@@ -1,6 +1,5 @@
 <?php
-# English
-# Language File for ResourceSpace
+# English Language File for ResourceSpace
 # -------
 # Note: when translating to a new language, preserve the original case if possible.
 
@@ -343,7 +342,6 @@ $lang["smtpauth"]="Use Authentication for SMTP Server";
 $lang["smtpusername"]="SMTP Username";
 $lang["smtppassword"]="SMTP Password";
 
-
 $lang["connect"]="Connect";
 $lang["uselocalupload"]="OR: Use local 'upload' folder instead of remote FTP server";
 
@@ -446,7 +444,7 @@ $lang["total"]="Total";
 $lang["lastmatching"]="Last matching";
 $lang["ownedbyyou"]="owned by you";
 $lang["edit_theme_category"]="Edit featured collection category";
-$lang["emailthemecollectionmessageexternal"]="has e-mailed you collections of resources from $applicationname."; 
+$lang["emailthemecollectionmessageexternal"]="has e-mailed you collections of resources from $applicationname.";
 $lang["emailthememessage"]="has e-mailed you a selection of featured collections from $applicationname which have been added to your 'My collections' page.";
 $lang["clicklinkviewthemes"]="Click the link below to view the featured collections.";
 $lang["clicklinkviewcollections"]="Click the links below to view the collections.";
@@ -737,7 +735,6 @@ $lang["researchrequestassigned"]="Research request assigned";
 $lang["researchrequestcompletemessage"]="Your research request is complete and has been added to your 'my collections' page.";
 $lang["researchrequestcomplete"]="Research request completed";
 
-
 # Misc / global
 $lang["selectgroupuser"]="Select group/user...";
 $lang["select"]="Select...";
@@ -910,7 +907,6 @@ $lang["false-true"]=array("False","True");
 # Formatting
 $lang["plugin_field_fmt"]="%A (%B)"; // %A and %B are replaced by content defined by individual plugins. See, e.e., config_db_single_select in /include/plugin_functions.php
 
-
 #Sharing
 $lang["share"]="Share";
 $lang["sharecollection"]="Share collection";
@@ -956,7 +952,6 @@ $lang["notapprovedresources"]="The following resources are not active and cannot
 $lang['error_generating_access_key'] = 'Could not generate an access key';
 $lang['access_key_deleted'] = "Access key '%access_key' deleted";
 $lang['email_error_user_list_not_valid'] = 'No valid emails to send to (users might not be approved)';
-
 
 # New for 1.3
 $lang["savesearchitemstocollection"]="Save results to collection";
@@ -1110,7 +1105,6 @@ $lang["description"]="Description";
 $lang["notuploaded"]="Not uploaded";
 $lang["uploadreplacementfile"]="Upload replacement file";
 $lang["backtomanagealternativefiles"]="Back to manage alternative files";
-
 
 $lang["resourceistranscoding"]="Resource is currently being transcoded";
 $lang["cantdeletewhiletranscoding"]="You can't delete resources while they are transcoding";
@@ -1354,7 +1348,7 @@ $lang["alternativelocalupload"]="Upload alternative files - fetch from local upl
 
 $lang["confirmdeletefieldoption"]="Are you sure you wish to DELETE this field option?";
 
-$lang["cannotshareemptycollection"]="This collection is empty and cannot be shared.";	
+$lang["cannotshareemptycollection"]="This collection is empty and cannot be shared.";
 $lang["cannotshareemptythemecategory"]="This featured collection category contains no featured collections and cannot be shared.";
 
 $lang["requestall"]="Request all";
@@ -1466,12 +1460,9 @@ $lang["groupaccess"]="Group access";
 $lang["plugin-groupsallaccess"]="This plugin is activated for all groups";
 $lang["plugin-groupsspecific"]="This plugin is activated for the selected groups only";
 
-
 $lang["associatedcollections"]="Associated collections";
 $lang["emailfromuser"]="Send the e-mail from ";
 $lang["emailfromsystem"]="If unchecked, email will be sent from the system address: ";
-
-
 
 $lang["previewpage"]="Preview page";
 $lang["nodownloads"]="No downloads";
@@ -1502,7 +1493,6 @@ $lang["usageincorrect"]="You must describe the planned usage and select a medium
 $lang["savesearchassmartcollection"]="Save search as smart collection";
 $lang["smartcollection"]="Smart collection";
 $lang["dosavedsearch"]="Do saved search";
-
 
 $lang["uploadertryjava"]="Use the legacy Java uploader.";
 $lang["uploadertryplupload"]="<strong>NEW</strong> - Try out the new style uploader.";
@@ -1562,7 +1552,6 @@ $lang["purchase_complete_email_user"] = "Confirmation of purchase";
 $lang["purchase_complete_email_user_body"] = "Thanks for your purchase. Please use the link below to access your purchased items.";
 $lang["purchase_email_address"] = "Please enter a valid email address if you wish to receive confirmation of your purchase";
 
-
 $lang["subcategories"]="Subcategories";
 $lang["subcategory"]="Subcategory";
 $lang["back"]="Back";
@@ -1596,7 +1585,6 @@ $lang['report_periodic_email_option_all_users'] = 'all users';
 $lang['report_periodic_email_option_selected_user_groups'] = 'selected user group(s)';
 $lang['report_periodic_email_unsubscribe_title'] = 'Unsubscribe from periodic emails';
 $lang['report_periodic_email_unsubscribe_confirmation'] = 'Please confirm you would like to unsubscribe';
-
 
 #Column headers (for the default reports)
 $lang["columnheader-keyword"]="Keyword";
@@ -1670,7 +1658,6 @@ $lang["star"]="Star";
 $lang["stars"]="Stars";
 
 $lang["noupload"]="No upload";
-
 
 $lang["permissions"]="Permissions";
 
@@ -1816,7 +1803,6 @@ $lang["error-plugin-not-activated"] = "Plugin not activated";
 $lang["error-failed-to-delete"] = "Failed to delete";
 $lang["error-failed-to-move"] = "Failed to move";
 
-
 $lang["no-options-available"]="No options available";
 $lang["header-upload-subtitle"] = "Step %number: %subtitle"; # %number, %subtitle will be replaced, e.g. Step 1: Specify Default Content For New Resources
 $lang["local_upload_path"] = "Local upload folder";
@@ -1928,7 +1914,7 @@ $lang["collection-order"] = "Collection order";
 $lang["save-error"]="!! Error auto saving - please save manually !!";
 $lang["save-conflict-error"]="Edit conflict. Please reload the page";
 $lang["save-conflict-multiple"]="Edit conflict. Please reload the page";
-$lang["save-conflict-title"]="Edit conflict"; 
+$lang["save-conflict-title"]="Edit conflict";
 
 $lang["theme_home_promote"]="Promote on the home page?";
 $lang["theme_home_page_text"]="Home page text";
@@ -1988,7 +1974,7 @@ $lang['metadata-pdf-title'] = 'Metadata download for resource';
 # Comments field titles, prompts and default placeholders
 $lang['comments_box-title']="Comments";
 $lang['comments_box-policy']="Comments Policy";
-$lang['comments_box-policy-placeholder']="Please add text to comments_policy entry in the site text";		# only shown if Admin User and no policy set
+$lang['comments_box-policy-placeholder']="Please add text to comments_policy entry in the site text";       # only shown if Admin User and no policy set
 $lang['comments_in-response-to']="in response to";
 $lang['comments_respond-to-this-comment']="Reply";
 $lang['comments_in-response-to-on']="on";
@@ -2190,8 +2176,6 @@ $lang['action-move-down'] = 'Move down';
 $lang['action-move-to'] = 'Move to';
 $lang['delete_user_group_checkbox_alert_message'] = 'Please note this action will also delete all content text that was relevant to this user group. There are %%RECORDSCOUNT%% records found in Manage Content.';
 
-
-
 $lang["about__about"]="Your about text goes here.";
 $lang["all__comments_flag_notification_email_body"]="";
 $lang["all__comments_flag_notification_email_subject"]="";
@@ -2283,7 +2267,7 @@ $lang["notify_resource_change_notification"]="A resource that you downloaded in 
 $lang["passwordresetemail"]="Please click on the link below to reset your password.";
 $lang['password_reset_email_html'] = 'Username: [username]<br /><br />Please click on the link below to reset your password.<br /><br /><a href="[url]" target="_blank" >[url]</a>';
 $lang["passwordnewemail"]="Please click on the link below to set a new password for your account.";
-$lang["passwordlinkexpired"]="Password reset link has either expired or been used. Please log in or request a new link."; 
+$lang["passwordlinkexpired"]="Password reset link has either expired or been used. Please log in or request a new link.";
 $lang["done__user_password_link_sent"]="If your email address was recognised as belonging to a valid account then an e-mail containing a link to reset your password has been sent.<br /><br /> If you do not receive an email and you believe your account is valid please check your email filters before contacting your system administrator.";
 $lang["user_password__introtextreset"]="Enter your e-mail address and a link you can use to reset your password will be sent to you.";
 $lang["ticktoemaillink"]="E-mail user a link so that they can reset their password";
@@ -2585,7 +2569,6 @@ $lang['manage_external_shares'] = 'Manage external shares';
 $lang['filter_label'] = 'Filter';
 /* end of Manage external shares */
 
-
 $lang["rse_analytics"]="Analytics";
 $lang["new_report"]="New report";
 $lang["edit_report"]="Edit report";
@@ -2673,13 +2656,12 @@ $lang["actions_view_editable_as_resultset"]="View resources to review as a resul
 
 $lang["refinemetadata"]="Refine metadata";
 $lang["saveandnext"]="Save and next";
-$lang["save_and_auto"]="Save and auto-next"; 
+$lang["save_and_auto"]="Save and auto-next";
 
 $lang["upload_sequence"]="Upload sequence";
 $lang["default_upload_sequence"]="Default upload sequence";
 $lang["upload_first_then_set_metadata"]="Upload first, then set metadata";
 $lang["set_metadata_then_upload"]="Set metadata first, then upload";
-
 
 /* Annotations */
 $lang['annotate_text_link_label'] = 'Annotate mode toggle';
@@ -2687,7 +2669,6 @@ $lang['annotate_annotation_label'] = 'Annotation';
 $lang['annotate_annotations_label'] = 'Annotations';
 
 $lang["byte_prefix_mode_decimal"]="Use decimal for file sizes (1000 multiples, KB/MB/GB/TB) as opposed to binary (1024 multiples , KiB/MiB/GiB/TiB)";
-
 
 /* Errors */
 $lang['error_upload_resource_alternatives_batch'] = 'When using this feature (see $upload_alternatives_suffix) your original file MUST be the first one in the queue!';
@@ -2741,7 +2722,7 @@ $lang['login_word'] = "Login";
 
 $lang['error-duplicatesfound'] = "Duplicate found: resource(s) %resourceref% matches file %filename%"; # %resourceref to be replaced by list of refs that match incoming file and %filename to be replaced by the incoming files name or location
 $lang['see_log'] = "Please refer to the log below for more details on this upload.";$lang["edit_copy_from_field"]       = "Copy data from field";
-// Filter rules 
+// Filter rules
 $lang["filter_migration"]           = "Filter migration";
 $lang["filter_search_success"]      = "Search filter has been successfully migrated.";
 $lang["filter_search_error"]        = "An error was encountered migrating a search filter. Please check the search filter.";
@@ -2769,7 +2750,6 @@ $lang["filter_or"]                  = "OR";
 $lang["filter_and"]                 = "AND";
 $lang['see_log'] = "Please refer to the log below for more details on this upload.";$lang['login_word'] = "Login";$lang["edit_copy_from_field"]       = "Copy data from field";
 
-
 /* Browse bar */
 $lang['browse_bar_text']                = "Browse";
 $lang['field_show_in_browse_bar']       = "Show in Browse Bar";
@@ -2779,6 +2759,126 @@ $lang['error-invalid_browse_action']    = "Invalid action. Please check existing
 $lang['browse_by_tag']                  = "Browse by tag";
 $lang['browse_by_workflow_state']       = "Workflow";
 
-
 # Updates to workflow
 $lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+
+// Amazon Web Services (AWS) SDK for PHP
+$lang["system_aws"] = "AWS dashboard";
+$lang["aws_s3"] = "Amazon Web Services (AWS) Simple Storage Service (S3) Based Original Filestore";
+$lang["aws_s3_text"] = "Use AWS S3 object-based original file filestore?";
+$lang["aws_s3_region"] = "Bucket located in region: ";
+$lang["aws_s3_bucket"] = "Bucket: ";
+$lang['aws_s3_bucket_access'] = "S3 bucket accessible?";
+$lang["aws_s3_owner"] = "Bucket owner: ";
+$lang["aws_s3_id"] = "Owner ID: ";
+$lang["aws_s3_storage_class"] = "S3 bucket storage class:";
+$lang["aws_s3_dashboard"] = "Amazon Web Services (AWS) Simple Storage Service (S3) Dashboard";
+$lang["aws_s3_object_num"] = "Number of S3 bucket objects:";
+$lang["aws_s3_bucketsizebytes"] = "S3 bucket size and estimated monthly cost:";
+$lang["aws_s3_putrequests"] = "S3 PUT requests";
+$lang["aws_s3_getrequests"] = "S3 GET requests";
+$lang["aws_s3_headrequests"] = "S3 HEAD requests";
+$lang["aws_s3_postrequests"] = "S3 POST requests";
+$lang["aws_s3_bytesdownloaded"] = "S3 bytes downloaded";
+$lang["aws_s3_bytesuploaded"] = "S3 bytes uploaded";
+$lang["aws_s3_download_text"] = "Downloading file from long-term storage, please stand by.";
+$lang["aws_s3_keypair"] = "AWS key pair (key / secret) set?";
+
+$lang["filestore_type2"] = "Using original file separated filestore";
+$lang["deletefilecheck"] = "Filestore and AWS S3 delete file check";
+$lang["deletefilechecktext"] = "Checking the server filestore and AWS S3 bucket for remaining folders and files.";
+$lang["filestore"] = "Filestore";
+$lang["purge_temp_folder_age"] = "Purge temp folder age";
+$lang["exiftool_write"] = "Allow ExifTool metadata writing (\$exiftool_write = true)?";
+$lang["exiftool_write_option"] = "Require ExifTool metadata writing (\$exiftool_write_option = true)?";
+$lang["created2"] = "Created Resource ID";
+
+// MAP SEARCH RESULTS
+$lang['map_configuration'] = "Search Results Map";
+$lang['map_introtext'] = "Plugin provides for a map search results option.  Select available basemaps and overlays below for the user to choose from.";
+$lang['map_introtext2'] = "The map below shows resources from the search result that have a location associated with them. The marker color is set to the resource type (key below the map). When markers would overprint other markers, green-colored clustering is used with a number indicating the number of clustered markers, zoom-in or double click a cluster.  Click on an individual marker to load a window for that resource.  Hover over an individual marker for the Resource ID.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
+$lang['mapview'] = "Map";
+$lang['maptitle'] = "Map view";
+$lang['mapemptysearch'] = "No search results.";
+
+// Leaflet search map options.
+$lang['map_options'] = "Search Map Options";
+$lang['leaflet_map_centerview'] = "Map Center Location (EPSG:3857 Web Mercator in decimal degrees): [latitude, longitude],zoomlevel";
+$lang['legend_text'] = "Resource Types:";
+$lang['leaflet_mapdownload'] = "Download map as PNG file, select size to right";
+
+// OpenSteetMap basemap group.
+$lang['map_osm_group'] = "OpenStreetMap (OSM)";
+$lang['map_osm'] = "Default";
+$lang['map_osmde'] = "German Style";
+$lang['map_osmfr'] = "OSM France";
+$lang['map_osmbzh'] = "OSM Luxembourg";
+$lang['map_osmbw'] = "Black and White";
+$lang['map_osmhot'] = "Humanitarian";
+$lang['map_osmmtb'] = "Mountain Bike Map of Europe";
+$lang['map_osmhikebike'] = "Hike & Bike Map";
+$lang['map_otm'] = "OSM Topographic";
+$lang['map_omsroads'] = "OpenMapSurfer Roads";
+$lang['map_omsgray'] = "OpenMapSurfer Grayscale";
+
+// Thunderforest basemap group.
+$lang['map_tf_group'] = "Thunderforest";
+$lang['map_tfapi'] = "API Code";
+$lang['map_tfocm'] = "OpenCycleMap (OCM)";
+$lang['map_tftransport'] = "Transport";
+$lang['map_tftransportdark'] = "Transport Dark";
+$lang['map_tflandscape'] = "Landscape";
+$lang['map_tfoutdoors'] = "Outdoors";
+$lang['map_tfpioneer'] = "Pioneer";
+
+// Hydda basemap group.
+$lang['map_hydda_group'] = "Hydda";
+$lang['map_hyddafull'] = "Default Map";
+$lang['map_hyddabase'] = "Base";
+
+// Stamen basemap group.
+$lang['map_stamen_group'] = "Stamen";
+$lang['map_stamentoner'] = "Toner";
+$lang['map_stamentonerlt'] = "Toner Light";
+$lang['map_stamentonerback'] = "Toner Background";
+$lang['map_stamenterrain'] = "Terrain";
+$lang['map_stamenterrainback'] = "Terrain Background";
+$lang['map_stamenrelief'] = "Relief";
+$lang['map_stamenwatercolor'] = "Watercolor";
+
+// ESRI basemap group.
+$lang['map_esri_group'] = "ESRI";
+$lang['map_esristreet'] = "Streets";
+$lang['map_esridelorme'] = "DeLorme";
+$lang['map_esritopo'] = "Topographic";
+$lang['map_esriimagery'] = "Imagery";
+$lang['map_esriterrain'] = "Terrain";
+$lang['map_esrirelief'] = "Shaded Relief";
+$lang['map_esriphysical'] = "Physical";
+$lang['map_esriocean'] = "Ocean";
+$lang['map_esrinatgeo'] = "National Geographic";
+$lang['map_esrigray'] = "Gray Canvas";
+
+// NASA GIBS basemap group.
+$lang['map_nasagibs_group'] = "NASA GIBS";
+$lang['map_nasagibscolor'] = "Modis/Terra Color Imagery";
+$lang['map_nasagibsfalsecolor'] = "Modis/Terra False Color Imagery";
+$lang['map_nasagibsnight'] = "Night Imagery";
+
+// Mapbox basemap group.
+$lang['map_mapbox_group'] = "Mapbox";
+$lang['map_mapboxid'] = "ID";
+$lang['map_mapboxtoken'] = "Access Token";
+$lang['map_mapbox'] = "Default Map";
+
+// Collection description.
+$lang['theme_category_descriptions'] = "Show collection name and description?";
+$lang['collection_description'] = "Description";
+
+// CSV Delimiter.
+$lang['csvExportResultsDelimiter'] = "Use the pipe '|' symbol delimiter instead of a comma?";
+$lang['csvExportResultsExtension'] = "Use TXT file extension instead of CSV?";
+$lang['csvExportResultsLineStrip'] = "Strip unexcaped line endings from fields before output (i.e. some OCR'd PDF files)?";
+$lang['csv_geolat'] = "Latitude";
+$lang['csv_geolong'] = "Longitude";
+
