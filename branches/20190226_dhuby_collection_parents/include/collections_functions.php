@@ -151,7 +151,7 @@ function get_collection($ref)
 function get_collections($parent)
 	{
 	# Returns all collections for a given parent ID.
-	return sql_query("select * from collection where parent='" . escape_check($parent) . "'");
+	return sql_query("select * from collection where parent='" . escape_check($parent) . "' order by name,ref");
 	}
 	
 function get_collection_resources($collection)
