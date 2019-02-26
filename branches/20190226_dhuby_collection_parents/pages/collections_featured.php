@@ -102,7 +102,7 @@ function DisplayCollections($parent)
                                 'tile_audience'     => 'false',
                                 'all_users'         => 1,
                                 'promoted_resource' => 'true',
-                                'link'              => "{$baseurl_short}pages/search.php?search=!collection{$collection['ref']}",
+                                'link'              => $url,
                             )
                         );
                         ?>
