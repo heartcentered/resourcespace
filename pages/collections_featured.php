@@ -70,16 +70,22 @@ function DisplayCollections($parent)
 					}
 				}
 				*/
-			
+				# Does this itself contain collections? Folder mode.
+				$is_folder=count(get_collections($collection["ref"]))>0;
+					
+				$icon=($is_folder?"folder":"th-large");
+				
+				$url=($is_folder? $baseurl_short . "pages/collections_featured.php?parent=" . $collection["ref"]
+					            : $baseurl_short . "pages/search.php?search=!collection" . $collection["ref"]);
                 ?>
 				<div id="FeaturedSimpleTile_<?php echo md5($collection['ref']); ?>" class="FeaturedSimplePanel HomePanel DashTile FeaturedSimpleTile<?php
 					if($theme_image_path!="")
 						{	
 						echo " FeaturedSimpleTileImage\" style=\"background: url(" . $theme_image_path . ");background-size: cover;";
 						}?> <?php echo strip_tags_and_attributes(htmlspecialchars(str_replace(" ","",i18n_get_collection_name($collection))))?>">					
-					<a href="<?php echo $baseurl_short?>pages/search.php?search=!collection<?php echo $collection["ref"]?>" onclick="return CentralSpaceLoad(this,true);" class="FeaturedSimpleLink <?php if($themes_simple_images){echo " TileContentShadow";} ?>" id="featured_tile_<?php echo $collection["ref"]; ?>">
+					<a href="<?php echo $url ?>" onclick="return CentralSpaceLoad(this,true);" class="FeaturedSimpleLink <?php if($themes_simple_images){echo " TileContentShadow";} ?>" id="featured_tile_<?php echo $collection["ref"]; ?>">
 					<div id="FeaturedSimpleTileContents_<?php echo $collection["ref"] ; ?>"  class="FeaturedSimpleTileContents">
-                        <h2><span class="fa fa-th-large"></span><?php echo i18n_get_collection_name($collection); ?></h2>
+                        <h2><span class="fa fa-<?php echo $icon ?>"></span><?php echo i18n_get_collection_name($collection); ?></h2>
 					</div>
 					</a>
                     <div id="FeaturedSimpleTileActions_<?php echo md5($collection['ref']); ?>" class="FeaturedSimpleTileActions"  style="display:none;">
