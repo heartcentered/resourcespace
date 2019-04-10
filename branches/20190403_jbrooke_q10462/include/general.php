@@ -4261,7 +4261,7 @@ function check_access_key($resource,$key)
                         
                         if($co_parts[0]!='' && isset($co_parts[1]))
                             {
-                            $name=str_replace("$","",$co_parts[0]);
+                            $name=str_replace("$","",ltrim($co_parts[0]));
                             $value=ltrim($co_parts[1]); 
                             if(strtolower($value)=='false'){$value=0;}
                             elseif(strtolower($value)=='true'){$value=1;}
@@ -6276,7 +6276,10 @@ function get_rs_session_id($create=false)
     // Note this is not a PHP session, we are using this to create an ID so we can distinguish between anonymous users
     if(isset($_COOKIE["rs_session"]))
         {
-        rs_setcookie("rs_session",$_COOKIE["rs_session"], 7, "", "", substr($baseurl,0,5)=="https", true); // extend the life of the cookie
+        if (!headers_sent())
+            {
+            rs_setcookie("rs_session",$_COOKIE["rs_session"], 7, "", "", substr($baseurl,0,5)=="https", true); // extend the life of the cookie
+            }
         return($_COOKIE["rs_session"]);
         }
     if ($create) 
@@ -6284,7 +6287,10 @@ function get_rs_session_id($create=false)
         // Create a new ID - numeric values only so we can search for it easily
         $rs_session= rand();
         global $baseurl;
-        rs_setcookie("rs_session",$rs_session, 7, "", "", substr($baseurl,0,5)=="https", true);
+        if (!headers_sent())
+            {
+            rs_setcookie("rs_session",$rs_session, 7, "", "", substr($baseurl,0,5)=="https", true);
+            }
 
         if(is_array($anonymous_login))
             {
@@ -7655,4 +7661,22 @@ function has_browsebar()
     && ('' == $k || $internal_share_access)
     && $browse_bar;
     //   && false == $loginterms ?
+    }
+
+/**
+* Utility to if collapsable upload options should be displayed
+*  
+* @return boolean
+*/   
+function display_upload_options()
+    {
+    global $metadata_read, $enable_add_collection_on_upload, $relate_on_upload, $camera_autorotation;
+    if ($metadata_read || $enable_add_collection_on_upload || $relate_on_upload || $camera_autorotation)
+        {
+        return true;
+        }
+    else
+        {
+        return false;
+        }
     }
