@@ -1,12 +1,12 @@
 
 .image-annotate-canvas {
-    border: solid 1px #ccc;
     background-position: left top;
     background-repeat: no-repeat;
     display: block;
     margin: 0;
     position: relative;
     overflow:hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2 );
 }
 .image-annotate-view {
     display: none;

@@ -72,7 +72,8 @@ if ($upload_review_mode)
     $search_all_workflow_states = TRUE;
     $check_edit_checksums = false;
     $usersearchfilter = "";
-    $review_collection_contents=do_search("!collection" . $collection);
+    $upload_review_collection_order_by = ($upload_review_mode_review_by_resourceid ? 'resourceid' : $default_collection_sort);
+    $review_collection_contents = do_search("!collection{$collection}", '', $upload_review_collection_order_by);
     # Revert save settings
     $search_all_workflow_states = $search_all_workflow_states_cache;
     $usersearchfilter = $usersearchfilter_cache;
@@ -182,46 +183,30 @@ if ($go!="")
 
 $collection=getvalescaped("collection",0,true);
 $editsearch = getval("editsearchresults","") != "";
-if ($collection != 0 || $editsearch) 
+if($editsearch)
     {
+    debug("edit.php: editing multiple items...");
+    debug("edit.php: \$search = {$search}");
+    debug("edit.php: \$collection = {$collection}");
+    debug("edit.php: \$editsearch = " . ($editsearch ? 'true' : 'false'));
+
+    $multiple = true;
+    $edit_autosave = false; # Do not allow auto saving for batch editing.
+
+    // Check all resources are editable
+    $searchitems = do_search($search, $restypes, 'resourceid', $archive, -1, $sort, false, 0, false, false, '', false, false, true, false);
+    $edititems   = do_search($search, $restypes, 'resourceid', $archive, -1, $sort, false, 0, false, false, '', false, false, true, true);
+    $items       = array_column($edititems,"ref");
+    if(count($searchitems) != count($edititems))
+        {
+        $error = $lang['error-permissiondenied'];
+        error_alert($error);
+        exit();
+        }
+
+    $last_resource_edit = get_last_resource_edit_array($items); 
+
     # If editing multiple items, use the first resource as the template
-    $multiple=true;
-    $edit_autosave=false; # Do not allow auto saving for batch editing.
-    if ($collection != 0)
-        {
-        $items=get_collection_resources($collection);  
-        if (count($items)==0) 
-            {
-           $error=$lang['error-cannoteditemptycollection'];
-           error_alert($error);
-           exit();
-            }
-        
-        // Check all resources are editable
-        if (!allow_multi_edit($collection))
-            {
-            $error=$lang['error-permissiondenied'];
-            error_alert($error);
-            exit();
-            }
-            
-        $last_resource_edit = get_last_resource_edit($collection); 
-        }
-    else
-        {
-        // Check all resources are editable
-        $searchitems    = do_search($search,$restypes,'resourceid',$archive,-1,$sort,false,0,false,false,'',false,false, true, false);
-        $edititems      = do_search($search,$restypes,'resourceid',$archive,-1,$sort,false,0,false,false,'',false,false, true, true);
-        $items          = array_column($edititems,"ref");
-        if (count($searchitems) != count($edititems))
-            {
-            $error=$lang['error-permissiondenied'];
-            error_alert($error);
-            exit();
-            }
-        $last_resource_edit = get_last_resource_edit_array($items);  
-        }
-        
     $ref = $items[0];
     }
 else
@@ -278,7 +263,10 @@ else
 
 $uploadparams["resource_type"] = $resource['resource_type'];   
 
-$setarchivestate = getvalescaped('status', $resource["archive"], TRUE);
+// Resource archive (ie user template - negative resource ID) can be default only when user actually gets to set it otherwise
+// makes no sense in using it and we should let the system decide based on configuration and permissions what it should use.
+$default_setarchivestate = ($show_status_and_access_on_upload || $resource['ref'] > 0 ? $resource['archive'] : '');
+$setarchivestate = getvalescaped('status', $default_setarchivestate, TRUE);
 // Validate this is permitted
 $setarchivestate = get_default_archive_state($setarchivestate);
 
@@ -1421,19 +1409,30 @@ if(isset($metadata_template_resource_type) && !$multiple && ($ref < 0 || $upload
         <script>
         function MetadataTemplateOptionChanged(value)
             {
-            // Undo template selection <=> clear out the form
+            $confirm_message = "<?php echo $lang['usemetadatatemplatesure']?>";
+            $resetform = false;
             if(value == '')
                 {
-                jQuery('#mainform').append(
+                $confirm_message = "<?php echo $lang['removemetadatatemplatesure'] ?>";
+                $resetform = true;
+                }
+
+            if(confirm($confirm_message))
+                {
+                if($resetform)
+                    {
+                    // Undo template selection <=> clear out the form
+                    jQuery('#mainform').append(
                     jQuery('<input type="hidden">').attr(
                         {
                         name: 'resetform',
                         value: 'true'
                         })
-                );
-                }
+                    );
+                    }
 
-            return CentralSpacePost(document.getElementById('mainform'), true);
+                return CentralSpacePost(document.getElementById('mainform'), true);
+                }
             }
         </script>
         <div class="clearerleft"></div>

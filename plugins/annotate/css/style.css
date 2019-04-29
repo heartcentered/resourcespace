@@ -19,10 +19,16 @@
 }
 
 .annotate-view-wrapper {
-    display:table;
-    clear:none;
-    margin: 0px auto;
+    display: inline-block;
+    float: left;
+    margin-right: 15px;
 }
+
+.RecordPanelLarge .annotate-view-wrapper {
+    display: table;
+    float: inherit;
+    margin: 0 auto;
+}   
 
 .annotate-view-preview-links {
     float: right;

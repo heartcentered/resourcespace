@@ -520,7 +520,7 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .RecordPanel .RecordDownload .DownloadDBlend td {margin: 0;vertical-align: middle;}
 .RecordPanel .RecordDownloadSpace {padding: 5px 10px 0 10px;}
 .RecordPanel .RecordDownloadSpace ul {padding:0.2em 0;margin:0;margin-top: 5px;list-style:none;}
-.RecordPanel .RecordDownloadSpace li {padding:0;margin:0 12px 3px 0;float:left;min-width:195px;}
+.RecordPanel .RecordDownloadSpace li {padding:0;margin:0 12px 3px 0;float:left;min-width:192px;}
 .RecordPanel .RecordDownloadSpace li a:hover {text-decoration:none;}
 
 .RecordPanel .RecordDownloadSpace .DownloadDBlend .DownloadButton {text-align: center;font-weight: bold;}
@@ -1763,5 +1763,9 @@ a.BrowseRefresh{
 }
 
 #RecordDownloadSummary, #ResourceWorkflowActions {
+    width: 435px;
+}
+
+.RecordPanelLarge #RecordDownloadSummary, .RecordPanelLarge #ResourceWorkflowActions {
     width: 49.4%;
 }
