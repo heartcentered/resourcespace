@@ -462,6 +462,10 @@ else
 							if($iiif_result["iiif_position"] == $annotationid)
 								{
 								$resourceid = $iiif_result["ref"];
+                                $size_info = array(
+                                    'identifier' => (strtolower($iiif_result['file_extension']) != 'jpg') ? 'hpr' : '',
+                                    'return_height_width' => false,
+                                );
 								$validrequest = true;
 								break;
 								}
@@ -471,8 +475,9 @@ else
 							$response["@context"] = "http://iiif.io/api/presentation/2/context.json";
 							$response["@id"] = $rooturl . $identifier . "/annotation/" . $annotationid;
 							$response["@type"] = "oa:Annotation";
-							$response["motivation"] = "sc:painting";						
-							$response["resource"] =  iiif_get_image($identifier,$resourceid,$annotationid);
+							$response["motivation"] = "sc:painting";
+                            $response["resource"] = iiif_get_image($identifier, $resourceid, $annotationid, $size_info);
+                            $response["on"] = $rooturl . $identifier . "/canvas/" . $annotationid;
 							}
 						else
 							{
@@ -536,7 +541,7 @@ else
                 }
             if(defined('JSON_PRETTY_PRINT'))
                 {
-                echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK);
+                echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 }
             else
                 {

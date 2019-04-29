@@ -187,30 +187,19 @@ function save_resource_data($ref,$multi,$autosave_field="")
 								
 				if(count($added_nodes)>0 || count($removed_nodes)>0)
 					{  
-					// Log this change, nodes will actually be added later	
-					$existing_nodes_value = '';
-					$new_nodes_val        = '';
-
-					// Build new value:
-					foreach($ui_selected_node_values as $ui_selected_node_value)
-						{
-						$new_nodes_val .= ",{$node_options[$ui_selected_node_value]}";
-						}
-					// Build existing value:
-					foreach($current_field_nodes as $current_field_node)
-						{
-						$existing_nodes_value .= ",{$node_options[$current_field_node]}";
-						}
-					resource_log($ref, LOG_CODE_EDITED, $fields[$n]["ref"], '', $existing_nodes_value, $new_nodes_val);
-                    
-                    $val = $new_nodes_val;
                     # If this is a 'joined' field it still needs to add it to the resource column
                     $joins=get_resource_table_joins();
                     if (in_array($fields[$n]["ref"],$joins))
                         {
-                        if(substr($val,0,1)==","){$val=substr($val,1);}
+					    $new_nodevals = array();
+                        // Build new value:
+                        foreach($ui_selected_node_values as $ui_selected_node_value)
+                            {
+                            $new_nodevals[] = $node_options[$ui_selected_node_value];
+                            }
+                        $new_nodes_val = implode($new_nodevals,",");
                         sql_query("update resource set field".$fields[$n]["ref"]."='".escape_check(truncate_join_field_value(substr($new_nodes_val,1)))."' where ref='$ref'");
-                         }
+                        }
 					}
 
                 // Required fields that didn't change get the current value
@@ -241,7 +230,7 @@ function save_resource_data($ref,$multi,$autosave_field="")
 						$rangeregex="/^(\d{4})(-\d{2})?(-\d{2})?\/(\d{4})(-\d{2})?(-\d{2})?/";
 						if(!preg_match($rangeregex,$date_edtf,$matches))
 							{
-							$errors[$fields[$n]["ref"]] = $lang["information-regexp_fail"] . " : " . $val;
+							$errors[$fields[$n]["ref"]] = $lang["information-regexp_fail"] . " : " . $date_edtf;
 							continue;
 							}
                         if(is_numeric($fields[$n]["linked_data_field"]))
@@ -295,10 +284,13 @@ function save_resource_data($ref,$multi,$autosave_field="")
 								$daterangenodes[]=set_node(null, $fields[$n]["ref"], $val, null, null,true);
 								}
 							}
-						}
-						// Get currently selected nodes for this field 
-						$current_field_nodes = get_resource_nodes($ref, $fields[$n]['ref']);
-						
+                        }
+
+                        natsort($daterangenodes);
+                        
+                        // Get currently selected nodes for this field 
+						$current_field_nodes = get_resource_nodes($ref, $fields[$n]['ref'], false, SORT_ASC);
+                                            
 						// Check if resource field data has been changed between form being loaded and submitted				
 						$post_cs = getval("field_" . $fields[$n]['ref'] . "_checksum","");
 						$current_cs = md5(implode(",",$current_field_nodes));						
@@ -317,11 +309,8 @@ function save_resource_data($ref,$multi,$autosave_field="")
 						
 						if(count($added_nodes)>0 || count($removed_nodes)>0)
 							{  
-							// Log this change, nodes will actually be added later	
-							resource_log($ref, LOG_CODE_EDITED, $fields[$n]["ref"], '', $fields[$n]["value"], $newval);
-							
 							$val = $newval;
-							# If this is a 'joined' field it still needs to add it to the resource column
+							# If this is a 'joined' field it still needs to be added to the resource column
 							$joins=get_resource_table_joins();
 							if (in_array($fields[$n]["ref"],$joins))
 								{
@@ -658,10 +647,12 @@ function save_resource_data($ref,$multi,$autosave_field="")
                 }
             else
                 {
-                if($setarchivestate != $oldarchive && 0 < $ref)
+                // update archive status if different (doesn't matter whether it is a user template or a genuine resource)
+                if($setarchivestate != $oldarchive)
                     {
                     update_archive_status($ref,$setarchivestate,array($oldarchive));
-                    }                
+                    }
+
 				$new_checksums["status"] = $setarchivestate;
                 }
 			}
@@ -962,19 +953,19 @@ function save_resource_data_multi($collection,$editsearch = array())
 					else
 						{
 						// Range has been passed via normal inputs, construct the value from the date/time dropdowns
-						$date_parts=array("start","end");
+						$date_parts=array("_start_","_end_");
 						
 						foreach($date_parts as $date_part)
 							{
-							$val = getvalescaped("field_" . $fields[$n]["ref"] . "_" . $date_part . "year","");
+							$val = getvalescaped("field_" . $fields[$n]["ref"] . $date_part . "year","");
 							if (intval($val)<=0) 
 								{
 								$val="";
 								}
-							elseif (($field=getvalescaped("field_" . $fields[$n]["ref"] . "_" . $date_part . "month",""))!="") 
+							elseif (($field=getvalescaped("field_" . $fields[$n]["ref"] . $date_part . "month",""))!="") 
 								{
 								$val.="-" . $field;
-								if (($field=getvalescaped("field_" . $fields[$n]["ref"] . "_" . $date_part . "day",""))!="") 
+								if (($field=getvalescaped("field_" . $fields[$n]["ref"] . $date_part . "day",""))!="") 
 									{
 									$val.="-" . $field;
 									}
@@ -3195,7 +3186,7 @@ function notify_user_contributed_submitted($refs,$collection=0)
         }
     else
         {
-        $linkurl = $baseurl . "/pages/search.php?search=!contributions" . $userref . "&archive=-1";
+        $templatevars['url'] = $baseurl . "/pages/search.php?search=!contributions" . $userref . "&archive=-1";
         }
 	
 	$templatevars['list']=$list;
@@ -5442,7 +5433,7 @@ function get_last_resource_edit_array($resources = array())
 function get_default_archive_state($requestedstate = "")
     {
     global $override_status_default;
-    
+
     if ((string)(int)$requestedstate == (string)$requestedstate && checkperm("e" . $requestedstate))
         {
         return $requestedstate;

@@ -3110,7 +3110,7 @@ $resource_edit_modal_from_view_modal=false;
 $resource_view_use_pre = false;
 
 # Use the larger layout on the view page for certain file extensions.
-$resource_view_large_layout = array("jpg", "jpeg", "tif", "tiff");
+$resource_view_large_layout = array("jpg", "jpeg", "tif", "tiff", "png", "gif");
 
 # Show geographical search results in a modal
 $geo_search_modal_results = true;
@@ -3387,6 +3387,10 @@ $upload_review_lock_metadata = false;
 # New upload mode that focuses on getting files into the filestore, then working off a queue for further processing (metadata extract, preview creation, etc).
 # requires $offline_job_queue=true;
 $upload_then_process=false;
+
+// Set to TRUE to review resources based on resource ID (starting from most recent) when using upload then edit mode.
+// Requires "$upload_then_edit = true;"
+$upload_review_mode_review_by_resourceid = false;
 
 # Uncomment and set to an archive state where $upload_then_process files are stored before processing.
 # It is strongly recommended that a unique archive state be created to handle this
