@@ -7797,7 +7797,7 @@ function check_script_last_ran($name, $fail_notify_allowance, &$last_ran_datetim
     $name = escape_check($name);
 
     $script_last_ran = sql_value('SELECT `value` FROM sysvars WHERE name = "{$name}"', '');
-    $mplus_script_failure_notify_seconds = intval($fail_notify_allowance) * 24 * 60 * 60;
+    $script_failure_notify_seconds = intval($fail_notify_allowance) * 24 * 60 * 60;
 
     if('' != $script_last_ran)
         {
@@ -7805,7 +7805,7 @@ function check_script_last_ran($name, $fail_notify_allowance, &$last_ran_datetim
         $last_ran_datetime = date('l F jS Y @ H:m:s', strtotime($script_last_ran));
 
         // It's been less than user allows it to last run, meaning it is all good!
-        if(time() < (strtotime($script_last_ran) + $mplus_script_failure_notify_seconds))
+        if(time() < (strtotime($script_last_ran) + $script_failure_notify_seconds))
             {
             return true;
             }
