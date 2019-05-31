@@ -7770,6 +7770,12 @@ function display_upload_options()
         return false;
         }
     }
+    
+function get_recent_users($days)
+    {
+    return (sql_value("select count(*) value from user where datediff(now(),last_active) <= '" . escape_check($days) . "'",0));
+    }
+    }
 
 /**
 * Check if script last ran more than the failure notification days

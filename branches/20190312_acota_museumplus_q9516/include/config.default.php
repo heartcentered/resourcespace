@@ -933,7 +933,7 @@ $user_purge=true;
 # List of active plugins.
 # Note that multiple plugins must be specified within array() as follows:
 # $plugins=array("loader","rss","messaging","googledisplay"); 
-$plugins = array('transform', 'rse_version', 'lightbox_preview', 'rse_search_notifications');
+$plugins = array('transform', 'rse_version', 'lightbox_preview', 'rse_search_notifications', 'rse_workflow');
 
 # Optional list of plugins that cannot be enabled through the UI. Can be useful to lock down system for hosting situations
 $disabled_plugins=array();
@@ -2439,6 +2439,9 @@ $debug_log=false;
 #$debug_log_location="d:/logs/resourcespace.log";
 #$debug_log_location="/var/log/resourcespace/resourcespace.log";
 
+# Suppress SQL information in the debug log?
+$suppress_sql_log = false;
+
 # Enable Metadata Templates. This should be set to the ID of the resource type that you intend to use for metadata templates.
 # Metadata templates can be selected on the resource edit screen to pre-fill fields.
 # The intention is that you will create a new resource type named "Metadata Template" and enter its ID below.
@@ -3121,7 +3124,7 @@ $resource_edit_modal_from_view_modal=false;
 $resource_view_use_pre = false;
 
 # Only use use the larger layout on the view page for certain file extensions.
-# $resource_view_large_ext = array("jpg", "jpeg", "tif", "tiff", "gif, "svg");
+# $resource_view_large_ext = array("jpg", "jpeg", "tif", "tiff", "gif", "png", "svg");
 
 # Show geographical search results in a modal
 $geo_search_modal_results = true;
