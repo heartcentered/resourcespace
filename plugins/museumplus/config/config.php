@@ -18,6 +18,9 @@ $museumplus_mpid_field = null;
 $museumplus_resource_types = array();
 
 // Script settings
+$museumplus_enable_script = true;
+$museumplus_interval_run = ''; // see http://php.net/manual/en/datetime.formats.relative.php or http://php.net/manual/en/datetime.add.php
+$museumplus_log_directory = '';
 $museumplus_script_failure_notify_days = 3;
 
 // MuseumPlus - ResourceSpace mappings
