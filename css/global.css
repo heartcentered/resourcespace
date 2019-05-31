@@ -484,6 +484,9 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .RecordPanel.RecordPanelLarge .RecordDownloadSpace {
     padding: 6px 1rem;
 }
+.RecordPanelLarge #ResourceToolsContainer {
+    display: inline-grid;
+}
 
 .RecordPanel .RecordDownloadSpace .DownloadDBlend .AltThumbLink,
 .RecordPanel .RecordDownloadSpace .DownloadDBlend .AltThumbLink:hover,
@@ -509,13 +512,13 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .RecordPanel .item {word-wrap: break-word; float: left;margin: 10px;width: 100%;position:relative;}
 .RecordPanel .item h3, .RecordPanel .itemNarrow h3, th {font-size: 1em;margin: 0px;padding: 0px;text-transform: uppercase; font-size: 0.875rem; color: #999;}
 .RecordPanel .item p, .RecordPanel .itemNarrow p {margin: 0px;padding: 0px;}
-.RecordPanel .RecordDownload {float: left;width: 435px;margin: 0px 10px 10px 0;}
+.RecordPanel .RecordDownload {float: left;width: 445px;margin: 0 0 10px 0;}
 .RecordPanel .RecordDownload table {width: 100%;margin: 0px;padding: 0px;}
 .RecordPanel .RecordDownload td {padding: 5px 5px 5px 0;margin: 0;}
 .RecordPanel .RecordDownload .DownloadDBlend td {margin: 0;vertical-align: middle;}
 .RecordPanel .RecordDownloadSpace {padding: 5px 10px 0 10px;}
 .RecordPanel .RecordDownloadSpace ul {padding:0.2em 0;margin:0;margin-top: 5px;list-style:none;}
-.RecordPanel .RecordDownloadSpace li {padding:0;margin:0 12px 3px 0;float:left;min-width:195px;}
+.RecordPanel .RecordDownloadSpace li {padding:0;margin:0 12px 3px 0;float:left;min-width:198px;}
 .RecordPanel .RecordDownloadSpace li a:hover {text-decoration:none;}
 
 .RecordPanel .RecordDownloadSpace .DownloadDBlend .DownloadButton {text-align: center;font-weight: bold;}
@@ -711,22 +714,12 @@ div.autocomplete ul li {
     }
 
 
-li.plupload_droptext {font-size: 1.1em;}
-
-.plupload_filelist_header {height:12px;}
- /* Smoothness changes - general */
-#pluploader .plupload_header_content {padding-left:10px;background-image:none;}
-#pluploader .plupload_view_switch{bottom:16px;}
-#pluploader .plupload_view_switch .ui-button-icon-only {margin-right:0px;}
-
- /* Smoothness changes - list view */
-.plupload_view_list .plupload_filelist_header {padding-right:15px;}
-.plupload_view_list .plupload_filelist_header .plupload_file_action {padding-right:21px;}
-.plupload_view_list .plupload_content {top:86px;bottom:41px;overflow-x: hidden;overflow-y: scroll;}
-.plupload_view_list .plupload_file {height:28px;padding-bottom:0px;}
-#pluploader .plupload_view_list .plupload_file_action {padding-top:6px;padding-bottom:6px;}
-.plupload_view_list .plupload_filelist_footer {padding-right:15px;}
-.plupload_view_list .plupload_filelist_footer .plupload_file_action {padding-right:21px;padding-left:6px;}
+.plupload_container {min-height:500px;}
+.plupload_droptext {font-size:20px;line-height:400px;}
+.plupload_wrapper, .plupload_header_title {font-family: inherit;}
+.plupload_header {display:none;}
+.plupload_content {top:0 !important;}
+.ui-widget-content {border:3px dashed #ccc;border-radius:10px;}
 
 #showlog,#hidelog
     {
@@ -1563,10 +1556,6 @@ a.Enabled, a:visited.Enabled {
     max-height: 600px;
 }
 
-#resourcetools {
-    float: left;
-}
-
 #preview {
     box-shadow: 0 2px 6px rgba(0,0,0,0.2)
 }
@@ -1758,7 +1747,7 @@ a.BrowseRefresh{
 }
 
 #RecordDownloadSummary, #ResourceWorkflowActions {
-    width: 36.8%;
+    width: 445px;
 }
 
 .RecordPanelLarge #RecordDownloadSummary, .RecordPanelLarge #ResourceWorkflowActions {
