@@ -219,3 +219,25 @@ function mplus_search(array $conn_data, array $mappings, $module_name, $mpid, $m
     return $result;
     }
 
+
+/**
+* Send notifications to users regarding MuseumPlus events (e.g script failed)
+* 
+* @uses message_add()
+* 
+* @param array   $users    List of users' IDs
+* @param string  $message  Notification message
+* 
+* @return boolean TRUE on success FALSE on failure
+*/
+function mplus_notify(array $users, $message)
+    {
+    if(count($users) < 0 || trim($message) === '')
+        {
+        return false;
+        }
+
+    message_add($users, $message);
+
+    return true;
+    }

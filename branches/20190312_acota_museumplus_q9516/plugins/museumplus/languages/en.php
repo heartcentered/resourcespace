@@ -29,12 +29,12 @@ $lang['museumplus_'] = '';
 $lang['museumplus_'] = '';
 $lang['museumplus_'] = '';
 
-// Errors
+// Errors/ warnings
 $lang['museumplus_error_bad_conn_data'] = 'MuseumPlus Connection Data invalid';
 $lang['museumplus_error_unexpected_response'] = 'Unexpected MuseumPlus response code received - %code';
 $lang['museumplus_error_no_data_found'] = 'No data found in MuseumPlus for this MpID - %mpid';
-$lang['museumplus_'] = '';
-$lang['museumplus_'] = '';
+$lang['museumplus_warning_script_not_completed'] = "WARNING: The MuseumPlus script has not completed since '%script_last_ran'.\r\nYou can safely ignore this warning only if you subsequently received notification of a successful script completion.";
+$lang['museumplus_error_script_failed'] = "The MuseumPlus script failed to run because a process lock was in place. This indicates that the previous run did not complete.\r\nIf you need to clear the lock after a failed run, run the script as follows:\r\nphp museumplus_script.php --clear-lock";
 $lang['museumplus_'] = '';
 
 
