@@ -241,3 +241,36 @@ function mplus_notify(array $users, $message)
 
     return true;
     }
+
+
+/**
+* Function to retrieve all resources that have their MpID field set to a value
+* and that are within the allowed resource types for an update
+* 
+* @return array
+*/
+function get_museumplus_resources()
+    {
+    global $museumplus_mpid_field, $museumplus_resource_types;
+
+    $resource_types_list = implode(', ', array_map(
+            function($resource_type)
+                {
+                return "'" . escape_check($resource_type) . "'";
+                },
+                $museumplus_resource_types));
+
+    $museumplus_mpid_field_escaped = escape_check($museumplus_mpid_field);
+
+    $found_resources = sql_query("
+            SELECT r.ref AS resource,
+                   rd.value AS mpid
+              FROM resource_data AS rd
+        RIGHT JOIN resource AS r ON rd.resource = r.ref AND r.resource_type IN ({$resource_types_list})
+             WHERE rd.resource > 0
+               AND rd.resource_type_field = '{$museumplus_mpid_field_escaped}'
+          ORDER BY r.ref;
+    ");
+
+    return $found_resources;
+    }
