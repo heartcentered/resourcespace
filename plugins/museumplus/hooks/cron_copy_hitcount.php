@@ -33,10 +33,12 @@ function HookMuseumplusCron_copy_hitcountAddplugincronjob()
             }
         }
 
+    echo nl2br(PHP_EOL, PHP_SAPI != 'cli'); # Adding an extra new line to separate cron_copy_hitcount items from the plugin item
+
     $php_fullpath = get_utility_path("php");
     if($php_fullpath === false)
         {
-        echo PHP_EOL . 'MuseumPlus script failed - $php_fullpath variable must be set in config.php';
+        echo nl2br(PHP_EOL . 'MuseumPlus script failed - $php_fullpath variable must be set in config.php', PHP_SAPI != 'cli');
         return false;
         }
 
@@ -50,7 +52,7 @@ function HookMuseumplusCron_copy_hitcountAddplugincronjob()
 
             if(!is_dir($museumplus_log_directory))
                 {
-                echo PHP_EOL . 'Unable to create log directory: "' . htmlspecialchars($museumplus_log_directory) . '"';
+                echo nl2br(PHP_EOL . 'MuseumPlus: Unable to create log directory: "' . htmlspecialchars($museumplus_log_directory) . '"', PHP_SAPI != 'cli');
                 return false;
                 }
             }
@@ -80,22 +82,15 @@ function HookMuseumplusCron_copy_hitcountAddplugincronjob()
     $script_file = dirname(__FILE__) . '/../pages/museumplus_script.php';
     if(!file_exists($script_file))
         {
-        echo PHP_EOL . "MuseumPlus script '{$script_file}' not found!";
+        echo nl2br(PHP_EOL . "MuseumPlus: script '{$script_file}' not found!", PHP_SAPI != 'cli');
         return false;
         }
 
     $command = "{$php_fullpath} {$script_file}";
 
-    echo PHP_EOL . 'Running MuseumPlus script...' . PHP_EOL . "COMMAND: '{$command}'";
-
-    $mplus_script_cmd_output = run_command($command, true);
-
-    if($mplus_script_cmd_output !== '')
-        {
-        echo PHP_EOL . "{$lang['error']}: {$mplus_script_cmd_output}";
-        }
-
-    echo PHP_EOL . 'MuseumPlus script started, please check setup page to ensure script has completed.';
+    echo nl2br(PHP_EOL . 'Running MuseumPlus script...' . PHP_EOL . "COMMAND: '{$command}'", PHP_SAPI != 'cli');
+    run_command($command);
+    echo nl2br(PHP_EOL . 'MuseumPlus script started, please check setup page to ensure script has completed.', PHP_SAPI != 'cli');
 
     return true;
     }
