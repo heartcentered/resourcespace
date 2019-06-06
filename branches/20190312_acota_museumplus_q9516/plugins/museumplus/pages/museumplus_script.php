@@ -12,12 +12,27 @@ include_once dirname(__FILE__) . '/../../../include/log_functions.php';
 
 set_time_limit($cron_job_time_limit);
 
+// Init script logging (if set)
+global $museumplus_log_directory;
+$mplus_log_file = '';
+if('' != trim($museumplus_log_directory))
+    {
+    if(!is_dir($museumplus_log_directory))
+        {
+        @mkdir($museumplus_log_directory, 0755, true);
 
-$mplus_errors = array();
+        if(!is_dir($museumplus_log_directory))
+            {
+            logScript("MuseumPlus: Unable to create log directory: '{$museumplus_log_directory}'");
+            return false;
+            }
+        }
 
+    // Cleaning up old files is up to the cron_copy_hitcount hook to do
 
-
-
+    // New log file
+    $mplus_log_file = fopen($museumplus_log_directory . DIRECTORY_SEPARATOR . 'mplus_script_log_' . date('Y_m_d-H_i') . '.log', 'ab');
+    }
 
 // Script options @see https://www.php.net/manual/en/function.getopt.php
 $mplus_short_options = 'hc';
@@ -29,7 +44,7 @@ foreach(getopt($mplus_short_options, $mplus_long_options) as $option_name => $op
     {
     if(in_array($option_name, array('h', 'help')))
         {
-        logScript('To clear the lock after a failed run, pass in "-c" or "--clear-lock"');
+        logScript('To clear the lock after a failed run, pass in "-c" or "--clear-lock"', $mplus_log_file);
         exit();
         }
 
@@ -58,7 +73,6 @@ foreach($notify_users as $notify_user)
     $message_users[] = $notify_user['ref'];
     }
 
-
 // Check when this script was last run - do it now in case of permanent process locks
 $museumplus_script_last_ran = '';
 if(!check_script_last_ran('last_museumplus_import', $museumplus_script_failure_notify_days, $museumplus_script_last_ran))
@@ -71,8 +85,8 @@ if(!check_script_last_ran('last_museumplus_import', $museumplus_script_failure_n
 // Check for a process lock
 if(is_process_lock(MPLUS_LOCK)) 
     {
-    logScript('MuseumPlus script lock is in place. Deferring...');
-    logScript('To clear the lock after a failed run use --clear-lock flag.');
+    logScript('MuseumPlus script lock is in place. Deferring...', $mplus_log_file);
+    logScript('To clear the lock after a failed run use --clear-lock flag.', $mplus_log_file);
 
     mplus_notify($message_users, $lang['museumplus_error_script_failed']);
 
@@ -80,3 +94,23 @@ if(is_process_lock(MPLUS_LOCK))
     }
 set_process_lock(MPLUS_LOCK);
 
+
+
+
+
+$mplus_script_start_time = microtime(true);
+$mplus_errors            = array();
+$mplus_resources         = get_museumplus_resources();
+$count_mplus_resources   = count($mplus_resources);
+
+$museumplus_rs_mappings = unserialize(base64_decode($museumplus_rs_saved_mappings));
+
+
+
+
+logScript('', $mplus_log_file);
+foreach($mplus_resources as $mplus_resource)
+    {
+    logScript('Retrieving data from MuseumPlus...', $mplus_log_file);
+    logScript("Checking resource #{$mplus_resource['resource']} with MpID '{$mplus_resource['mpid']}'", $mplus_log_file);
+    }
