@@ -2,7 +2,7 @@
 include_once dirname(__DIR__) . '/include/museumplus_functions.php';
 
 // Constants
-
+define('MPLUS_LOCK', 'museumplus_import');
 
 
 // API
