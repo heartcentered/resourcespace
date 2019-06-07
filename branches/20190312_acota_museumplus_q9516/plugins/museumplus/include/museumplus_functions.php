@@ -171,6 +171,11 @@ function mplus_search(array $conn_data, array $mappings, $module_name, $mpid, $m
     $select = $xml->createElement('select');
     $select = $search->appendChild($select);
 
+    // Always select the systems' field "__lastModified"
+    $field = $xml->createElement('field');
+    $field->setAttribute('fieldPath', '__lastModified');
+    $field = $select->appendChild($field);
+
     // Fields to select
     foreach($mappings as $mplus_field => $rs_field)
         {
@@ -203,6 +208,19 @@ function mplus_search(array $conn_data, array $mappings, $module_name, $mpid, $m
         }
 
     $result = array();
+    foreach($xml->getElementsByTagName('systemField') as $system_field)
+        {
+        foreach($system_field->attributes as $attr)
+            {
+            if($attr->nodeName != 'name' || $attr->nodeValue != '__lastModified')
+                {
+                continue;
+                }
+
+            $value = $system_field->getElementsByTagName('value');
+            $result[$attr->nodeValue] = $value[0]->nodeValue;
+            }
+        }
     foreach($xml->getElementsByTagName('virtualField') as $virtual_field)
         {
         foreach($virtual_field->attributes as $attr)
@@ -251,9 +269,11 @@ function mplus_notify(array $users, $message)
 */
 function get_museumplus_resources()
     {
-    global $museumplus_mpid_field, $museumplus_resource_types;
+    global $museumplus_mpid_field, $museumplus_resource_types, $museumplus_integrity_check_field;
 
-    $resource_types_list = implode(', ', array_map(
+    $resource_types_list = implode(
+        ', ',
+        array_map(
             function($resource_type)
                 {
                 return "'" . escape_check($resource_type) . "'";
@@ -261,14 +281,18 @@ function get_museumplus_resources()
                 $museumplus_resource_types));
 
     $museumplus_mpid_field_escaped = escape_check($museumplus_mpid_field);
+    $museumplus_integrity_check_field_escaped = escape_check($museumplus_integrity_check_field);
 
     $found_resources = sql_query("
             SELECT r.ref AS resource,
-                   rd.value AS mpid
+                   rd.value AS mpid,
+                   ic.value AS 'integrity_check'
               FROM resource_data AS rd
         RIGHT JOIN resource AS r ON rd.resource = r.ref AND r.resource_type IN ({$resource_types_list})
+         LEFT JOIN resource_data AS ic ON ic.resource = r.ref AND ic.resource_type_field = '{$museumplus_integrity_check_field_escaped}'
              WHERE rd.resource > 0
                AND rd.resource_type_field = '{$museumplus_mpid_field_escaped}'
+               AND rd.value <> ''
           ORDER BY r.ref;
     ");
 
