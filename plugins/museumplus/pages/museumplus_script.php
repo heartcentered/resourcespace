@@ -52,6 +52,7 @@ foreach(getopt($mplus_short_options, $mplus_long_options) as $option_name => $op
         {
         if(is_process_lock(MPLUS_LOCK))
             {
+            logScript('Clearing lock...', $mplus_log_file);
             clear_process_lock(MPLUS_LOCK);
             }
         }
@@ -71,6 +72,13 @@ foreach($notify_users as $notify_user)
         }
 
     $message_users[] = $notify_user['ref'];
+    }
+
+$connection_data = mplus_generate_connection_data($museumplus_host, $museumplus_application, $museumplus_api_user, $museumplus_api_pass);
+if(empty($connection_data))
+    {
+    mplus_notify($message_users, $lang['museumplus_error_bad_conn_data']);
+    exit(1);
     }
 
 // Check when this script was last run - do it now in case of permanent process locks
@@ -97,7 +105,6 @@ set_process_lock(MPLUS_LOCK);
 
 
 
-
 $mplus_script_start_time = microtime(true);
 $mplus_errors            = array();
 $mplus_resources         = get_museumplus_resources();
@@ -105,12 +112,39 @@ $count_mplus_resources   = count($mplus_resources);
 
 $museumplus_rs_mappings = unserialize(base64_decode($museumplus_rs_saved_mappings));
 
-
-
-
 logScript('', $mplus_log_file);
+logScript('Retrieving data from MuseumPlus...', $mplus_log_file);
 foreach($mplus_resources as $mplus_resource)
     {
-    logScript('Retrieving data from MuseumPlus...', $mplus_log_file);
+    if(trim($mplus_resource['mpid']) === '')
+        {
+        continue;
+        }
+
     logScript("Checking resource #{$mplus_resource['resource']} with MpID '{$mplus_resource['mpid']}'", $mplus_log_file);
+
+    $mplus_data = mplus_search($connection_data, $museumplus_rs_mappings, 'Object', $mplus_resource['mpid'], $museumplus_search_mpid_field);
+    if(empty($mplus_data))
+        {
+        logScript('No data found! Skipped.', $mplus_log_file);
+        continue;
+        }
+
+    foreach($museumplus_rs_mappings as $mplus_field => $rs_field)
+        {
+        if(!array_key_exists($mplus_field, $mplus_data))
+            {
+            continue;
+            }
+
+        $update_errors = array();
+        if(!update_field($mplus_resource['resource'], $rs_field, $mplus_data[$mplus_field], $update_errors))
+            {
+            logScript("Failed to update field #{$rs_field} with the following value '{$mplus_data[$mplus_field]}'", $mplus_log_file);
+            logScript("Reason(s): " . implode(', ', $update_errors), $mplus_log_file);
+            continue;
+            }
+
+        logScript("Successfully updated field #{$rs_field}", $mplus_log_file);
+        }
     }

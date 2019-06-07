@@ -22,6 +22,7 @@ $museumplus_enable_script = true;
 $museumplus_interval_run = ''; // see http://php.net/manual/en/datetime.formats.relative.php or http://php.net/manual/en/datetime.add.php
 $museumplus_log_directory = '';
 $museumplus_script_failure_notify_days = 3;
+$museumplus_integrity_check_field = null;
 
 // MuseumPlus - ResourceSpace mappings
 // @todo: once mappings have been established - move to setup page of the plugin and then set it here to an empty array
