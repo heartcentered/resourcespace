@@ -456,6 +456,8 @@ else
     </li>
     <?php } ?>
         
+    		
+	<?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php } ?>    
         
     <?php
     if(!hook('replaceheaderfullnamelink'))
@@ -513,7 +515,10 @@ include_once __DIR__ . '/../pages/ajax/message.php';
 <?php hook("midheader"); ?>
 <div id="HeaderNav2" class="HorizontalNav HorizontalWhiteNav">
 <?php
-include (dirname(__FILE__) . "/header_links.php");
+if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login))
+    {
+        include (dirname(__FILE__) . "/header_links.php");
+    }
 ?>
 </div> 
 
@@ -530,7 +535,6 @@ include (dirname(__FILE__) . "/header_links.php");
 
 <?php
  $omit_searchbar_pages = array(
-        'terms',
         'index',
         'preview_all',
         'search_advanced',
@@ -542,6 +546,12 @@ include (dirname(__FILE__) . "/header_links.php");
         'user_change_password',
         'document_viewer'
     );
+
+if($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login)
+    {
+        array_push($omit_searchbar_pages, 'terms');
+        $collections_footer = false;
+    }
  
 if (!$header_search)
     {
