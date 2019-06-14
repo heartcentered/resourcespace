@@ -83,7 +83,7 @@ if(empty($connection_data))
 
 // Check when this script was last run - do it now in case of permanent process locks
 $museumplus_script_last_ran = '';
-if(!check_script_last_ran('last_museumplus_import', $museumplus_script_failure_notify_days, $museumplus_script_last_ran))
+if(!check_script_last_ran(MPLUS_LAST_IMPORT, $museumplus_script_failure_notify_days, $museumplus_script_last_ran))
     {
     mplus_notify(
         $message_users,
@@ -102,17 +102,12 @@ if(is_process_lock(MPLUS_LOCK))
     }
 set_process_lock(MPLUS_LOCK);
 
-
-
-
+// So far all checks are ok, proceed...
 $mplus_script_start_time = microtime(true);
-$mplus_errors            = array();
 $mplus_resources         = get_museumplus_resources();
-$count_mplus_resources   = count($mplus_resources);
 
 $museumplus_rs_mappings = unserialize(base64_decode($museumplus_rs_saved_mappings));
 
-logScript('', $mplus_log_file);
 logScript('Retrieving data from MuseumPlus...', $mplus_log_file);
 foreach($mplus_resources as $mplus_resource)
     {
@@ -121,6 +116,7 @@ foreach($mplus_resources as $mplus_resource)
         continue;
         }
 
+    logScript("", $mplus_log_file);
     logScript("Checking resource #{$mplus_resource['resource']} with MpID '{$mplus_resource['mpid']}'", $mplus_log_file);
 
     $mplus_data = mplus_search($connection_data, $museumplus_rs_mappings, 'Object', $mplus_resource['mpid'], $museumplus_search_mpid_field);
@@ -130,12 +126,33 @@ foreach($mplus_resources as $mplus_resource)
         continue;
         }
 
+    $existing_resource_data = array_values(
+        array_filter(
+            get_resource_field_data($mplus_resource['resource'], false, false),
+            function($value) use ($museumplus_rs_mappings)
+                {
+                return in_array($value['ref'], array_unique(array_values($museumplus_rs_mappings)));
+                }));
+
     foreach($museumplus_rs_mappings as $mplus_field => $rs_field)
         {
         if(!array_key_exists($mplus_field, $mplus_data))
             {
             continue;
             }
+
+
+        $existing_field_value = null;
+        $existing_field_index = array_search($rs_field, array_column($existing_resource_data, 'ref'));
+        if($existing_field_index !== false)
+            {
+            $existing_field_value = $existing_resource_data[$existing_field_index]['value'];
+            }
+
+        if(!is_null($existing_field_value) && $existing_field_value == $mplus_data[$mplus_field])
+                {
+                continue;
+                }
 
         $update_errors = array();
         if(!update_field($mplus_resource['resource'], $rs_field, $mplus_data[$mplus_field], $update_errors))
@@ -145,6 +162,12 @@ foreach($mplus_resources as $mplus_resource)
             continue;
             }
 
-        logScript("Successfully updated field #{$rs_field}", $mplus_log_file);
+        logScript("Successfully updated field #{$rs_field} with '{$mplus_data[$mplus_field]}'", $mplus_log_file);
         }
     }
+
+logScript("", $mplus_log_file);
+logScript(sprintf("MuseumPlus script completed in %01.2f seconds.", microtime(true) - $mplus_script_start_time), $mplus_log_file);
+fclose($mplus_log_file);
+sql_query("UPDATE sysvars SET `value` = NOW() WHERE `name` = '" . MPLUS_LAST_IMPORT . "'");
+clear_process_lock(MPLUS_LOCK);

@@ -3,6 +3,7 @@ include_once dirname(__DIR__) . '/include/museumplus_functions.php';
 
 // Constants
 define('MPLUS_LOCK', 'museumplus_import');
+define('MPLUS_LAST_IMPORT', 'last_museumplus_import');
 
 
 // API
@@ -22,7 +23,7 @@ $museumplus_enable_script = true;
 $museumplus_interval_run = ''; // see http://php.net/manual/en/datetime.formats.relative.php or http://php.net/manual/en/datetime.add.php
 $museumplus_log_directory = '';
 $museumplus_script_failure_notify_days = 3;
-$museumplus_integrity_check_field = null;
+$museumplus_integrity_check_field = null; # not in use until we can reliably get integrity checks of the data from M+
 
 // MuseumPlus - ResourceSpace mappings
 // @todo: once mappings have been established - move to setup page of the plugin and then set it here to an empty array
@@ -36,3 +37,4 @@ $museumplus_rs_mappings = array(
     'DimDisplayVrt' => 92,
 );
 $museumplus_rs_saved_mappings = base64_encode(serialize($museumplus_rs_mappings));
+

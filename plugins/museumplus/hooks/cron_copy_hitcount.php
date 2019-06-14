@@ -13,7 +13,7 @@ function HookMuseumplusCron_copy_hitcountAddplugincronjob()
     if('' != $museumplus_interval_run)
         {
         $museumplus_script_last_ran = '';
-        $check_script_last_ran = check_script_last_ran('last_museumplus_import', $museumplus_script_failure_notify_days, $museumplus_script_last_ran);
+        $check_script_last_ran = check_script_last_ran(MPLUS_LAST_IMPORT, $museumplus_script_failure_notify_days, $museumplus_script_last_ran);
         $mplus_script_future_run_date = new DateTime();
 
         // Use last date the script was run, if available
