@@ -224,7 +224,7 @@ function iiif_get_thumbnail($resourceid)
 * 
 * @param integer $identifier  IIIF identifier (this associates resources via the metadata field set as $iiif_identifier_field
 * @param integer $resourceid  Resource ID
-* @param string $position     The canvas identifier, i..e position in the sequence. If $iiif_sequence_field is defined
+* @param string $position     The canvas identifier, i.e position in the sequence. If $iiif_sequence_field is defined
 * @param array $size          ResourceSpace size information. Required information: identifier and whether it 
 *                             requires to return height & width back (e.g annotations don't require it). 
 *                             Please note for the identifier - we use 'hpr' if the original file is not a JPG file it 

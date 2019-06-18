@@ -3434,22 +3434,32 @@ $iiif_enabled = false;
 
 // User ID to use for IIIF. This user should be granted access only to those resources that are to be published via IIIF using permissions and search filter
 // $iiif_userid = 0;
-//
+
 // Field that is used to hold the IIIF identifier e.g. if using TMS this may be the same as the TMS object field
 // $iiif_identifier_field = 29;
-//
+
 // Field that is used to hold the IIIF description
 // $iiif_description_field = 0;
-//
+
 // Field that contains license information about the resource
 // $iiif_license_field = 0;
-//
+
 // Field that defines the position of a particular resource in the default sequence (only one sequence currently supported)
 // $iiif_sequence_field = 1;
-//
+
 // Optional prefix that will be added to sequence identifier - useful if just numeric identifers are used e.g. for different views or pages 
 // $iiif_sequence_prefix = "View ";
 
+// IIIF tile settings
+// Tiles can be generated along with normal previews or created upon request.
+// If enabling IIIF on an existing system then it is recommended to add all IIIF published resources to a collection first and use the batch/recreate_previews.php script
+$preview_tile_create_with_previews = true;
+
+// Size in pixels of the tiles. The same value is used for both tile width and height (see https://iiif.io/api/image/2.1/#region for more info)
+$preview_tile_size = 1024;
+
+// Available scale factors (see https://iiif.io/api/image/2.1/#size)
+$preview_tile_scale_factors = array(1,2,4,8,16);
 
 /*Prevent client side users to get access to the real path of the resource when ResourceSpace is using filestore URLs.
 Rather than use a URL like "http://yourdomain/filestore/1_6326bb8314c6c21/1pre_cf33a61f47b5982.jpg", it will use
