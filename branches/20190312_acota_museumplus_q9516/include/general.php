@@ -7826,7 +7826,7 @@ function check_script_last_ran($name, $fail_notify_allowance, &$last_ran_datetim
         }
     $name = escape_check($name);
 
-    $script_last_ran = sql_value('SELECT `value` FROM sysvars WHERE name = "{$name}"', '');
+    $script_last_ran = sql_value("SELECT `value` FROM sysvars WHERE name = '{$name}'", '');
     $script_failure_notify_seconds = intval($fail_notify_allowance) * 24 * 60 * 60;
 
     if('' != $script_last_ran)
