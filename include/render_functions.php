@@ -1306,7 +1306,7 @@ function render_access_key_tr(array $record)
         // For resource
         $link      = $baseurl . '?r=' . urlencode($record['resource']) . '&k=' . urlencode($record['access_key']);
         $type      = $lang['share-resource'];
-        $edit_link = sprintf('%spages/resource_share.php?ref=%s&editaccess=%s&editexpiration=%s&editaccesslevel=%s&editgroup=',
+        $edit_link = sprintf('%spages/resource_share.php?ref=%s&editaccess=%s&editexpiration=%s&editaccesslevel=%s&editgroup=%s',
             $baseurl_short,
             urlencode($record['resource']),
             urlencode($record['access_key']),
@@ -1320,7 +1320,7 @@ function render_access_key_tr(array $record)
         // For collection
         $link      = $baseurl . '?c=' . urlencode($record['collection']) . '&k=' . urlencode($record['access_key']);
         $type      = $lang['sharecollection'];
-        $edit_link = sprintf('%spages/collection_share.php?ref=%s&editaccess=%s&editexpiration=%s&editaccesslevel=%s&editgroup=',
+        $edit_link = sprintf('%spages/collection_share.php?ref=%s&editaccess=%s&editexpiration=%s&editaccesslevel=%s&editgroup=%s',
             $baseurl_short,
             urlencode($record['collection']),
             urlencode($record['access_key']),
@@ -1420,6 +1420,8 @@ function display_field($n, $field, $newtab=false,$modal=false)
   $embedded_data_user_select, $embedded_data_user_select_fields, $show_error, $save_errors, $baseurl, $is_search,
   $all_selected_nodes,$original_nodes, $FIXED_LIST_FIELD_TYPES, $TEXT_FIELD_TYPES, $upload_review_mode, $check_edit_checksums,
   $upload_review_lock_metadata, $locked_fields, $lastedited, $copyfrom, $fields;
+
+  debug("display_field: display_field(\$n = {$n}, \$field = {$field['ref']}, \$newtab = {$newtab}, \$modal = {$modal});");
 
   // Set $is_search to false in case page request is not an ajax load and $is_search hs been set from the searchbar
   $is_search=false;
@@ -2663,7 +2665,7 @@ function render_upload_here_button(array $search_params, $return_params_only = f
 
 function render_trash($type, $deletetext,$forjs=false)
     {
-    $trash_html = '<div id="' . $type . '_bin" class="trash_bin"><span class="trash_bin_text"><i class="fa fa-trash" aria-hidden="true"></i></span></div>
+    $trash_html = '<div id="' . $type . '_bin" class="trash_bin ui-droppable ui-droppable-active ui-state-hover"><span class="trash_bin_text"><i class="fa fa-trash" aria-hidden="true"></i></span></div>
     <div id="trash_bin_delete_dialog" style="display:none;"></div>
     <div id="delete_permanent_dialog" style="display:none;text-align:left;">'  . $deletetext . '</div>
 ';

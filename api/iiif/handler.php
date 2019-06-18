@@ -1,4 +1,5 @@
 <?php
+$suppress_headers = true;
 include "../../include/db.php";
 
 if(!$iiif_enabled || !isset($iiif_identifier_field) || !is_numeric($iiif_identifier_field) || !isset($iiif_userid) || !is_numeric($iiif_userid) || !isset($iiif_description_field))
@@ -74,12 +75,12 @@ else
 				
 				$img_path = get_resource_path($resourceid,true,'',false);
 				$image_size = get_original_imagesize($resourceid,$img_path);
-				$response["width"] = $image_size[1];
-				$response["height"] = $image_size[2];
+				$response["width"] = (int) $image_size[1];
+				$response["height"] = (int) $image_size[2];
 				
 				$response["sizes"] = array();
-				$response["sizes"][0]["width"] = $image_size[1];
-				$response["sizes"][0]["height"] = $image_size[2];
+				$response["sizes"][0]["width"] = (int) $image_size[1];
+				$response["sizes"][0]["height"] = (int) $image_size[2];
 				
 				$response["profile"] = array();
 				$response["profile"][] = "http://iiif.io/api/image/2/level0.json";
@@ -462,6 +463,10 @@ else
 							if($iiif_result["iiif_position"] == $annotationid)
 								{
 								$resourceid = $iiif_result["ref"];
+                                $size_info = array(
+                                    'identifier' => (strtolower($iiif_result['file_extension']) != 'jpg') ? 'hpr' : '',
+                                    'return_height_width' => false,
+                                );
 								$validrequest = true;
 								break;
 								}
@@ -471,8 +476,9 @@ else
 							$response["@context"] = "http://iiif.io/api/presentation/2/context.json";
 							$response["@id"] = $rooturl . $identifier . "/annotation/" . $annotationid;
 							$response["@type"] = "oa:Annotation";
-							$response["motivation"] = "sc:painting";						
-							$response["resource"] =  iiif_get_image($identifier,$resourceid,$annotationid);
+							$response["motivation"] = "sc:painting";
+                            $response["resource"] = iiif_get_image($identifier, $resourceid, $annotationid, $size_info);
+                            $response["on"] = $rooturl . $identifier . "/canvas/" . $annotationid;
 							}
 						else
 							{
@@ -536,7 +542,7 @@ else
                 }
             if(defined('JSON_PRETTY_PRINT'))
                 {
-                echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_NUMERIC_CHECK);
+                echo json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 }
             else
                 {

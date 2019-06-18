@@ -106,6 +106,16 @@ if($comments_resource_enable && $comments_view_panel_show_marker){
     $resource_comments=sql_value("select count(*) value from comment where resource_ref='" . escape_check($ref) . "'","0");
 }
 
+# Should the page use a larger resource preview layout?
+$use_larger_layout = true;
+if (isset($resource_view_large_ext))
+	{
+	if (!in_array($resource["file_extension"], $resource_view_large_ext))
+		{
+		$use_larger_layout = false;
+		}
+	}
+
 // Set $use_mp3_player switch if appropriate
 $use_mp3_player = (
     !(isset($resource['is_transcoding']) && 1 == $resource['is_transcoding'])
@@ -573,7 +583,7 @@ jQuery(document).ready(function () {
 <?php } ?>
 <!--Panel for record and details-->
 <div class="RecordBox">
-<div class="RecordPanel"> 
+<div class="RecordPanel<?php echo $use_larger_layout ? ' RecordPanelLarge' : ''; ?>">
 
 <div class="RecordHeader">
 <?php if (!hook("renderinnerresourceheader")) { ?>
@@ -776,38 +786,41 @@ else if(1 == $resource['has_image'])
     {
     $use_watermark = check_use_watermark();
 	$use_size="scr";
-    $imagepath     = get_resource_path($ref, true, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
-	
-	# Retina mode. Get scr if it exists
-	if ($retina_mode)
+	$imagepath = "";
+
+	# Obtain imagepath for 'scr' if permissions allow
+	if (resource_download_allowed($ref, $use_size, $resource['resource_type']))
 		{
-		$imagepath_retina     = get_resource_path($ref, true, 'scr', false, $resource['preview_extension'], true, 1, $use_watermark);
-		if (file_exists($imagepath_retina)) {$imagepath=$imagepath_retina;$use_size="scr";}
+		$imagepath = get_resource_path($ref, true, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
 		}
 
-    if(
-        !file_exists($imagepath)
-        || ($hide_real_filepath && !resource_download_allowed($ref, $use_size, $resource['resource_type']))
-        || $resource_view_use_pre)
+	# Note that retina mode uses 'scr' size which we have just obtained, so superfluous code removed
+
+	# Obtain imagepath for 'pre' if 'scr' absent OR hide filepath OR force 'pre' on view page 
+    if(!( isset($imagepath) && file_exists($imagepath) )
+       || $hide_real_filepath
+       || $resource_view_use_pre)
         {
 		$use_size="pre";
+		$imagepath = get_resource_path($ref, true, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
 		}
 
-    $imagepath = get_resource_path($ref, true, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
+	# Imagepath is the actual file path and can point to 'scr' or 'pre' as a result of the above
 
+	# Fall back to 'thm' if necessary
     if(!file_exists($imagepath))
         {
         $use_size="thm";
         }
-	
-    $imageurl = get_resource_path($ref, false, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
+	$imageurl = get_resource_path($ref, false, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
+	# Imageurl is the url version of the path and can point to 'scr' or 'pre' or 'thm' as a result of the above
 
     $previewimagelink = generateURL("{$baseurl_short}pages/preview.php", $urlparams, array("ext" => $resource["preview_extension"])) . "&" . hook("previewextraurl");
     $previewimagelink_onclick = 'return CentralSpaceLoad(this);';
 
     // PDFjs works only for PDF files. Because this requires the PDF file itself, we can only use this mode if user has
     // full access to the resource.
-    if($resource['file_extension'] == 'pdf' && $use_pdfjs_viewer && $access === 0)
+    if($resource['file_extension'] == 'pdf' && $use_pdfjs_viewer && $access == 0)
         {
         // IMPORTANT: never show the real file path with this feature
         $hide_real_filepath_initial = $hide_real_filepath;
@@ -838,8 +851,11 @@ else if(1 == $resource['has_image'])
         <?php
         } 
 
+	// Below actually means if the 'scr' or the 'pre' file exists then display it
+	// It checks imagepath but references imageurl as the image source which will only point to 'scr' or 'pre' 
     if(file_exists($imagepath))
-        {
+		{
+		// Imageurl will never point to 'thm' in this context because the imagepath file_exists	
         list($image_width, $image_height) = @getimagesize($imagepath);
         ?>
         <img id="previewimage"
@@ -1035,7 +1051,8 @@ else if(1 == $resource['has_image'])
                 </script>
                 <?php
                 }
-
+			
+			// Swap the image with the 'scr' size when hoverable image zooming is enabled in config 
             if($image_preview_zoom)
                 {
                 $previewurl = get_resource_path($ref, false, 'scr', false, $resource['preview_extension'], -1, 1, $use_watermark);
@@ -1130,7 +1147,8 @@ hook("renderbeforerecorddownload", '', array($disable_flag));
 	hook("beforeresourcetoolsheader");
 	if (!hook('replaceresourcetoolsheader')) {
 ?>
-<h2 id="resourcetools"><?php echo $lang["columnheader-resource_downloads"]?></h2>
+<h2 id="resourcetools"><?php echo $lang["resourcetools"]?></h2>
+
 <?php
 	}
 
@@ -1364,7 +1382,7 @@ if ($resource["has_image"]==1 && $download_multisize)
 		if(!hook("replacedownloadspacetableheaders")){
 			if ($table_headers_drawn==false) { ?>
 				<td><?php echo $lang["fileinformation"]?></td>
-                <td><?php echo $lang["filedimensions"]?></td>
+				<?php echo $use_larger_layout ? "<td>" . $lang["filedimensions"] . "</td>" : ''; ?>
 				<td><?php echo $lang["filesize"]?></td>
 				<?php if ($showprice) { ?><td><?php echo $lang["price"] ?></td><?php } ?>
 				<td class="textcenter"><?php echo $lang["options"]?></td>
@@ -1374,8 +1392,10 @@ if ($resource["has_image"]==1 && $download_multisize)
 			} 
 		} # end hook("replacedownloadspacetableheaders")?>
 		<tr class="DownloadDBlend" id="DownloadBox<?php echo $n?>">
-		<td class="DownloadFileName"><h2><?php echo $headline?></h2></td>
-        <td class="DownloadFileDimensions"><?php
+		<td class="DownloadFileName"><h2><?php echo $headline?></h2><?php
+
+		echo $use_larger_layout ? '</td><td class="DownloadFileDimensions">' : '';
+
 		if (is_numeric($sizes[$n]["width"]))
 			{
 			echo get_size_info($sizes[$n]);
@@ -1397,7 +1417,7 @@ if ($resource["has_image"]==1 && $download_multisize)
 				{ 
 				# Add an extra line for previewing
 				?> 
-				<tr class="DownloadDBlend"><td class="DownloadFileName"><h2><?php echo $lang["preview"]?></h2></td><td class="DownloadFileDimensions"><p><?php echo $lang["fullscreenpreview"]?></p></td><td class="DownloadFileSize"><?php echo $sizes[$n]["filesize"]?></td>
+				<tr class="DownloadDBlend"><td class="DownloadFileName"><h2><?php echo $lang["preview"]?></h2><?php echo $use_larger_layout ? '</td><td class="DownloadFileDimensions">' : '';?><p><?php echo $lang["fullscreenpreview"]?></p></td><td class="DownloadFileSize"><?php echo $sizes[$n]["filesize"]?></td>
 				<?php if ($userrequestmode==2 || $userrequestmode==3) { ?><td></td><?php } # Blank spacer column if displaying a price above (basket mode).
 				?>
 				<td class="DownloadButton">
@@ -1530,7 +1550,6 @@ if (!$videojs && $use_mp3_player && file_exists($mp3realpath) && $access==0)
 hook("additionalresourcetools3");
  } 
 if(!hook("replaceactionslistopen")){?>
-<div id="ResourceToolsDiv">
 <ul id="ResourceToolsContainer">
 <?php
 } # end hook("replaceactionslistopen")
@@ -1539,7 +1558,6 @@ if(!hook("replaceactionslistopen")){?>
 hook ("resourceactions") ?>
 <?php if ($k=="" || $internal_share_access) { ?>
 <?php if (!hook("replaceresourceactions")) {
-    echo "<h2>" . $lang["resourcetools"] . "</h2>";
 	hook("resourceactionstitle");
 	 if ($resource_contact_link)	
 	 	{ ?>
@@ -1645,7 +1663,7 @@ hook ("resourceactions") ?>
 		</a></li><?php 
 		}
 
-    if($resource['file_extension'] == 'pdf' && $use_pdfjs_viewer && $access === 0)
+    if($resource['file_extension'] == 'pdf' && $use_pdfjs_viewer && $access == 0)
         {
         $find_in_pdf_url = generateURL("{$baseurl_short}pages/search_text_in_pdf.php", array( 'ref' => $ref));
         ?>
@@ -1681,11 +1699,12 @@ if ($user_rating && ($k=="" || $internal_share_access)) { include "../include/us
 
 
 </div>
-</div>
 <?php } /* End of renderresourcedownloadspace hook */ ?>
 <?php } /* End of renderinnerresourceview hook */
 
+if ($download_summary) {include "../include/download_summary.php";}
 
+hook("renderbeforeresourcedetails");
 
 
 /* ---------------  Display metadata ----------------- */
@@ -1699,8 +1718,7 @@ if (!hook('replacemetadata')) {
 <?php include "view_metadata.php";
 } /* End of replacemetadata hook */ ?>
 </div>
-<?php if ($download_summary) {include "../include/download_summary.php";}
-hook("renderbeforeresourcedetails");?>
+
 </div>
 
 </div>

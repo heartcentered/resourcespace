@@ -153,6 +153,7 @@ $lang['information-inherit_global_fields'] = 'Should global fields be included f
 $lang["property-smart_theme_name"]="Smart featured collection name";
 $lang["property-exiftool_field"]="Exiftool field";
 $lang['property-fits_field'] = 'FITS field';
+$lang['property-read_only_field'] = 'Read-only metadata field (ie. will not write back on Download)';
 $lang['information-fits_field'] = 'FITS (File Information Tool Set) field will overwrite Exiftool values if a value can be found!';
 $lang["property-exiftool_filter"]="Exiftool filter";
 $lang["property-help_text"]="Help text";
@@ -171,7 +172,7 @@ $lang["property-display_condition"]="Display condition";
 $lang["information-display_condition"]="Display condition: this field will only display if the following conditions are met. Uses same format as group search filter i.e. shortname=value1|value2, shortnamea=validoptiona;shortnameb=validoptionb1|validoptionb2";
 $lang["property-onchange_macro"]="On change macro";
 $lang["information-onchange_macro"]="On change macro: code to be executed when field value is changed. CAUTION ADVISED";
-$lang["information-derestrict_filter"]="Derestrict filter. Can be used in conjunction with g permission so that all resources are restricted unless metadata condition is met";
+$lang["information-derestrict_filter"]="Derestrict filter. Only effective when used in conjunction with removing the g permission so that all resources are restricted unless metadata condition is met";
 $lang["information-push_metadata"]="If set, the metadata for this resource will be displayed on the resource view page for any related resources. For example, you may relate several photos to a person resource. If this property is set on the person resource, then the person metadata will appear on all related photo resource records, avoiding duplication of data in the system.";
 
 $lang["property-query"]="Query";
@@ -696,6 +697,7 @@ $lang["accountunlock"]="Unlock";
 $lang['account_request_label'] = 'Account request';
 $lang['account_request_confirmation_email_to_requester'] = 'Your request for a new user account has been received. Someone will be in contact soon. Thank you!';
 $lang["accountdoesnotexist"]="This user account does not exist.<br /> If you arrived at this page because of a link in the user messages area, please note that another admin might have already handled an account request and removed this account.";
+$lang["accountdisabled"]="Your account has been disabled. Please contact the resources team.";
 
 # Research request
 $lang["nameofproject"]="Name of project";
@@ -966,7 +968,7 @@ $lang['deleteallresourcesfromcollection'] = 'Delete all resources';
 $lang["deleteallsure"]="Are you sure you wish to DELETE these resources? This will delete the resources themselves, not just remove them from this collection.";
 $lang["batchdonotaddcollection"]="(do not add to a collection)";
 $lang["collectionsthemes"]="Related featured and public collections";
-$lang["recent"]="Recently added";
+$lang["recent"]="Recent";
 $lang["n_recent"]="%qty Recently added resources";
 $lang["batchcopyfrom"]="Copy the data below from resource with ID";
 $lang["copy"]="Copy";
@@ -1449,6 +1451,8 @@ $lang["publiccollections"]="Public collections";
 $lang["viewmygroupsonly"]="View my groups only";
 $lang["usemetadatatemplate"]="Use metadata template";
 $lang["undometadatatemplate"]="(undo template selection)";
+$lang["usemetadatatemplatesure"]="Are you sure you wish to apply this metadata template? This will clear the current data that has been entered.";
+$lang["removemetadatatemplatesure"]="Are you sure you wish to remove this metadata template? This will clear the current data that has been entered.";
 
 $lang["accountemailalreadyexists"]="An account with that e-mail address already exists";
 
@@ -1707,26 +1711,26 @@ $lang["other"]="Other";
 $lang["custompermissions"]="Custom permissions";
 $lang["searchcapability"]="Search capability";
 $lang["access_to_restricted_and_confidential_resources"]="Can download restricted resources and view confidential resources<br>(normally admin only)";
-$lang["restrict_access_to_all_available_resources"]="Restrict access to all available resources";
+$lang["restrict_access_to_all_available_resources"]="Restrict access to all available resources. Checking this <strong>removes</strong> the 'g' permission";
 $lang["restrict_access_to_workflow_state"] = "Restrict access to resources in workflow %workflow_state_name"; # %workflow_state_name is placeholder
 $lang["can_make_resource_requests"]="Can make resource requests";
 $lang["show_watermarked_previews_and_thumbnails"]="Show watermarked previews/thumbnails";
 $lang["can_see_all_fields"]="Can see all fields";
 $lang["can_see_field"]="Can see field";
-$lang["can_edit_all_fields"]="Can edit all fields<br>(for editable resources)";
+$lang["can_edit_all_fields"]="Can edit all fields<br>(for editable resources). Checking this <strong>removes</strong> the 'F*' permission";
 $lang["can_edit_field"]="Can edit field";
-$lang["can_see_resource_type"]="Can see resource type";
+$lang["can_see_resource_type"]="Can see resource type '%TYPE'. Unchecking this <strong>adds</strong> the 'T%REF' permission";
 $lang["restricted_access_only_to_resource_type"]="Restricted access only to resource type";
 $lang["restricted_upload_for_resource_of_type"]="Restricted upload for resource of type";
 $lang["edit_access_to_workflow_state"]="Edit access to workflow state";
-$lang["edit_access_to_access"]="Edit access to Access state";
+$lang["edit_access_to_access"]="Edit access to Access state '%STATE'. Unchecking this <strong>adds</strong> the 'ea%REF' permission";
 $lang["can_create_resources_and_upload_files-admins"]="Can create resources / upload files<br>(admin users; resources go to 'Active' state)";
 $lang["can_create_resources_and_upload_files-general_users"]="Can create resources / upload files<br>(normal users; resources go to 'Pending Submission' state via My Contributions)";
-$lang["can_delete_resources"]="Can delete resources<br>(to which the user has write access)";
+$lang["can_delete_resources"]="Can delete resources <br>(to which the user has write access).Unchecking this <strong>adds</strong> the 'D' permission";
 $lang["can_manage_archive_resources"]="Can manage archive resources";
 $lang["can_manage_alternative_files"]="Can manage alternative files";
 $lang["can_tag_resources_using_speed_tagging"]="Can tag resources using 'Speed Tagging'<br>(if enabled in the configuration)";
-$lang["enable_bottom_collection_bar"]="Enable bottom collection bar ('Lightbox')";
+$lang["enable_bottom_collection_bar"]="Enable bottom collection bar ('Lightbox'). Unchecking this <strong>adds</strong> the 'b' permission";
 $lang["can_publish_collections_as_themes"]="Can publish collections as featured collections";
 $lang["can_see_all_theme_categories"]="Can see all featured collection categories";
 $lang["can_see_theme_category"]="Can see featured collection category";
@@ -1740,7 +1744,7 @@ $lang["can_bulk-mail_users"]="Can bulk-mail users";
 $lang["can_manage_users"]="Can manage users";
 $lang["can_manage_keywords"]="Can manage keywords";
 $lang["can_access_system_setup"]="Can access the System Setup area";
-$lang["can_change_own_password"]="Can change own account password";
+$lang["can_change_own_password"]="Can change own account password. Unchecking this <strong>adds</strong> the 'p' permission";
 $lang["can_manage_users"]="Can manage users";
 $lang["can_manage_users_in_children_groups"]="Can manage users in children groups to the user's group only";
 $lang["can_email_resources_to_own_and_children_and_parent_groups"]="Can email resources to users in the user's own group, children groups and parent group only";
@@ -2310,6 +2314,7 @@ $lang['disk_size_no_upload_explain']="Due to space constraints, uploading has be
 /*
  * Start - User Dash Strings
  */
+$lang["dash"]="Dash";
 $lang["savethissearchtodash"]="Save to dash tile";
 $lang["createnewdashtile"]="Create new dash tile";
 $lang["specialdashtiles"]="Special dash tiles";

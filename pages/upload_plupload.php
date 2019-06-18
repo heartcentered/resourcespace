@@ -61,10 +61,12 @@ if($upload_then_edit && $resource_type_force_selection && getval('posting', '') 
     update_resource_type(0 - $userref, $resource_type);
     }
 
+// If upload_then_edit we may not have a resource type, so we need to find the first resource type
+// which does not have an XU? (restrict upload) permission  
+// This will be the resource type used for the upload
 if($resource_type == "")
 	{
-	// If upload_then_edit we may not have a resource type
-	$allrestypes = get_resource_types();
+    $allrestypes = get_resource_types();
 	foreach($allrestypes as $restype)
 		{
 		if (!checkperm("XU" . $restype["ref"]))
@@ -73,6 +75,8 @@ if($resource_type == "")
 			break;
 			}
 		}
+    // It is possible for there to be no 'unrestricted for upload' resource types 
+    // which means that the resource type used for the upload will be blank
 	}
 
 # Load the configuration for the selected resource type. Allows for alternative notification addresses, etc.
@@ -417,6 +421,7 @@ if ($_FILES)
         // If this chunk-file-filename has been processed, don't process it again
         if($chunk == $processed_file_content[0] && $queue_index == $processed_file_content[1])
             {
+            debug("PLUPLOAD - Duplicate chunk [" . $chunk . "] of file " . $plfilename . " found at index [" . $queue_index . "] in the upload queue");
             die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "Duplicate chunk [' . $chunk . '] of file ' . $plfilename . ' found at index [' . $queue_index . '] in the upload queue"}, "id" : "id"}');
             }
         }
@@ -657,10 +662,17 @@ if ($_FILES)
                                     $resource_type_extension_mapping_default
                                 );
 
-                                if(!checkperm("XU{resource_type_from_extension}"))
+                                if(!checkperm("XU{$resource_type_from_extension}"))
                                     {
                                     update_resource_type($ref, $resource_type_from_extension);
                                     }
+                                }
+
+                            if($upload_then_edit && $reset_date_upload_template)
+                                {
+                                // If extracting embedded metadata than expect the date to be overriden as it would be if
+                                // upload_then_edit = false
+                                update_field($ref, $reset_date_field, date('Y-m-d H:i:s'));
                                 }
 
                             # Log this			
@@ -678,11 +690,12 @@ if ($_FILES)
                                     $view_title_field_escaped = escape_check($view_title_field);
 
                                     $resource_detail = sql_query ("
-                                                 SELECT r.ref, r.file_extension, rd.value
-                                                   FROM resource r
-                                        LEFT OUTER JOIN resource_data AS rd ON r.ref = rd.resource
-                                                  WHERE r.ref = '{$ref_escaped}'
-                                                    AND rd.resource_type_field = '{$view_title_field_escaped}'");
+                                        SELECT r.ref, r.file_extension, rd.value
+                                        FROM resource r
+                                        LEFT JOIN resource_data AS rd ON r.ref = rd.resource
+                                        AND rd.resource_type_field = '{$view_title_field_escaped}'
+                                        WHERE r.ref = '{$ref_escaped}'
+                                                    ");
 
                                     $new_auto_generated_title = str_replace(
                                         array('%title', '%resource', '%extension'),
@@ -830,6 +843,10 @@ if ($_FILES)
 									// No resource found with the same filename
 									header('Content-Type: application/json');
                                     unlink($plfilepath);
+                                    if(file_exists($plupload_processed_filepath))
+                                        {
+                                        unlink($plupload_processed_filepath);
+                                        }
 									die('{"jsonrpc" : "2.0", "error" : {"code": 106, "message": "ERROR - no resource found with filename ' . $origuploadedfilename . '"}, "id" : "id"}');
 									}
 								else
@@ -851,6 +868,10 @@ if ($_FILES)
 										// Multiple resources found with the same filename
 										header('Content-Type: application/json');
                                         unlink($plfilepath);
+                                        if(file_exists($plupload_processed_filepath))
+                                            {
+                                            unlink($plupload_processed_filepath);
+                                            }
 										die('{"jsonrpc" : "2.0", "error" : {"code": 107, "message": "ERROR - multiple resources found with filename ' . $origuploadedfilename . '. Resource IDs : ' . $resourcelist . '"}, "id" : "id" }');
 										}
 									}
@@ -1483,7 +1504,7 @@ if(($replace_resource != '' || $replace != '' || $upload_then_edit) && (display_
     {
     // Show options on the upload page if in 'upload_then_edit' mode or replacing a resource
     ?>
-    <h2 class="CollapsibleSectionHead collapsed" id="UploadOptionsSectionHead"><?php echo $lang["upload-options"]; ?></h2>
+    <h2 class="CollapsibleSectionHead collapsed" onClick="UICenterScrollBottom();" id="UploadOptionsSectionHead"><?php echo $lang["upload-options"]; ?></h2>
     <div class="CollapsibleSection" id="UploadOptionsSection">
     <form id="UploadPluploadForm" class="pluploadform FormWide" action="<?php echo $baseurl_short?>pages/upload_plupload.php">
     <?php
@@ -1562,7 +1583,7 @@ if ($status!="") { ?><?php echo $status?><?php } ?>
 if ($show_upload_log)
     {
     ?>
-    <h2 class="CollapsibleSectionHead collapsed" id="UploadLogSectionHead"><?php echo $lang["log"]; ?></h2>
+    <h2 class="CollapsibleSectionHead collapsed" id="UploadLogSectionHead" onClick="UICenterScrollBottom();"><?php echo $lang["log"]; ?></h2>
     <div class="CollapsibleSection" id="UploadLogSection">
         <textarea id="upload_log" rows=10 cols=100 style="width: 100%; border: solid 1px;" ><?php echo  $lang["plupload_log_intro"] . date("d M y @ H:i"); ?></textarea>
     </div> <!-- End of UploadLogSection -->
