@@ -329,8 +329,9 @@ else
 		}
 	}
 
-// Load system wide config options from database
+// Load system wide config options from database and then store them to distinguish between the system wide and user preference
 process_config_options();
+$system_wide_config_options = get_defined_vars();
 
 # Include the appropriate language file
 $pagename=safe_file_name(str_replace(".php","",pagename()));
@@ -746,7 +747,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
     # This has been added retroactively to support large result sets, yet a pager can work as if a full
     # result set has been returned as an array (as it was working previously).
 	# $logthis parameter is only relevant if $mysql_log_transactions is set.  0=don't log, 1=always log, 2=detect logging - i.e. SELECT statements will not be logged
-    global $db,$config_show_performance_footer,$debug_log,$debug_log_override,$mysql_verbatim_queries,$use_mysqli, $mysql_log_transactions;
+    global $db, $config_show_performance_footer, $debug_log, $debug_log_override, $suppress_sql_log, $mysql_verbatim_queries, $use_mysqli, $mysql_log_transactions;
     
 	if (!isset($debug_log_override))
 		{
@@ -762,7 +763,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 		$querycount++;
     	}
     	
-    if ($debug_log || $debug_log_override) 
+    if (($debug_log || $debug_log_override) && !$suppress_sql_log)
 		{
 		debug("SQL: " . $sql);
 		}
@@ -1340,6 +1341,32 @@ function unescape($text)
     
 
     return $text;
+    }
+
+/**
+* Escape each elements' value of an array to safely use any of the values in SQL statements
+* 
+* @uses escape_check()
+* 
+* @param array $unsafe_array Array of values that should be escaped
+* 
+* @return array Returns an array with its values escaped for SQLi
+*/
+function escape_check_array_values(array $unsafe_array)
+    {
+    $escape_array_element = function($value)
+        {
+        if(is_array($value))
+            {
+            return escape_check_array_values($value);
+            }
+
+        return escape_check($value);
+        };
+
+    $escaped_array = array_map($escape_array_element, $unsafe_array);
+
+    return $escaped_array;
     }
 
 

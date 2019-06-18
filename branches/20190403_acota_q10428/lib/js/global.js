@@ -362,7 +362,7 @@ function CentralSpaceLoad (anchor,scrolltop,modal)
 
 			// Add global trash bin:
 			CentralSpace.append(global_trash_html);
-			CentralSpace.trigger('prepareTrash');
+			CentralSpace.trigger('prepareDragDrop');
 
 			// Add Chosen dropdowns, if configured
 			if (typeof chosen_config !== 'undefined' && chosen_config['#CentralSpace select']!=='undefined')
@@ -484,7 +484,7 @@ function CentralSpacePost (form,scrolltop,modal)
 
 		// Add global trash bin:
 		CentralSpace.append(global_trash_html);
-		CentralSpace.trigger('prepareTrash');
+		CentralSpace.trigger('prepareDragDrop');
 
 		// Activate or deactivate the large slideshow, if this function is enabled.			
 		if (typeof ActivateSlideshow == 'function' && !modal)
@@ -638,28 +638,33 @@ function ReloadLinks()
         return false;
         }
         
-	var nav2=jQuery('#HeaderNav2');
+    var nav2=jQuery('#HeaderNav2');
     if(!nav2.has("#HeaderLinksContainer").length)
         {
         return false;
         }
         
-	nav2.load(baseurl_short+"pages/ajax/reload_links.php", function (response, status, xhr)
-			{
-			if (status=="error")
-				{		
-                var SearchBar=jQuery('#SearchBarContainer');		
-				SearchBar.html(errorpageload  + xhr.status + " " + xhr.statusText + "<br>" + response);		
-				}
-			else
-				{
-				// Load completed	
-				ActivateHeaderLink(document.location.href);
-				}		
-			});
-        headerLinksDropdown();
-		return false;
-	
+    nav2.load(baseurl_short+"pages/ajax/reload_links.php", function (response, status, xhr)
+        {
+        // 403 is returned when user is logged out and ajax request! @see revision #12655
+        if(xhr.status == 403)
+            {               
+            window.location = baseurl_short + "login.php";      
+            }
+        else if(status=="error")
+            {
+            var SearchBar=jQuery('#SearchBarContainer');		
+            SearchBar.html(errorpageload  + xhr.status + " " + xhr.statusText + "<br>" + response);		
+            }
+        else
+            {
+            // Load completed
+            ActivateHeaderLink(document.location.href);
+            }
+        });
+
+    headerLinksDropdown();
+    return false;
     }
 
 function relateresources (ref,related,action)
@@ -1393,6 +1398,14 @@ function redirectAfterDelay(targetUrl,delayTime)
 		window.location.href = targetUrl;
 		}, delayTime);
 	}
+
+function UICenterScrollBottom()
+	{
+	// Smoothly croll to the bottom of the central container. Useful to show content after expanding a section at the bottom of the page (e.g. the uploader)
+	window.setTimeout('jQuery(\'#UICenter\').animate({scrollTop: document.getElementById(\'UICenter\').scrollHeight },"slow");',300);
+	}
+
+
 
 /**
 * Detect the users' local time zone using the Internationalisation API

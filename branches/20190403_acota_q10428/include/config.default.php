@@ -462,6 +462,16 @@ $metadata_read_default=true;
 # For example: $exiftool_no_process=array("eps","png");
 $exiftool_no_process=array();
 
+/*
+ExifTool global options - these get applied to any exiftool command run. For more information on options please see
+https://sno.phy.queensu.ca/~phil/exiftool/exiftool_pod.html#Advanced-options
+
+Example use cases:
+$exiftool_global_options = "-config '/var/www/test.Exiftool_config'"; # @see https://sno.phy.queensu.ca/~phil/exiftool/config.html
+$exiftool_global_options = "-x EXIF:CreateDate"; # exclude tag
+*/
+$exiftool_global_options = "";
+
 # Which field do we drop the original filename in to?
 $filename_field=51;
 
@@ -763,8 +773,6 @@ $descthemesorder=false;
 #Hide advanced search on search bar
 $advancedsearch_disabled = false;
 
-# Display the advanced search as a 'search' link in the top navigation
-$advanced_search_nav=false;
 
 # Show Contributed by on Advanced Search (ability to search for resources contributed by a specific user)
 $advanced_search_contributed_by = true;
@@ -927,7 +935,7 @@ $user_purge=true;
 # List of active plugins.
 # Note that multiple plugins must be specified within array() as follows:
 # $plugins=array("loader","rss","messaging","googledisplay"); 
-$plugins = array('transform', 'rse_version', 'lightbox_preview', 'rse_search_notifications');
+$plugins = array('transform', 'rse_version', 'lightbox_preview', 'rse_search_notifications', 'rse_workflow');
 
 # Optional list of plugins that cannot be enabled through the UI. Can be useful to lock down system for hosting situations
 $disabled_plugins=array();
@@ -1327,6 +1335,7 @@ $about_link=true;
 
 # When uploading resources (batch upload) and editing the template, should the date be reset to today's date?
 # If set to false, the previously entered date is used.
+# Please note that if upload_then_edit is enabled, then this will happen at upload stage in order to get the similar behaviour for this mode
 $reset_date_upload_template=true;
 $reset_date_field=12; # Which date field to reset? (if using multiple date fields)
 
@@ -2432,6 +2441,9 @@ $debug_log=false;
 #$debug_log_location="d:/logs/resourcespace.log";
 #$debug_log_location="/var/log/resourcespace/resourcespace.log";
 
+# Suppress SQL information in the debug log?
+$suppress_sql_log = false;
+
 # Enable Metadata Templates. This should be set to the ID of the resource type that you intend to use for metadata templates.
 # Metadata templates can be selected on the resource edit screen to pre-fill fields.
 # The intention is that you will create a new resource type named "Metadata Template" and enter its ID below.
@@ -3113,6 +3125,9 @@ $resource_edit_modal_from_view_modal=false;
 # Use the "preview" size on the resource view page
 $resource_view_use_pre = false;
 
+# Only use use the larger layout on the view page for certain file extensions.
+# $resource_view_large_ext = array("jpg", "jpeg", "tif", "tiff", "gif", "png", "svg");
+
 # Show geographical search results in a modal
 $geo_search_modal_results = true;
 
@@ -3388,6 +3403,10 @@ $upload_review_lock_metadata = false;
 # New upload mode that focuses on getting files into the filestore, then working off a queue for further processing (metadata extract, preview creation, etc).
 # requires $offline_job_queue=true;
 $upload_then_process=false;
+
+// Set to TRUE to review resources based on resource ID (starting from most recent) when using upload then edit mode.
+// Requires "$upload_then_edit = true;"
+$upload_review_mode_review_by_resourceid = false;
 
 # Uncomment and set to an archive state where $upload_then_process files are stored before processing.
 # It is strongly recommended that a unique archive state be created to handle this

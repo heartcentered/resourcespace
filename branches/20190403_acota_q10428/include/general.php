@@ -351,7 +351,9 @@ function get_resource_data($ref,$cache=true)
                     $user = $userref;
                     }
                 else {$user = -1;}
-                $wait = sql_query("insert into resource (ref,resource_type,created_by) values ('" . escape_check($ref) . "','$default_resource_type','$user')");
+
+                $default_archive_state = escape_check(get_default_archive_state());
+                $wait = sql_query("insert into resource (ref,resource_type,created_by, archive) values ('" . escape_check($ref) . "','$default_resource_type','$user', '{$default_archive_state}')");
                 $resource = sql_query("select *,mapzoom from resource where ref='" . escape_check($ref) . "'");
                 }
             }
@@ -431,7 +433,8 @@ function get_resource_type_field($field)
                 fits_field,
                 personal_data,
                 include_in_csv_export,
-                browse_bar" . hook('add_resource_type_field_column') . "
+                browse_bar,
+                read_only" . hook('add_resource_type_field_column') . "
            FROM resource_type_field
           WHERE ref = '{$field}'
     ";
@@ -440,7 +443,7 @@ function get_resource_type_field($field)
         $rtf_query=$modified_rtf_query;
     }
     $return = sql_query($rtf_query);
-    
+
     if(0 == count($return))
         {
         return false;
@@ -1525,7 +1528,7 @@ function get_user($ref)
         if (isset($udata_cache[$ref])){
           $return=$udata_cache[$ref];
         } else {
-    $udata_cache[$ref]=sql_query("SELECT u.*, if(find_in_set('permissions',g.inherit_flags)>0 AND pg.permissions IS NOT NULL,pg.permissions,g.permissions) permissions, g.parent, g.search_filter, g.edit_filter, g.ip_restrict ip_restrict_group, g.name groupname, u.ip_restrict ip_restrict_user, u.search_filter_override, u.search_filter_o_id, g.resource_defaults,if(find_in_set('config_options',g.inherit_flags)>0 AND pg.config_options IS NOT NULL,pg.config_options,g.config_options) config_options,g.request_mode, g.derestrict_filter FROM user u LEFT JOIN usergroup g ON u.usergroup=g.ref LEFT JOIN usergroup pg ON g.parent=pg.ref WHERE u.ref='$ref'");
+    $udata_cache[$ref]=sql_query("SELECT u.*, if(find_in_set('permissions',g.inherit_flags)>0 AND pg.permissions IS NOT NULL,pg.permissions,g.permissions) permissions, g.parent, g.search_filter, g.edit_filter, g.ip_restrict ip_restrict_group, g.name groupname, u.ip_restrict ip_restrict_user, u.search_filter_override, u.search_filter_o_id, g.resource_defaults,if(find_in_set('config_options',g.inherit_flags)>0 AND pg.config_options IS NOT NULL,pg.config_options,g.config_options) config_options,g.request_mode, g.derestrict_filter, g.search_filter_id FROM user u LEFT JOIN usergroup g ON u.usergroup=g.ref LEFT JOIN usergroup pg ON g.parent=pg.ref WHERE u.ref='$ref'");
     }
     
     # Return a user's credentials.
@@ -2686,8 +2689,34 @@ function send_mail($email,$subject,$message,$from="",$reply_to="",$html_template
         global $email_notify;
         $bcc.="," . $email_notify;
         }
-    # No/invalid email address? Exit.
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {return false;}
+
+    /*
+    Checking email is valid. Email argument can be an RFC 2822 compliant string so handle multi addresses as well
+    IMPORTANT: FILTER_VALIDATE_EMAIL is not fully RFC 2822 compliant, an email like "Another User <anotheruser@example.com>"
+    will be invalid
+    */
+    $rfc_2822_multi_delimiters = array(', ', ',');
+    $email = str_replace($rfc_2822_multi_delimiters, '**', $email);
+    $check_emails = explode('**', $email);
+    $valid_emails = array();
+    foreach($check_emails as $check_email)
+        {
+        if(!filter_var($check_email, FILTER_VALIDATE_EMAIL))
+            {
+            debug("send_mail: Invalid e-mail address - '{$check_email}'");
+            continue;
+            }
+
+        $valid_emails[] = $check_email;
+        }
+    // No/invalid email address? Exit.
+    if(empty($valid_emails))
+        {
+        debug("send_mail: No valid e-mail address found!");
+        return false;
+        }
+    // Valid emails? then make it back into an RFC 2822 compliant string
+    $email = implode(', ', $valid_emails);
     
     # Send a mail - but correctly encode the message/subject in quoted-printable UTF-8.
     global $use_phpmailer;
@@ -3808,11 +3837,13 @@ function check_display_condition($n, array $field, array $fields, $render_js)
 
     if(trim($field['display_condition']) == "")
         {
-        return true;
+        return true;  # This field does not have a display condition, so it should be displayed
         }
 
+    // Assume the candidate field is to be displayed    
     $displaycondition = true;
-    $s                = explode(';', $field['display_condition']);
+    // Break down into array of conditions
+    $conditions       = explode(';', $field['display_condition']);
     $condref          = 0;
     $scriptconditions = array();
     
@@ -3827,11 +3858,15 @@ function check_display_condition($n, array $field, array $fields, $render_js)
     // On upload, check against the posted nodes as save_resource_data() saves nodes after going through all the fields
     $user_set_values = getval('nodes', array());
 
-    foreach ($s as $condition) # Check each condition
+    foreach ($conditions as $condition) # Check each condition
         {
         $displayconditioncheck = false;
-        $s                     = explode('=', $condition);
 
+        // Break this condition down into fieldname $s[0] and value(s) $s[1]
+        $s = explode('=', $condition);
+
+        // Process all fields which are referenced by display condition(s) on the candidate field
+        // For each referenced field, render javascript to trigger when the referenced field changes
         for ($cf=0;$cf<count($display_check_data);$cf++) # Check each field to see if needs to be checked
             {
             // Work out nodes submitted by user, if any
@@ -3850,6 +3885,7 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                 $ui_selected_node_values = $user_set_values[$display_check_data[$cf]['ref']];
                 }
 
+            // Does the fieldname on this condition match the field being processed    
             if($s[0] == $display_check_data[$cf]['name']) # this field needs to be checked
                 {
                 $display_check_data[$cf]['nodes'] = get_nodes($display_check_data[$cf]['ref'], null, (FIELD_TYPE_CATEGORY_TREE == $display_check_data[$cf]['type'] ? true : false));
@@ -3860,6 +3896,7 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                 $scriptconditions[$condref]['type']  = $display_check_data[$cf]['type'];
 
                 $checkvalues=$s[1];
+                // Break down values delimited with pipe characters
                 $validvalues=explode("|",mb_strtoupper($checkvalues));
                 $scriptconditions[$condref]['valid'] = array();
                 $v = trim_array(get_resource_nodes($ref, $display_check_data[$cf]['ref']));
@@ -3905,6 +3942,9 @@ function check_display_condition($n, array $field, array $fields, $render_js)
 
                 // Check display conditions
                 // Certain fixed list types allow for multiple nodes to be passed at the same time
+
+                // Generate a javascript function specific to the field with the display condition
+                // This function will be invoked whenever a field referenced by the display condition changes
                 if(in_array($display_check_data[$cf]['type'], $FIXED_LIST_FIELD_TYPES))
                     {
                     if(FIELD_TYPE_CATEGORY_TREE == $display_check_data[$cf]['type'])
@@ -3913,10 +3953,17 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                         <script>
                         jQuery(document).ready(function()
                             {
-                            checkDisplayCondition<?php echo $field['ref']; ?>(node);
+                            <?php
+                            if($GLOBALS["multiple"] === false)
+                                {
+                                ?>
+                                checkDisplayCondition<?php echo $field['ref']; ?>();
+                                <?php
+                                }
+                            ?>
                             jQuery('#CentralSpace').on('categoryTreeChanged', function(e,node)
                                 {
-                                checkDisplayCondition<?php echo $field['ref']; ?>(node);
+                                checkDisplayCondition<?php echo $field['ref']; ?>();
                                 });
                             });
                         </script>
@@ -3931,10 +3978,17 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                         <script>
                         jQuery(document).ready(function()
                             {
-                            checkDisplayCondition<?php echo $field['ref']; ?>(node);
+                            <?php
+                            if($GLOBALS["multiple"] === false)
+                                {
+                                ?>
+                                checkDisplayCondition<?php echo $field['ref']; ?>();
+                                <?php
+                                }
+                            ?>
                             jQuery('#CentralSpace').on('dynamicKeywordChanged', function(e,node)
                                 {
-                                checkDisplayCondition<?php echo $field['ref']; ?>(node);
+                                checkDisplayCondition<?php echo $field['ref']; ?>();
                                 });
                             });
                         </script>
@@ -3966,13 +4020,13 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                         if($GLOBALS["multiple"] === false)
                             {
                             ?>
-                            checkDisplayCondition<?php echo $field['ref']; ?>(jQuery(this).val());
+                            checkDisplayCondition<?php echo $field['ref']; ?>();
                             <?php
                             }
                         ?>
                         jQuery('<?php echo $jquery_selector; ?>').change(function ()
                             {
-                            checkDisplayCondition<?php echo $field['ref']; ?>(jQuery(this).val());
+                            checkDisplayCondition<?php echo $field['ref']; ?>();
                             });
                         });
                     </script>
@@ -3984,7 +4038,14 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                     <script type="text/javascript">
                     jQuery(document).ready(function()
                         {
-                        checkDisplayCondition<?php echo $field['ref']; ?>();
+                        <?php
+                        if($GLOBALS["multiple"] === false)
+                            {
+                            ?>
+                            checkDisplayCondition<?php echo $field['ref']; ?>();
+                            <?php
+                            }
+                        ?>
                         jQuery('#field_<?php echo $display_check_data[$cf]["ref"]; ?>').change(function ()
                             {
                             checkDisplayCondition<?php echo $field['ref']; ?>();
@@ -3995,20 +4056,23 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                     }
                 }
 
-        } # see if next field needs to be checked
-    $condref++;
+            } # see if next field needs to be checked
+        $condref++;
 
-    } # check next condition
+        } # check next condition
 
     if($render_js)
         {
         ?>
         <script type="text/javascript">
-        function checkDisplayCondition<?php echo $field["ref"];?>(node)
+        function checkDisplayCondition<?php echo $field["ref"];?>()
             {
+            // Get current display status
             field<?php echo $field['ref']; ?>status    = jQuery('#question_<?php echo $n; ?>').css('display');
+            // Assume field will not be displayed
             newfield<?php echo $field['ref']; ?>status = 'none';
             newfield<?php echo $field['ref']; ?>show   = false;
+            // TODO Explain meaning of provisional
             newfield<?php echo $field['ref']; ?>provisional = true;
             <?php
             foreach($scriptconditions as $scriptcondition)
@@ -4027,6 +4091,7 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                     )
                 */
                 ?>
+                // TODO Explain meaning of subcheck
                 newfield<?php echo $field['ref']; ?>subcheck = false;
                 fieldokvalues<?php echo $scriptcondition['field']; ?> = <?php echo json_encode($scriptcondition['valid']); ?>;
                 <?php
@@ -4066,6 +4131,7 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                     <?php
                     }
                 ?>
+                // TODO Explain this
                 if(!newfield<?php echo $field['ref']; ?>subcheck)
                     {
                     newfield<?php echo $field['ref']; ?>provisional = false;
@@ -4074,11 +4140,13 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                 }
                 ?>
 
+                // Is field to be displayed
                 if(newfield<?php echo $field['ref']; ?>provisional)
                     {
                     newfield<?php echo $field['ref']; ?>status = 'block';
                     }
 
+                // If display status changed then toggle the visibility
                 if(newfield<?php echo $field['ref']; ?>status != field<?php echo $field['ref']; ?>status)
                     {
                     jQuery('#question_<?php echo $n ?>').slideToggle();
@@ -4144,11 +4212,13 @@ function check_access_key($resource,$key)
             SELECT user,
                    usergroup,
                    expires,
-                   password_hash
+                   password_hash, 
+                   access
               FROM external_access_keys
              WHERE resource = '$resource_escaped'
                AND access_key = '$key_escaped'
-               AND (expires IS NULL OR expires > now())");
+               AND (expires IS NULL OR expires > now())
+               ORDER BY access");
 
     if (count($keys)==0)
         {
@@ -4156,6 +4226,24 @@ function check_access_key($resource,$key)
         }
     else
         {
+        if($keys[0]["access"] == -1)
+            {
+            // If the resources have -1 as access they may have been added without the correct expiry etc.
+            sql_query("UPDATE external_access_keys ak
+                LEFT JOIN (SELECT * FROM external_access_keys ake WHERE access_key='$key_escaped' ORDER BY access DESC, expires ASC LIMIT 1) ake
+                    ON ake.access_key=ak.access_key
+                    AND ake.collection=ak.collection
+                SET ak.expires=ake.expires, 
+                    ak.access=ake.access,
+                    ak.usergroup=ake.usergroup,
+                    ak.email=ake.email,
+                    ak.password_hash=ake.password_hash
+                WHERE ak.access_key = '$key_escaped'
+                AND ak.access='-1'
+                AND ak.expires IS NULL");
+            return false;            
+            }
+
         if($keys[0]["password_hash"] != "" && PHP_SAPI != "cli")
             {
             // A share password has been set. Check if user has a valid cookie set
@@ -5639,13 +5727,15 @@ function get_utility_path($utilityname, &$checked_path = null)
             return $return;       
 
         case 'exiftool':
+            global $exiftool_global_options;
+
             return get_executable_path(
                 $exiftool_path,
                 array(
                     'unix' => 'exiftool',
                     'win'  => 'exiftool.exe'
                 ),
-                $checked_path);
+                $checked_path) . " {$exiftool_global_options} ";
 
         case 'antiword':
         case 'pdftotext':
@@ -7679,6 +7769,11 @@ function display_upload_options()
         {
         return false;
         }
+    }
+    
+function get_recent_users($days)
+    {
+    return (sql_value("select count(*) value from user where datediff(now(),last_active) <= '" . escape_check($days) . "'",0));
     }
 
 

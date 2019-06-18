@@ -1361,7 +1361,8 @@ function get_saved_searches($collection)
 
 function add_saved_search($collection)
 	{
-	sql_query("insert into collection_savedsearch(collection,search,restypes,archive) values ('" . escape_check($collection) . "','" . getvalescaped("addsearch","") . "','" . getvalescaped("restypes","") . "','" . getvalescaped("archive","",true) . "')");
+	sql_query("insert into collection_savedsearch(collection,search,restypes,archive) values ('" 
+		. escape_check($collection) . "','" . getvalescaped("addsearch","") . "','" . getvalescaped("restypes","") . "','" . getvalescaped("archive","") . "')");
 	}
 
 function remove_saved_search($collection,$search)
@@ -1489,8 +1490,8 @@ function add_saved_search_items($collection, $search = "", $restypes = "", $arch
 			for ($n=0;$n<count($keys);$n++)
 				{
 				# Insert a new access key entry for this resource/collection.
-				sql_query("insert into external_access_keys(resource,access_key,user,collection,date) values ('$resource','" . escape_check($keys[$n]["access_key"]) . "','$userref','$collection',now())");
-				#log this
+				sql_query("insert into external_access_keys(resource,access_key,user,collection,date,expires,access,usergroup,password_hash) values ('" . escape_check($resource) . "','" . escape_check($keys[$n]["access_key"]) . "','$userref','" . escape_check($collection) . "',now()," . ($keys[$n]["expires"]==''?'null':"'" . escape_check($keys[$n]["expires"]) . "'") . ",'" . escape_check($keys[$n]["access"]) . "'," . (($keys[$n]["usergroup"]!="")?"'" . escape_check($keys[$n]["usergroup"]) ."'":"NULL") . ",'" . $keys[$n]["password_hash"] . "')");
+                #log this
 				collection_log($collection,"s",$resource, $keys[$n]["access_key"]);	
 				
 				# Set the flag so a warning appears.
@@ -2102,18 +2103,20 @@ function collection_set_themes ($collection, $categories = array())
 	}
 	
 function remove_all_resources_from_collection($ref){
-	// abstracts it out of save_collection()
-	$removed_resources = sql_array('SELECT resource AS value FROM collection_resource WHERE collection = ' . escape_check($ref) . ';');
+    // abstracts it out of save_collection()
+    $removed_resources = sql_array('SELECT resource AS value FROM collection_resource WHERE collection = ' . escape_check($ref) . ';');
 
-	// First log this for each resource (in case it was done by mistake)
-	foreach($removed_resources as $removed_resource_id)
-		{
-		collection_log($ref, 'r', $removed_resource_id, ' - Removed all resources from collection ID ' . $ref);
-		}
+    // First log this for each resource (in case it was done by mistake)
+    foreach($removed_resources as $removed_resource_id)
+        {
+        collection_log($ref, 'r', $removed_resource_id, ' - Removed all resources from collection ID ' . $ref);
+        }
 
-	sql_query('DELETE FROM collection_resource WHERE collection = ' . escape_check($ref));
-	collection_log($ref, 'R', 0);
-	}	
+    sql_query('DELETE FROM collection_resource WHERE collection = ' . escape_check($ref));
+    sql_query("DELETE FROM external_access_keys WHERE collection='" . escape_check($ref) . "'");
+
+    collection_log($ref, 'R', 0);
+    }	
 
 if (!function_exists("get_home_page_promoted_collections")){
 function get_home_page_promoted_collections()
@@ -2239,9 +2242,17 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
     	$search_collection = explode(',', $search_collection); // just get the number
     	$search_collection = escape_check($search_collection[0]);
     	}
-        
+
+    // Collection bar actions should always be a special search !collection[ID] (exceptions might arise but most of the 
+    // time it should be handled using the special search). If top actions then search may include additional refinement inside the collection
+
+    if(isset($collection_data['ref']) && !$top_actions)
+        {
+        $search = "!collection{$collection_data['ref']}";
+        }
+
     $urlparams = array(
-        "search"      =>  (isset($collection_data['ref']) ? "!collection" . $collection_data['ref'] : $search),
+        "search"      =>  $search,
         "collection"  =>  (isset($collection_data['ref']) ? $collection_data['ref'] : ""),
         "ref"         =>  (isset($collection_data['ref']) ? $collection_data['ref'] : ""),
         "restypes"    =>  isset($_COOKIE['restypes']) ? $_COOKIE['restypes'] : "",
@@ -2517,11 +2528,20 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         }
         
     // View all resources
-    if(($k=="" || $internal_share_access) && (isset($collection_data["c"]) && $collection_data["c"]>0) || (is_array($result) && count($result) > 0))
+    if(
+        !$top_actions // View all resources makes sense only from collection bar context
+        && (
+            ($k=="" || $internal_share_access)
+            && (isset($collection_data["c"]) && $collection_data["c"] > 0)
+            || (is_array($result) && count($result) > 0)
+        )
+    )
         {
-		// Force ascending order
-		$tempurlparams = array();
-		$tempurlparams['sort']="ASC";
+        $tempurlparams = array(
+            'sort' => 'ASC',
+            'search' => (isset($collection_data['ref']) ? "!collection{$collection_data['ref']}" : $search),
+        );
+
         $data_attribute['url'] = generateURL($baseurl_short . "pages/search.php",$urlparams,$tempurlparams);
         $options[$o]['value']='view_all_resources_in_collection';
 		$options[$o]['label']=$lang['view_all_resources'];
@@ -2538,7 +2558,11 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         {
         if($allow_multi_edit)
             {
-            $data_attribute['url'] = generateURL($baseurl_short . "pages/edit.php",$urlparams);
+            $extra_params = array(
+                'editsearchresults' => 'true',
+            );
+
+            $data_attribute['url'] = generateURL($baseurl_short . "pages/edit.php", $urlparams, $extra_params);
             $options[$o]['value']='edit_all_in_collection';
             $options[$o]['label']=$lang['edit_all_resources'];
             $options[$o]['data_attr']=$data_attribute;
@@ -2853,7 +2877,7 @@ function collection_download_use_original_filenames_when_downloading(&$filename,
         }
 
     global $pextension, $usesize, $subbed_original, $prefix_resource_id_to_filename, $prefix_filename_string, $server_charset,
-           $download_filename_id_only, $deletion_array, $use_zip_extension, $copy, $exiftool_write_option, $p, $size;
+           $download_filename_id_only, $deletion_array, $use_zip_extension, $copy, $exiftool_write_option, $p, $size, $lang;
 
     # Only perform the copy if an original filename is set.
 
@@ -2875,24 +2899,6 @@ function collection_download_use_original_filenames_when_downloading(&$filename,
 
     if ($usesize!=""&&!$subbed_original){$append="-".$usesize;}else {$append="";}
 	$basename_minus_extension=remove_extension($pathparts['basename']);
-	
-	if ($download_filename_id_only) 
-	    {
-		# Id only means ignore settings $original_filenames_when_download and $prefix_resource_id_to_filename
-		$filename = $prefix_filename_string . $ref . "." . $pextension;
-		}	
-	else 
-		{  
-		# Otherwise use settings $original_filenames_when_download and $prefix_resource_id_to_filename
-		if ($prefix_resource_id_to_filename) 
-			{
-			$filename = $prefix_filename_string . $ref . "_" . $basename_minus_extension.$append.".".$pextension;
-			}
-		else 
-			{
-			$filename = $prefix_filename_string . $basename_minus_extension.$append.".".$pextension;
-			}
-    	}
 
     $fs=explode("/",$filename);$filename=$fs[count($fs)-1];
 

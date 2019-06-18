@@ -80,7 +80,7 @@ function DrawOption($permission,$description,$reverse=false,$reload=false)
 		<a href="<?php echo $baseurl_short; ?>pages/admin/admin_group_management_edit.php<?php echo $url_params; ?>" onclick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php
 		echo $lang['page-title_user_group_management_edit']; ?></a>
 	</p>	
-	<h1><?php echo $lang['page-title_user_group_permissions_edit'] . " - " . $group["name"]; ?></h1>
+	<h1><?php echo $lang['page-title_user_group_permissions_edit'] . " - " . htmlspecialchars($group["name"]); ?></h1>
 	<p><?php echo $lang['page-subtitle_user_group_permissions_edit']; ?></p>	
 
 	<form method="post" id="permissions" action="<?php echo $baseurl_short; ?>pages/admin/admin_group_permissions.php<?php echo $url_params ?>" onsubmit="return CentralSpacePost(this,true);" >	
@@ -178,7 +178,7 @@ foreach ($fields as $field)
 $rtypes=sql_query("select * from resource_type order by name");
 foreach ($rtypes as $rtype)
 	{
-	DrawOption("T" . $rtype["ref"], $lang["can_see_resource_type"] ." '" . lang_or_i18n_get_translated($rtype["name"], "resourcetype-") . "'", true);
+	DrawOption("T" . $rtype["ref"], str_replace(array("%TYPE","%REF"),array(lang_or_i18n_get_translated($rtype["name"], "resourcetype-"),$rtype["ref"]),$lang["can_see_resource_type"]), true);
 	}
 
 # ------------ Restricted access to resource types
@@ -217,7 +217,7 @@ foreach ($additional_archive_states as $additional_archive_state)
 	}
 for ($n=0;$n<=($custom_access?3:2);$n++)
     {
-    DrawOption("ea" . $n, $lang["edit_access_to_access"]. " '".$lang["access" . $n]. "'", true);
+    DrawOption("ea" . $n,  str_replace(array("%STATE","%REF"),array($lang["access" . $n],$n),$lang["edit_access_to_access"]), true);
     }
 
 DrawOption("c", $lang["can_create_resources_and_upload_files-admins"]);
