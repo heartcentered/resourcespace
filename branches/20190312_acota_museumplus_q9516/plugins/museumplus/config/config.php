@@ -26,15 +26,5 @@ $museumplus_script_failure_notify_days = 3;
 $museumplus_integrity_check_field = null; # not in use until we can reliably get integrity checks of the data from M+
 
 // MuseumPlus - ResourceSpace mappings
-// @todo: once mappings have been established - move to setup page of the plugin and then set it here to an empty array
-$museumplus_rs_mappings = array(
-    'ObjMgrFileMatchVrt' => 87,
-    'ObjObjectTitleVrt' => 88,
-    'ObjLiteratureRef.moduleReferenceItem' => 89,
-    'ObjMaterialTechniqueTxt' => 90,
-    'ObjPublicationStatusVoc' => 91,
-    'ObjDimUniversalGrp.repeatableGroupItem' => 92,
-    'DimDisplayVrt' => 92,
-);
-$museumplus_rs_saved_mappings = base64_encode(serialize($museumplus_rs_mappings));
+$museumplus_rs_saved_mappings = base64_encode(serialize(array()));
 
