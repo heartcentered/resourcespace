@@ -2779,7 +2779,6 @@ $lang["filter_or"]                  = "OR";
 $lang["filter_and"]                 = "AND";
 $lang['see_log'] = "Please refer to the log below for more details on this upload.";$lang['login_word'] = "Login";$lang["edit_copy_from_field"]       = "Copy data from field";
 
-
 /* Browse bar */
 $lang['browse_bar_text']                = "Browse";
 $lang['field_show_in_browse_bar']       = "Show in Browse Bar";
@@ -2789,6 +2788,8 @@ $lang['error-invalid_browse_action']    = "Invalid action. Please check existing
 $lang['browse_by_tag']                  = "Browse by tag";
 $lang['browse_by_workflow_state']       = "Workflow";
 
-
 # Updates to workflow
 $lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+
+$lang["collection_description"] = "Description";
+
