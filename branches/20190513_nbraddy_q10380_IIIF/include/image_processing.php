@@ -1254,9 +1254,7 @@ function create_previews($ref,$thumbonly=false,$extension="jpg",$previewonly=fal
             if ($previewonly) {$sizes=" where id='thm' or id='col' or id='pre' or id='scr'";}
             if (count($onlysizes) > 0 )
                 {
-                print_r($onlysizes);
                 $onlysizes = array_filter($onlysizes,function($v){return ctype_lower($v);});
-                print_r($onlysizes);
                 $sizes=" where id in ('" . implode("','", $onlysizes) . "')";   
                 }
 
@@ -1351,7 +1349,7 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
     global $keep_for_hpr,$imagemagick_path,$imagemagick_preserve_profiles,$imagemagick_quality,$imagemagick_colorspace,$default_icc_file;
     global $autorotate_no_ingest,$always_make_previews,$lean_preview_generation,$previews_allow_enlarge,$alternative_file_previews;
     global $imagemagick_mpr, $imagemagick_mpr_preserve_profiles, $imagemagick_mpr_preserve_metadata_profiles, $config_windows;
-    global $preview_tile_create_with_previews, $preview_tile_size, $preview_tile_scale_factors;
+    global $preview_tiles_create_auto, $preview_tile_size, $preview_tile_scale_factors;
 
     if(!is_numeric($ref))
         {
@@ -1470,8 +1468,8 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
             }
         elseif (is_array($onlysizes) && count($onlysizes) > 0 )
             {
-            $onlysizes = array_filter($onlysizes,function($v){return ctype_lower($v);});
-            $sizes=" where id in ('" . implode("','", $onlysizes) . "')";
+            $sizefilter = array_filter($onlysizes,function($v){return ctype_lower($v);});
+            $sizes=" where id in ('" . implode("','", $sizefilter) . "')";
             $all_sizes= false;
             }
         
@@ -1497,9 +1495,10 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
                 }
             $ps = array_values($ps);
             }
-        
-        if($preview_tile_create_with_previews || (count($ps)==0 && in_array("tiles",$onlysizes)))
+            
+        if((count($ps) > 0  && $preview_tiles_create_auto) || in_array("tiles",$onlysizes))
             {
+                //exit("HERE"  . print_r($onlysizes));
             $o = count($ps);
             // Ensure that scales are in order
             natsort($preview_tile_scale_factors);
@@ -1516,46 +1515,27 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
                     {
                     debug("create_previews scaled tile (" . $scale . ") too large for source. Tile region length: " . $tileregion );
                     continue;
-                    }
-                    
+                    }                    
                 
-                if($tileregion >= $sh)
-                    {
-                    debug("create_previews - tile taller than area, setting to match area");
-                    $tilew = $tileregion;
-                    $tileh = $sh;
-                    $fullgenerated = true;
-                    }
-                elseif($tileregion >= $sw)
-                    {
-                    debug("create_previews - tile wider than area, setting to match area");
-                    $tilew = $sw;
-                    $tileh = $tileregion;
-                    $fullgenerated = true;
-                    }
-                else
-                    {
-                    $tilew = $tileregion;
-                    $tileh = $tileregion;
-                    }
-                    
-                
-                    
                 while($y < $sh)
                     {
+                    $tileh = $tileregion;
                     if(($y + $tileregion) > $sh)
                         {
+                        debug("create_previews tiles: $y, - tile taller than area, reducing height");
                         $tileh = $sh - $y;
                         }
                     while($x < $sw)
                         {
+                        $tilew = $tileregion;
                         if(($x + $tileregion) > $sw)
                             {
+                            debug("create_previews tiles: $x, - tile wider than area, reducing width");
                             $tilew = $sw - $x;
                             }
                         $tileid = (string)($x) . "_" . (string)($y) . "_" . (string)($tilew) . "_" . (string)($tileh);
-                        debug("create_previews scale: " . $scale . ", x: " . $x . ", y: " . $y);
-                        debug("create_previews id: " . $tileid);
+                        debug("create_previews tiles scale: " . $scale . ", x: " . $x . ", y: " . $y);
+                        debug("create_previews tiles id: " . $tileid);
                         $ps[$o]['id'] = "tile_" . $tileid; 
                         $ps[$o]['width'] = $preview_tile_size;
                         $ps[$o]["height"] = $preview_tile_size;
@@ -1571,10 +1551,19 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
                     }
                 }
             }
-           
-           
-           
-           //exit(print_r($ps));
+        
+        if(count($onlysizes) == 1 && substr($onlysizes[0],0,8) == "resized_")
+            {
+            $o = count($ps);
+            $size_req = explode("_",substr($onlysizes[0],8));
+            $customx = $size_req[0];
+            $customy = $size_req[1];
+    
+            debug("create_previews - creating custom size width: " . $customx . " height: " . $customy);
+            $ps[$o]['id'] = $onlysizes[0]; 
+            $ps[$o]['width'] = $customx;
+            $ps[$o]["height"] = $customy;
+            }
             
         # Locate imagemagick.
         $convert_fullpath = get_utility_path("im-convert");
@@ -3176,15 +3165,7 @@ function getSvgSize($file_path)
 
     return $svg_size;
     }
-    
-    
-function create_preview_size($resource,$size,$sizeinfo)
-    {
-     
-    $hpr_path=get_resource_path($resource,true,"hpr",false,"jpg",-1,1,false,"",$alternative);
-    
-    
-    }
+   
     
 /**
 * Generate all the resource tiles required for IIIF
@@ -3195,7 +3176,7 @@ function create_preview_size($resource,$size,$sizeinfo)
 */
 function generate_tiles($resource, $scale)
     {
-    global $iiif_tile_size, $iiif_tile_scale_factors;
+    global $preview_tile_size, $preview_tile_scale_factors;
     $resdata = get_resource_data($resource);
     
     //print_r($resdata);
@@ -3207,9 +3188,9 @@ function generate_tiles($resource, $scale)
     $image_height = (int) $image_size[2];
     
     // Ensure that scales are in order
-    natsort($iiif_tile_scale_factors);
+    natsort($preview_tile_scale_factors);
     
-    foreach($iiif_tile_scale_factors as $scale)
+    foreach($preview_tile_scale_factors as $scale)
         {
         $source_width = ceil($image_width/$scale);
         $source_height = ceil($image_height/$scale);
@@ -3227,15 +3208,12 @@ function generate_tiles($resource, $scale)
         $y=0;
         while($x < $image_width && $y < $image_height)
             {
-            $tilearea = (string)($iiif_tile_size * 10);
+            $tilearea = (string)($preview_tile_size * 10);
             $tile_code = $x . "_" . $y . "_" ;
             }
         }
         
-        
-    //$image_width = 5312;
-    //$image_height = 2988;
-    
+            
     // Co-ordinates of tile top-left point
     $region_x = 0;
     $region_y = 1024;
@@ -3289,7 +3267,7 @@ function generate_tiles($resource, $scale)
     
 function iiif_tilecode_from_request($resource, $region, $size)
    {
-   global $iiif_tile_size, $iiif_tile_scale_factors;
+   global $preview_tile_size, $preview_tile_scale_factors;
    $resdata = get_resource_data($resource);
    
    //print_r($resdata);
@@ -3362,3 +3340,6 @@ function iiif_tilecode_from_request($resource, $region, $size)
    //    }
    
    }
+   
+   
+   

@@ -3449,15 +3449,23 @@ $iiif_enabled = false;
 
 // Optional prefix that will be added to sequence identifier - useful if just numeric identifers are used e.g. for different views or pages 
 // $iiif_sequence_prefix = "View ";
+//
+// $iiif_custom_sizes
+// Set to true to support Mirador/Universal viewer that requires the ability to request arbitrary sizes by 'w,', ',h' 
+// Note that this can result in significantly more storage space being required for each resource published via IIIF
+// See https://iiif.io/api/image/2.1 for more information 
+$iiif_custom_sizes = false;
 
-// IIIF tile settings
+$iiif_max_width  = 1024;
+$iiif_max_height = 1024;
+
+// Tile settings (currently only used by IIIF when $iiif_level is 1)
+$preview_tiles = false;
 // Tiles can be generated along with normal previews or created upon request.
 // If enabling IIIF on an existing system then it is recommended to add all IIIF published resources to a collection first and use the batch/recreate_previews.php script
-$preview_tile_create_with_previews = true;
-
+$preview_tiles_create_auto = true;
 // Size in pixels of the tiles. The same value is used for both tile width and height (see https://iiif.io/api/image/2.1/#region for more info)
 $preview_tile_size = 1024;
-
 // Available scale factors (see https://iiif.io/api/image/2.1/#size)
 $preview_tile_scale_factors = array(1,2,4,8,16);
 

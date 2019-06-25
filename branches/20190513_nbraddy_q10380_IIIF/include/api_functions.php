@@ -286,3 +286,21 @@ function iiif_get_image($identifier,$resourceid,$position, array $size_info)
 
     return $images;  
 	}
+
+function iiif_error($errorcode = 404, $errors = array())
+    {
+    global $iiif_debug;
+    if(function_exists("http_response_code"))
+        {
+        http_response_code($errorcode); # Send error status
+        }
+    if($iiif_debug)
+        {
+        echo implode("<br />",$errors);	 
+        }
+    else
+        {
+        echo implode("<br />",$errors);
+        }
+    exit();
+    }
