@@ -99,7 +99,7 @@ else
                     $prewidth = $size['width'];
                     $preheight = round(($imageHeight * $prewidth + $imageWidth - 1) / $imageWidth);
                     }
-                if($prewidth <= $iiif_max_width && $preheight <= $iiif_max_height)
+                if($prewidth > 0 && $preheight > 0 && $prewidth <= $iiif_max_width && $preheight <= $iiif_max_height)
                     {
                     $availsizes[] = array("id"=>$size['id'],"width" => $prewidth, "height" => $preheight);
                     }
@@ -109,7 +109,7 @@ else
 				{
 				// Image information request. Only fullsize available in this initial version
 				$response["@context"] = "http://iiif.io/api/image/2/context.json";
-				$response["@id"] = $rootimageurl . $resourceid;
+				$response["@id"] = $rootimageurl . $resourceid . "/info.json";
                 				
 				$response["height"] = $imageHeight;
 				$response["width"]  = $imageWidth;
@@ -141,16 +141,16 @@ else
                 if($preview_tiles)
                     {
                     $response["tiles"] = array();
-                    $response["tiles"][] = array("height" => $preview_tile_size, "scaleFactors" => $preview_tile_scale_factors, "width" => $preview_tile_size);
+                    $response["tiles"][] = array("height" => $preview_tile_size, "width" => $preview_tile_size, "scaleFactors" => $preview_tile_scale_factors);
                     }
 				$iiif_headers[] = 'Link: <http://iiif.io/api/image/2/level0.json>;rel="profile"';
 				$validrequest = true;
 				}
-            elseif(!isset($xpath[3]) || !isset($xpath[4]) || !isset($xpath[5]) || !isset($xpath[5]) || strpos(".",$xpath[5] === false))
+            elseif(!isset($xpath[3]) || !isset($xpath[4]) || !isset($xpath[5]) || !isset($xpath[5]) || $xpath[5] != "default.jpg")
 				{
                 // Not request for image infomation document and no sizes specified
 				$errors[] = "Invalid image request format.";
-				iiif_error(501,$errors);
+				iiif_error(400,$errors);
 				}
             else
 				{
@@ -162,8 +162,8 @@ else
 				if(count($formatparts) != 2)
 					{
 					// Format. As we only support IIIF Image level 0 a value of 'jpg' is required 
-					$errorcode=501;
 					$errors[] = "Invalid quality or format requested. Try using 'default.jpg'";
+                    iiif_error(400,$errors);
 					}
 				else
 					{
@@ -185,7 +185,7 @@ else
                         {
                         // Invalid region
                         $errors[]  = "Invalid region requested. Use 'full' or 'x,y,w,h'";
-                        iiif_error(501,$errors);
+                        iiif_error(400,$errors);
                         }
                     else
                         {
@@ -198,7 +198,7 @@ else
                             {
                             // Invalid region
                             $errors[]  = "Invalid region requested. Supported tiles are " . $preview_tile_size . "x" . $preview_tile_size . " at scale factors " . implode($preview_tile_scale_factors,",") . ".";
-                            iiif_error(501,$errors);
+                            iiif_error(400,$errors);
                             }                            
                         else
                             {
@@ -262,7 +262,7 @@ else
                         else
                             {
                             $errors[] = "Invalid tile size requested";
-                            iiif_error(501,$errors);                             
+                            iiif_error(400,$errors);                             
                             }
                             
                         $getsize = "tile_" . $regionx . "_" . $regiony . "_". $regionw . "_". $regionh;
@@ -295,7 +295,7 @@ else
                                 {
                                 // Invalid size requested
                                 $errors[] = "Invalid size requested";
-                                iiif_error(501,$errors);                   
+                                iiif_error(400,$errors);                   
                                 }
                             else
                                 {
@@ -323,35 +323,44 @@ else
                         }
                     else
                         {
-                        $isjpeg = in_array(strtolower($resource["file_extension"]),array("jpg","jpeg"));
-                        $getext = strtolower($resource["file_extension"]) == "jpeg" ? "jpeg" : "jpg";
-                        $getsize = ($size  == "thm") ? 'thm' : ($isjpeg ? "" : "hpr");
+                        // Full/max image region requested
+                        if($iiif_max_width >= $imageWidth && $iiif_max_height >= $imageHeight)
+                            {
+                            $isjpeg = in_array(strtolower($resource["file_extension"]),array("jpg","jpeg"));
+                            $getext = strtolower($resource["file_extension"]) == "jpeg" ? "jpeg" : "jpg";
+                            $getsize = $isjpeg ? "" : "hpr";
+                            }
+                        else
+                            {
+                            $getext = "jpg";
+                            $getsize = count($availsizes) > 0 ? $availsizes[0]["id"] : "thm";
+                            }
                         }                   
                         
                     }
                 else
                     {
                     $errors[] = "Invalid size requested";
-                    iiif_error(501,$errors);  
+                    iiif_error(400,$errors);  
                     }
                 
 				if($rotation!=0)
 					{
 					// Rotation. As we only support IIIF Image level 0 only a rotation value of 0 is accepted 
 					$errors[] = "Invalid rotation requested. Only '0' is permitted.";
-                    iiif_error(501,$errors);  
+                    iiif_error(404,$errors);  
 					}
 				 if(isset($quality) && $quality != "default" && $quality != "color")
 					{
 					// Quality. As we only support IIIF Image level 0 only a quality value of 'default' or 'color' is accepted 
 					$errors[] = "Invalid quality requested. Only 'default' is permitted";
-                    iiif_error(501,$errors);  
+                    iiif_error(404,$errors);  
 					}
 				 if(isset($format) && strtolower($format) != "jpg")
 					{
 					// Format. As we only support IIIF Image level 0 only a value of 'jpg' is accepted 
 					$errors[] = "Invalid format requested. Only 'jpg' is permitted."; 
-                    iiif_error(501,$errors);    
+                    iiif_error(404,$errors);    
 					}
 
                 if(!isset($errorcode))
@@ -404,8 +413,10 @@ else
             }
         else
             {
-            $errorcode=404;
+            //$errorcode=404;
             $errors[] = "Missing or invalid identifier";
+            //$errors[]  = "Invalid region requested. Supported tiles are " . $preview_tile_size . "x" . $preview_tile_size . " at scale factors " . implode($preview_tile_scale_factors,",") . ".";
+            iiif_error(404,$errors);
             }
         } // End of image API
 	else
