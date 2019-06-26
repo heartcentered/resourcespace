@@ -109,7 +109,7 @@ else
 				{
 				// Image information request. Only fullsize available in this initial version
 				$response["@context"] = "http://iiif.io/api/image/2/context.json";
-				$response["@id"] = $rootimageurl . $resourceid . "/info.json";
+				$response["@id"] = $rootimageurl . $resourceid;
                 				
 				$response["height"] = $imageHeight;
 				$response["width"]  = $imageWidth;
