@@ -436,8 +436,9 @@ else
 	if (!hook("replaceheadernav1")) {
 	?>
     <ul>
-        
-    <?php if ($header_search && $k=="") { ?>
+    <?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php }
+
+    if ($header_search && $k=="") { ?>
     <li>
 	<form class="HeaderSearchForm" id="header_search_form" method="post" action="<?php echo $baseurl?>/pages/search.php" onSubmit="return CentralSpacePost(this,true);">
     <?php
@@ -448,18 +449,10 @@ else
     <a href="<?php echo $baseurl; ?>/pages/simple_search.php" onClick="ModalClose(); return ModalLoad(this, true, true, 'right');">
                 <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
             </a>
-    </form>
-         
-         
-    
-        
+    </form>        
     </li>
-    <?php } ?>
-        
-    		
-	<?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php } ?>    
-        
-    <?php
+    <?php }
+
     if(!hook('replaceheaderfullnamelink'))
         {
         ?>
