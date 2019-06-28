@@ -440,16 +440,15 @@ else
 
     if ($header_search && $k=="") { ?>
     <li>
-	<form class="HeaderSearchForm" id="header_search_form" method="post" action="<?php echo $baseurl?>/pages/search.php" onSubmit="return CentralSpacePost(this,true);">
+	<form class="HeaderSearchForm" id="header_search_form" method="post" action="<?php echo $baseurl?>/pages/search.php" onSubmit="return CentralSpacePost(this, true);">
     <?php
     generateFormToken("header_search_form");
     ?>
-    <input id="ssearchbox" name="search" type="text" class="searchwidth" placeholder="<?php echo $lang['simplesearch'] . '...'; ?>" value="<?php echo (isset($quicksearch)?$htmlspecialchars($quicksearch):"") ?>" />
-    
-    <a href="<?php echo $baseurl; ?>/pages/simple_search.php" onClick="ModalClose(); return ModalLoad(this, true, true, 'right');">
-                <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
-            </a>
-    </form>        
+        <input id="ssearchbox" name="search" type="text" class="searchwidth" placeholder="<?php echo $lang['simplesearch'] . '...'; ?>" value="<?php echo (isset($quicksearch)?$htmlspecialchars($quicksearch):"") ?>" />
+        <a href="<?php echo $baseurl; ?>/pages/search_advanced.php" onClick="return TogglePane('FilterBarContainer', this.href);">
+            <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
+        </a>
+    </form>
     </li>
     <?php }
 
@@ -565,9 +564,13 @@ if (!$header_search)
         <?php
         }
     }
-?>
+else
+    {
+    ?>
+    <div id="FilterBarContainer" class="ui-layout-east"></div>
+    <?php
+    }
 
-<?php
 # Determine which content holder div to use
 if (($pagename=="login") || ($pagename=="user_password") || ($pagename=="user_request") || ($pagename=="user_change_password"))
     {

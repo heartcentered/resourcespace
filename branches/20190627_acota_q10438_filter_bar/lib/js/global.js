@@ -1416,3 +1416,43 @@ function detect_local_timezone()
     {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
+
+
+/**
+* General pane toggler functionality. Useful when the pane will load its content on the fly
+* 
+* @returns {boolean}
+*/
+function TogglePane(pane_id, load_url) 
+    {
+    // Find the active pane using the panes' container ID
+    var active_pane = '';
+    jQuery.each(myLayout.panes, function(pane_name, pane_element)
+        {
+        if(pane_element.prop('id') != pane_id)
+            {
+            return;
+            }
+
+        active_pane = pane_name;
+        });
+
+    var pane_open = myLayout.state[active_pane].isClosed;
+    /*if(!pane_open)
+        {
+        myLayout.toggle(active_pane);
+        return false;
+        }*/
+
+    jQuery("#" + pane_id).load(load_url, function (response, status, xhr)
+        {
+        if(status == "error" || status == "timeout")
+            {
+            //@todo: styledalert();
+            }
+
+        myLayout.toggle(active_pane);
+        });
+
+    return false;
+    }

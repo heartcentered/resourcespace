@@ -451,3 +451,4 @@ input:checked + .customFieldLabel, .keywordselected
 ::-webkit-scrollbar,::-webkit-scrollbar-corner {background:none;}
 ::-webkit-scrollbar-thumb {background:rgba(0,0,0,0.3);border-radius: 6px;}
 
+#FilterBarContainer { background:  rgba(0, 0, 0, 0.47); }

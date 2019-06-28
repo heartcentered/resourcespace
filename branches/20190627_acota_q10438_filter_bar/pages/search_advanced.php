@@ -248,26 +248,52 @@ else
     $allwords = str_replace(', ', ' ', $allwords);
   }
 
-function render_advanced_search_buttons() {
- global $lang, $swap_clear_and_search_buttons;
- ?><div class="QuestionSubmit">
- <label for="buttons"> </label>
-<?php if ($swap_clear_and_search_buttons){?>
- <input name="dosearch" class="dosearch" type="submit" value="<?php echo $lang["action-viewmatchingresults"]?>" />
- &nbsp;
- <input name="resetform" class="resetform" type="submit" value="<?php echo $lang["clearbutton"]?>" /> 
-<?php } else { ?>
- <input name="resetform" class="resetform" type="submit" value="<?php echo $lang["clearbutton"]?>" />
- &nbsp;
- <input name="dosearch" class="dosearch" type="submit" value="<?php echo $lang["action-viewmatchingresults"]?>" />
- <?php } ?>
-</div>
+function render_advanced_search_buttons()
+    {
+    global $lang, $swap_clear_and_search_buttons, $header_search;
 
- <?php 
- }
+    $reset_input_classes = 'resetform';
+    if($header_search)
+        {
+        $reset_input_classes .= ' FullWidth';
+        }
+    ?>
+    <div class="QuestionSubmit">
+        <label for="buttons"></label>
+    <?php
+    if($swap_clear_and_search_buttons)
+        {
+        if(!$header_search)
+            {
+            ?>
+            <input name="dosearch" class="dosearch" type="submit" value="<?php echo $lang["action-viewmatchingresults"]?>" />&nbsp;
+            <?php
+            }
+        ?>
+        <input name="resetform" class="<?php echo $reset_input_classes; ?>" type="submit" value="<?php echo $lang["clearbutton"]?>" /> 
+        <?php
+        }
+    else
+        {
+        ?>
+        <input name="resetform" class="<?php echo $reset_input_classes; ?>" type="submit" value="<?php echo $lang["clearbutton"]?>" />&nbsp;
+        <?php
+        if(!$header_search)
+            {
+            ?>
+            <input name="dosearch" class="dosearch" type="submit" value="<?php echo $lang["action-viewmatchingresults"]?>" />
+            <?php
+            }
+        }
+        ?>
+    </div>
+    <?php 
+    }
 
-
-include "../include/header.php";
+if(!$header_search)
+    {
+    include RS_ROOT . "/include/header.php";
+    }
 ?>
 <script type="text/javascript">
 
@@ -419,8 +445,15 @@ jQuery(document).ready(function()
 
 <iframe src="blank.html" name="resultcount" id="resultcount" style="visibility:hidden;float:right;" width=1 height=1></iframe>
 <div class="BasicsBox">
-<h1><?php echo ($archiveonly)?$lang["archiveonlysearch"]:$lang["advancedsearch"];?> </h1>
-<p class="tight"><?php echo text("introtext")?></p>
+<?php
+if(!$header_search)
+    {
+    ?>
+    <h1><?php echo ($archiveonly)?$lang["archiveonlysearch"]:$lang["advancedsearch"];?> </h1>
+    <p class="tight"><?php echo text("introtext")?></p>
+    <?php
+    }
+    ?>
 <form method="post" id="advancedform" action="<?php echo $baseurl ?>/pages/search_advanced.php" >
 <?php generateFormToken("advancedform"); ?>
 <input type="hidden" name="submitted" id="submitted" value="yes">
@@ -472,9 +505,9 @@ jQuery(document).ready(function(){
 
 <?php
 if($advanced_search_buttons_top)
- {
- render_advanced_search_buttons();
- }
+    {
+    render_advanced_search_buttons();
+    }
 
 if($search_includes_resources && !hook("advsearchrestypes"))
  {?>
@@ -516,11 +549,17 @@ if (!hook('advsearchallfields')) { ?>
 <label for="allfields"><?php echo $lang["allfields"]?></label><input class="SearchWidth" type=text name="allfields" id="allfields" value="<?php echo htmlspecialchars($allwords)?>" onChange="UpdateResultCount();">
 <div class="clearerleft"> </div>
 </div>
-<?php } ?>
-<h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionGlobalHead" <?php if (in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["resourcetype-global_fields"]; ?></h1>
-<div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionGlobal" <?php if (in_array("Collections",$opensections)) {?> style="display: none;" <?php } ?>>
+<?php }
 
-<?php if (!hook('advsearchresid')) { ?>
+if(!$header_search)
+    {
+    ?>
+    <h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionGlobalHead" <?php if (in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["resourcetype-global_fields"]; ?></h1>
+    <div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionGlobal" <?php if (in_array("Collections",$opensections)) {?> style="display: none;" <?php } ?>>
+    <?php
+    }
+
+if (!hook('advsearchresid')) { ?>
 <!-- Search for resource ID(s) -->
 <div class="Question">
 <label for="resourceids"><?php echo $lang["resourceids"]?></label><input class="SearchWidth" type=text name="resourceids" id="resourceids" value="<?php echo htmlspecialchars(getval("resourceids","")) ?>" onChange="UpdateResultCount();">
@@ -590,8 +629,14 @@ for ($n=0;$n<count($fields);$n++)
 			# Note: get_resource_types() has already translated the resource type name for the current user.
 			if ($rtypes[$m]["ref"]==$fields[$n]["resource_type"]) {$label=$rtypes[$m]["name"];}
 			}
-		?>
-		</div>
+
+        if(!$header_search)
+            {
+            ?>
+            </div>
+            <?php
+            }
+            ?>
             <h1 class="AdvancedSectionHead CollapsibleSectionHead ResTypeSectionHead"
                 id="AdvancedSearchTypeSpecificSection<?php echo $fields[$n]["resource_type"]; ?>Head"
                 <?php
@@ -811,5 +856,7 @@ if($archive!==0){
 	<?php
 }
 
-include "../include/footer.php";
-?>
+if(!$header_search)
+    {
+    include RS_ROOT . "/include/footer.php";
+    }
