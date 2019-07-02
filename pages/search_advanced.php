@@ -463,6 +463,16 @@ if(!$header_search)
 var updating=false;
 function UpdateResultCount()
 	{
+    <?php
+    if($header_search)
+        {
+        ?>
+        CentralSpacePost(document.getElementById('advancedform'), true, false, false);
+        return true;
+        <?php
+        }
+        ?>
+
 	updating=false;
 	// set the target of the form to be the result count iframe and submit
 	document.getElementById("advancedform").target="resultcount";
@@ -475,7 +485,29 @@ function UpdateResultCount()
 	}
 	
 jQuery(document).ready(function(){
-	    jQuery('#advancedform').submit(function() {
+    // Detect which submit input was last called so we can figure out if we need to treat it differently (e.g when 
+    // resetform is clicked and we are using filter bar we want to reload filter bar clearing all fields)
+    var submit_caller_element = '';
+    jQuery(":submit").click(function()
+            {
+            submit_caller_element = this.name;
+            });
+
+	    jQuery('#advancedform').submit(function(event) {
+            <?php
+            if($header_search)
+                {
+                ?>
+                if(submit_caller_element == 'resetform')
+                    {
+                    event.preventDefault();
+                    ClearFilterBar();
+                    return false;
+                    }
+                <?php
+                }
+                ?>
+
             if (jQuery('#AdvancedSearchTypeSpecificSectionCollections').is(":hidden") && (document.getElementById("countonly").value!="yes")) 
                 {
                     jQuery('.tickboxcoll').prop('checked',false);
@@ -544,12 +576,25 @@ if($search_includes_resources && !hook("advsearchrestypes"))
 if (!hook('advsearchallfields')) { ?>
 <!-- Search across all fields -->
 <input type="hidden" id="hiddenfields" name="hiddenfields" value="">
-    
-<div class="Question">
-<label for="allfields"><?php echo $lang["allfields"]?></label><input class="SearchWidth" type=text name="allfields" id="allfields" value="<?php echo htmlspecialchars($allwords)?>" onChange="UpdateResultCount();">
-<div class="clearerleft"> </div>
-</div>
-<?php } ?>
+<?php
+if($header_search)
+    {
+    ?>
+    <input id="allfields" type="hidden" name="allfields" value="<?php echo htmlspecialchars($allwords); ?>" onChange="UpdateResultCount();">
+    <?php
+    }
+    else
+    {
+    ?>
+    <div class="Question">
+        <label for="allfields"><?php echo $lang["allfields"]?></label>
+        <input class="SearchWidth" type=text name="allfields" id="allfields" value="<?php echo htmlspecialchars($allwords)?>" onChange="UpdateResultCount();">
+        <div class="clearerleft"> </div>
+    </div>
+    <?php
+    }
+}
+?>
 <h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionGlobalHead" <?php if (in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["resourcetype-global_fields"]; ?></h1>
 <div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionGlobal" <?php if (in_array("Collections",$opensections)) {?> style="display: none;" <?php } ?>>
 
@@ -826,6 +871,14 @@ render_advanced_search_buttons();
 
 // show result count as it stands ?>
 </div> <!-- BasicsBox -->
+<script>
+function ClearFilterBar()
+    {
+    var url = "<?php echo generateURL("{$baseurl}/pages/search_advanced.php", array('submitted' => true, 'resetform' => true)); ?>";
+    jQuery("#FilterBarContainer").load(url);
+    document.getElementById('ssearchbox').value='';
+    }
+</script>
 <?php
 if($archive!==0){
 	?>
