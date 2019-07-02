@@ -549,17 +549,11 @@ if (!hook('advsearchallfields')) { ?>
 <label for="allfields"><?php echo $lang["allfields"]?></label><input class="SearchWidth" type=text name="allfields" id="allfields" value="<?php echo htmlspecialchars($allwords)?>" onChange="UpdateResultCount();">
 <div class="clearerleft"> </div>
 </div>
-<?php }
+<?php } ?>
+<h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionGlobalHead" <?php if (in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["resourcetype-global_fields"]; ?></h1>
+<div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionGlobal" <?php if (in_array("Collections",$opensections)) {?> style="display: none;" <?php } ?>>
 
-if(!$header_search)
-    {
-    ?>
-    <h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionGlobalHead" <?php if (in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["resourcetype-global_fields"]; ?></h1>
-    <div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionGlobal" <?php if (in_array("Collections",$opensections)) {?> style="display: none;" <?php } ?>>
-    <?php
-    }
-
-if (!hook('advsearchresid')) { ?>
+<?php if (!hook('advsearchresid')) { ?>
 <!-- Search for resource ID(s) -->
 <div class="Question">
 <label for="resourceids"><?php echo $lang["resourceids"]?></label><input class="SearchWidth" type=text name="resourceids" id="resourceids" value="<?php echo htmlspecialchars(getval("resourceids","")) ?>" onChange="UpdateResultCount();">
@@ -629,14 +623,8 @@ for ($n=0;$n<count($fields);$n++)
 			# Note: get_resource_types() has already translated the resource type name for the current user.
 			if ($rtypes[$m]["ref"]==$fields[$n]["resource_type"]) {$label=$rtypes[$m]["name"];}
 			}
-
-        if(!$header_search)
-            {
-            ?>
-            </div>
-            <?php
-            }
-            ?>
+		?>
+		</div>
             <h1 class="AdvancedSectionHead CollapsibleSectionHead ResTypeSectionHead"
                 id="AdvancedSearchTypeSpecificSection<?php echo $fields[$n]["resource_type"]; ?>Head"
                 <?php
