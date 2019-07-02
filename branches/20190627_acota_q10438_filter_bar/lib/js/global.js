@@ -425,7 +425,7 @@ top.window.onpopstate = function(event)
 
 
 /* AJAX posting of a form, result are displayed in the CentralSpace area. */
-function CentralSpacePost (form,scrolltop,modal)
+function CentralSpacePost(form, scrolltop, modal, update_history_record)
 	{
 	ajaxinprogress=true;
 	var url=form.action;
@@ -498,9 +498,10 @@ function CentralSpacePost (form,scrolltop,modal)
 			DeactivateSlideshow();
 			}
 		    }
-			    
+
 		// Change the browser URL and save the CentralSpace HTML state in the browser's history record.
-		if(typeof(top.history.pushState)=='function' && !modal)
+        update_history_record = typeof update_history_record === 'undefined' ? true : update_history_record;
+		if(update_history_record && typeof(top.history.pushState)=='function' && !modal)
 			{
 			top.history.pushState(document.title+'&&&'+data, applicationname, form.action);
 			}
