@@ -7178,7 +7178,7 @@ function generateFormToken($form_id)
 
     $token = generateCSRFToken($usersession, $form_id);
     ?>
-    <input type="hidden" name="<?php echo htmlspecialchars($CSRF_token_identifier); ?>" value="<?php echo $token; ?>">
+    <input type="hidden" name="<?php echo $CSRF_token_identifier; ?>" value="<?php echo $token; ?>">
     <?php
     return;
     }
@@ -7202,7 +7202,7 @@ function generateAjaxToken($form_id)
         return "";
         }
 
-    $identifier = htmlspecialchars($CSRF_token_identifier);
+    $identifier = $CSRF_token_identifier;
     $token      = generateCSRFToken($usersession, $form_id);
 
     return "{$identifier}: \"{$token}\"";
