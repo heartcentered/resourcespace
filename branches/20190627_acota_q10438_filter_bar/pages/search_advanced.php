@@ -7,6 +7,13 @@ include_once "../include/resource_functions.php";
 include_once "../include/collections_functions.php";
 include_once dirname(__FILE__) . '/../include/render_functions.php';
 
+$filter_bar_reload = trim(getval('filter_bar_reload', '')) !== 'false' ? true : false;
+if(!$filter_bar_reload)
+    {
+    http_response_code(204);
+    exit();
+    }
+
 function get_search_default_restypes()
 	{
 	global $search_includes_resources, $collection_search_includes_resource_metadata;
@@ -147,6 +154,28 @@ if (getval("submitted","")=="yes" && getval("resetform","")=="")
 		<?php
 		exit();
 		}
+    else if($header_search)
+        {
+        $search_url = generateURL(
+            "{$baseurl}/pages/search.php",
+            array(
+                'search'            => $search,
+                'archive'           => $archive,
+                'restypes'          => $restypes,
+                'filter_bar_reload' => 'false',
+            ));
+        ?>
+        <html>
+        <script>
+        jQuery(document).ready(function ()
+            {
+            CentralSpaceLoad("<?php echo $search_url; ?>");
+            });
+        </script>
+        </html>
+        <?php
+        exit();
+        }
 	else
 		{
 		# Log this			
@@ -489,9 +518,9 @@ jQuery(document).ready(function(){
     // resetform is clicked and we are using filter bar we want to reload filter bar clearing all fields)
     var submit_caller_element = '';
     jQuery(":submit").click(function()
-            {
-            submit_caller_element = this.name;
-            });
+        {
+        submit_caller_element = this.name;
+        });
 
 	    jQuery('#advancedform').submit(function(event) {
             <?php
@@ -880,7 +909,7 @@ function ClearFilterBar()
     }
 </script>
 <?php
-if($archive!==0){
+if($archive!==0 && !$header_search){
 	?>
 	<script>
 	jQuery(document).ready(function()

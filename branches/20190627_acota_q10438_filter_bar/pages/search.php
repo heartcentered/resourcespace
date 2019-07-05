@@ -593,6 +593,19 @@ if($k=="" || $internal_share_access)
     <?php
     }
 
+if($header_search && $k == "")
+    {
+    ?>
+    <script>
+    var require_filter_bar_reload = <?php echo trim(getval("filter_bar_reload", "")) !== "false" ? "true" : "false"; ?>;
+    if(require_filter_bar_reload)
+        {
+        ReloadFilterBar();
+        }
+    </script>
+    <?php
+    }
+
 
 // Allow Drag & Drop from collection bar to CentralSpace only when special search is "!collection"
 if($collectionsearch && collection_writeable(substr($search, 11)))
