@@ -600,7 +600,7 @@ if($header_search && $k == "")
     var require_filter_bar_reload = <?php echo trim(getval("filter_bar_reload", "")) !== "false" ? "true" : "false"; ?>;
     if(require_filter_bar_reload)
         {
-        ReloadFilterBar();
+        ReloadFilterBar('<?php echo $search; ?>');
         }
     </script>
     <?php
