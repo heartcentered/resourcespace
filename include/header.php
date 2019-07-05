@@ -438,19 +438,25 @@ else
     <ul>
     <?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php }
 
-    if ($header_search && $k=="") { ?>
-    <li>
-	<form class="HeaderSearchForm" id="header_search_form" method="post" action="<?php echo $baseurl?>/pages/search.php" onSubmit="return CentralSpacePost(this, true);">
-    <?php
-    generateFormToken("header_search_form");
-    ?>
-        <input id="ssearchbox" name="search" type="text" class="searchwidth" placeholder="<?php echo $lang['simplesearch'] . '...'; ?>" value="<?php echo (isset($quicksearch)?$htmlspecialchars($quicksearch):"") ?>" />
-        <a href="<?php echo $baseurl; ?>/pages/search_advanced.php" onClick="return TogglePane('FilterBarContainer', this.href);">
-            <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
-        </a>
-    </form>
-    </li>
-    <?php }
+    // Filter bar functionality
+    if($header_search && $k == "")
+        {
+        ?>
+        <li>
+            <form id="header_search_form" class="HeaderSearchForm"
+                  method="post" action="<?php echo $baseurl?>/pages/search.php"
+                  onsubmit="return CentralSpacePost(this, true);">
+                <?php generateFormToken("header_search_form"); ?>
+                <input id="ssearchbox" name="search" type="text" class="searchwidth"
+                       placeholder="<?php echo $lang['all__search']; ?>"
+                       value="<?php echo isset($quicksearch) ? $htmlspecialchars($quicksearch) : ""; ?>" />
+                <a href="<?php echo $baseurl; ?>/pages/search_advanced.php" onclick="return TogglePane('FilterBarContainer', this.href);">
+                    <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
+                </a>
+            </form>
+        </li>
+        <?php
+        }
 
     if(!hook('replaceheaderfullnamelink'))
         {

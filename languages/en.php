@@ -227,7 +227,7 @@ $lang["changethemeto"] = "Change theme to";
 
 # Search bar
 $lang["simplesearch"]="Simple search";
-$lang["searchbutton"]="Search";
+$lang["searchbutton"]=$lang["all__search"]="Search";
 $lang["clearbutton"]="Clear";
 $lang["bycountry"]="By country";
 $lang["bydate"]="By date";
