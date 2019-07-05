@@ -1458,7 +1458,14 @@ function TogglePane(pane_id, load_url)
     return false;
     }
 
-function ReloadFilterBar()
+/**
+* Reloads the filter bar
+* 
+* @param {String} Search string
+* 
+* @return void
+*/
+function ReloadFilterBar(search)
     {
     var FilterBarContainer = jQuery("#FilterBarContainer");
     var url = baseurl + "/pages/search_advanced.php";
@@ -1472,4 +1479,13 @@ function ReloadFilterBar()
             return false;
             }
         });
+
+    // User searched for something else? Clear simple search box as the search was done differently (e.g recently added)
+    var ssearchbox = document.getElementById("ssearchbox").value;
+    if(typeof search !== "undefined" && search !== "" && ssearchbox !== search)
+        {
+        document.getElementById("ssearchbox").value = "";
+        }
+
+    return;
     }
