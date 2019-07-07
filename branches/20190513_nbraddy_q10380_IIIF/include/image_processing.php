@@ -3124,6 +3124,26 @@ function delete_previews($resource,$alternative=-1)
                 }
             }
         }
+
+    $delete_prefixes = array();
+    $delete_prefixes[] = "resized_";
+    $delete_prefixes[] = "tile_";
+    
+    $allfiles = new DirectoryIterator($resourcefolder);
+    foreach ($allfiles as $fileinfo)
+        {
+        if (!$fileinfo->isDot())
+            {
+            $filename = $fileinfo->getFilename();
+            foreach($delete_prefixes as $delete_prefix)
+                {
+                if(substr($filename,strlen($resource),strlen($delete_prefix)) == $delete_prefix)
+                    {
+                    unlink($resourcefolder . DIRECTORY_SEPARATOR . $filename);
+                    }
+                }
+            }
+        }
     }
 
 
