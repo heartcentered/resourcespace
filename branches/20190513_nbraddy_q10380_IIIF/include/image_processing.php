@@ -1543,6 +1543,7 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
                         $ps[$o]["y"] = $y;  
                         $ps[$o]["w"] = $tilew;
                         $ps[$o]["h"] = $tileh;
+                        $ps[$o]["type"] = "tile";
                         $x = $x + $tileregion;
                         $o++;
                         }
@@ -1621,7 +1622,7 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
                 # Check that source image dimensions are sufficient to create the required size. Unusually wide/tall images can
                 # mean that the height/width of the larger sizes is less than the required target height/width
                 list($checkw,$checkh) = @getimagesize($file);
-                if(($checkw<$ps[$n]['width'] || $checkh<$ps[$n]['height']) && $file!=$hpr_path)
+                if((($checkw<$ps[$n]['width'] || $checkh<$ps[$n]['height']) || (isset($ps[$n]['type']) && $ps[$n]['type'] == "tile")) && $file!=$hpr_path)
                     {
                     $file=file_exists($hpr_path)?$hpr_path:$origfile;
                     }
@@ -1654,7 +1655,7 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
             
             # Add crop if generating a tile
             $crop = false;
-            if(substr($id,0,5) == "tile_")
+            if(isset($ps[$n]['type']) && $ps[$n]['type'] == "tile")
                 {
                 $cropx = $ps[$n]["x"];
                 $cropy = $ps[$n]["y"];
