@@ -511,11 +511,7 @@ $searchparams= array(
     'foredit'                                   => ($editable_only?"true":"")
 );
  
-
-if(false === strpos($search, '!') || '!properties' == substr($search, 0, 11))
-    {
-    rs_setcookie('search', $search,0,"","",false,false);
-    }
+rs_setcookie("search", $search, 0, "", "", false, false);
 
 hook('searchaftersearchcookie');
 if ($search_includes_resources || substr($search,0,1)==="!")
