@@ -205,6 +205,29 @@ if (getval("resetform","")!="")
   $selected_archive_states=array(0);
   rs_setcookie("search","",0,"","",false,false);
   rs_setcookie("saved_archive","",0,"","",false,false);
+  rs_setcookie("restypes", implode(",", $restypes), 0, "", "", false, false);
+
+  if($header_search)
+    {
+    $search_url = generateURL(
+        "{$baseurl}/pages/search.php",
+        array(
+            'search'   => '',
+            'archive'  => implode(",", $selected_archive_states),
+            'restypes' => implode(",", $restypes),
+        ));
+    ?>
+    <html>
+    <script>
+    jQuery(document).ready(function ()
+        {
+        CentralSpaceLoad("<?php echo $search_url; ?>");
+        });
+    </script>
+    </html>
+    <?php
+    exit();
+    }
   }
 else
   {
