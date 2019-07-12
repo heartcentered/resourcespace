@@ -108,12 +108,24 @@ if ($upload_then_edit && $replace == "" && $replace_resource == "")
     $redirecturl_extra_params = array();
 
 	# Set the redirect after upload to the start of the edit process
-    $redirecturl = generateURL(
-        "{$baseurl}/pages/edit.php",
-        array(
-            'upload_review_mode' => true,
-        ),
-        $redirecturl_extra_params);
+    if($alternative != "") 
+        {
+        $redirecturl = generateURL(
+            "{$baseurl}/pages/view.php",
+            array(
+                'ref' => $alternative
+            ),
+            $redirecturl_extra_params);	
+        }
+    else
+        {
+        $redirecturl = generateURL(
+            "{$baseurl}/pages/edit.php",
+            array(
+                'upload_review_mode' => true,
+            ),
+            $redirecturl_extra_params);	
+        }
 
 	# Clear the user template
 	clear_resource_data(0-$userref);
@@ -138,7 +150,7 @@ $uploadparams= array(
     'collection_add'                         => $collection_add,
     'resource_type'                          => $resource_type,
     'no_exif'                                => getval('no_exif', ''),
-    'autorotate'                             => getval('autorotate', ''),
+    'autorotate'                             => $upload_then_edit ? $camera_autorotation_checked : getval('autorotate', ''),
     'replace_resource'                       => $replace_resource,
     'archive'                                => $archive,
     'relateto'                               => getval('relateto', ''),
@@ -235,7 +247,7 @@ if($upload_then_edit && !$alternative)
                 {
                     if ($extension != "") 
                     {
-                        array_push($all_allowed_extensions_holder, strtolower($extension));
+                        array_push($all_allowed_extensions_holder, trim(strtolower($extension)));
                     }
                 }
             }
