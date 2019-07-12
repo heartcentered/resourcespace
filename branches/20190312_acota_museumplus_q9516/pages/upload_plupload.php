@@ -108,12 +108,24 @@ if ($upload_then_edit && $replace == "" && $replace_resource == "")
     $redirecturl_extra_params = array();
 
 	# Set the redirect after upload to the start of the edit process
-    $redirecturl = generateURL(
-        "{$baseurl}/pages/edit.php",
-        array(
-            'upload_review_mode' => true,
-        ),
-        $redirecturl_extra_params);
+    if($alternative != "") 
+        {
+        $redirecturl = generateURL(
+            "{$baseurl}/pages/view.php",
+            array(
+                'ref' => $alternative
+            ),
+            $redirecturl_extra_params);	
+        }
+    else
+        {
+        $redirecturl = generateURL(
+            "{$baseurl}/pages/edit.php",
+            array(
+                'upload_review_mode' => true,
+            ),
+            $redirecturl_extra_params);	
+        }
 
 	# Clear the user template
 	clear_resource_data(0-$userref);
@@ -138,7 +150,7 @@ $uploadparams= array(
     'collection_add'                         => $collection_add,
     'resource_type'                          => $resource_type,
     'no_exif'                                => getval('no_exif', ''),
-    'autorotate'                             => getval('autorotate', ''),
+    'autorotate'                             => $upload_then_edit ? $camera_autorotation_checked : getval('autorotate', ''),
     'replace_resource'                       => $replace_resource,
     'archive'                                => $archive,
     'relateto'                               => getval('relateto', ''),
@@ -215,7 +227,38 @@ if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
 
 $allowed_extensions="";
-if ($resource_type!="" && !$alternative) {$allowed_extensions=get_allowed_extensions_by_type($resource_type);}
+
+if($upload_then_edit && !$alternative)
+    {
+        $all_allowed_extensions_holder = array();
+        $all_resource_types = get_resource_types();
+    
+        foreach ($all_resource_types as $type) 
+        {
+            if(get_allowed_extensions_by_type($type["ref"]) == "")
+            {
+                $all_allowed_extensions_holder = array();
+                break;
+            }
+            else
+            {
+                $extensions = explode(",", get_allowed_extensions_by_type($type["ref"]));
+                foreach ($extensions as $extension) 
+                {
+                    if ($extension != "") 
+                    {
+                        array_push($all_allowed_extensions_holder, trim(strtolower($extension)));
+                    }
+                }
+            }
+        }
+        $all_allowed_extensions_holder = array_unique($all_allowed_extensions_holder);
+        $allowed_extensions = implode(",", $all_allowed_extensions_holder);
+    }
+else if ($resource_type!="" && !$alternative) 
+    {
+        $allowed_extensions=get_allowed_extensions_by_type($resource_type);
+    }
 
 if (is_numeric($collection_add))
 	{

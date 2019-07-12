@@ -6915,9 +6915,12 @@ function get_resource_type_from_extension($extension, array $resource_type_exten
     {
     foreach($resource_type_extension_mapping as $resource_type_id => $allowed_extensions)
         {
-        if(in_array($extension, $allowed_extensions))
+        if (!checkperm('T' . $resource_type_id))
             {
-            return $resource_type_id;
+            if(in_array(strtolower($extension), $allowed_extensions))
+                {
+                return $resource_type_id;
+                }
             }
         }
 
@@ -7100,7 +7103,7 @@ function IsModal()
 * @param  string  $session_id  The current user session ID
 * @param  string  $form_id     A unique form ID
 * 
-* @return  string  Token base64 encoded
+* @return  string  Token
 */
 function generateCSRFToken($session_id, $form_id)
     {
@@ -7112,7 +7115,7 @@ function generateCSRFToken($session_id, $form_id)
         "form_id"   => $form_id
     ));
 
-    return urlencode(rsEncrypt($data, $session_id));
+    return rsEncrypt($data, $session_id);
     }
 
 /**
@@ -7137,7 +7140,7 @@ function isValidCSRFToken($token_data, $session_id)
         return false;
         }
 
-    $plaintext = rsDecrypt(urldecode($token_data), $session_id);
+    $plaintext = rsDecrypt($token_data, $session_id);
 
     if($plaintext === false)
         {
@@ -7178,7 +7181,7 @@ function generateFormToken($form_id)
 
     $token = generateCSRFToken($usersession, $form_id);
     ?>
-    <input type="hidden" name="<?php echo htmlspecialchars($CSRF_token_identifier); ?>" value="<?php echo $token; ?>">
+    <input type="hidden" name="<?php echo $CSRF_token_identifier; ?>" value="<?php echo $token; ?>">
     <?php
     return;
     }
@@ -7202,10 +7205,9 @@ function generateAjaxToken($form_id)
         return "";
         }
 
-    $identifier = htmlspecialchars($CSRF_token_identifier);
-    $token      = generateCSRFToken($usersession, $form_id);
+    $token = generateCSRFToken($usersession, $form_id);
 
-    return "{$identifier}: \"{$token}\"";
+    return "{$CSRF_token_identifier}: \"{$token}\"";
     }
 
 
