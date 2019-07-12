@@ -420,11 +420,13 @@ if(isset($username) && !in_array($pagename, $not_authenticated_pages) && false =
 hook("beforeheadernav1");
 if (checkPermission_anonymoususer())
 	{
+    $load_login_modal = $anon_login_modal || $header_search;
+
 	if (!hook("replaceheadernav1anon")) 
         {
     	?>
     	<ul>
-    	<li><a href="<?php echo $baseurl?>/login.php"<?php if($anon_login_modal){?> onClick="return ModalLoad(this,true);" <?php } ?>><?php echo $lang["login"]?></a></li>
+    	<li><a href="<?php echo $baseurl?>/login.php"<?php if($load_login_modal){?> onClick="return ModalLoad(this,true);" <?php } ?>><?php echo $lang["login"]?></a></li>
     	<?php hook("addtoplinksanon");?>
     	<?php if ($contact_link) { ?><li><a href="<?php echo $baseurl?>/pages/contact.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["contactus"]?></a></li><?php } ?>
     	</ul>
