@@ -1044,7 +1044,20 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
         
         # Fix the ORDER BY for this query (special case due to inner query)
         $order_by=str_replace("r.rating","rating",$order_by);
-        $sql = $sql_prefix . "SELECT DISTINCT *,r2.total_hit_count score FROM (SELECT $select FROM resource r $sql_join WHERE $sql_filter ORDER BY ref DESC LIMIT $last ) r2 ORDER BY $order_by" . $sql_suffix;
+        $sql = $sql_prefix
+               . "SELECT DISTINCT *,
+                         r2.total_hit_count score
+                    FROM (
+                             SELECT $select
+                               FROM resource AS r
+                             $sql_join 
+                              WHERE $sql_filter
+                           GROUP BY r.ref
+                           ORDER BY ref DESC
+                              LIMIT $last
+                         ) AS r2
+                ORDER BY $order_by" . $sql_suffix;
+
         return $returnsql ? $sql : sql_query($sql,false,$fetchrows);
         }
     
