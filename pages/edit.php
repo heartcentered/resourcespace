@@ -12,6 +12,7 @@ include_once '../include/render_functions.php';
 # Editing resource or collection of resources (multiple)?
 $ref=getvalescaped("ref","",true);
 if(getval("create","")!="" && $ref==0 && $userref>0){$ref=0-$userref;} // Saves manual link creation having to work out user template ref
+$use=$ref;
 
 # Fetch search details (for next/back browsing and forwarding of search params)
 $search=getvalescaped("search","");
@@ -81,6 +82,7 @@ if ($upload_review_mode)
     if (isset($review_collection_contents[0]["ref"]))
         {
         $ref=$review_collection_contents[0]["ref"];
+        $use=$ref;
         }
     else 
         {
@@ -1498,12 +1500,11 @@ if($embedded_data_user_select && $ref<0 && !$multiple)
 <?php   
 }
 
-
-$use=$ref;
-
 # Resource aliasing.
 # 'Copy from' or 'Metadata template' been supplied? Load data from this resource instead.
 $originalref=$use;
+$original_fields=array();
+$original_nodes=array();
 
 if (getval("copyfrom","")!="")
   {
