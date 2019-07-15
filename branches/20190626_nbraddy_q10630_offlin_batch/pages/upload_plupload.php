@@ -846,8 +846,8 @@ if ($_FILES)
                             }
                     else
                             {
-							$filename_field=getvalescaped("filename_field","",true);
-							if($filename_field!="")
+							$filename_field=getvalescaped("filename_field",0,true);
+							if($filename_field != 0)
 								{
 								$target_resource=sql_array("select resource value from resource_data where resource_type_field='$filename_field' and value='$origuploadedfilename' AND resource>'$fstemplate_alt_threshold'","");
 								if(count($target_resource)==1 && !resource_file_readonly($target_resource[0]))

@@ -2277,8 +2277,8 @@ $multilingual_text_fields=false;
 $upload_methods = array(
 		'single_upload' => true,
 		'in_browser_upload' => true,
-		'fetch_from_ftp' => false,
-		'fetch_from_local_folder' => false,
+		'fetch_from_ftp' => true,
+		'fetch_from_local_folder' => true,
 	);
 
 # Allow to change the location of the upload folder, so that it is not in the
@@ -3398,7 +3398,7 @@ $resource_type_extension_mapping         = array(
 $upload_then_edit=false;
 
 # Option to allow users to 'lock' metadata fields in upload_then_edit_mode
-$upload_review_lock_metadata = false;
+$upload_review_lock_metadata = true;
 
 # New upload mode that focuses on getting files into the filestore, then working off a queue for further processing (metadata extract, preview creation, etc).
 # requires $offline_job_queue=true;
@@ -3602,4 +3602,6 @@ $browse_bar_workflow=true;
 // Default browse bar width;
 $browse_default_width = 295;
 
+// Batch replace from local folder
+$batch_replace_local_folder = "/upload";
 

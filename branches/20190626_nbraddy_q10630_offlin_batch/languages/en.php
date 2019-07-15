@@ -2739,6 +2739,8 @@ $lang["share-invalid"] = "Invalid access key or password";
 /* Offline jobs */
 $lang["oj-collection-download-success-text"] = "Collection ready for download";
 $lang["oj-collection-download-failure-text"] = "Unable to prepare collection archive for download";
+$lang["oj-batch-replace-local-success-text"] = "Batch replace has successfully replaced %TOTALRESOURCES resources";
+$lang["oj-batch-replace-local-failure-text"] = "Batch replace failed. Please check logs for errors";
 /* End of offline jobs */
 
 $lang["email_auto_digest_inactive"] = "This is a summary of your unread messages";
@@ -2792,3 +2794,11 @@ $lang['browse_by_workflow_state']       = "Workflow";
 
 # Updates to workflow
 $lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+
+# Batch replace updates
+$lang["replacebatchlocalfolder"]        = "Retrieve files from local folder on server?";
+$lang["replacebatch_resource_min"]      = "Lowest resource id to replace (optional). Useful if you expect to encounter duplicate filenames";
+$lang["replacebatch_resource_max"]      = "Highest resource id to replace (optional)";
+$lang["replacebatch_collection"]        = "Enter a collection ID if you only want to replace resources within this collection (optional)";
+$lang["replacebatch_job_created"]       = "Batch replacement job created. You will receive a notification message when the job has completed.";
+$lang["start"]                          = "Start";
