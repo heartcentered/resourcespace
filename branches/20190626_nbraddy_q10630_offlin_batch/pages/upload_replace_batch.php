@@ -17,8 +17,9 @@ $resource_min   = getval("resource_min",0,true);
 $resource_max   = getval("resource_max",0,true);
 $replace_col    = getval("batch_replace_collection",0,true);
 $mode           = getval("batch_replace_mode","upload");
+$submitted      = getval("submit","") != "";
 
-if(getval("submit","") != "")
+if($submitted)
     {    
     if($mode == "upload")
         {
@@ -83,7 +84,7 @@ if (isset($info_text))
     
 <div class="Question">
     <label for="use_resourceid"><?php echo $lang["batch_replace_use_resourceid"]?></label>
-    <input type="checkbox" class="stdwidth" value="yes" <?php if ($filename_field == 0) {echo " checked ";} ?> name="use_resourceid" id="use_resourceid" onClick="if(this.checked){jQuery('#question_filename_field').slideDown();jQuery('#filename_field').prop('disabled',true);}else{jQuery('#question_filename_field').slideUp();jQuery('#filename_field').prop('disabled',false);}" />
+    <input type="checkbox" value="yes" <?php if ($filename_field == 0) {echo " checked ";} ?> name="use_resourceid" id="use_resourceid" onClick="if(this.checked){jQuery('#question_filename_field').slideUp();jQuery('#filename_field').prop('disabled',true);}else{jQuery('#question_filename_field').slideDown();jQuery('#filename_field').prop('disabled',false);}" />
     <div class="clearerleft"> </div>
 </div>
 
@@ -95,7 +96,7 @@ if (isset($info_text))
     foreach ($allfields as $metadatafield)
         {
         ?>
-        <option value="<?php echo $metadatafield["ref"] ?>">
+        <option value="<?php echo $metadatafield["ref"] ?>" <?php if($metadatafield["ref"] == $filename_field){ echo " selected";} ?>>
         <?php echo i18n_get_translated($metadatafield["title"]) ?>	
         </option>    
         <?php
@@ -107,25 +108,25 @@ if (isset($info_text))
 
 <div class="Question">
     <label for="resource_min"><?php echo $lang["replacebatch_resource_min"]?></label>
-    <input type="number" class="stdwidth" value="<?php echo htmlspecialchars($resource_min); ?>" name="resource_min" id="resource_min" />
+    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($resource_min); ?>" name="resource_min" id="resource_min" />
     <div class="clearerleft"> </div>
 </div>
 
 <div class="Question">
     <label for="resource_max"><?php echo $lang["replacebatch_resource_max"]?></label>
-    <input type="number" class="stdwidth" value="<?php echo htmlspecialchars($resource_max); ?>" name="resource_max" id="resource_max" />
+    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($resource_max); ?>" name="resource_max" id="resource_max" />
     <div class="clearerleft"> </div>
 </div>
 
 <div class="Question">
     <label for="batch_replace_collection"><?php echo $lang["replacebatch_collection"]?></label>
-    <input type="number" class="stdwidth" value="<?php echo htmlspecialchars($replace_col); ?>" name="batch_replace_collection" id="batch_replace_collection" />
+    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($replace_col); ?>" name="batch_replace_collection" id="batch_replace_collection" />
     <div class="clearerleft"> </div>
 </div>
 
 <div class="Question">
     <label for="no_exif"><?php echo $lang["no_exif"]?></label>
-    <input type=checkbox <?php if (!$metadata_read_default){ echo " checked "; } ?> id="no_exif" name="no_exif" value="yes">
+    <input type=checkbox <?php if ((!$metadata_read_default && !$submitted) || $no_exif == "yes"){ echo " checked "; } ?> id="no_exif" name="no_exif" value="yes">
     <div class="clearerleft"> </div>
 </div>
 
@@ -134,7 +135,7 @@ if($offline_job_queue)
     {?>
     <div class="Question">
         <label for="replace_batch_local"><?php echo $lang["replacebatchlocalfolder"]?></label>
-        <input type="checkbox" class="stdwidth" value="yes" <?php if($mode == "fetch_local") {echo " checked";} ?> name="replace_batch_local" id="replace_batch_local" onClick="if(this.checked){document.getElementById('batch_replace_mode').value = 'fetch_local';}else{document.getElementById('batch_replace_mode').value = 'upload'}" />
+        <input type="checkbox" value="yes" <?php if($mode == "fetch_local") {echo " checked";} ?> name="replace_batch_local" id="replace_batch_local" onClick="if(this.checked){document.getElementById('batch_replace_mode').value = 'fetch_local';}else{document.getElementById('batch_replace_mode').value = 'upload'}" />
         <div class="clearerleft"> </div>
     </div>
     
