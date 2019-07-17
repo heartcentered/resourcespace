@@ -167,7 +167,10 @@ if (getval("langupdate","")!="")
 
 include "include/header.php";
 
-include "include/login_background.php";
+if(getval("no_login_background", "") == "")
+    {
+    include "include/login_background.php";
+    }
 	
 
 
