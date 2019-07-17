@@ -422,11 +422,18 @@ if (checkPermission_anonymoususer())
 	{
     $load_login_modal = $anon_login_modal || $header_search;
 
+    $login_url_params = array();
+    if($header_search)
+        {
+        $login_url_params["no_login_background"] = "true";
+        }
+    $login_url = generateURL("{$baseurl}/login.php", $login_url_params);
+
 	if (!hook("replaceheadernav1anon")) 
         {
     	?>
     	<ul>
-    	<li><a href="<?php echo $baseurl?>/login.php"<?php if($load_login_modal){?> onClick="return ModalLoad(this,true);" <?php } ?>><?php echo $lang["login"]?></a></li>
+    	<li><a href="<?php echo $login_url; ?>"<?php if($load_login_modal){?> onClick="return ModalLoad(this,true);" <?php } ?>><?php echo $lang["login"]?></a></li>
     	<?php hook("addtoplinksanon");?>
     	<?php if ($contact_link) { ?><li><a href="<?php echo $baseurl?>/pages/contact.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["contactus"]?></a></li><?php } ?>
     	</ul>
