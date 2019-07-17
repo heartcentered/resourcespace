@@ -91,6 +91,8 @@ if (isset($info_text))
 <div class="Question" id="question_filename_field" <?php if ($filename_field == 0) {echo "style='display:none;'";}?>>
     <label for="filename_field"><?php echo $lang["batch_replace_filename_field_select"]?></label>
     <select  class="stdwidth" name="filename_field" id="filename_field">
+
+    <option value="0" >
     <?php
 
     foreach ($allfields as $metadatafield)

@@ -34,7 +34,7 @@ if (!isset($collectionid) || $collectionid == 0)
     $minref = max((int)($minref),$fstemplate_alt_threshold);
     $firstref = max($fstemplate_alt_threshold, $minref);
     
-    $replace_resources = sql_array("SELECT ref value FROM resource WHERE ref > '" . $minref . "' " . (($maxref > 0) ? " AND ref <= '" . (int)$maxref . "'" : "") . " ORDER BY ref ASC",0);
+    $replace_resources = sql_array("SELECT ref value FROM resource WHERE ref >= '" . $minref . "' " . (($maxref > 0) ? " AND ref <= '" . (int)$maxref . "'" : "") . " ORDER BY ref ASC",0);
     $logtext .= " - > Replacing files for resource IDs. Min ID: " . $minref  . (($maxref > 0) ? " Max ID: " . $maxref : "");
     }
 else
@@ -57,14 +57,13 @@ foreach($foldercontents as $objectindex => $object)
         
     $filename   = $object->getFilename();
     $extension  = $object->getExtension();
-        
+    $full_path = $local_path . DIRECTORY_SEPARATOR . $filename;
+
     // get resource by $filename_field
     if($filename_field != 0)
         {
         $target_resources = sql_array("select resource value from resource_data where resource_type_field='$filename_field' and value='" . escape_check($filename) . "'","");
-        
-        $valid_resources=array_values(array_intersect($target_resources,$replace_resources));        
-        $full_path = $local_path . DIRECTORY_SEPARATOR . $filename;
+        $valid_resources=array_values(array_intersect($target_resources,$replace_resources));
         
         if(count($valid_resources) == 1)
             {
@@ -131,14 +130,14 @@ foreach($foldercontents as $objectindex => $object)
     else
         {
         # Overwrite an existing resource using the number from the filename.
-        $targetresource = $object->getBasename(); 
-        if((string)(int)($targetresource) == (string)$targetresource && !resource_file_readonly($targetresource))
+        $targetresource = $object->getBasename("." . $extension); 
+        if((string)(int)($targetresource) == (string)$targetresource && in_array($targetresource,$replace_resources) && !resource_file_readonly($targetresource))
             {
             $rsfile = get_resource_path($targetresource,true,'',true,$extension);
             $success = @copy($full_path,$rsfile);
             if($success)
                 {
-                create_previews($valid_resource, false, $extension);
+                create_previews($targetresource, false, $extension);
                 // Check to see if we need to notify users of this change							
                 if($notify_on_resource_change_days != 0)
                     {				
@@ -149,13 +148,13 @@ foreach($foldercontents as $objectindex => $object)
                 }
             else
                 {
-                $errors[] = "Failed to copy file from : " .  $filepath; 
+                $errors[] = "Failed to copy file from : " .  $full_path; 
                 }
             }
         else
             {
             // No resource found with the same filename
-            $errors[] = "ERROR - no ref matching filename: " . $filename;            
+            $errors[] = "ERROR - no ref matching filename: " . $filename . ", id: " . $targetresource;  
             }
         }
     }
@@ -174,7 +173,30 @@ if(count($errors) > 0)
     {
     $logtext .= "\n -> ERRORS: -\n";
     $logtext .= " - >  " . implode("\n",$errors) . "\n\n";
+
+    if($offline_job_delete_completed)
+        {
+        job_queue_delete($jobref);
+        }
+    else
+        {
+        job_queue_update($jobref,$job_data,STATUS_ERROR);
+        }
+    }
+else
+    {
+    if($offline_job_delete_completed)
+        {
+        job_queue_delete($jobref);
+        }
+    else
+        {
+        job_queue_update($jobref,$job_data,STATUS_COMPLETE);
+        }        
+    $jobsuccess = true;    
     }
 
 echo $logtext;
+
+message_add($job["user"],$logtext,$baseurl . "/pages/search.php?search=!list" . implode(",",$replaced));
 
