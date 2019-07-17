@@ -19,7 +19,10 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
     {
     node_field_options_override($field);
 	
-	global $auto_order_checkbox, $auto_order_checkbox_case_insensitive, $lang, $category_tree_open, $minyear, $daterange_search, $searchbyday, $is_search, $values, $n, $simple_search_show_dynamic_as_dropdown, $clear_function, $simple_search_display_condition, $autocomplete_search, $baseurl, $fields, $baseurl_short, $extrafooterhtml,$FIXED_LIST_FIELD_TYPES;
+    global $auto_order_checkbox, $auto_order_checkbox_case_insensitive, $lang, $category_tree_open, $minyear,
+           $daterange_search, $searchbyday, $is_search, $values, $n, $simple_search_show_dynamic_as_dropdown, $clear_function,
+           $simple_search_display_condition, $autocomplete_search, $baseurl, $fields, $baseurl_short, $extrafooterhtml,
+           $FIXED_LIST_FIELD_TYPES, $header_search;
     
     // set this to zero since this does not apply to collections
     if (!isset($field['field_constraint'])){$field['field_constraint']=0;}
@@ -406,7 +409,8 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
                 $setnames=trim_array(explode(";",$value));
                 $wrap=0;
 
-                $l    = average_length($node_options);
+                $al_multiplier_factor = $header_search ? 2.7 : 1;
+                $l = average_length($node_options) * $al_multiplier_factor;
                 switch($l)
                     {
                     case($l > 40): $cols = 1; break; 

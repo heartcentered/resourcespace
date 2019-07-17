@@ -1776,5 +1776,6 @@ a.BrowseRefresh{
 #FilterBarContainer .Question:last-of-type, #FilterBarContainer .QuestionSubmit:last-of-type { border-bottom: initial; }
 #FilterBarContainer .Question label, #FilterBarContainer .QuestionSubmit label { margin: 5px; padding: initial; font-weight: bold; }
 #FilterBarContainer .QuestionSubmit { padding: initial; }
+#FilterBarContainer .Question table { display: inline-block; width: 100%; max-height: 100px; overflow-y: scroll; }
 
 .FullWidth { width: -webkit-fill-available; }
