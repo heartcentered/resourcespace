@@ -13,9 +13,9 @@ if (!checkperm("t"))
     
 $no_exif        = getval('no_exif', '');
 $filename_field = getval("filename_field",0,true);
-$resource_min   = getval("resource_min",0,true);
-$resource_max   = getval("resource_max",0,true);
-$replace_col    = getval("batch_replace_collection",0,true);
+$batch_replace_min   = getval("batch_replace_min",0,true);
+$batch_replace_max   = getval("batch_replace_max",0,true);
+$batch_replace_col   = getval("batch_replace_col",0,true);
 $mode           = getval("batch_replace_mode","upload");
 $submitted      = getval("submit","") != "";
 
@@ -24,12 +24,12 @@ if($submitted)
     if($mode == "upload")
         {
         $upload_params = array();
-        $upload_params["replace"]       = "true";
-        $upload_params["filename_field"]= $filename_field;
-        $upload_params["replace_col"]   = $replace_col;
-        $upload_params["resource_min"]  = $resource_min;
-        $upload_params["resource_max"]  = $resource_max;
-        $upload_params["no_exif"]       = $no_exif;
+        $upload_params["replace"]           = "true";
+        $upload_params["filename_field"]    = $filename_field;
+        $upload_params["batch_replace_col"] = $batch_replace_col;
+        $upload_params["batch_replace_min"] = $batch_replace_min;
+        $upload_params["batch_replace_max"] = $batch_replace_max;
+        $upload_params["no_exif"]           = $no_exif;
         
         redirect(generateURL($baseurl_short . "pages/upload_plupload.php", $upload_params));
         exit();
@@ -38,12 +38,12 @@ if($submitted)
         {
         // Create offline job to retrieve files
         $replace_batch_local_data = array(
-            'import_path'   => $batch_replace_local_folder,
-            'filename_field'=> $filename_field,
-            'replace_col'   => $replace_col,
-            'resource_min'  => $resource_min,
-            'resource_max'  => $resource_max,
-            'no_exif'       => $no_exif
+            'import_path'       => $batch_replace_local_folder,
+            'filename_field'    => $filename_field,
+            'batch_replace_col' => $batch_replace_col,
+            'batch_replace_min' => $batch_replace_min,
+            'batch_replace_max' => $batch_replace_max,
+            'no_exif'           => $no_exif
         );
         
         job_queue_add(
@@ -109,20 +109,20 @@ if (isset($info_text))
 </div>
 
 <div class="Question">
-    <label for="resource_min"><?php echo $lang["replacebatch_resource_min"]?></label>
-    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($resource_min); ?>" name="resource_min" id="resource_min" />
+    <label for="batch_replace_min"><?php echo $lang["replacebatch_resource_min"]?></label>
+    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($batch_replace_min); ?>" name="batch_replace_min" id="batch_replace_min" />
     <div class="clearerleft"> </div>
 </div>
 
 <div class="Question">
-    <label for="resource_max"><?php echo $lang["replacebatch_resource_max"]?></label>
-    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($resource_max); ?>" name="resource_max" id="resource_max" />
+    <label for="batch_replace_max"><?php echo $lang["replacebatch_resource_max"]?></label>
+    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($batch_replace_max); ?>" name="batch_replace_max" id="batch_replace_max" />
     <div class="clearerleft"> </div>
 </div>
 
 <div class="Question">
-    <label for="batch_replace_collection"><?php echo $lang["replacebatch_collection"]?></label>
-    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($replace_col); ?>" name="batch_replace_collection" id="batch_replace_collection" />
+    <label for="batch_replace_col"><?php echo $lang["replacebatch_collection"]?></label>
+    <input type="text" class="shrtwidth" value="<?php echo htmlspecialchars($batch_replace_col); ?>" name="batch_replace_col" id="batch_replace_col" />
     <div class="clearerleft"> </div>
 </div>
 

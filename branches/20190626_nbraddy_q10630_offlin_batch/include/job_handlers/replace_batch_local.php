@@ -6,22 +6,22 @@ Requires the following job data:-
 $job_data['import_path'] - Folder to scan for files to import
 */
 
-global $lang, $baseurl, $offline_job_delete_completed, $fstemplate_alt_threshold;
-global $notify_on_resource_change_days;
+global $lang, $baseurl_short, $offline_job_delete_completed, $fstemplate_alt_threshold;
+global $notify_on_resource_change_days, $replace_batch_existing;
 
 $local_path     = $job_data['import_path'];
-$minref         = $job_data['resource_min'];
-$maxref         = $job_data['resource_max'];
-$collectionid   = $job_data['replace_col'];
+$minref         = $job_data['batch_replace_min'];
+$maxref         = $job_data['batch_replace_max'];
+$collectionid   = $job_data['batch_replace_col'];
 $filename_field = $job_data['filename_field'];
-$noexif         = ($job_data['no_exif'] == "yes") ? true : false ;
+$no_exif         = ($job_data['no_exif'] == "yes") ? true : false ;
 
 if(!file_exists($local_path))
     {
     job_queue_update($jobref , $job_data , STATUS_ERROR);
     }
 
-$logtext = "";
+$logtext = array();
 
 include_once __DIR__ . '/../search_functions.php';
 include_once __DIR__ . '/../resource_functions.php';
@@ -35,12 +35,12 @@ if (!isset($collectionid) || $collectionid == 0)
     $firstref = max($fstemplate_alt_threshold, $minref);
     
     $replace_resources = sql_array("SELECT ref value FROM resource WHERE ref >= '" . $minref . "' " . (($maxref > 0) ? " AND ref <= '" . (int)$maxref . "'" : "") . " ORDER BY ref ASC",0);
-    $logtext .= " - > Replacing files for resource IDs. Min ID: " . $minref  . (($maxref > 0) ? " Max ID: " . $maxref : "");
+    $logtext[] = "Replacing files for resource IDs. Min ID: " . $minref  . (($maxref > 0) ? " Max ID: " . $maxref : "");
     }
 else
     {
     $replace_resources = get_collection_resources($collectionid);
-    $logtext .= " - > Replacing resources within collection " . $collectionid . " only";
+    $logtext[] = "Replacing resources within collection " . $collectionid . " only";
     }
 
     
@@ -67,18 +67,23 @@ foreach($foldercontents as $objectindex => $object)
         
         if(count($valid_resources) == 1)
             {
+            $valid_resource = $valid_resources[0];
             // A single resource has been found with the same filename
-            $rsfile = get_resource_path($valid_resources[0],true,'',true,$extension);
+            $rsfile = get_resource_path($valid_resource,true,'',true,$extension);
             $success = @copy($full_path,$rsfile);
             if($success)
                 {
-                create_previews($valid_resources[0], false, $extension);
-                // Check to see if we need to notify users of this change							
+                resource_log($valid_resource,"u",0);
+                if(!$no_exif) 
+                    {
+                    extract_exif_comment($valid_resource,$extension);
+                    }
+                create_previews($valid_resource, false, $extension);						
                 if($notify_on_resource_change_days != 0)
                     {				
-                    notify_resource_change($valid_resources[0]);
+                    notify_resource_change($valid_resource);
                     }
-                $replaced[] = $valid_resources[0];
+                $replaced[] = $valid_resource;
                 unlink($full_path);
                 }
             else
@@ -103,8 +108,12 @@ foreach($foldercontents as $objectindex => $object)
                     $success = @copy($full_path,$rsfile);
                     if($success)
                         {
-                        create_previews($valid_resource, false, $extension);
-                        // Check to see if we need to notify users of this change							
+                        resource_log($valid_resource,"u",0);
+                        if(!$no_exif) 
+                            {
+                            extract_exif_comment($valid_resource,$extension);
+                            }
+                        create_previews($valid_resource, false, $extension);						
                         if($notify_on_resource_change_days != 0)
                             {				
                             notify_resource_change($valid_resource);
@@ -123,7 +132,7 @@ foreach($foldercontents as $objectindex => $object)
                 {
                 // Multiple resources found with the same filename
                 $resourcelist=implode(",",$valid_resources);
-                $errors[] = "ERROR - multiple resources found with filename " . $filename . ". Resource IDs : " . $resourcelist;
+                $errors[] = "ERROR - multiple resources found with filename '" . $filename . "'. Resource IDs : " . $resourcelist;
                 }
             }
         }
@@ -137,8 +146,12 @@ foreach($foldercontents as $objectindex => $object)
             $success = @copy($full_path,$rsfile);
             if($success)
                 {
-                create_previews($targetresource, false, $extension);
-                // Check to see if we need to notify users of this change							
+                resource_log($targetresource,"u",0);
+                if(!$no_exif) 
+                    {
+                    extract_exif_comment($targetresource,$extension);
+                    }
+                create_previews($targetresource, false, $extension);						
                 if($notify_on_resource_change_days != 0)
                     {				
                     notify_resource_change($targetresource);
@@ -154,26 +167,23 @@ foreach($foldercontents as $objectindex => $object)
         else
             {
             // No resource found with the same filename
-            $errors[] = "ERROR - no ref matching filename: " . $filename . ", id: " . $targetresource;  
+            $errors[] = "ERROR - no ref matching filename: '" . $filename . "', id: " . $targetresource;  
             }
         }
     }
 
-
-
-$logtext .= "\n - > Replaced " . count($replaced) . " resource files: -\n";
+$logtext[] = "Replaced " . count($replaced) . " resource files: -";
 
 if(count($replaced) > 0)
     {
-    $logtext .= "\n - > Replaced resource files for IDs: -\n";
-    $logtext .= " - > " . implode(",",$replaced) . "\n";
+    $logtext[] = "Replaced resource files for IDs:";
+    $logtext[] = implode(",",$replaced);
     }
     
 if(count($errors) > 0)
     {
-    $logtext .= "\n -> ERRORS: -\n";
-    $logtext .= " - >  " . implode("\n",$errors) . "\n\n";
-
+    $logtext[] = "ERRORS: -";
+    $logtext = array_merge($logtext,$errors);
     if($offline_job_delete_completed)
         {
         job_queue_delete($jobref);
@@ -196,7 +206,6 @@ else
     $jobsuccess = true;    
     }
 
-echo $logtext;
-
-message_add($job["user"],$logtext,$baseurl . "/pages/search.php?search=!list" . implode(",",$replaced));
+echo " --> " . implode("\n --> ",$logtext) . "\n";
+message_add($job["user"],implode("<br />",$logtext),(count($replaced) > 0) ? $baseurl_short . "pages/search.php?search=!list" . implode(",",$replaced) : "");
 
