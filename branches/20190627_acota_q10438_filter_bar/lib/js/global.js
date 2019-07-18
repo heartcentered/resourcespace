@@ -1489,3 +1489,20 @@ function ReloadFilterBar(search)
 
     return;
     }
+
+(function($) {
+    $.fn.PutShadowOnScrollableElement = function()
+        {
+        return this.each(function()
+            {
+            var element = $(this);
+
+            if(element.get(0).scrollHeight <= element.get(0).clientHeight)
+                {
+                return this;
+                }
+
+            return element.addClass("InsetBottomShadow");
+            });
+        };
+}(jQuery));

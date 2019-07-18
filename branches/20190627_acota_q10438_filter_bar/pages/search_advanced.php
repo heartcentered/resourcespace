@@ -930,6 +930,18 @@ function ClearFilterBar()
     jQuery("#FilterBarContainer").load(url);
     document.getElementById('ssearchbox').value='';
     }
+
+jQuery(document).ready(function()
+    {
+    <?php
+    if($header_search)
+        {
+        ?>
+        jQuery("#FilterBarContainer .Question table").PutShadowOnScrollableElement();
+        <?php
+        }
+        ?>
+    });
 </script>
 <?php
 if($archive!==0 && !$header_search){
