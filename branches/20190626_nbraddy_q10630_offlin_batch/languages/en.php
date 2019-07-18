@@ -2797,8 +2797,8 @@ $lang["userresources_status_change"]="Resources that you have contributed have b
 
 # Batch replace updates
 $lang["replacebatchlocalfolder"]        = "Retrieve files from local folder on server?";
-$lang["replacebatch_resource_min"]      = "Lowest resource id to replace (optional). Useful if you expect to encounter duplicate filenames";
-$lang["replacebatch_resource_max"]      = "Highest resource id to replace (optional)";
-$lang["replacebatch_collection"]        = "Enter a collection ID if you only want to replace resources within this collection (optional)";
+$lang["replacebatch_resource_min"]      = "Lowest resource ID to replace (ignored if a collection is specified)";
+$lang["replacebatch_resource_max"]      = "Highest resource ID to replace";
+$lang["replacebatch_collection"]        = "Enter a collection ID if you only want to replace resources within this collection";
 $lang["replacebatch_job_created"]       = "Batch replacement job created. You will receive a notification message when the job has completed.";
 $lang["start"]                          = "Start";
