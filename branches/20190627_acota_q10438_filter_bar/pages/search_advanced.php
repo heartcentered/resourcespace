@@ -16,7 +16,8 @@ if(!$filter_bar_reload)
 
 function get_search_default_restypes()
 	{
-	global $search_includes_resources, $collection_search_includes_resource_metadata;
+	global $search_includes_resources, $collection_search_includes_resource_metadata, $search_includes_user_collections,
+           $search_includes_public_collections, $search_includes_themes;
 	$defaultrestypes=array();
 	if($search_includes_resources)
 		{
@@ -593,36 +594,84 @@ if($advanced_search_buttons_top)
     render_advanced_search_buttons();
     }
 
+if($header_search)
+    {
+    ?>
+    <div class="Question">
+        <label><?php echo $lang["active_filters"]; ?></label>
+        <div class="clearerleft"></div>
+        <!-- @todo: dynamically add labels -->
+        <label class="customFieldLabel">x x<a href="#" class="BoldMargin">x</a></label>
+        <label class="customFieldLabel">two<a href="#" class="BoldMargin">x</a></label>
+        <div class="clearerleft"></div>
+    </div>
+    <?php
+    }
+
 if($search_includes_resources && !hook("advsearchrestypes"))
- {?>
- <div class="Question">
- <label><?php echo $lang["search-mode"]?></label><?php
- 
- $wrap=0;
- ?><table><tr>
- <td valign=middle><input type=checkbox class="SearchTypeCheckbox" id="SearchGlobal" name="resourcetypeGlobal" value="yes" <?php if (in_array("Global",$restypes)) { ?>checked<?php }?>></td><td valign=middle><?php echo $lang["resources-all-types"]; ?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><?php
- $hiddentypes=Array();
- for ($n=0;$n<count($types);$n++)
-	 {
-		 if(in_array($types[$n]['ref'], $hide_resource_types)) { continue; }
-	 $wrap++;if ($wrap>4) {$wrap=1;?></tr><tr><?php }
-	 ?><td valign=middle><input type=checkbox class="SearchTypeCheckbox SearchTypeItemCheckbox" name="resourcetype<?php echo $types[$n]["ref"]?>" value="yes" <?php if (in_array("Global",$restypes) || in_array($types[$n]["ref"],$restypes)) {?>checked<?php } else $hiddentypes[]=$types[$n]["ref"]; ?>></td><td valign=middle><?php echo htmlspecialchars($types[$n]["name"])?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td><?php	
-	 }
- ?>
- <?php if ($search_includes_user_collections || $search_includes_public_collections ||$search_includes_themes)
-	 {
- ?></tr><tr><td>&nbsp;</td>
- </tr>
- <tr>
- <td valign=middle><input type=checkbox id="SearchCollectionsCheckbox" class="SearchTypeCheckbox" name="resourcetypeCollections" value="yes" <?php if (in_array("Collections",$restypes) || in_array("mycol",$restypes) || in_array("pubcol",$restypes) || in_array("themes",$restypes)) { ?>checked<?php }?>></td><td valign=middle><?php print $lang["collections"]; ?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</td>
- <?php
-	 }
- ?>
- </tr></table>
- <div class="clearerleft"> </div>
- </div>
- <?php
- }
+    {
+    ?>
+    <div class="Question">
+    <?php
+    if(!$header_search)
+        {
+        ?>
+        <label><?php echo $lang["search-mode"]?></label>
+        <?php
+        }
+        $wrap = $header_search ? 5 : 0;
+        ?>
+        <table>
+            <tr>
+                <td valign=middle>
+                    <input type=checkbox class="SearchTypeCheckbox" id="SearchGlobal" name="resourcetypeGlobal" value="yes" <?php if (in_array("Global",$restypes)) { ?>checked<?php }?>></td><td valign=middle><?php echo $lang["resources-all-types"]; ?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </td>
+            <?php
+            $hiddentypes=array();
+            for ($n=0;$n<count($types);$n++)
+                {
+                if(in_array($types[$n]['ref'], $hide_resource_types))
+                    {
+                    continue;
+                    }
+
+                $wrap++;
+
+                if($wrap > 4)
+                    {
+                    $wrap = $header_search ? 5 : 1;
+                    ?>
+                    </tr>
+                    <tr>
+                    <?php
+                    }
+                    ?>
+                <td valign=middle>
+                    <input type=checkbox class="SearchTypeCheckbox SearchTypeItemCheckbox" name="resourcetype<?php echo $types[$n]["ref"]?>" value="yes" <?php if (in_array("Global",$restypes) || in_array($types[$n]["ref"],$restypes)) {?>checked<?php } else $hiddentypes[]=$types[$n]["ref"]; ?>></td><td valign=middle><?php echo htmlspecialchars($types[$n]["name"])?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </td>
+                <?php
+                }
+    
+    if($search_includes_user_collections || $search_includes_public_collections ||$search_includes_themes)
+                {
+                ?>
+                </tr>
+                <tr>
+                    <td>&nbsp;</td>
+                </tr>
+            <tr>
+                <td valign=middle>
+                    <input type=checkbox id="SearchCollectionsCheckbox" class="SearchTypeCheckbox" name="resourcetypeCollections" value="yes" <?php if (in_array("Collections",$restypes) || in_array("mycol",$restypes) || in_array("pubcol",$restypes) || in_array("themes",$restypes)) { ?>checked<?php }?>></td><td valign=middle><?php print $lang["collections"]; ?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </td>
+                <?php
+                }
+                ?>
+            </tr>
+        </table>
+        <div class="clearerleft"></div>
+    </div>
+    <?php
+    }
 
 
 if (!hook('advsearchallfields')) { ?>

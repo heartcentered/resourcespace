@@ -863,6 +863,7 @@ $lang['single_width'] = 'Single width';
 $lang['double_width'] = 'Double width';
 $lang['filter_by_table'] = 'Filter by table...';
 $lang['upload_here'] = "Upload here";
+$lang["active_filters"] = "Active filters";
 
 # Pager
 $lang["next"]="Next";
