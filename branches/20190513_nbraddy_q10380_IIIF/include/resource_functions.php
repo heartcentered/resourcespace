@@ -1081,7 +1081,7 @@ function save_resource_data_multi($collection,$editsearch = array())
                         }
 
                     # Work out existing field value.
-                    $existing       = escape_check(sql_value("SELECT `value` FROM resource_data WHERE resource = '{$ref}' AND resource_type_field = '{$fields[$n]['ref']}'", ''));
+                    $existing = sql_value("SELECT `value` FROM resource_data WHERE resource = '".escape_check($ref)."' AND resource_type_field = '".escape_check($fields[$n]['ref'])."'", "");
                         
                     if (getval("modeselect_" . $fields[$n]["ref"],"")=="FR")
                         {
@@ -1184,7 +1184,7 @@ function save_resource_data_multi($collection,$editsearch = array())
                         $val = $hookval;
                         }                    
     
-                    if ($existing !== str_replace("\\", '', $val) || $value_changed)
+                    if ($val !== $existing || $value_changed)
                         {
                         # This value is different from the value we have on record.
                         
@@ -2117,7 +2117,9 @@ function copy_resource($from,$resource_type=-1)
 	# to avoid reentering data if the resource is very similar.
 	# If $resource_type if specified then the resource type for the new resource will be set to $resource_type
 	# rather than simply copied from the $from resource.
-	
+    global $userref;
+    global $always_record_resource_creator, $upload_then_edit;
+    
 	# Check that the resource exists
 	if (sql_value("select count(*) value from resource where ref='". escape_check($from) . "'",0)==0) {return false;}
 	
@@ -2168,8 +2170,6 @@ function copy_resource($from,$resource_type=-1)
 	# This needs to be done if either:
 	# 1) The user does not have direct 'resource create' permissions and is therefore contributing using My Contributions directly into the active state
 	# 2) The user is contributiting via My Contributions to the standard User Contributed pre-active states.
-	global $userref;
-	global $always_record_resource_creator;
 	if ((!checkperm("c")) || $archive<0 || (isset($always_record_resource_creator) && $always_record_resource_creator))
 		{
 		# Update the user record
@@ -2195,15 +2195,15 @@ function copy_resource($from,$resource_type=-1)
     // Set any resource defaults
     // Expected behaviour: set resource defaults only on upload and when
     // there is no edit access OR no existing value
-    if(0 > $from)
+    if(0 > $from || $upload_then_edit)
         {
         $fields_to_set_resource_defaults = array();
-        $fields_data                     = get_resource_field_data($from, false, true);
+        $fields_data                     = get_resource_field_data($from, false, false);
 
         // Set resource defaults only to fields
         foreach($fields_data as $field_data)
             {
-            if('' != trim($field_data['value']))
+            if('' != trim($field_data['value']) && !($upload_then_edit && $from < 0))
                 {
                 continue;
                 }
@@ -2216,7 +2216,7 @@ function copy_resource($from,$resource_type=-1)
             set_resource_defaults($to, $fields_to_set_resource_defaults);
             }
         }
-	
+
 	// Autocomplete any blank fields without overwriting any existing metadata
 	autocomplete_blank_fields($to, false);
 
@@ -3696,41 +3696,38 @@ function get_resource_access($resource)
     /*
     Restricted access to all available resources
     OR Restricted access to resources in a particular workflow state
+    OR Restricted access to resources of a particular resource type
     UNLESS user/ group has been granted custom (override) access
     */
     if (
         $access == 0
-        && (!checkperm("g") || checkperm("rws{$resourcedata['archive']}"))
+        && ((!checkperm("g") || checkperm("rws{$resourcedata['archive']}") || checkperm('X'.$resource_type))
         && !$customgroupaccess
         && !$customuseraccess)
+        )
         {
-        $access = 1; 
+        $access = 1;
         }
 
-	if ($access==0 && checkperm('X'.$resource_type)){
-		// this resource type is always restricted for this user group
-		$access=1;
-		}
-		
-	// Check derestrict filter
+	// Check for a derestrict filter, this allows exeptions for users without the 'g' permission who normally have restricted accesss to all available resources)
 	global $userderestrictfilter;
-	if ($access==1 && trim($userderestrictfilter)!="")
-		{		
+	if ($access==1 && !checkperm("g") && !checkperm("rws{$resourcedata['archive']}") && !checkperm('X'.$resource_type) && trim($userderestrictfilter) != "")
+		{
 		# A filter has been set to derestrict access when certain metadata criteria are met
 		if(!isset($metadata))
-                   {
-                    #  load metadata if not already loaded
-                   $metadata=get_resource_field_data($ref,false,false);
-                   }
+            {
+            #  load metadata if not already loaded
+            $metadata=get_resource_field_data($ref,false,false);
+            }
 		$matchedfilter=false;
 		for ($n=0;$n<count($metadata);$n++)
 			{
 			$name=$metadata[$n]["name"];
-			$value=$metadata[$n]["value"];			
+			$value=$metadata[$n]["value"];
 			if ($name!="")
 				{
 				$match=filter_match($userderestrictfilter,$name,$value);
-				if ($match==1) {$matchedfilter=false;break;} 
+				if ($match==1) {$matchedfilter=false;break;}
 				if ($match==2) {$matchedfilter=true;} 
 				}
 			}
@@ -3767,7 +3764,12 @@ function resource_download_allowed($resource,$size,$resource_type,$alternative=-
 	# $resource can be a resource-specific search result array.
 	$access=get_resource_access($resource);
 
-	if ((checkperm('X' . $resource_type . "_" . $size) || checkperm('T' . $resource_type . "_" . $size)) && $alternative==-1)
+    if (checkperm('T' . $resource_type . "_" . $size))
+        {
+        return false;
+        }
+
+	if (checkperm('X' . $resource_type . "_" . $size) && $alternative==-1)
 		{
 		# Block access to this resource type / size? Not if an alternative file
 		# Only if no specific user access override (i.e. they have successfully requested this size).

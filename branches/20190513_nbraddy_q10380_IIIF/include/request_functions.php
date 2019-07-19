@@ -38,7 +38,7 @@ function save_request($request)
     
     
     # --------------------- User Assignment ------------------------
-    # Has the assigned_to value changed?
+    # Process an assignment change if this user can assign requests to other users
     if ($currentrequest["assigned_to"]!=$assigned_to && checkperm("Ra"))
         {
         if ($assigned_to==0)
@@ -187,20 +187,33 @@ function save_request($request)
     
 function get_requests($excludecompleted=false,$excludeassigned=false,$returnsql=false)
     {
-    # If permission Rb (accept resource request assignments) is set then limit the list to only those assigned to this user - EXCEPT for those that can assign requests, who can always see everything.
     $condition="";global $userref;
-    if (checkperm("Rb") && !checkperm("Ra")) {$condition="WHERE r.assigned_to='" . $userref . "'";}
-    elseif ($excludeassigned) // This only make sense if we are able to assign requests 
+    # Include requests assigned to the user if the user can accept requests (permission "Rb")
+    if (checkperm("Rb")) 
         {
-        $condition = "WHERE r.assigned_to IS null"; 
+        $condition="WHERE r.assigned_to='" . $userref . "'";
         }
-    if ($excludecompleted) {$condition .= (($condition!="")?" AND ":"WHERE") . " r.status=0";}
+    # Include all requests if the user can assign requests (permission "Ra")
+    if (checkperm("Ra")) 
+        {
+        $condition="";
+        # Excluding assigned requests only makes sense if user is able to assign requests 
+        if ($excludeassigned) 
+            {
+            $condition = "WHERE r.assigned_to IS null"; 
+            }
+        }
+    # Exclude completed requests if necessary
+    if ($excludecompleted) 
+        {
+        $condition .= (($condition!="") ? " AND" : "WHERE") . " r.status=0";
+        }
         
     $sql="SELECT u.username,u.fullname,r.*,(SELECT count(*) FROM collection_resource cr WHERE cr.collection=r.collection) c,u2.username assigned_to_username FROM request r LEFT OUTER JOIN user u ON r.user=u.ref LEFT OUTER JOIN user u2 ON r.assigned_to=u2.ref $condition  ORDER BY status,ref desc";
     return $returnsql?$sql:sql_query($sql);
     }
   
-function email_collection_request($ref,$details)
+function email_collection_request($ref,$details,$external_email)
     {
     # Request mode 0
     # E-mails a collection request (posted) to the team
@@ -336,11 +349,12 @@ function email_collection_request($ref,$details)
     
     if (count($admin_notify_users)>0)
         {
-        global $userref;
         message_add($admin_notify_users,$notification_message,$templatevars["requesturl"],$userref, MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN,MESSAGE_DEFAULT_TTL_SECONDS,COLLECTION_REQUEST, $ref);
         }
-              
-    if ($request_senduserupdates)
+    
+    # $userref and $useremail will be that of the internal requestor    
+    # - We need to send the $userconfirmmessage to the internal requestor saying that their request has been submitted    
+    if (isset($userref) && $request_senduserupdates)
         {
         get_config_option($userref,'email_user_notifications', $send_email);    
         if($send_email && filter_var($useremail, FILTER_VALIDATE_EMAIL))
@@ -349,14 +363,20 @@ function email_collection_request($ref,$details)
             }        
         else
             {
-                
-            global $userref;
             message_add($userref,$userconfirmmessage, $templatevars['url']);
             }
         }
+
+    # $userref and $useremail will be null for external requestor
+    # - We can only send an email to the email address provided on the external request 
+    if (!isset($userref) && filter_var($external_email, FILTER_VALIDATE_EMAIL))
+        {
+        send_mail($external_email,$applicationname . ": " . $lang["requestsent"] . " - $ref",$userconfirmmessage,$email_from,NULL,"emailusercollectionrequest",$templatevars);
+        }    
     
-    # Increment the request counter
-    sql_query("update resource set request_count=request_count+1 where ref='$ref'");
+    # Increment the request counter for each resource in the requested collection
+    sql_query("update resource set request_count=request_count+1 " 
+             ."where ref in(select cr.resource from collection_resource cr where cr.collection='$ref' and cr.resource = ref)");
     
     return true;
     }
@@ -472,7 +492,7 @@ function managed_collection_request($ref,$details,$ref_is_resource=false)
                 return false; # Required field was not set.
                 }
             
-            $message.=i18n_get_translated($custom[$n]) . ": " . getval("custom" . $n,"") . "\n\n";
+            $message.="\n\n" . i18n_get_translated($custom[$n]) . ": " . getval("custom" . $n,"") . "\n\n";
             }
         }
     
@@ -757,7 +777,7 @@ function managed_collection_request($ref,$details,$ref_is_resource=false)
             $notification_message = $lang['requestassignedtoyoumail'];
             $request_url = $baseurl . "/?q=" . $request;
             $admin_message = $notification_message . "\n\n" . $request_url . "\n";
-            get_config_option($assigned_to_user,'email_user_notifications', $send_email, false);  // Don't get default as we may get the requesting user's preference
+            get_config_option($assigned_to_user['ref'],'email_user_notifications', $send_email, false);  // Don't get default as we may get the requesting user's preference
             if($send_email)
                 {
                 $assigned_to_user = get_user($admin_notify_user);
@@ -835,9 +855,10 @@ function managed_collection_request($ref,$details,$ref_is_resource=false)
             }
         }    
     
-    # Increment the request counter
-    sql_query("update resource set request_count=request_count+1 where ref='$ref'");
-    
+    # Increment the request counter for each resource in the requested collection
+    sql_query("update resource set request_count=request_count+1 " 
+             ."where ref in(select cr.resource from collection_resource cr where cr.collection='$ref' and cr.resource = ref)");
+
     return true;
     }
 

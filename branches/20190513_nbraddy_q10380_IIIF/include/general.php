@@ -6916,9 +6916,12 @@ function get_resource_type_from_extension($extension, array $resource_type_exten
     {
     foreach($resource_type_extension_mapping as $resource_type_id => $allowed_extensions)
         {
-        if(in_array($extension, $allowed_extensions))
+        if (!checkperm('T' . $resource_type_id))
             {
-            return $resource_type_id;
+            if(in_array(strtolower($extension), $allowed_extensions))
+                {
+                return $resource_type_id;
+                }
             }
         }
 
@@ -7101,7 +7104,7 @@ function IsModal()
 * @param  string  $session_id  The current user session ID
 * @param  string  $form_id     A unique form ID
 * 
-* @return  string  Token base64 encoded
+* @return  string  Token
 */
 function generateCSRFToken($session_id, $form_id)
     {
@@ -7113,7 +7116,7 @@ function generateCSRFToken($session_id, $form_id)
         "form_id"   => $form_id
     ));
 
-    return urlencode(rsEncrypt($data, $session_id));
+    return rsEncrypt($data, $session_id);
     }
 
 /**
@@ -7138,7 +7141,7 @@ function isValidCSRFToken($token_data, $session_id)
         return false;
         }
 
-    $plaintext = rsDecrypt(urldecode($token_data), $session_id);
+    $plaintext = rsDecrypt($token_data, $session_id);
 
     if($plaintext === false)
         {
@@ -7179,7 +7182,7 @@ function generateFormToken($form_id)
 
     $token = generateCSRFToken($usersession, $form_id);
     ?>
-    <input type="hidden" name="<?php echo htmlspecialchars($CSRF_token_identifier); ?>" value="<?php echo $token; ?>">
+    <input type="hidden" name="<?php echo $CSRF_token_identifier; ?>" value="<?php echo $token; ?>">
     <?php
     return;
     }
@@ -7203,10 +7206,9 @@ function generateAjaxToken($form_id)
         return "";
         }
 
-    $identifier = htmlspecialchars($CSRF_token_identifier);
-    $token      = generateCSRFToken($usersession, $form_id);
+    $token = generateCSRFToken($usersession, $form_id);
 
-    return "{$identifier}: \"{$token}\"";
+    return "{$CSRF_token_identifier}: \"{$token}\"";
     }
 
 
@@ -7770,4 +7772,77 @@ function display_upload_options()
         {
         return false;
         }
+    }
+    
+function get_recent_users($days)
+    {
+    return (sql_value("select count(*) value from user where datediff(now(),last_active) <= '" . escape_check($days) . "'",0));
+    }
+
+
+/**
+* Offset a datetime to user local time zone
+* 
+* IMPORTANT: the offset is fixed, there is no calculation for summertime!
+* 
+* @param string $datetime A date/time string. @see https://www.php.net/manual/en/datetime.formats.php
+* @param string $format   The format of the outputted date string. @see https://www.php.net/manual/en/function.date.php
+* 
+* @return string The date in the specified format
+*/
+function offset_user_local_timezone($datetime, $format)
+    {
+    global $user_local_timezone;
+
+    $server_dtz = new DateTimeZone(date_default_timezone_get());
+    $user_local_dtz = new DateTimeZone($user_local_timezone);
+
+    // Create two DateTime objects that will contain the same Unix timestamp, but have different timezones attached to them
+    $server_dt = new DateTime($datetime, $server_dtz);
+    $user_local_dt = new DateTime($datetime, $user_local_dtz);
+
+    $time_offset = $user_local_dt->getOffset() - $server_dt->getOffset();;
+
+    $user_local_dt->add(DateInterval::createFromDateString((string) $time_offset . ' seconds'));
+
+    return $user_local_dt->format($format);
+    }
+
+
+/**
+* Check if script last ran more than the failure notification days
+* Note: Never/ period longer than allowed failure should return false
+* 
+* @param string   $name                   Name of the sysvar to check the record for
+* @param integer  $fail_notify_allowance  How long to allow (in days) before user can consider script has failed
+* @param string   $last_ran_datetime      Datetime (string format) when script was last run
+* 
+* @return boolean
+*/
+function check_script_last_ran($name, $fail_notify_allowance, &$last_ran_datetime)
+    {
+    $last_ran_datetime = (trim($last_ran_datetime) === '' ? $GLOBALS['lang']['status-never'] : $last_ran_datetime);
+
+    if(trim($name) === '')
+        {
+        return false;
+        }
+    $name = escape_check($name);
+
+    $script_last_ran = sql_value("SELECT `value` FROM sysvars WHERE name = '{$name}'", '');
+    $script_failure_notify_seconds = intval($fail_notify_allowance) * 24 * 60 * 60;
+
+    if('' != $script_last_ran)
+        {
+        // @todo: potentially inject a date format value if it turns out to be required
+        $last_ran_datetime = date('l F jS Y @ H:m:s', strtotime($script_last_ran));
+
+        // It's been less than user allows it to last run, meaning it is all good!
+        if(time() < (strtotime($script_last_ran) + $script_failure_notify_seconds))
+            {
+            return true;
+            }
+        }
+
+    return false;
     }

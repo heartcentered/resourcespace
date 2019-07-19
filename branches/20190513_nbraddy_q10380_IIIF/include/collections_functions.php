@@ -2244,8 +2244,9 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
     	}
 
     // Collection bar actions should always be a special search !collection[ID] (exceptions might arise but most of the 
-    // time it should be handled using the special search)
-    if(isset($collection_data['ref']) && !$top_actions && $pagename == 'collections')
+    // time it should be handled using the special search). If top actions then search may include additional refinement inside the collection
+
+    if(isset($collection_data['ref']) && !$top_actions)
         {
         $search = "!collection{$collection_data['ref']}";
         }
@@ -2876,7 +2877,7 @@ function collection_download_use_original_filenames_when_downloading(&$filename,
         }
 
     global $pextension, $usesize, $subbed_original, $prefix_resource_id_to_filename, $prefix_filename_string, $server_charset,
-           $download_filename_id_only, $deletion_array, $use_zip_extension, $copy, $exiftool_write_option, $p, $size;
+           $download_filename_id_only, $deletion_array, $use_zip_extension, $copy, $exiftool_write_option, $p, $size, $lang;
 
     # Only perform the copy if an original filename is set.
 
@@ -2898,24 +2899,6 @@ function collection_download_use_original_filenames_when_downloading(&$filename,
 
     if ($usesize!=""&&!$subbed_original){$append="-".$usesize;}else {$append="";}
 	$basename_minus_extension=remove_extension($pathparts['basename']);
-	
-	if ($download_filename_id_only) 
-	    {
-		# Id only means ignore settings $original_filenames_when_download and $prefix_resource_id_to_filename
-		$filename = $prefix_filename_string . $ref . "." . $pextension;
-		}	
-	else 
-		{  
-		# Otherwise use settings $original_filenames_when_download and $prefix_resource_id_to_filename
-		if ($prefix_resource_id_to_filename) 
-			{
-			$filename = $prefix_filename_string . $ref . "_" . $basename_minus_extension.$append.".".$pextension;
-			}
-		else 
-			{
-			$filename = $prefix_filename_string . $basename_minus_extension.$append.".".$pextension;
-			}
-    	}
 
     $fs=explode("/",$filename);$filename=$fs[count($fs)-1];
 

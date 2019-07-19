@@ -61,10 +61,12 @@ if($upload_then_edit && $resource_type_force_selection && getval('posting', '') 
     update_resource_type(0 - $userref, $resource_type);
     }
 
+// If upload_then_edit we may not have a resource type, so we need to find the first resource type
+// which does not have an XU? (restrict upload) permission  
+// This will be the resource type used for the upload
 if($resource_type == "")
 	{
-	// If upload_then_edit we may not have a resource type
-	$allrestypes = get_resource_types();
+    $allrestypes = get_resource_types();
 	foreach($allrestypes as $restype)
 		{
 		if (!checkperm("XU" . $restype["ref"]))
@@ -73,6 +75,8 @@ if($resource_type == "")
 			break;
 			}
 		}
+    // It is possible for there to be no 'unrestricted for upload' resource types 
+    // which means that the resource type used for the upload will be blank
 	}
 
 # Load the configuration for the selected resource type. Allows for alternative notification addresses, etc.
@@ -104,12 +108,24 @@ if ($upload_then_edit && $replace == "" && $replace_resource == "")
     $redirecturl_extra_params = array();
 
 	# Set the redirect after upload to the start of the edit process
-    $redirecturl = generateURL(
-        "{$baseurl}/pages/edit.php",
-        array(
-            'upload_review_mode' => true,
-        ),
-        $redirecturl_extra_params);
+    if($alternative != "") 
+        {
+        $redirecturl = generateURL(
+            "{$baseurl}/pages/view.php",
+            array(
+                'ref' => $alternative
+            ),
+            $redirecturl_extra_params);	
+        }
+    else
+        {
+        $redirecturl = generateURL(
+            "{$baseurl}/pages/edit.php",
+            array(
+                'upload_review_mode' => true,
+            ),
+            $redirecturl_extra_params);	
+        }
 
 	# Clear the user template
 	clear_resource_data(0-$userref);
@@ -134,7 +150,7 @@ $uploadparams= array(
     'collection_add'                         => $collection_add,
     'resource_type'                          => $resource_type,
     'no_exif'                                => getval('no_exif', ''),
-    'autorotate'                             => getval('autorotate', ''),
+    'autorotate'                             => $upload_then_edit ? $camera_autorotation_checked : getval('autorotate', ''),
     'replace_resource'                       => $replace_resource,
     'archive'                                => $archive,
     'relateto'                               => getval('relateto', ''),
@@ -211,7 +227,38 @@ if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
 
 $allowed_extensions="";
-if ($resource_type!="" && !$alternative) {$allowed_extensions=get_allowed_extensions_by_type($resource_type);}
+
+if($upload_then_edit && !$alternative)
+    {
+        $all_allowed_extensions_holder = array();
+        $all_resource_types = get_resource_types();
+    
+        foreach ($all_resource_types as $type) 
+        {
+            if(get_allowed_extensions_by_type($type["ref"]) == "")
+            {
+                $all_allowed_extensions_holder = array();
+                break;
+            }
+            else
+            {
+                $extensions = explode(",", get_allowed_extensions_by_type($type["ref"]));
+                foreach ($extensions as $extension) 
+                {
+                    if ($extension != "") 
+                    {
+                        array_push($all_allowed_extensions_holder, trim(strtolower($extension)));
+                    }
+                }
+            }
+        }
+        $all_allowed_extensions_holder = array_unique($all_allowed_extensions_holder);
+        $allowed_extensions = implode(",", $all_allowed_extensions_holder);
+    }
+else if ($resource_type!="" && !$alternative) 
+    {
+        $allowed_extensions=get_allowed_extensions_by_type($resource_type);
+    }
 
 if (is_numeric($collection_add))
 	{
@@ -606,14 +653,14 @@ if ($_FILES)
                                 {
                                 $ref=$modified_ref;
                                 }
-                            else
+                            elseif(!$upload_then_edit)
                                 {
                                 $ref=copy_resource(0-$userref); # Copy from user template   
                                 }
 
                             // copy_resource() returns false if user doesn't have a resource template
                             // Usually, this happens when a user had from the first time upload_then_edit mode on
-                            if(false === $ref)
+                            if($upload_then_edit || false === $ref)
                                 {
                                 $ref = create_resource($resource_type, $setarchivestate);
                                 }
@@ -658,7 +705,7 @@ if ($_FILES)
                                     $resource_type_extension_mapping_default
                                 );
 
-                                if(!checkperm("XU{resource_type_from_extension}"))
+                                if(!checkperm("XU{$resource_type_from_extension}"))
                                     {
                                     update_resource_type($ref, $resource_type_from_extension);
                                     }
@@ -1500,7 +1547,7 @@ if(($replace_resource != '' || $replace != '' || $upload_then_edit) && (display_
     {
     // Show options on the upload page if in 'upload_then_edit' mode or replacing a resource
     ?>
-    <h2 class="CollapsibleSectionHead collapsed" id="UploadOptionsSectionHead"><?php echo $lang["upload-options"]; ?></h2>
+    <h2 class="CollapsibleSectionHead collapsed" onClick="UICenterScrollBottom();" id="UploadOptionsSectionHead"><?php echo $lang["upload-options"]; ?></h2>
     <div class="CollapsibleSection" id="UploadOptionsSection">
     <form id="UploadPluploadForm" class="pluploadform FormWide" action="<?php echo $baseurl_short?>pages/upload_plupload.php">
     <?php
@@ -1579,7 +1626,7 @@ if ($status!="") { ?><?php echo $status?><?php } ?>
 if ($show_upload_log)
     {
     ?>
-    <h2 class="CollapsibleSectionHead collapsed" id="UploadLogSectionHead"><?php echo $lang["log"]; ?></h2>
+    <h2 class="CollapsibleSectionHead collapsed" id="UploadLogSectionHead" onClick="UICenterScrollBottom();"><?php echo $lang["log"]; ?></h2>
     <div class="CollapsibleSection" id="UploadLogSection">
         <textarea id="upload_log" rows=10 cols=100 style="width: 100%; border: solid 1px;" ><?php echo  $lang["plupload_log_intro"] . date("d M y @ H:i"); ?></textarea>
     </div> <!-- End of UploadLogSection -->

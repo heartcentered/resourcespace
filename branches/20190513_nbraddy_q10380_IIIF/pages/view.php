@@ -676,9 +676,6 @@ if (!hook("replacetitleprefix","",array($resource["archive"]))) { switch ($resou
 			}
 		}
 	}
-	
-	
-	
 
 if(!hook('replaceviewtitle'))
     {
@@ -689,13 +686,18 @@ if(!hook('replaceviewtitle'))
 </div>
 
 <?php if (!hook("replaceresourceistranscoding")){
-	if (isset($resource['is_transcoding']) && $resource['is_transcoding']!=0) { ?><div class="PageInformal"><?php echo $lang['resourceistranscoding']?></div><?php }
-	} //end hook replaceresourceistrancoding ?>
+    if (isset($resource['is_transcoding']) && $resource['is_transcoding']!=0) { ?><div class="PageInformal"><?php echo $lang['resourceistranscoding']?></div><?php }
+    } //end hook replaceresourceistrancoding ?>
 
-<?php hook('renderbeforeresourceview', '', array('resource' => $resource)); 
-$download_multisize=true;
-
-
+<?php hook('renderbeforeresourceview', '', array('resource' => $resource));
+if (in_array($resource["file_extension"], config_merge_non_image_types()) && $non_image_types_generate_preview_only)
+    {
+    $download_multisize=false;
+    }
+else
+    {
+    $download_multisize=true;
+    }
 ?>
 
 <div class="RecordResource">
@@ -786,31 +788,34 @@ else if(1 == $resource['has_image'])
     {
     $use_watermark = check_use_watermark();
 	$use_size="scr";
-    $imagepath     = get_resource_path($ref, true, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
-	
-	# Retina mode. Get scr if it exists
-	if ($retina_mode)
+	$imagepath = "";
+
+	# Obtain imagepath for 'scr' if permissions allow
+	if (resource_download_allowed($ref, $use_size, $resource['resource_type']))
 		{
-		$imagepath_retina     = get_resource_path($ref, true, 'scr', false, $resource['preview_extension'], true, 1, $use_watermark);
-		if (file_exists($imagepath_retina)) {$imagepath=$imagepath_retina;$use_size="scr";}
+		$imagepath = get_resource_path($ref, true, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
 		}
 
-    if(
-        !file_exists($imagepath)
-        || ($hide_real_filepath && !resource_download_allowed($ref, $use_size, $resource['resource_type']))
-        || $resource_view_use_pre)
+	# Note that retina mode uses 'scr' size which we have just obtained, so superfluous code removed
+
+	# Obtain imagepath for 'pre' if 'scr' absent OR hide filepath OR force 'pre' on view page 
+    if(!( isset($imagepath) && file_exists($imagepath) )
+       || $hide_real_filepath
+       || $resource_view_use_pre)
         {
 		$use_size="pre";
+		$imagepath = get_resource_path($ref, true, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
 		}
 
-    $imagepath = get_resource_path($ref, true, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
+	# Imagepath is the actual file path and can point to 'scr' or 'pre' as a result of the above
 
+	# Fall back to 'thm' if necessary
     if(!file_exists($imagepath))
         {
         $use_size="thm";
         }
-	
-    $imageurl = get_resource_path($ref, false, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
+	$imageurl = get_resource_path($ref, false, $use_size, false, $resource['preview_extension'], true, 1, $use_watermark);
+	# Imageurl is the url version of the path and can point to 'scr' or 'pre' or 'thm' as a result of the above
 
     $previewimagelink = generateURL("{$baseurl_short}pages/preview.php", $urlparams, array("ext" => $resource["preview_extension"])) . "&" . hook("previewextraurl");
     $previewimagelink_onclick = 'return CentralSpaceLoad(this);';
@@ -848,8 +853,11 @@ else if(1 == $resource['has_image'])
         <?php
         } 
 
+	// Below actually means if the 'scr' or the 'pre' file exists then display it
+	// It checks imagepath but references imageurl as the image source which will only point to 'scr' or 'pre' 
     if(file_exists($imagepath))
-        {
+		{
+		// Imageurl will never point to 'thm' in this context because the imagepath file_exists	
         list($image_width, $image_height) = @getimagesize($imagepath);
         ?>
         <img id="previewimage"
@@ -1045,7 +1053,8 @@ else if(1 == $resource['has_image'])
                 </script>
                 <?php
                 }
-
+			
+			// Swap the image with the 'scr' size when hoverable image zooming is enabled in config 
             if($image_preview_zoom)
                 {
                 $previewurl = get_resource_path($ref, false, 'scr', false, $resource['preview_extension'], -1, 1, $use_watermark);
@@ -1622,7 +1631,7 @@ hook ("resourceactions") ?>
 		if (!$disable_alternative_files && !checkperm('A')) 
 			{ ?>
 			<li><a href="<?php echo $baseurl_short?>pages/alternative_files.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);">
-			<?php echo "<i class='fa fa-files-o'></i>&nbsp;" . $lang["alternativefiles"]?>
+			<?php echo "<i class='fa fa-files-o'></i>&nbsp;" . $lang["managealternativefiles"]?>
 			</a></li>
 			<?php 
 			}

@@ -1225,6 +1225,7 @@ function get_user_dash($user)
 			      		// This tile is set for all users so provide extra options
 				        jQuery("#trash_bin_delete_dialog").dialog({
 				        	title:'<?php echo $lang["dashtiledelete"]; ?>',
+				        	autoOpen: true,
 				        	modal: true,
 		    				resizable: false,
 	    					dialogClass: 'delete-dialog no-close',
@@ -1281,8 +1282,10 @@ function get_user_dash($user)
  */
 function parse_dashtile_link($link)
 	{
-	global $userref;
+	global $userref,$upload_then_edit;
 	$link = str_replace("[userref]",$userref,$link);
+    //For upload tiles respect the upload then edit preference
+    if ((strpos($link, 'uploader=plupload') !== false) && $upload_then_edit){$link="upload_plupload.php";}
 
 	return $link;
 	}

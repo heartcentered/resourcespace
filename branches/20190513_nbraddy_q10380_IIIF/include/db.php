@@ -747,7 +747,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
     # This has been added retroactively to support large result sets, yet a pager can work as if a full
     # result set has been returned as an array (as it was working previously).
 	# $logthis parameter is only relevant if $mysql_log_transactions is set.  0=don't log, 1=always log, 2=detect logging - i.e. SELECT statements will not be logged
-    global $db,$config_show_performance_footer,$debug_log,$debug_log_override,$mysql_verbatim_queries,$use_mysqli, $mysql_log_transactions;
+    global $db, $config_show_performance_footer, $debug_log, $debug_log_override, $suppress_sql_log, $mysql_verbatim_queries, $use_mysqli, $mysql_log_transactions;
     
 	if (!isset($debug_log_override))
 		{
@@ -763,7 +763,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 		$querycount++;
     	}
     	
-    if ($debug_log || $debug_log_override) 
+    if (($debug_log || $debug_log_override) && !$suppress_sql_log)
 		{
 		debug("SQL: " . $sql);
 		}
@@ -1343,32 +1343,93 @@ function unescape($text)
     return $text;
     }
 
+/**
+* Escape each elements' value of an array to safely use any of the values in SQL statements
+* 
+* @uses escape_check()
+* 
+* @param array $unsafe_array Array of values that should be escaped
+* 
+* @return array Returns an array with its values escaped for SQLi
+*/
+function escape_check_array_values(array $unsafe_array)
+    {
+    $escape_array_element = function($value)
+        {
+        if(is_array($value))
+            {
+            return escape_check_array_values($value);
+            }
+
+        return escape_check($value);
+        };
+
+    $escaped_array = array_map($escape_array_element, $unsafe_array);
+
+    return $escaped_array;
+    }
+
 
 if (!function_exists("nicedate")) {
-function nicedate($date,$time=false,$wordy=true)
-	{
-	# format a MySQL ISO date
-	# Always use the 'wordy' style from now on as this works better internationally.
-	global $lang,$date_d_m_y,$date_yyyy;
-	$y = substr($date,0,4);
-	if(!$date_yyyy)
-	{
-		$y = substr($y, 2, 2);
-	}
-	if ( $y=="" ) return "-";
-	$m = $wordy ? (@$lang["months"][substr($date,5,2)-1]) : substr($date,5,2);
-	if ($m=="") return $y;
-	$d = substr($date,8, 2);
-	if ($d=="" || $d=="00") return $m . " " . $y;
-	$t = $time ? (" @ "  . substr($date,11,5)) : "";
-	if($date_d_m_y)
-		{
-		return $d . " " . $m . " " . $y . $t;
-		}
-	else{
-		return $m . " " . $d . " " . $y . $t;
-		}
-	}	
+/**
+* Formats a MySQL ISO date
+* 
+* Always use the 'wordy' style from now on as this works better internationally.
+* 
+* @uses offset_user_local_timezone()
+* 
+* @return string
+*/
+function nicedate($date, $time = false, $wordy = true)
+    {
+    global $lang, $date_d_m_y, $date_yyyy;
+
+    if($date == '')
+        {
+        return '';
+        }
+
+    $original_time_part = substr($date, 11, 5);
+    if($original_time_part !== false || $original_time_part !== '')
+        {
+        $date = offset_user_local_timezone($date, 'Y-m-d H:i:s');
+        }
+
+    $y = substr($date, 0, 4);
+    if(!$date_yyyy)
+        {
+        $y = substr($y, 2, 2);
+        }
+
+    if($y == "")
+        {
+        return "-";
+        };
+
+    $month_part = substr($date, 5, 2);
+    $m = $wordy ? (@$lang["months"][$month_part - 1]) : $month_part;
+    if($m == "")
+        {
+        return $y;
+        }
+
+    $d = substr($date, 8, 2);    
+    if($d == "" || $d == "00")
+        {
+        return "{$m} {$y}";
+        }
+
+    $t = $time ? " @ " . substr($date, 11, 5) : "";
+
+    if($date_d_m_y)
+        {
+        return $d . " " . $m . " " . $y . $t;
+        }
+    else
+        {
+        return $m . " " . $d . " " . $y . $t;
+        }
+    }
 }
 
 function redirect($url)
@@ -2071,7 +2132,7 @@ function setup_user($userdata)
            $anonymous_user_session_collection, $global_permissions_mask, $user_preferences, $userrequestmode,
            $usersearchfilter, $usereditfilter, $userderestrictfilter, $hidden_collections, $userresourcedefaults,
            $userrequestmode, $request_adds_to_collection, $usercollection, $lang, $validcollection, $userpreferences,
-           $userorigin, $actions_enable, $actions_permissions, $actions_on, $usersession, $anonymous_login;
+           $userorigin, $actions_enable, $actions_permissions, $actions_on, $usersession, $anonymous_login, $resource_created_by_filter;
 		
 	# Hook to modify user permissions
 	if (hook("userpermissions")){$userdata["permissions"]=hook("userpermissions");} 

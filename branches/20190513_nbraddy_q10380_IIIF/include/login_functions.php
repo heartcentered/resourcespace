@@ -53,7 +53,7 @@ function perform_login()
 	$session_hash=generate_session_hash($password_hash);
 
     # Check the provided credentials
-	$valid=sql_query("select ref,usergroup,account_expires from user where username='".escape_check($username)."' and password='".escape_check($password_hash)."'");
+	$valid=sql_query("select ref,usergroup,account_expires,approved from user where username='".escape_check($username)."' and password='".escape_check($password_hash)."'");
 
 	# Prepare result array
 	$result=array();
@@ -65,6 +65,13 @@ function perform_login()
 		$userref=$valid[0]["ref"];
 		$usergroup=$valid[0]["usergroup"];
 		$expires=$valid[0]["account_expires"];
+        $approved=$valid[0]["approved"];
+
+        if ($approved == 2)
+            {
+            $result['error']=$lang["accountdisabled"];
+            return $result;
+            }
 
 		if ($expires!="" && $expires!="0000-00-00 00:00:00" && strtotime($expires)<=time())
 			{
@@ -90,6 +97,10 @@ function perform_login()
                    lang = '{$language}'
              WHERE ref = '{$userref}'
         ");
+
+        // Update user local time zone (if provided)
+        $get_user_local_timezone = getval('user_local_timezone', null);
+        set_config_option($userref, 'user_local_timezone', $get_user_local_timezone);
 
 		# Log this
 		daily_stat("User session",$userref);

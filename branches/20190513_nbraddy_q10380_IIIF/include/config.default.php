@@ -392,7 +392,11 @@ $disk_quota_notification_email='';
 # $disk_quota_limit_size_warning_noupload=10;
 
 # Set your time zone below (default GMT)
-if (function_exists("date_default_timezone_set")) {date_default_timezone_set("GMT");}
+if (function_exists("date_default_timezone_set")) {date_default_timezone_set("UTC");}
+
+// Configuration used to be allow for date offset based on user local time zone. For this to work well the server (or 
+// whatever MySQL uses) should be on the same timezone as PHP
+$user_local_timezone = 'UTC';
 
 # IPTC header - Character encoding auto-detection
 # If using IPTC headers, specify any non-ascii characters used in your local language
@@ -769,8 +773,6 @@ $descthemesorder=false;
 #Hide advanced search on search bar
 $advancedsearch_disabled = false;
 
-# Display the advanced search as a 'search' link in the top navigation
-$advanced_search_nav=false;
 
 # Show Contributed by on Advanced Search (ability to search for resources contributed by a specific user)
 $advanced_search_contributed_by = true;
@@ -933,7 +935,7 @@ $user_purge=true;
 # List of active plugins.
 # Note that multiple plugins must be specified within array() as follows:
 # $plugins=array("loader","rss","messaging","googledisplay"); 
-$plugins = array('transform', 'rse_version', 'lightbox_preview', 'rse_search_notifications');
+$plugins = array('transform', 'rse_version', 'lightbox_preview', 'rse_search_notifications', 'rse_workflow');
 
 # Optional list of plugins that cannot be enabled through the UI. Can be useful to lock down system for hosting situations
 $disabled_plugins=array();
@@ -2439,6 +2441,9 @@ $debug_log=false;
 #$debug_log_location="d:/logs/resourcespace.log";
 #$debug_log_location="/var/log/resourcespace/resourcespace.log";
 
+# Suppress SQL information in the debug log?
+$suppress_sql_log = false;
+
 # Enable Metadata Templates. This should be set to the ID of the resource type that you intend to use for metadata templates.
 # Metadata templates can be selected on the resource edit screen to pre-fill fields.
 # The intention is that you will create a new resource type named "Metadata Template" and enter its ID below.
@@ -3121,7 +3126,7 @@ $resource_edit_modal_from_view_modal=false;
 $resource_view_use_pre = false;
 
 # Only use use the larger layout on the view page for certain file extensions.
-# $resource_view_large_ext = array("jpg", "jpeg", "tif", "tiff", "gif, "svg");
+# $resource_view_large_ext = array("jpg", "jpeg", "tif", "tiff", "gif", "png", "svg");
 
 # Show geographical search results in a modal
 $geo_search_modal_results = true;
@@ -3594,13 +3599,14 @@ $prefix_resource_id_to_filename = false;
 */
 $auto_generated_resource_title_format = '';
 
-// List of extensions for which ResourceSpace should generate the internal preview sizes.
+// List of extensions for which ResourceSpace should only generate the internal preview sizes.
 $non_image_types = array();
 
 // List of extensions supported by ghostscript
 $ghostscript_extensions = array('ps', 'pdf');
 
-// Generate only the internal preview sizes for any of the extensions found in $non_image_types list
+// Generate only the internal preview sizes and show only the original file for download for any of the 
+// extensions found in a merge of $non_image_types, $ffmpeg_supported_extensions, $unoconv_extensions and $ghostscript_extensions list
 $non_image_types_generate_preview_only = true;
 
 // Enable updated search filter functionality? Allows for simpler setup of more advanced search filters

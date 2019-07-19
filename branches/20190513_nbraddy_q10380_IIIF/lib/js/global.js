@@ -1398,3 +1398,21 @@ function redirectAfterDelay(targetUrl,delayTime)
 		window.location.href = targetUrl;
 		}, delayTime);
 	}
+
+function UICenterScrollBottom()
+	{
+	// Smoothly croll to the bottom of the central container. Useful to show content after expanding a section at the bottom of the page (e.g. the uploader)
+	window.setTimeout('jQuery(\'#UICenter\').animate({scrollTop: document.getElementById(\'UICenter\').scrollHeight },"slow");',300);
+	}
+
+
+
+/**
+* Detect the users' local time zone using the Internationalisation API
+* 
+* @returns {string}
+*/
+function detect_local_timezone()
+    {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    }

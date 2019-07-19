@@ -1349,7 +1349,7 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
     global $keep_for_hpr,$imagemagick_path,$imagemagick_preserve_profiles,$imagemagick_quality,$imagemagick_colorspace,$default_icc_file;
     global $autorotate_no_ingest,$always_make_previews,$lean_preview_generation,$previews_allow_enlarge,$alternative_file_previews;
     global $imagemagick_mpr, $imagemagick_mpr_preserve_profiles, $imagemagick_mpr_preserve_metadata_profiles, $config_windows;
-    global $preview_tiles_create_auto, $preview_tile_size, $preview_tile_scale_factors;
+    global $preview_tiles, $preview_tiles_create_auto, $preview_tile_size, $preview_tile_scale_factors;
 
     if(!is_numeric($ref))
         {
@@ -1496,7 +1496,7 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
             $ps = array_values($ps);
             }
             
-        if((count($ps) > 0  && $preview_tiles_create_auto) || in_array("tiles",$onlysizes))
+        if((count($ps) > 0  && $preview_tiles && $preview_tiles_create_auto) || in_array("tiles",$onlysizes))
             {
                 //exit("HERE"  . print_r($onlysizes));
             $o = count($ps);
@@ -1536,14 +1536,17 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
                         $tileid = (string)($x) . "_" . (string)($y) . "_" . (string)($tilew) . "_" . (string)($tileh);
                         debug("create_previews tiles scale: " . $scale . ", x: " . $x . ", y: " . $y);
                         debug("create_previews tiles id: " . $tileid);
-                        $ps[$o]['id'] = "tile_" . $tileid; 
-                        $ps[$o]['width'] = $preview_tile_size;
-                        $ps[$o]["height"] = $preview_tile_size;
-                        $ps[$o]["x"] = $x;
-                        $ps[$o]["y"] = $y;  
-                        $ps[$o]["w"] = $tilew;
-                        $ps[$o]["h"] = $tileh;
-                        $ps[$o]["type"] = "tile";
+                        $ps[$o]['id']               = "tile_" . $tileid; 
+                        $ps[$o]['width']            = $preview_tile_size;
+                        $ps[$o]["height"]           = $preview_tile_size;
+                        $ps[$o]["x"]                = $x;
+                        $ps[$o]["y"]                = $y;  
+                        $ps[$o]["w"]                = $tilew;
+                        $ps[$o]["h"]                = $tileh;
+                        $ps[$o]["type"]             = "tile";
+                        $ps[$o]["internal"]         = 1;
+                        $ps[$o]["allow_preview"]    = 0;
+
                         $x = $x + $tileregion;
                         $o++;
                         }
