@@ -1,6 +1,0 @@
-name    : resource_tour
-author  : Alexandros Antonopoulos
-version : 1.0
-default_priority: 1
-desc    : Get the user's position and plot the nearest resources
-config_url: /plugins/resource_tour/pages/setup.php
