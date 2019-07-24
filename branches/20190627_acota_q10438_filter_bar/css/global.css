@@ -1782,7 +1782,8 @@ a.BrowseRefresh{
 #FilterBarContainer .Question .keywordselected { float: left; margin: 0px 0px 5px 5px; } /* Dynamic keywords list */
 #FilterBarContainer .Question .customFieldLabel { float: none; border-radius: 4px; margin-left: 5px; padding: 3px 6px; background-color: #2e99e6; color: #fff; }
 #FilterBarContainer .BoldMargin { margin-left: 15px; font-size: 1.2em; font-weight: bolder; }
-
+#FilterBarContainer .CloseButtonLink { text-decoration: none; }
+#FilterBarContainer .CloseButtonLink:hover { color: #dadada; text-decoration: none; }
 
 .FullWidth { width: -webkit-fill-available; }
 .InsetBottomShadow { box-shadow: inset 0px -20px 11px -11px darkgrey; }
