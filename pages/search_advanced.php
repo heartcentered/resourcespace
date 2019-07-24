@@ -495,8 +495,14 @@ jQuery(document).ready(function()
     
     });
 </script>
-
-<iframe src="blank.html" name="resultcount" id="resultcount" style="visibility:hidden;float:right;" width=1 height=1></iframe>
+<?php
+if(!$header_search)
+    {
+    ?>
+    <iframe src="blank.html" name="resultcount" id="resultcount" style="visibility:hidden;float:right;" width=1 height=1></iframe>
+    <?php
+    }
+    ?>
 <div class="BasicsBox">
 <?php
 if(!$header_search)
@@ -589,7 +595,7 @@ jQuery(document).ready(function(){
 </script>
 
 <?php
-if($advanced_search_buttons_top)
+if($advanced_search_buttons_top && !$header_search)
     {
     render_advanced_search_buttons();
     }
@@ -597,12 +603,24 @@ if($advanced_search_buttons_top)
 if($header_search)
     {
     ?>
-    <div class="Question">
+    <div id="ActiveFilters" class="Question">
         <label><?php echo $lang["active_filters"]; ?></label>
         <div class="clearerleft"></div>
-        <!-- @todo: dynamically add labels -->
-        <label class="customFieldLabel">x x<a href="#" class="BoldMargin">x</a></label>
-        <label class="customFieldLabel">two<a href="#" class="BoldMargin">x</a></label>
+        <span id="ActiveFiltersList">
+        <?php
+        foreach($searched_nodes as $searched_node)
+            {
+            $returned_node = array();
+            if(!get_node($searched_node, $returned_node))
+                {
+                continue;
+                }
+            ?>
+            <label class="customFieldLabel"><?php echo htmlspecialchars($returned_node['name']); ?><a href="#" class="CloseButtonLink BoldMargin" onclick="UpdateResultCount();">x</a></label>
+            <?php
+            }
+        ?>
+        </span>
         <div class="clearerleft"></div>
     </div>
     <?php

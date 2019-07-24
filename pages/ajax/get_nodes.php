@@ -19,7 +19,7 @@ $rows                = getvalescaped('rows', 10, true);
 // Prevent access to fields to which user does not have access to
 if(!metadata_field_view_access($resource_type_field))
     {
-    header('HTTP/1.1 401 Unauthorized');
+    http_response_code(401);
     $return['error'] = array(
         'status' => 401,
         'title'  => 'Unauthorized',
@@ -92,6 +92,7 @@ if($resource_type_field > 0 && $name == "")
 // create one now telling client code this is a bad request
 if(0 === count($return))
     {
+    http_response_code(400);
     $return['error'] = array(
         'status' => 400,
         'title'  => 'Bad Request',
