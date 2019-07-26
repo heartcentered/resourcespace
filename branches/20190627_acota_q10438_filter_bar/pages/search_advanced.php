@@ -527,6 +527,7 @@ function UpdateResultCount()
         {
         ?>
         CentralSpacePost(document.getElementById('advancedform'), true, false, false);
+        RenderActiveFilter(); /*@todo: might require different placement*/
         return true;
         <?php
         }

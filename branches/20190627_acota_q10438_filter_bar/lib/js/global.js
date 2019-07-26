@@ -1511,17 +1511,19 @@ function RenderActiveFilter()
     {
     var active_filters_list = document.getElementById("ActiveFiltersList");
 
-    var node = GetNodes({node: 274});
-    console.log(node);
-    node = GetNodes({resource_type_field: 95});
-    console.log(node);
-
-
-    var label = document.createElement("label");
-    label.classList.add("customFieldLabel");
-    label.innerHTML = "node name goes here";
-    label.insertAdjacentElement("beforeend", CloseButtonElement());
-    active_filters_list.appendChild(label);
+    // @todo: pass in the node(s) that should be active
+    alert("todo!");
+    jQuery.when(GetNodes({node: 274}))
+        .done(function(nodes) {
+            jQuery.each(nodes, function(index, node)
+                {
+                var label = document.createElement("label");
+                label.classList.add("customFieldLabel");
+                label.innerHTML = node.name;
+                label.insertAdjacentElement("beforeend", CloseButtonElement());
+                active_filters_list.appendChild(label);
+                });
+        });
 
     return;
     }
@@ -1541,17 +1543,14 @@ function CloseButtonElement()
 function GetNodes(request_data)
     {
     var nodes = [];
-
-    jQuery.get(baseurl + "/pages/ajax/get_nodes.php", request_data, null, "json")
+    return jQuery.get(baseurl + "/pages/ajax/get_nodes.php", request_data, null, "json")
         .done(function(data, textStatus, jqXHR)
             {
-            console.log("GetNodes() done....");
-            console.log(data.data);
-            if(data.data.length == 1)
+            if(!(data.data instanceof Array) || data.data.length == 1)
                 {
                 nodes.push(data.data);
 
-                return true;
+                return;
                 }
 
             nodes = data.data;
@@ -1559,12 +1558,9 @@ function GetNodes(request_data)
         .fail(function(data, textStatus, jqXHR)
             {
             styledalert(data.statusText, data.responseJSON.error.detail);
+            })
+        .then(function()
+            {
+            return nodes;
             });
-
-    // @todo: use the deferred to wait for the result
-    // jQuery.when(response).done(function(n) {
-    //     return nodes;
-    // });
-
-    return nodes;
     }
