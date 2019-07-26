@@ -114,7 +114,7 @@ input[readonly] {color: #000000;}
 	{color:#FFF;}
 .HomePanel h2{color:#FFF;}
 
-#SearchBox,#HomeSiteText.dashtext,.HomePanelIN, .PopupCategoryTree, #BrowseBar, #BrowseBarTab{
+#SearchBox,#HomeSiteText.dashtext,.HomePanelIN, .PopupCategoryTree, #BrowseBar, #BrowseBarTab, #FilterBarContainer{
 	background: rgba(0, 0, 0, 0.47);
 	color:#FFF;
 }
@@ -450,5 +450,3 @@ input:checked + .customFieldLabel, .keywordselected
 ::-webkit-scrollbar:horizonal {height:12px;}
 ::-webkit-scrollbar,::-webkit-scrollbar-corner {background:none;}
 ::-webkit-scrollbar-thumb {background:rgba(0,0,0,0.3);border-radius: 6px;}
-
-#FilterBarContainer { background:  rgba(0, 0, 0, 0.47); }
