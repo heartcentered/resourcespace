@@ -1786,4 +1786,4 @@ a.BrowseRefresh{
 #FilterBarContainer .CloseButtonLink:hover { color: #dadada; text-decoration: none; }
 
 .FullWidth { width: -webkit-fill-available; }
-.InsetBottomShadow { box-shadow: inset 0px -20px 11px -11px darkgrey; }
+.InsetBottomShadow { background: rgba(0, 0, 0, 0.2); }
