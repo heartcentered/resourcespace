@@ -1507,27 +1507,6 @@ function ReloadFilterBar(search)
         };
 }(jQuery));
 
-function RenderActiveFilter()
-    {
-    var active_filters_list = document.getElementById("ActiveFiltersList");
-
-    // @todo: pass in the node(s) that should be active
-    alert("todo!");
-    jQuery.when(GetNodes({node: 274}))
-        .done(function(nodes) {
-            jQuery.each(nodes, function(index, node)
-                {
-                var label = document.createElement("label");
-                label.classList.add("customFieldLabel");
-                label.innerHTML = node.name;
-                label.insertAdjacentElement("beforeend", CloseButtonElement());
-                active_filters_list.appendChild(label);
-                });
-        });
-
-    return;
-    }
-
 /**
 * Create an "X" (close) link button with an UpdateResultCount() on click event
 * 
@@ -1593,4 +1572,114 @@ function GetNodes(request_data)
             {
             return nodes;
             });
+    }
+
+/**
+* Render an active filter in the filters' list
+* 
+* @param {String} Filter text
+* 
+* @return void
+*/
+function RenderActiveFilter(name)
+    {
+    var active_filters_list = document.getElementById("ActiveFiltersList");
+    var label = document.createElement("label");
+    label.classList.add("customFieldLabel");
+    label.innerHTML = name;
+    label.insertAdjacentElement("beforeend", CloseButtonElement());
+
+    active_filters_list.appendChild(label);
+
+    return;
+    }
+
+/**
+* Update filter bars' active filters
+* 
+* @param {PlainObject} Search data that can be used for filter bars (e.g searched nodes, text fields-value searched for)
+* 
+* @return void
+*/
+function UpdateActiveFilters(data)
+    {
+    if(typeof data === "undefined")
+        {
+        return;
+        }
+    else if(data.search === "")
+        {
+        return;
+        }
+
+    jQuery("#ActiveFiltersList").empty();
+
+    var search = data.search;
+    var all = function(array)
+        {
+        var deferred = jQuery.Deferred();
+        var fulfilled = 0, length = array.length;
+        var results = [];
+
+        if(length === 0)
+            {
+            deferred.resolve(results);
+            }
+        else
+            {
+            array.forEach(function(promise, i)
+                {
+                jQuery.when(promise()).then(function(value)
+                    {
+                    results[i] = value[0];
+                    fulfilled++;
+                    
+                    if(fulfilled === length)
+                        {
+                        deferred.resolve(results);
+                        }
+                    });
+                });
+            }
+
+        return deferred.promise();
+        };
+
+    jQuery.each(search.split(/\s?,\s?/gm), function(index, s_part)
+        {
+        // !propertieshmin:100;hmax:2300;wmin:200;wmax:200;fmin:500;fmax:700;cu:2
+
+        // fbar-text:test
+
+        // fbar-date:1990|01|02
+
+        // Extract nodes (e.g syntax: @@284@@286, @@343, @@293, @@296, @@390, @@250@@274)
+        if(s_part.indexOf("@@") !== -1)
+            {
+            var nodes = s_part.substr(2).split("@@");
+            var promises = [];
+            nodes.forEach(function(node_id)
+                {
+                promises.push(function()
+                    {
+                    return jQuery.Deferred(function(dfd)
+                        {
+                        dfd.resolve(GetNodes({node: node_id}));
+                        }).promise();
+                    });
+                });
+
+            jQuery.when(all(promises)).then(function(results)
+                {
+                var same_field_options = [];
+                results.forEach(function(node)
+                    {
+                    same_field_options.push(node.name);
+                    });
+                RenderActiveFilter(same_field_options.join(" or "));
+                });
+            }
+        });
+
+    return;
     }

@@ -171,6 +171,7 @@ if (getval("submitted","")=="yes" && getval("resetform","")=="")
         jQuery(document).ready(function ()
             {
             CentralSpaceLoad("<?php echo $search_url; ?>");
+            UpdateActiveFilters({search: "<?php echo $search; ?>"});
             });
         </script>
         </html>
@@ -527,7 +528,6 @@ function UpdateResultCount()
         {
         ?>
         CentralSpacePost(document.getElementById('advancedform'), true, false, false);
-        RenderActiveFilter(); /*@todo: might require different placement*/
         return true;
         <?php
         }
