@@ -736,7 +736,7 @@ function search_filter($search,$archive,$restypes,$starsearch,$recent_search_day
     global $userref,$userpermissions,$resource_created_by_filter,$uploader_view_override,$edit_access_for_contributor,$additional_archive_states,$heightmin,
     $heightmax,$widthmin,$widthmax,$filesizemin,$filesizemax,$fileextension,$haspreviewimage,$geo_search_restrict,$pending_review_visible_to_all,
     $search_all_workflow_states,$pending_submission_searchable_to_all,$collections_omit_archived,$k,$collection_allow_not_approved_share,$archive_standard,
-    $open_access_for_contributor;
+    $open_access_for_contributor, $searchstates;
 
     # Convert the provided search parameters into appropriate SQL, ready for inclusion in the do_search() search query.
     if(!is_array($archive)){$archive=explode(",",$archive);}
@@ -843,13 +843,13 @@ function search_filter($search,$archive,$restypes,$starsearch,$recent_search_day
             }
         elseif ($search_all_workflow_states || substr($search,0,8)=="!related")
             {hook("search_all_workflow_states_filter");}   
-        elseif ($archive_standard && $pending_review_visible_to_all)
+        elseif ($archive_standard)
             {
-            # If resources pending review are visible to all, when performing a default search with no archive specified 
-            # that normally returns only active resources, include pending review (-1) resources too.
+            # If no archive specified add in default archive states (set by config options or as set in rse_workflow plugin)
             if ($sql_filter!="") {$sql_filter.=" AND ";}
-            $sql_filter.="archive in('0','-1')";
-            } 
+            $defaultsearchstates = get_default_search_states();
+            $sql_filter.="archive IN (" . implode(",",$defaultsearchstates) . ")";
+            }
         else
             {
             # Append normal filtering - extended as advanced search now allows searching by archive state
@@ -1595,4 +1595,26 @@ function get_upload_here_selected_nodes($search, array $nodes)
         }
 
     return array_merge($nodes, $upload_here_nodes);
+    }
+
+/**
+* get the default archive states to search
+*  
+* @return array
+*/
+function get_default_search_states()
+    {
+    global $searchstates, $pending_submission_searchable_to_all, $pending_review_visible_to_all;
+
+    $defaultsearchstates = isset($searchstates) ? $searchstates : array();// May be set by rse_workflow plugin
+    if($pending_submission_searchable_to_all)
+        {
+        $defaultsearchstates[] = -2;
+        }
+    if($pending_review_visible_to_all)
+        {
+        $defaultsearchstates[] = -1;
+        }
+
+    return $defaultsearchstates;
     }
