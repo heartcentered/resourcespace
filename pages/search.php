@@ -510,7 +510,20 @@ $searchparams= array(
     'recentdaylimit'                            => getvalescaped('recentdaylimit', '', true),
     'foredit'                                   => ($editable_only?"true":"")
 );
- 
+
+$checkparams = array();
+$checkparams[] = "order_by";
+$checkparams[] = "sort";
+$checkparams[] = "display";
+$checkparams[] = "k";
+foreach($checkparams as $checkparam)
+    {
+    if(preg_match('/[^a-z:_\-0-9]/i', $$checkparam))
+        {
+        exit($lang['error_invalid_input'] . ":- <pre>" . $checkparam . " : " . htmlspecialchars($$checkparam) . "</pre>");
+        }
+    }
+
 rs_setcookie("search", $search, 0, "", "", false, false);
 
 hook('searchaftersearchcookie');
@@ -1263,7 +1276,7 @@ if($responsive_ui)
     // Generate a URL for drag drop function - fires same URL as "upload here" when dragging.
     $drag_upload_params=render_upload_here_button($searchparams,true);
     $drag_over="";
-    if (is_array($drag_upload_params) && ($display=='thumbs' || $display=='xlthumbs'))
+    if (is_array($drag_upload_params))
         {
         $drag_url=generateURL("{$GLOBALS['baseurl']}/pages/upload_plupload.php", $drag_upload_params);
         $drag_over=" onDragOver=\"UploadViaDrag('" . $drag_url . "');\" ";
