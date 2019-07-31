@@ -82,7 +82,7 @@ if($alternative_file_resource_title && isset($resource['field'.$view_title_field
     }
     ?>
 
-<h1><?php echo $lang["managealternativefilestitle"]?><?php render_help_link('user/alternative-files');?></h1>
+<h1><?php echo $lang["managealternativefilestitle"]; render_help_link('user/alternative-files');?></h1>
 
 <?php if (count($files)>0){?><a href="#" id="deletechecked" onclick="if (confirm('<?php echo $lang["confirm-deletion"]?>')) {clickDelete();} return false;"><?php echo LINK_CARET ?><?php echo $lang["action-deletechecked"]?></a><?php } ?>
 </div>
