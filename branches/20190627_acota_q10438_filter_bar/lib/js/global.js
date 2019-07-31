@@ -1595,7 +1595,7 @@ function RenderActiveFilter(name)
     }
 
 /**
-* Update filter bars' active filters
+* Update filters' bar active filters
 * 
 * @param {PlainObject} Search data that can be used for filter bars (e.g searched nodes, text fields-value searched for)
 * 
