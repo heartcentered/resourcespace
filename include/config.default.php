@@ -3603,4 +3603,6 @@ $browse_bar_workflow=true;
 // Default browse bar width;
 $browse_default_width = 295;
 
+// Display help links on pages
+$contextual_help_links=true;
 
