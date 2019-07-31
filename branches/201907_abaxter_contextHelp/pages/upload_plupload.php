@@ -1520,7 +1520,9 @@ else
 
 <?php if (!hook("replacepluploadtitle")){?><h1><?php echo $titleh1 ?></h1><?php } ?>
 <div id="plupload_instructions"><p><?php echo $intro?></p></div>
-<?php if (isset($plupload_max_file_size))
+<?php render_help_link("user/uploading");
+
+if (isset($plupload_max_file_size))
 	{
 	if (is_numeric($plupload_max_file_size))
 		$sizeText = formatfilesize($plupload_max_file_size);
