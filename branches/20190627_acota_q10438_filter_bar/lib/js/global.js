@@ -1648,10 +1648,36 @@ function UpdateActiveFilters(data)
     jQuery.each(search.split(/\s?,\s?/gm), function(index, s_part)
         {
         // !propertieshmin:100;hmax:2300;wmin:200;wmax:200;fmin:500;fmax:700;cu:2
+        if(s_part.indexOf("!properties") !== -1)
+            {
+            RenderActiveFilter("<i aria-hidden=\"true\" class=\"fa fa-television\"></i>");
+            return true;
+            }
 
-        // fbar-text:test
+        /*
+        Non-fixed list metadata fields (e.g fbar-text, fbar-date):
+        fbar-text:test
+        fbar-date:1990|01|02
+        fbar-date:1990|07
+        */
+        if(s_part.indexOf(":") !== -1)
+            {
+            var parts = s_part.split(":");
+            var key = parts[0];
+            var value = parts[1];
 
-        // fbar-date:1990|01|02
+            // fbar-date:1990|01|02
+            // fbar-date:1990|07
+            if(value.match(/(\d+|\|\d.)+\|\d./g) != null)
+                {
+                RenderActiveFilter(value.replace("|", "/"));
+                return true;
+                }
+
+            // fbar-text:test
+            RenderActiveFilter(value);
+            return true;
+            }
 
         // Extract nodes (e.g syntax: @@284@@286, @@343, @@293, @@296, @@390, @@250@@274)
         if(s_part.indexOf("@@") !== -1)
@@ -1676,8 +1702,10 @@ function UpdateActiveFilters(data)
                     {
                     same_field_options.push(node.name);
                     });
-                RenderActiveFilter(same_field_options.join(" or "));
+                RenderActiveFilter(same_field_options.join(" | "));
                 });
+
+            return true;
             }
         });
 
