@@ -602,12 +602,19 @@ if($k=="" || $internal_share_access)
     <?php
     }
 
-if($header_search && $k == "")
+if($k == "")
     {
     ?>
     <script>
+    var filter_bar_search = <?php echo trim(getval("source", "")) == "filter_bar" ? "true" : "false"; ?>;
     var require_filter_bar_reload = <?php echo trim(getval("filter_bar_reload", "")) !== "false" ? "true" : "false"; ?>;
-    if(require_filter_bar_reload)
+
+    if(!filter_bar_search)
+        {
+        TogglePane('FilterBarContainer', '<?php echo $baseurl; ?>/pages/search_advanced.php', true);
+        }
+
+    if(filter_bar_search && require_filter_bar_reload)
         {
         ReloadFilterBar('<?php echo $search; ?>');
         }

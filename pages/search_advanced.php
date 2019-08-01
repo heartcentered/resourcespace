@@ -107,84 +107,27 @@ if (getval("submitted","")=="yes" && getval("resetform","")=="")
 	$search=refine_searchstring($search);
 	hook("moresearchcriteria");
 
-	if (getval("countonly","")!="")
-		{        
-		# Only show the results (this will appear in an iframe)
-        if (substr($restypes,0,11)!="Collections" && !$collection_search_includes_resource_metadata)
-            {
-            $result=do_search($search,$restypes,"relevance",$archive,1,"",false,$starsearch);
-            }
-        else 
-            {
-            $order_by=$default_collection_sort;
-            $sort="DESC";
-            $result=do_collections_search($search,$restypes,$archive,$order_by,$sort);
-            }
-        if (is_array($result))
-            {
-            $count=count($result);
-            }
-        else
-            {
-            $count=0;				
-            }
-			
-		?>
-		<html>
-		<script type="text/javascript">
-            function populate_view_buttons(content)
-                {
-                var inputs = parent.document.getElementsByClassName('dosearch');
-
-                for(var i = 0; i < inputs.length; i++)
-                    {
-                    if(typeof inputs[i] !== 'undefined')
-                        {
-                        inputs[i].value = content;
-                        }
-                    }
-                }
-		
-		<?php if ($count==0) { ?>
-			populate_view_buttons("<?php echo $lang["nomatchingresults"] ?>");
-		<?php } else { ?>
-			populate_view_buttons("<?php echo $lang["view"] . " " . number_format($count) . " " . $lang["matchingresults"] ?>");
-		<?php } ?>
-		</script>
-		</html>
-		<?php
-		exit();
-		}
-    else if($header_search)
+    $search_url = generateURL(
+        "{$baseurl}/pages/search.php",
+        array(
+            'search'            => $search,
+            'archive'           => $archive,
+            'restypes'          => $restypes,
+            'filter_bar_reload' => 'false',
+            'source'            => getval("source", ""),
+        ));
+    ?>
+    <html>
+    <script>
+    jQuery(document).ready(function ()
         {
-        $search_url = generateURL(
-            "{$baseurl}/pages/search.php",
-            array(
-                'search'            => $search,
-                'archive'           => $archive,
-                'restypes'          => $restypes,
-                'filter_bar_reload' => 'false',
-            ));
-        ?>
-        <html>
-        <script>
-        jQuery(document).ready(function ()
-            {
-            CentralSpaceLoad("<?php echo $search_url; ?>");
-            UpdateActiveFilters({search: "<?php echo $search; ?>"});
-            });
-        </script>
-        </html>
-        <?php
-        exit();
-        }
-	else
-		{
-		# Log this			
-		daily_stat("Advanced search",$userref);
-
-		redirect($baseurl_short."pages/search.php?search=" . urlencode($search) . "&archive=" . urlencode($archive) . "&restypes=" . urlencode($restypes));
-		}
+        CentralSpaceLoad("<?php echo $search_url; ?>");
+        UpdateActiveFilters({search: "<?php echo $search; ?>"});
+        });
+    </script>
+    </html>
+    <?php
+    exit();
 	}
 
 
@@ -517,31 +460,13 @@ if(!$header_search)
 <form method="post" id="advancedform" action="<?php echo $baseurl ?>/pages/search_advanced.php" >
 <?php generateFormToken("advancedform"); ?>
 <input type="hidden" name="submitted" id="submitted" value="yes">
-<input type="hidden" name="countonly" id="countonly" value="">
+<input type="hidden" name="source" value="filter_bar">
 
 <script type="text/javascript">
-var updating=false;
 function UpdateResultCount()
 	{
-    <?php
-    if($header_search)
-        {
-        ?>
-        CentralSpacePost(document.getElementById('advancedform'), true, false, false);
-        return true;
-        <?php
-        }
-        ?>
-
-	updating=false;
-	// set the target of the form to be the result count iframe and submit
-	document.getElementById("advancedform").target="resultcount";
-	document.getElementById("countonly").value="yes";
-	
-	
-	jQuery("#advancedform").submit();
-	document.getElementById("advancedform").target="";
-	document.getElementById("countonly").value="";
+    CentralSpacePost(document.getElementById('advancedform'), true, false, false);
+    return;
 	}
 	
 jQuery(document).ready(function(){
@@ -568,7 +493,7 @@ jQuery(document).ready(function(){
                 }
                 ?>
 
-            if (jQuery('#AdvancedSearchTypeSpecificSectionCollections').is(":hidden") && (document.getElementById("countonly").value!="yes")) 
+            if (jQuery('#AdvancedSearchTypeSpecificSectionCollections').is(":hidden")) 
                 {
                     jQuery('.tickboxcoll').prop('checked',false);
                 }
