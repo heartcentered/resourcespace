@@ -600,33 +600,14 @@ if($advanced_search_buttons_top && !$header_search)
     {
     render_advanced_search_buttons();
     }
-
-if($header_search)
-    {
     ?>
-    <div id="ActiveFilters" class="Question">
-        <label><?php echo $lang["active_filters"]; ?></label>
-        <div class="clearerleft"></div>
-        <span id="ActiveFiltersList">
-        <?php
-        foreach($searched_nodes as $searched_node)
-            {
-            $returned_node = array();
-            if(!get_node($searched_node, $returned_node))
-                {
-                continue;
-                }
-            ?>
-            <label class="customFieldLabel"><?php echo htmlspecialchars($returned_node['name']); ?><a href="#" class="CloseButtonLink BoldMargin" onclick="UpdateResultCount();">x</a></label>
-            <?php
-            }
-        ?>
-        </span>
-        <div class="clearerleft"></div>
-    </div>
-    <?php
-    }
-
+<div id="ActiveFilters" class="Question">
+    <label><?php echo $lang["active_filters"]; ?></label>
+    <div class="clearerleft"></div>
+    <span id="ActiveFiltersList"></span>
+    <div class="clearerleft"></div>
+</div>
+<?php
 if($search_includes_resources && !hook("advsearchrestypes"))
     {
     ?>
@@ -1001,14 +982,8 @@ function ClearFilterBar()
 
 jQuery(document).ready(function()
     {
-    <?php
-    if($header_search)
-        {
-        ?>
-        jQuery("#FilterBarContainer .Question table").PutShadowOnScrollableElement();
-        <?php
-        }
-        ?>
+    UpdateActiveFilters({search: "<?php echo $search; ?>"});
+    jQuery("#FilterBarContainer .Question table").PutShadowOnScrollableElement();
     });
 </script>
 <?php
