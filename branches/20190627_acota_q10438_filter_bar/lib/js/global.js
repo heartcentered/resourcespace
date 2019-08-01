@@ -1603,16 +1603,18 @@ function RenderActiveFilter(name)
 */
 function UpdateActiveFilters(data)
     {
+    jQuery("#ActiveFiltersList").empty();
+
     if(typeof data === "undefined")
         {
+        ResetActiveFiltersDisplay();
         return;
         }
     else if(data.search === "")
         {
+        ResetActiveFiltersDisplay();
         return;
         }
-
-    jQuery("#ActiveFiltersList").empty();
 
     var search = data.search;
     var all = function(array)
@@ -1703,11 +1705,26 @@ function UpdateActiveFilters(data)
                     same_field_options.push(node.name);
                     });
                 RenderActiveFilter(same_field_options.join(" | "));
+                }).then(function() {
+                    ResetActiveFiltersDisplay();
                 });
 
             return true;
             }
+
+        // Simple search without any filters should just hide the active filters section
+        ResetActiveFiltersDisplay();
         });
 
+    return;
+    }
+
+function ResetActiveFiltersDisplay()
+    {
+    jQuery("#ActiveFilters").hide();
+    if(jQuery("#ActiveFiltersList").find(".customFieldLabel").length > 0)
+        {
+        jQuery("#ActiveFilters").show();
+        }
     return;
     }
