@@ -1664,6 +1664,7 @@ function UpdateActiveFilters(data)
         if(s_part.indexOf("!properties") !== -1)
             {
             RenderActiveFilter("<i aria-hidden=\"true\" class=\"fa fa-television\"></i>");
+            ResetActiveFiltersDisplay();
             return true;
             }
 
@@ -1689,6 +1690,7 @@ function UpdateActiveFilters(data)
 
             // fbar-text:test
             RenderActiveFilter(value);
+            ResetActiveFiltersDisplay();
             return true;
             }
 

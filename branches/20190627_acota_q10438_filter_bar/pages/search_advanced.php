@@ -463,8 +463,10 @@ if(!$header_search)
 <input type="hidden" name="source" value="filter_bar">
 
 <script type="text/javascript">
+var updating = false;
 function UpdateResultCount()
 	{
+    updating = false;
     CentralSpacePost(document.getElementById('advancedform'), true, false, false);
     return;
 	}
