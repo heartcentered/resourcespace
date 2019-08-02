@@ -1,0 +1,124 @@
+<?php
+include_once __DIR__ . "/../../include/db.php";
+include_once __DIR__ . "/../../include/general.php";
+
+// Get resources and checksums to validate
+$resources      = sql_query("SELECT ref, archive, file_extension, file_checksum, integrity_fail FROM resource WHERE ref>0 AND datediff(now(),last_verified)>1 " . ((count($file_integrity_ignore_states) > 0) ? " AND archive NOT IN ('" . implode("','",$file_integrity_ignore_states) . "')" : ""));
+$checkfailed    = array();
+$validtime      = true;
+       
+foreach($resources as $resource)
+    {
+    // Check we are in a valid time period
+    $curhour = date('H');
+    if($file_integrity_verify_window[0] < $file_integrity_verify_window[1])
+        {
+        // Second time is later than first. Ensure time is not before the first or later than the second
+        $validtime = false;
+        }
+    else
+        {
+        // First time is later than second (running through midnight). Ensure time is not before the first and after the second
+        if($curhour < $file_integrity_verify_window[0] && $curhour >= $file_integrity_verify_window[1])
+            {
+            $validtime = false;
+            }
+        }
+
+    if(!$validtime)
+        {
+        if('cli' == PHP_SAPI)
+            {
+            echo "End of time period reached: " . $curhour .  PHP_EOL;
+            }
+        break;
+        }
+
+    $path=get_resource_path($resource['ref'],true,"",false,$resource['file_extension']);
+    if(!hook('file_integrity_check','',array($resource)))
+        {              
+        if (is_readable($path))
+            {
+            if($file_checksums && !$file_checksums_50k)
+                {
+                // Need full file checksums to check integrity
+                $checksum = get_checksum($path);
+                if(trim($resource['file_checksum']) != '' && $checksum == $resource['file_checksum'])
+                    {
+                    sql_query("UPDATE resource SET integrity_fail=0, last_verified=now() WHERE ref='" . $resource['ref'] . "'");
+                    }
+                elseif(!in_array($resource["ref"],$file_integrity_ignore_states))
+                    {
+                    if('cli' == PHP_SAPI)
+                        {
+                        echo "Checksum mismatch for resource " . $resource['ref'] . ".  Current: " . $resource['file_checksum'] . ". Stored: " . $checksum . PHP_EOL;
+                        }
+                    // Checksum mismatch - add to array of failed files
+                    $checkfailed[] = $resource["ref"];
+                    }
+                }
+            else
+                {
+                // No checksum functionality but file is present - just ensure file updated
+                
+                sql_query("UPDATE resource SET integrity_fail = 0, last_verified=now() WHERE ref='" . $resource['ref'] . "'");
+                }
+            }
+        else
+            {
+            // File is missing or not readable, record this and update the resource table
+            if(!in_array($resource['archive'],$file_integrity_ignore_states))
+                {
+                if('cli' == PHP_SAPI)
+                    {
+                    echo "Missing or unreadable resource file for resource " . $resource['ref'] . ".  Expected location: " . $path . PHP_EOL;
+                    }
+                $checkfailed[] = $resource['ref'];
+                }
+            }
+        }
+    }
+    
+if(count($checkfailed) > 0)
+    {
+    sql_query("UPDATE resource SET integrity_fail = 1 WHERE ref in('" . implode("','",$checkfailed) . "')");
+
+    # Send notifications
+    $subject = $applicationname . ": " . $lang['file_integrity_summary'];
+    $message = $lang['file_integrity_summary_failed'];
+    $notification_message = $message; 
+
+    $message   .= "\r\n" . $baseurl . "pages/search.php?search=!integrityfail"; 
+    $url        = $baseurl_short . "pages/search.php?search=!integrityfail";
+    $templatevars['message']    = $message;
+    $admin_notify_emails        = array();
+    $admin_notify_users         = array();
+    $notify_users               = get_notification_users("SYSTEM_ADMIN");
+    foreach($notify_users as $notify_user)
+        {
+        get_config_option($notify_user['ref'],'user_pref_system_management_notifications', $send_message);		  
+        if($send_message==false)
+            {
+            $continue;
+            }
+        get_config_option($notify_user['ref'],'email_user_notifications', $send_email);    
+        if($send_email && $notify_user["email"]!="")
+            {
+            $admin_notify_emails[] = $notify_user['email'];				
+            }        
+        else
+            {
+            $admin_notify_users[]=$notify_user["ref"];
+            }
+        }
+
+    foreach($admin_notify_emails as $admin_notify_email)
+        {
+        send_mail($admin_notify_email,$applicationname . ": " . $lang['action_dates_notification_subject'],$message,"","","emailproposedchanges",$templatevars);    
+        }
+            
+    if (count($admin_notify_users)>0)
+        {
+        message_add($admin_notify_users,$notification_message,$url,0);
+        }
+    }

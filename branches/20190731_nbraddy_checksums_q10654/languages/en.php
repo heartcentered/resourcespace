@@ -2793,3 +2793,9 @@ $lang['browse_by_workflow_state']       = "Workflow";
 
 # Updates to workflow
 $lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+
+# File integrity checks
+$lang["file_integrity_summary"]         = "File integrity report";
+$lang["file_integrity_summary_failed"]  = "Resource files have failed integrity checks or are missing. Please click below to see these resources and take action as required e.g. restore files from backup";
+$lang["file_integrity_fail_search"]     = "File integrity failures";
+

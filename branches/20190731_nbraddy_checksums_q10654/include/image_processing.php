@@ -2444,17 +2444,7 @@ function generate_file_checksum($resource,$extension,$anyway=false)
         $path=get_resource_path($resource,true,"",false,$extension);
         if (file_exists($path))
             {
-
-                        # Generate the ID
-                        if ($file_checksums_50k){
-                            # Fetch the string used to generate the unique ID
-                            $use=filesize_unlimited($path) . "_" . file_get_contents($path,null,null,0,50000);
-                            $checksum=md5($use);
-                        } else {
-                            $checksum=md5_file($path);
-                        }
-
-                        # Generate store.
+            $checksum = get_checksum($path);
             sql_query("update resource set file_checksum='" . escape_check($checksum) . "' where ref='$resource'");
             $generated = true;
             }

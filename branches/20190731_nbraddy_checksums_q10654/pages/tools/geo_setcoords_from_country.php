@@ -642,5 +642,3 @@ YEMEN,YE
 ZAMBIA,ZM
 ZIMBABWE,ZW");  // $codes
 }
-
-?>

@@ -38,7 +38,7 @@ for($i=0; $i<=999; $i++)
 # Allow plugins to add their own cron jobs.
 hook("cron");
 
-echo "Complete";
+echo "Complete" . PHP_EOL;
 
 # Update last cron date
 sql_query("delete from sysvars where name='last_cron'");
