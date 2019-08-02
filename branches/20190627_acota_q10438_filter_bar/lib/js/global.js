@@ -1529,7 +1529,6 @@ function CloseButtonElement()
     a.setAttribute("href", "#");
     a.classList.add("CloseButtonLink");
     a.classList.add("BoldMargin");
-    a.setAttribute("onclick", "UpdateResultCount();");
     a.innerHTML = "x";
 
     return a;
@@ -1589,15 +1588,24 @@ function GetNodes(request_data)
 * Render an active filter in the filters' list
 * 
 * @param {String} Filter text
+* @param {PlainObject} Extra data that can be applied to the label (e.g adding resource_type_field data to help with 
+*                      clearing fields if clearing active filter)
 * 
 * @return void
 */
-function RenderActiveFilter(name)
+function RenderActiveFilter(name, data)
     {
     var active_filters_list = document.getElementById("ActiveFiltersList");
     var label = document.createElement("label");
     label.classList.add("customFieldLabel");
     label.innerHTML = name;
+
+    data = typeof data === "undefined" ? {} : data;
+    for(const [key, value] of Object.entries(data))
+        {
+        label.setAttribute("data-" + key, value);
+        }
+
     label.insertAdjacentElement("beforeend", CloseButtonElement());
 
     active_filters_list.appendChild(label);
@@ -1684,12 +1692,12 @@ function UpdateActiveFilters(data)
             // fbar-date:1990|07
             if(value.match(/(\d+|\|\d.)+\|\d./g) != null)
                 {
-                RenderActiveFilter(value.replace(/\|/g, "/"));
+                RenderActiveFilter(value.replace(/\|/g, "/"), {name: key});
                 return true;
                 }
 
             // fbar-text:test
-            RenderActiveFilter(value);
+            RenderActiveFilter(value, {name: key});
             ResetActiveFiltersDisplay();
             return true;
             }
@@ -1710,17 +1718,21 @@ function UpdateActiveFilters(data)
                     });
                 });
 
-            jQuery.when(all(promises)).then(function(results)
-                {
-                var same_field_options = [];
-                results.forEach(function(node)
+            jQuery.when(all(promises))
+                .then(function(results)
                     {
-                    same_field_options.push(node.name);
-                    });
-                RenderActiveFilter(same_field_options.join(" | "));
-                }).then(function() {
-                    ResetActiveFiltersDisplay();
-                });
+                    var same_field_options = [];
+                    var extra_data = {};
+
+                    results.forEach(function(node)
+                        {
+                        same_field_options.push("<span data-node-ref=\"" + node.ref + "\">" + node.name + "</span>");
+                        extra_data.resource_type_field = node.resource_type_field;
+                        });
+
+                    RenderActiveFilter(same_field_options.join(" | "), extra_data);
+                    })
+                .then(ResetActiveFiltersDisplay);
 
             return true;
             }
@@ -1738,6 +1750,98 @@ function ResetActiveFiltersDisplay()
     if(jQuery("#ActiveFiltersList").find(".customFieldLabel").length > 0)
         {
         jQuery("#ActiveFilters").show();
+
+        // Register only one click event for each active filter clear button
+        jQuery("#ActiveFiltersList .CloseButtonLink").off("click").click(function(event)
+            {
+            event.preventDefault();
+
+            var field_name = jQuery(event.target).parent().data("name");
+            var resource_type_field = jQuery(event.target).parent().data("resource_type_field");
+            var field_data = {};
+            var node_elements = [];
+
+            if(typeof field_name !== "undefined" && field_name.trim() != "")
+                {
+                field_data = resource_type_fields_data.filter(data => data.name === field_name)[0];
+                }
+            // Nodes will only pass the resource_type_field instead of the shortname of the field
+            else if(typeof resource_type_field !== "undefined" && resource_type_field > 0)
+                {
+                field_data = resource_type_fields_data.filter(data => data.ref == resource_type_field)[0];
+                node_elements = jQuery(event.target).parent().find("span[data-node-ref]");
+                }
+
+            switch(parseInt(field_data.type))
+                {
+                case 0://FIELD_TYPE_TEXT_BOX_SINGLE_LINE
+                case 1://FIELD_TYPE_TEXT_BOX_MULTI_LINE
+                case 5://FIELD_TYPE_TEXT_BOX_LARGE_MULTI_LINE
+                case 8://FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR
+                    var text_input = document.getElementById("field_" + field_data.ref);
+                    text_input.value = "";
+                    text_input.onchange();
+                    break;
+                case 2://FIELD_TYPE_CHECK_BOX_LIST
+                case 3://FIELD_TYPE_DROP_DOWN_LIST
+                    jQuery.each(node_elements, function(index, element)
+                        {
+                        var node_ref = jQuery(element).data("node-ref");
+                        jQuery("#nodes_searched_" + node_ref).prop("checked", false);
+                        });
+
+                    var dropdown_field = document.getElementById("field_" + field_data.ref);
+                    if(dropdown_field != null)
+                        {
+                        document.getElementById("field_" + field_data.ref).selectedIndex = -1;
+                        }
+
+                    UpdateResultCount();
+                    break;
+                case  4:// FIELD_TYPE_DATE_AND_OPTIONAL_TIME
+                case  6:// FIELD_TYPE_EXPIRY_DATE
+                case 10:// FIELD_TYPE_DATE
+                case 14:// FIELD_TYPE_DATE_RANGE
+                    break;
+                case 7: // FIELD_TYPE_CATEGORY_TREE
+                    jQuery("#search_tree_" + resource_type_field + "").jstree(true).deselect_all();
+                    var cat_tree_hidden_inputs = document.getElementsByName("nodes_searched[" + resource_type_field + "][]");
+                    while(cat_tree_hidden_inputs[0])
+                        {
+                        cat_tree_hidden_inputs[0].parentNode.removeChild(cat_tree_hidden_inputs[0]);
+                        }
+                    UpdateResultCount();
+                    break;
+                case 9:// FIELD_TYPE_DYNAMIC_KEYWORDS_LIST
+                    jQuery.each(node_elements, function(index, element)
+                        {
+                        var node_ref = jQuery(element).data("node-ref");
+                        window["removeKeyword_nodes_searched_" + resource_type_field](node_ref, false);
+                        });
+                    UpdateResultCount();
+                    break;
+                case 12:// FIELD_TYPE_RADIO_BUTTONS
+                    jQuery.each(node_elements, function(index, element)
+                        {
+                        var node_ref = jQuery(element).data("node-ref");
+                        jQuery("#nodes_searched_" + node_ref).prop("checked", false);
+                        });
+
+                    // If rendered as a dropdown
+                    var radio_dropdown_elements = document.getElementsByName("nodes_searched[" + resource_type_field + "]");
+                    if(radio_dropdown_elements.length > 0)
+                        {
+                        radio_dropdown_elements[0].selectedIndex = -1;
+                        }
+
+                    UpdateResultCount();
+                    break;
+                default:
+                    console.error("default --- remove input and update results!");
+                    // var input = document.getElementById("field_" + field_data.ref);
+                    break;
+                }
+            });
         }
     return;
     }

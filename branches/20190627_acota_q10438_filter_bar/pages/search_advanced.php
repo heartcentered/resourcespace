@@ -520,6 +520,9 @@ jQuery(document).ready(function(){
 			});
 		});
 
+// Resource type fields information. Can be used to link client side actions with fields (e.g clearing active filters 
+// in the filter bar need to clear the actual fields as well)
+var resource_type_fields_data = [];
 </script>
 
 <?php
@@ -724,7 +727,15 @@ for ($n=0;$n<count($fields);$n++)
 	# Work out a default value
 	if (array_key_exists($fields[$n]["name"],$values)) {$value=$values[$fields[$n]["name"]];} else {$value="";}
 	if (getval("resetform","")!="") {$value="";}
-	
+    ?>
+    <script>
+    resource_type_fields_data[<?php echo $fields[$n]["ref"]; ?>] = {
+        ref: "<?php echo $fields[$n]["ref"]; ?>",
+        name: "<?php echo $fields[$n]["name"]; ?>",
+        type: "<?php echo $fields[$n]["type"]; ?>",
+    };
+    </script>
+    <?php
 	# Render this field
     render_search_field($fields[$n], $value, true, 'SearchWidth', false, array(), $searched_nodes);
 	}
@@ -930,8 +941,3 @@ if($archive!==0 && !$header_search){
 	</script>
 	<?php
 }
-
-if(!$header_search)
-    {
-    include RS_ROOT . "/include/footer.php";
-    }
