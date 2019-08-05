@@ -1666,13 +1666,35 @@ function UpdateActiveFilters(data)
         return deferred.promise();
         };
 
+    // basicyear:1981, basicmonth:02, basicday:04
+    var basic_date_parts = search.match(/(basic(year|month|day):\d{2,4})/g);
+    if(basic_date_parts != null)
+        {
+        var date_value = "";
+        jQuery.each(basic_date_parts, function(i, basic_date_part)
+            {
+            var date_part = basic_date_part.match(/\d+/g);
+            if(date_part == null)
+                {
+                return true;
+                }
+
+            date_value += "/" + date_part[0];
+            });
+        date_value = date_value.substr(1);
+
+        // Remove the basic date from the search string otherwise the next part will process it again
+        search = search.replace(/(basic(year|month|day):\d{2,4})\s?,\s?/g, "");
+
+        RenderActiveFilter(date_value, {"basic-date": true});
+        }
+
     jQuery.each(search.split(/\s?,\s?/gm), function(index, s_part)
         {
         // !propertieshmin:100;hmax:2300;wmin:200;wmax:200;fmin:500;fmax:700;cu:2
         if(s_part.indexOf("!properties") !== -1)
             {
             RenderActiveFilter("<i aria-hidden=\"true\" class=\"fa fa-television\"></i>");
-            ResetActiveFiltersDisplay();
             return true;
             }
 
@@ -1698,7 +1720,6 @@ function UpdateActiveFilters(data)
 
             // fbar-text:test
             RenderActiveFilter(value, {name: key});
-            ResetActiveFiltersDisplay();
             return true;
             }
 
@@ -1736,10 +1757,9 @@ function UpdateActiveFilters(data)
 
             return true;
             }
-
-        // Simple search without any filters should just hide the active filters section
-        ResetActiveFiltersDisplay();
         });
+
+    ResetActiveFiltersDisplay();
 
     return;
     }
@@ -1770,6 +1790,10 @@ function ResetActiveFiltersDisplay()
                 {
                 field_data = resource_type_fields_data.filter(data => data.ref == resource_type_field)[0];
                 node_elements = jQuery(event.target).parent().find("span[data-node-ref]");
+                }
+            else if(jQuery(event.target).parent().data("basic-date") === true)
+                {
+                field_data.type = 4;
                 }
 
             switch(parseInt(field_data.type))
@@ -1802,6 +1826,8 @@ function ResetActiveFiltersDisplay()
                 case  6:// FIELD_TYPE_EXPIRY_DATE
                 case 10:// FIELD_TYPE_DATE
                 case 14:// FIELD_TYPE_DATE_RANGE
+                    console.log(field_data);
+                    alert("@todo: implement clear filter for dates");
                     break;
                 case 7: // FIELD_TYPE_CATEGORY_TREE
                     jQuery("#search_tree_" + resource_type_field + "").jstree(true).deselect_all();
