@@ -1972,6 +1972,9 @@ $public_collections_top_nav=false;
 
 $enable_theme_breadcrumbs = true;
 
+# Show collection name below breadcrumbs?  
+$show_collection_name = false;
+
 # Themes simple view - option to show featured collection categories and featured collections (themes) as basic tiles wih no images.
 # Can be tested or used for custom link by adding querystring parameter simpleview=true to themes.php e.g. pages/themes.php?simpleview=true
 # NOTE: only works with $themes_category_split_pages=true;
@@ -1979,7 +1982,7 @@ $themes_simple_view=false;
 # Option to show images on featured collection and featured collection category tiles if $themes_simple_view is enabled
 $themes_simple_images=true;
 
-# Option to show single hoem slideshow image on featured collection page (themes.php) if $themes_simple_view is enabled
+# Option to show single home slideshow image on featured collection page (themes.php) if $themes_simple_view is enabled
 $featured_collection_static_bg = false;
 
 # Display theme categories as links, and themes on separate pages?
@@ -3439,22 +3442,40 @@ $iiif_enabled = false;
 
 // User ID to use for IIIF. This user should be granted access only to those resources that are to be published via IIIF using permissions and search filter
 // $iiif_userid = 0;
-//
+
 // Field that is used to hold the IIIF identifier e.g. if using TMS this may be the same as the TMS object field
 // $iiif_identifier_field = 29;
-//
+
 // Field that is used to hold the IIIF description
 // $iiif_description_field = 0;
-//
+
 // Field that contains license information about the resource
 // $iiif_license_field = 0;
-//
+
 // Field that defines the position of a particular resource in the default sequence (only one sequence currently supported)
 // $iiif_sequence_field = 1;
-//
+
 // Optional prefix that will be added to sequence identifier - useful if just numeric identifers are used e.g. for different views or pages 
 // $iiif_sequence_prefix = "View ";
+//
+// $iiif_custom_sizes
+// Set to true to support Mirador/Universal viewer that requires the ability to request arbitrary sizes by 'w,', ',h' 
+// Note that this can result in significantly more storage space being required for each resource published via IIIF
+// See https://iiif.io/api/image/2.1 for more information 
+$iiif_custom_sizes = false;
 
+$iiif_max_width  = 1024;
+$iiif_max_height = 1024;
+
+// Tile settings (currently only used by IIIF when $iiif_level is 1)
+$preview_tiles = false;
+// Tiles can be generated along with normal previews or created upon request.
+// If enabling IIIF on an existing system then it is recommended to add all IIIF published resources to a collection first and use the batch/recreate_previews.php script
+$preview_tiles_create_auto = true;
+// Size in pixels of the tiles. The same value is used for both tile width and height (see https://iiif.io/api/image/2.1/#region for more info)
+$preview_tile_size = 1024;
+// Available scale factors (see https://iiif.io/api/image/2.1/#size)
+$preview_tile_scale_factors = array(1,2,4,8,16);
 
 /*Prevent client side users to get access to the real path of the resource when ResourceSpace is using filestore URLs.
 Rather than use a URL like "http://yourdomain/filestore/1_6326bb8314c6c21/1pre_cf33a61f47b5982.jpg", it will use
