@@ -2796,6 +2796,6 @@ $lang["userresources_status_change"]="Resources that you have contributed have b
 
 # File integrity checks
 $lang["file_integrity_summary"]         = "File integrity report";
-$lang["file_integrity_summary_failed"]  = "Resource files have failed integrity checks or are missing. Please click below to see these resources and take action as required e.g. restore files from backup";
+$lang["file_integrity_summary_failed"]  = "Resource files have failed integrity checks or are missing. Please follow the link to see these resources and take action as required e.g. restore files from backup";
 $lang["file_integrity_fail_search"]     = "File integrity failures";
-
+$lang["all__file_integrity_fail_email"] = "[img_headerlogo]<br />\n[lang_file_integrity_summary_failed] <br /><br /> \n[lang_file_integrity_fail_search] <br /><br /> \n<a href=\"[url]\">[url]</a><br /><br />\n[text_footer]\n";

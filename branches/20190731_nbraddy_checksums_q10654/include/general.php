@@ -2948,6 +2948,11 @@ function send_mail_phpmailer($email,$subject,$message="",$from="",$reply_to="",$
                 }
 
                 // embed images - ex [img_gfx/whitegry/titles/title.gif]
+                else if('img_headerlogo' == substr($variable, 0, 14))
+                    {
+                    $img_url = get_header_image(true);                    
+                    $$variable = '<img src="' . $img_url . '"/>';
+                    }
                 else if('img_' == substr($variable, 0, 4))
                     {
                     $image_path = substr($variable, 4);

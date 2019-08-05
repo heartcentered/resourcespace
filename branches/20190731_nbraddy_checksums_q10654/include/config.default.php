@@ -1189,7 +1189,7 @@ $file_checksums_offline = true;
 # Workflow states to ignore when verifying file integrity (to verify file integrity usign checksums requires $file_checksums_50k=false;)
 $file_integrity_ignore_states = array();
 
-# $file_integrity_verify_window - set times that the file integrity check script can run.
+# $file_integrity_verify_window - set server time window that the file integrity check script can run in.
 # This can be resource intensive when checking checksums for a large number of resources.
 # Examples: -
 # $file_integrity_verify_window = array(2,6);   # between 2AM and 6AM (second time is later than first value so time must be after the first AND before second)

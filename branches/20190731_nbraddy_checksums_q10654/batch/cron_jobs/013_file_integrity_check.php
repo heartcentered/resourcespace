@@ -14,7 +14,10 @@ foreach($resources as $resource)
     if($file_integrity_verify_window[0] < $file_integrity_verify_window[1])
         {
         // Second time is later than first. Ensure time is not before the first or later than the second
-        $validtime = false;
+        if($curhour < $file_integrity_verify_window[0] || $curhour >= $file_integrity_verify_window[1])
+            {
+            $validtime = false;
+            }
         }
     else
         {
@@ -91,6 +94,7 @@ if(count($checkfailed) > 0)
     $message   .= "\r\n" . $baseurl . "pages/search.php?search=!integrityfail"; 
     $url        = $baseurl_short . "pages/search.php?search=!integrityfail";
     $templatevars['message']    = $message;
+    $templatevars['url']        = $baseurl . "/pages/search.php?search=!integrityfail";
     $admin_notify_emails        = array();
     $admin_notify_users         = array();
     $notify_users               = get_notification_users("SYSTEM_ADMIN");
@@ -114,7 +118,7 @@ if(count($checkfailed) > 0)
 
     foreach($admin_notify_emails as $admin_notify_email)
         {
-        send_mail($admin_notify_email,$applicationname . ": " . $lang['action_dates_notification_subject'],$message,"","","emailproposedchanges",$templatevars);    
+        send_mail($admin_notify_email,$applicationname . ": " . $lang['file_integrity_summary'],$message,"","","file_integrity_fail_email",$templatevars);    
         }
             
     if (count($admin_notify_users)>0)
