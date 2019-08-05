@@ -3,17 +3,17 @@ include_once __DIR__ . "/../../include/db.php";
 include_once __DIR__ . "/../../include/general.php";
 
 // Get resources and checksums to validate
-$resources      = sql_query("SELECT ref, archive, file_extension, file_checksum, integrity_fail FROM resource WHERE ref>0 AND datediff(now(),last_verified)>1 " . ((count($file_integrity_ignore_states) > 0) ? " AND archive NOT IN ('" . implode("','",$file_integrity_ignore_states) . "')" : ""));
+$resources      = sql_query("SELECT ref, archive, file_extension, file_checksum, last_verified, integrity_fail FROM resource WHERE ref>0 AND (datediff(now(),last_verified)>1 OR last_verified IS NULL) " . ((count($file_integrity_ignore_states) > 0) ? " AND archive NOT IN ('" . implode("','",$file_integrity_ignore_states) . "')" : "") . " ORDER BY last_verified ASC");
 $checkfailed    = array();
 $validtime      = true;
-       
+
 foreach($resources as $resource)
     {
     // Check we are in a valid time period
     $curhour = date('H');
-    if($file_integrity_verify_window[0] < $file_integrity_verify_window[1])
+    if($file_integrity_verify_window[0] <= $file_integrity_verify_window[1])
         {
-        // Second time is later than first. Ensure time is not before the first or later than the second
+        // Second time is later than first or times are the same (off). Ensure time is not before the first or later than the second
         if($curhour < $file_integrity_verify_window[0] || $curhour >= $file_integrity_verify_window[1])
             {
             $validtime = false;
@@ -32,7 +32,7 @@ foreach($resources as $resource)
         {
         if('cli' == PHP_SAPI)
             {
-            echo "End of time period reached: " . $curhour .  PHP_EOL;
+            echo " - Outside of valid time period. Set times are between " . $file_integrity_verify_window[0] . ":00 and " . $file_integrity_verify_window[1] . ":00 hours. Current hour: " . $curhour . ":00" . PHP_EOL;
             }
         break;
         }
