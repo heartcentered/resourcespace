@@ -641,7 +641,7 @@ if (!$daterange_search)
 	{
 	?>
 	<div class="Question"><label><?php echo $lang["bydate"]?></label>
-	<select name="basicyear" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
+	<select id="basicyear" name="basicyear" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
 	  <option value=""><?php echo $lang["anyyear"]?></option>
 	  <?php
 	  $y=date("Y");
@@ -651,7 +651,7 @@ if (!$daterange_search)
 		}
 	  ?>
 	</select>
-	<select name="basicmonth" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
+	<select id="basicmonth" name="basicmonth" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
 	  <option value=""><?php echo $lang["anymonth"]?></option>
 	  <?php
 	  for ($n=1;$n<=12;$n++)
@@ -661,7 +661,7 @@ if (!$daterange_search)
 		}
 	  ?>
 	</select>
-	<select name="basicday" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
+	<select id="basicday" name="basicday" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
 	  <option value=""><?php echo $lang["anyday"]?></option>
 	  <?php
 	  for ($n=1;$n<=31;$n++)
