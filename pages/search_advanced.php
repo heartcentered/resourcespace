@@ -286,11 +286,6 @@ function render_advanced_search_buttons()
     </div>
     <?php 
     }
-
-if(!$header_search)
-    {
-    include RS_ROOT . "/include/header.php";
-    }
 ?>
 <script type="text/javascript">
 
@@ -924,20 +919,3 @@ jQuery(document).ready(function()
     jQuery("#FilterBarContainer .Question table").PutShadowOnScrollableElement();
     });
 </script>
-<?php
-if($archive!==0 && !$header_search){
-	?>
-	<script>
-	jQuery(document).ready(function()
-	  {
-	  UpdateResultCount();
-	  jQuery("input").keypress(function(event) {
-		   if (event.which == 13) {
-			   event.preventDefault();
-			   jQuery("#advancedform").submit();
-		   }
-	  });
-	  });
-	</script>
-	<?php
-}
