@@ -1,11 +1,11 @@
 <?php
 include_once "../include/db.php";
-include_once "../include/general.php";
-include "../include/authenticate.php"; if (!checkperm("s")) {exit ("Permission denied.");}
-include_once "../include/search_functions.php";
-include_once "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once dirname(__FILE__) . '/../include/render_functions.php';
+include_once RS_ROOT . "/include/general.php";
+include RS_ROOT . "/include/authenticate.php"; if (!checkperm("s")) {exit ("Permission denied.");}
+include_once RS_ROOT . "/include/search_functions.php";
+include_once RS_ROOT . "/include/resource_functions.php";
+include_once RS_ROOT . "/include/collections_functions.php";
+include_once RS_ROOT . '/include/render_functions.php';
 
 $filter_bar_reload = trim(getval('filter_bar_reload', '')) !== 'false' ? true : false;
 if(!$filter_bar_reload)
@@ -32,7 +32,7 @@ function get_search_default_restypes()
 		}	
 	return $defaultrestypes;
 	}
-	
+
 function get_search_open_sections()
     {
     global $search_includes_resources, $collection_search_includes_resource_metadata;
@@ -244,48 +244,6 @@ else
 
     $allwords = str_replace(', ', ' ', $allwords);
   }
-
-function render_advanced_search_buttons()
-    {
-    global $lang, $swap_clear_and_search_buttons, $header_search;
-
-    $reset_input_classes = 'resetform';
-    if($header_search)
-        {
-        $reset_input_classes .= ' FullWidth';
-        }
-    ?>
-    <div class="QuestionSubmit">
-        <label for="buttons"></label>
-    <?php
-    if($swap_clear_and_search_buttons)
-        {
-        if(!$header_search)
-            {
-            ?>
-            <input name="dosearch" class="dosearch" type="submit" value="<?php echo $lang["action-viewmatchingresults"]?>" />&nbsp;
-            <?php
-            }
-        ?>
-        <input name="resetform" class="<?php echo $reset_input_classes; ?>" type="submit" value="<?php echo $lang["clearbutton"]?>" /> 
-        <?php
-        }
-    else
-        {
-        ?>
-        <input name="resetform" class="<?php echo $reset_input_classes; ?>" type="submit" value="<?php echo $lang["clearbutton"]?>" />&nbsp;
-        <?php
-        if(!$header_search)
-            {
-            ?>
-            <input name="dosearch" class="dosearch" type="submit" value="<?php echo $lang["action-viewmatchingresults"]?>" />
-            <?php
-            }
-        }
-        ?>
-    </div>
-    <?php 
-    }
 ?>
 <script type="text/javascript">
 
@@ -476,19 +434,12 @@ jQuery(document).ready(function(){
         });
 
 	    jQuery('#advancedform').submit(function(event) {
-            <?php
-            if($header_search)
+            if(submit_caller_element == 'resetform')
                 {
-                ?>
-                if(submit_caller_element == 'resetform')
-                    {
-                    event.preventDefault();
-                    ClearFilterBar();
-                    return false;
-                    }
-                <?php
+                event.preventDefault();
+                ClearFilterBar();
+                return false;
                 }
-                ?>
 
             if (jQuery('#AdvancedSearchTypeSpecificSectionCollections').is(":hidden")) 
                 {
@@ -519,13 +470,6 @@ jQuery(document).ready(function(){
 // in the filter bar need to clear the actual fields as well)
 var resource_type_fields_data = [];
 </script>
-
-<?php
-if($advanced_search_buttons_top && !$header_search)
-    {
-    render_advanced_search_buttons();
-    }
-    ?>
 <div id="ActiveFilters" class="Question">
     <label><?php echo $lang["active_filters"]; ?></label>
     <div class="clearerleft"></div>
@@ -598,31 +542,15 @@ if($search_includes_resources && !hook("advsearchrestypes"))
     <?php
     }
 
-
-if (!hook('advsearchallfields')) { ?>
-<!-- Search across all fields -->
-<input type="hidden" id="hiddenfields" name="hiddenfields" value="">
-<?php
-if($header_search)
+if(!hook('advsearchallfields'))
     {
     ?>
+    <!-- Search across all fields -->
+    <input type="hidden" id="hiddenfields" name="hiddenfields" value="">
     <input id="allfields" type="hidden" name="allfields" value="<?php echo htmlspecialchars($allwords); ?>" onChange="UpdateResultCount();">
     <?php
     }
-    else
-    {
     ?>
-    <div class="Question">
-        <label for="allfields"><?php echo $lang["allfields"]?></label>
-        <input class="SearchWidth" type=text name="allfields" id="allfields" value="<?php echo htmlspecialchars($allwords)?>" onChange="UpdateResultCount();">
-        <div class="clearerleft"> </div>
-    </div>
-    <?php
-    }
-}
-?>
-<h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionGlobalHead" <?php if (in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["resourcetype-global_fields"]; ?></h1>
-<div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionGlobal" <?php if (in_array("Collections",$opensections)) {?> style="display: none;" <?php } ?>>
 
 <?php if (!hook('advsearchresid')) { ?>
 <!-- Search for resource ID(s) -->
@@ -668,12 +596,10 @@ if (!$daterange_search)
 	</select>
 	<div class="clearerleft"> </div>
 	</div>
-<?php }} ?>
+<?php }}
 
+hook('advsearchaddfields');
 
-<?php hook('advsearchaddfields'); ?>
-
-<?php
 # Fetch fields
 $fields=get_advanced_search_fields($archiveonly);
 $showndivide=-1;
@@ -900,10 +826,12 @@ if($advanced_search_media_section)
     </div><!-- End of AdvancedSearchMediaSection -->
     <?php
     }
-
-render_advanced_search_buttons();
-
-// show result count as it stands ?>
+    ?>
+        <div class="QuestionSubmit">
+            <label for="buttons"></label>
+            <input class="resetform FullWidth" name="resetform" type="submit" form="advancedform" value="<?php echo $lang["clearbutton"]; ?>">
+        </div>
+    </form>
 </div> <!-- BasicsBox -->
 <script>
 function ClearFilterBar()
