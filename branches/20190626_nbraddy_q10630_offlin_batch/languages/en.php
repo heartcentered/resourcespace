@@ -2796,7 +2796,7 @@ $lang['browse_by_workflow_state']       = "Workflow";
 $lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
 
 # Batch replace updates
-$lang["replacebatchlocalfolder"]        = "Retrieve files from local folder on server?";
+$lang["replacebatchlocalfolder"]        = "Retrieve files from local folder on server? (this will create an offline job)";
 $lang["replacebatch_resource_min"]      = "Lowest resource ID to replace (ignored if a collection is specified)";
 $lang["replacebatch_resource_max"]      = "Highest resource ID to replace";
 $lang["replacebatch_collection"]        = "Enter a collection ID if you only want to replace resources within this collection";
