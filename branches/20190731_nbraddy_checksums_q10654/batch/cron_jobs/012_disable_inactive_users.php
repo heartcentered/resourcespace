@@ -1,4 +1,14 @@
 <?php
+
+$last_disable_inactive_users  = get_sysvar('last_disable_inactive_users', '1970-01-01');
+
+# Skip if run within last 24 hours
+if (time()-strtotime($last_disable_inactive_users) < 24*60*60)
+    {
+    echo " - Skipping disable_inactive_users job<br />\n";
+    return false;
+    }
+
 # Disable inactive users
 if (is_numeric($inactive_user_disable_days) && $inactive_user_disable_days > 0)
     {
@@ -10,3 +20,6 @@ if (is_numeric($inactive_user_disable_days) && $inactive_user_disable_days > 0)
             AND approved=1"); 
     echo " - " . sql_affected_rows() . " users disabled" . PHP_EOL;
     }
+
+# Update last sent date/time.
+set_sysvar("last_disable_inactive_users",date("Y-m-d H:i:s")); 

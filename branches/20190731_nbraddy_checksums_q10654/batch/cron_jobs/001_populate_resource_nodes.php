@@ -7,4 +7,8 @@ if(!isset($sysvars['resource_node_migration_state']) || $sysvars['resource_node_
     echo "Populating resource_node and node_keyword tables\r\n";
     populate_resource_nodes(((isset($sysvars['resource_node_migration_state']))?$sysvars['resource_node_migration_state']:0));
     }
+else
+    {
+    echo " - Skipping populate_resource_nodes - already run<br />\n";
+    }
     

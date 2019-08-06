@@ -1,6 +1,6 @@
 <?php
 include_once __DIR__ . "/../../include/db.php";
-if($sysvars["upgrade_system_level"] <= 2)
+if($sysvars["upgrade_system_level"] < 2)
     {
     // After migrating to nodes it is prefereable to delete resource_keyword rows for fixed list data
     // as this is now stored in normalised form in resource_node and node_keyword
@@ -20,4 +20,8 @@ if($sysvars["upgrade_system_level"] <= 2)
             }
         
         }
+    }
+else
+    {
+    echo " - Skipping flush_unused_keywords - already complete<br />\n";    
     }

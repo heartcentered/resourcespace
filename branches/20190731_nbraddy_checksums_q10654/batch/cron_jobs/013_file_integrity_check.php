@@ -54,7 +54,7 @@ foreach($resources as $resource)
                     {
                     if('cli' == PHP_SAPI)
                         {
-                        echo "Checksum mismatch for resource " . $resource['ref'] . ".  Current: " . $resource['file_checksum'] . ". Stored: " . $checksum . PHP_EOL;
+                        echo " - Checksum mismatch for resource " . $resource['ref'] . ".  Current: " . $resource['file_checksum'] . ". Stored: " . $checksum . PHP_EOL;
                         }
                     // Checksum mismatch - add to array of failed files
                     $checkfailed[] = $resource["ref"];
@@ -74,7 +74,7 @@ foreach($resources as $resource)
                 {
                 if('cli' == PHP_SAPI)
                     {
-                    echo "Missing or unreadable resource file for resource " . $resource['ref'] . ".  Expected location: " . $path . PHP_EOL;
+                    echo " - Missing or unreadable resource file for resource " . $resource['ref'] . ".  Expected location: " . $path . PHP_EOL;
                     }
                 $checkfailed[] = $resource['ref'];
                 }
@@ -86,43 +86,55 @@ if(count($checkfailed) > 0)
     {
     sql_query("UPDATE resource SET integrity_fail = 1 WHERE ref in('" . implode("','",$checkfailed) . "')");
 
-    # Send notifications
-    $subject = $applicationname . ": " . $lang['file_integrity_summary'];
-    $message = $lang['file_integrity_summary_failed'];
-    $notification_message = $message; 
+    $last_integrity_check_notify = get_sysvar('last_integrity_check_notify', '1970-01-01');
 
-    $message   .= "\r\n" . $baseurl . "pages/search.php?search=!integrityfail"; 
-    $url        = $baseurl_short . "pages/search.php?search=!integrityfail";
-    $templatevars['message']    = $message;
-    $templatevars['url']        = $baseurl . "/pages/search.php?search=!integrityfail";
-    $admin_notify_emails        = array();
-    $admin_notify_users         = array();
-    $notify_users               = get_notification_users("SYSTEM_ADMIN");
-    foreach($notify_users as $notify_user)
+    # Skip if run within last 24 hours
+    if (false && time()-strtotime($last_integrity_check_notify) < 24*60*60)
         {
-        get_config_option($notify_user['ref'],'user_pref_system_management_notifications', $send_message);		  
-        if($send_message==false)
-            {
-            $continue;
-            }
-        get_config_option($notify_user['ref'],'email_user_notifications', $send_email);    
-        if($send_email && $notify_user["email"]!="")
-            {
-            $admin_notify_emails[] = $notify_user['email'];				
-            }        
-        else
-            {
-            $admin_notify_users[]=$notify_user["ref"];
-            }
+        echo " - Skipping sending of integrity failure notifications - last send: " . $last_integrity_check_notify . "<br />\n";
         }
+    else
+        {
+        echo " - Sending summary messages to administrators";
+        # Send notifications if not sent in last 24 hours
+        $subject = $applicationname . ": " . $lang['file_integrity_summary'];
+        $message = $lang['file_integrity_summary_failed'];
+        $notification_message = $message; 
 
-    foreach($admin_notify_emails as $admin_notify_email)
-        {
-        send_mail($admin_notify_email,$applicationname . ": " . $lang['file_integrity_summary'],$message,"","","file_integrity_fail_email",$templatevars);    
-        }
-            
-    if (count($admin_notify_users)>0)
-        {
-        message_add($admin_notify_users,$notification_message,$url,0);
+        $message   .= "\r\n" . $baseurl . "pages/search.php?search=!integrityfail"; 
+        $url        = $baseurl_short . "pages/search.php?search=!integrityfail";
+        $templatevars['message']    = $message;
+        $templatevars['url']        = $baseurl . "/pages/search.php?search=!integrityfail";
+        $admin_notify_emails        = array();
+        $admin_notify_users         = array();
+        $notify_users               = get_notification_users("SYSTEM_ADMIN");
+        foreach($notify_users as $notify_user)
+            {
+            get_config_option($notify_user['ref'],'user_pref_system_management_notifications', $send_message);		  
+            if($send_message==false)
+                {
+                $continue;
+                }
+            get_config_option($notify_user['ref'],'email_user_notifications', $send_email);    
+            if($send_email && $notify_user["email"]!="")
+                {
+                $admin_notify_emails[] = $notify_user['email'];				
+                }        
+            else
+                {
+                $admin_notify_users[]=$notify_user["ref"];
+                }
+            }
+
+        foreach($admin_notify_emails as $admin_notify_email)
+            {
+            send_mail($admin_notify_email,$applicationname . ": " . $lang['file_integrity_summary'],$message,"","","file_integrity_fail_email",$templatevars);    
+            }
+                
+        if (count($admin_notify_users)>0)
+            {
+            message_add($admin_notify_users,$notification_message,$url,0);
+            }
+        set_sysvar("last_integrity_check_notify",date("Y-m-d H:i:s"));
         }
     }

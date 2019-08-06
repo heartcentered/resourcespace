@@ -14,9 +14,9 @@ ob_start();
 echo "Starting cron process...<br />\n";
 
 # Get last cron date
-$lastcron = sql_value("SELECT value FROM sysvars where name='last_cron'",'1970-01-01');
-$lastcrontime = strtotime($lastcron);
-$sincelast  = time() - $lastcrontime;
+$lastcron       = get_sysvar('last_cron', '1970-01-01');
+$lastcrontime   = strtotime($lastcron);
+$sincelast      = time() - $lastcrontime;
 
 // grab a list of files to run as part of the upgrade process
 $new_system_version_files=array();
@@ -38,11 +38,10 @@ for($i=0; $i<=999; $i++)
 # Allow plugins to add their own cron jobs.
 hook("cron");
 
-echo "Complete" . PHP_EOL;
+echo PHP_EOL . "All tasks complete" . PHP_EOL;
 
 # Update last cron date
-sql_query("delete from sysvars where name='last_cron'");
-sql_query("insert into sysvars(name,value) values ('last_cron',now())");
+set_sysvar("last_cron",date("Y-m-d H:i:s"));
 
 
 

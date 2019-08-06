@@ -7,6 +7,15 @@ if($purge_temp_folder_age==0)
     return;
     }
     
+$last_delete_tmp_files  = get_sysvar('last_delete_tmp_files', '1970-01-01');
+
+# No need to run if already run in last 24 hours.
+if (time()-strtotime($last_delete_tmp_files) < 4*60*60)
+    {
+    echo " - Skipping delete_tmp_files job   - last run: " . $last_delete_tmp_files . "<br />\n";
+    return false;
+    }
+
 // Set up array of folders to scan
 $folderstoscan = array();
 $folderstoscan[] = get_temp_dir(false);
@@ -80,6 +89,9 @@ foreach ($filestodelete as $filetodelete)
     echo __FILE__. " - deleting file " . $filetodelete ." - " . ($success ? "SUCCESS" : "FAILED") . PHP_EOL;
     debug(__FILE__. " - deleting file " . $filetodelete ." - " . ($success ? "SUCCESS" : "FAILED"));
     }
-    
+
+# Update last sent date/time.
+set_sysvar("last_delete_tmp_files",date("Y-m-d H:i:s")); 
+
 
 
