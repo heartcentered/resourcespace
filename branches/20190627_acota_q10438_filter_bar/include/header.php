@@ -449,24 +449,21 @@ else
     <?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php }
 
     // Filter bar functionality
-    if($header_search && $k == "")
-        {
-        ?>
-        <li>
-            <form id="header_search_form" class="HeaderSearchForm"
-                  method="post" action="<?php echo $baseurl?>/pages/search.php"
-                  onsubmit="return CentralSpacePost(this, true);">
-                <?php generateFormToken("header_search_form"); ?>
-                <input id="ssearchbox" name="search" type="text" class="searchwidth"
-                       placeholder="<?php echo $lang['all__search']; ?>"
-                       value="<?php echo isset($quicksearch) ? $htmlspecialchars($quicksearch) : ""; ?>" />
-                <a href="<?php echo $baseurl; ?>/pages/search_advanced.php" onclick="return TogglePane('FilterBarContainer', this.href);">
-                    <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
-                </a>
-            </form>
-        </li>
-        <?php
-        }
+    ?>
+    <li>
+        <form id="header_search_form" class="HeaderSearchForm"
+              method="post" action="<?php echo $baseurl?>/pages/search.php"
+              onsubmit="return CentralSpacePost(this, true);">
+            <?php generateFormToken("header_search_form"); ?>
+            <input id="ssearchbox" name="search" type="text" class="searchwidth"
+                   placeholder="<?php echo $lang['all__search']; ?>"
+                   value="<?php echo isset($quicksearch) ? $htmlspecialchars($quicksearch) : ""; ?>" />
+            <a href="<?php echo $baseurl; ?>/pages/search_advanced.php" onclick="return TogglePane('FilterBarContainer', this.href);">
+                <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
+            </a>
+        </form>
+    </li>
+    <?php
 
     if(!hook('replaceheaderfullnamelink'))
         {
@@ -560,32 +557,10 @@ if($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false &&
         array_push($omit_searchbar_pages, 'terms');
         $collections_footer = false;
     }
- 
-if (!$header_search)
-    {
-    # Include simple search sidebar?
-   
-    $modified_omit_searchbar_pages=hook("modifyomitsearchbarpages");
-    if ($modified_omit_searchbar_pages){$omit_searchbar_pages=$modified_omit_searchbar_pages;}
-        
-    if (!in_array($pagename,$omit_searchbar_pages) && ($loginterms==false) && ($k == '' || $internal_share_access) && !hook("replace_searchbarcontainer") ) 	
-        {
-        ?>
-        <div id="SearchBarContainer" class="ui-layout-east" >
-        <?php
-        include dirname(__FILE__)."/searchbar.php";
-        
-        ?>
-        </div>
-        <?php
-        }
-    }
-else
-    {
-    ?>
-    <div id="FilterBarContainer" class="ui-layout-east"></div>
-    <?php
-    }
+
+?>
+<div id="FilterBarContainer" class="ui-layout-east"></div>
+<?php
 
 # Determine which content holder div to use
 if (($pagename=="login") || ($pagename=="user_password") || ($pagename=="user_request") || ($pagename=="user_change_password"))

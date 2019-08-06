@@ -2262,10 +2262,6 @@ $staticsync_allow_syncdir_deletion=false;
 # Show tabs on the edit/upload page. Disables collapsible sections
 $tabs_on_edit=false;
 
-# Show additional clear and 'show results' buttons at top of advanced search page
-$advanced_search_buttons_top=false;
-
-
 # Enable multi-lingual free text fields
 # By default, only the checkbox list/dropdown fields can be multilingual by using the special syntax when defining
 # the options. However, setting the below to true means that free text fields can also be multi-lingual. Several text boxes appear when entering data so that translations can be entered.
@@ -2892,9 +2888,6 @@ $hide_resource_share_link=false; // Configurable option to hide the "Share" link
 
 # Option to email the contributor when their resources have been approved (moved from pending submission/review to active)
 $user_resources_approved_email=false; 
-
-# Set to true to move the Search button before the Clear button
-$swap_clear_and_search_buttons=false;
 
 # Option to have default date left blank, instead of current date.
 $blank_date_upload_template=false;
