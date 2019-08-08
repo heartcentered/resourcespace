@@ -931,7 +931,6 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                 {
                 return false;
                 }
-
             switch(v)
                 {
             <?php
@@ -1089,6 +1088,23 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                             success: function(data) {
 								if (data.trim() == "HIDDEN") {
 									CollectionDivLoad('<?php echo $baseurl; ?>/pages/collections.php?collection='+mycol);
+								}
+							},
+							error: function (err) {
+								console.log("AJAX error : " + JSON.stringify(err, null, 2));
+							}
+						}); 
+						break;
+
+                        case 'relate_all':
+						var collection = <?php echo urlencode($collection_data['ref']);?>;
+						jQuery.ajax({
+							type: 'POST',
+							url: baseurl_short + 'pages/ajax/relate_resources.php?collection=' + collection,
+							data: {<?php echo generateAjaxToken("relate_resources"); ?>},
+                            success: function(data) {
+								if (data.trim() == "SUCCESS") {
+									stylerAlert("OK","Related ok");
 								}
 							},
 							error: function (err) {

@@ -867,20 +867,7 @@ function save_collection($ref, $coldata=array())
 	# Relate all resources?
 	if (getval("relateall","")!="")
 		{
-		$rlist=get_collection_resources($ref);
-		for ($n=0;$n<count($rlist);$n++)
-			{
-			for ($m=0;$m<count($rlist);$m++)
-				{
-				if ($rlist[$n]!=$rlist[$m]) # Don't relate a resource to itself
-					{ 
-						if (count(sql_query("SELECT 1 FROM resource_related WHERE resource='".$rlist[$n]."' and related='".$rlist[$m]."' LIMIT 1"))!=1) 
-							{
-							sql_query("insert into resource_related (resource,related) values ('" . $rlist[$n] . "','" . $rlist[$m] . "')");
-							}
-					}
-				}
-			}
+        relate_all_collection($ref);
 		}
 		
 	# Remove all resources?
@@ -2226,7 +2213,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
            $download_usage, $home_dash, $top_nav_upload_type, $pagename, $offset, $col_order_by, $find, $default_sort,
            $default_collection_sort, $starsearch, $restricted_share, $hidden_collections, $internal_share_access, $search,
            $usercollection, $disable_geocoding, $geo_locate_collection, $collection_download_settings, $contact_sheet,
-           $allow_resource_deletion, $pagename,$upload_then_edit;
+           $allow_resource_deletion, $pagename,$upload_then_edit, $enable_related_resources;
                
 	#This is to properly render the actions drop down in the themes page	
 	if ( isset($collection_data['ref']) && $pagename!="collections" )
@@ -2657,7 +2644,17 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label'] = $lang['hide_collection'];
 		$options[$o]['extra_tag_attributes']=$extra_tag_attributes;	
 		$o++;
-		}
+        }
+        
+    
+    // Relate all resources
+    if($enable_related_resources) 
+        {
+        $options[$o]['value'] = 'relate_all';
+        $options[$o]['label'] = $lang['relateallresources'];
+        $options[$o]['data_attr']=$data_attribute;
+        $o++;
+        }
 
     // Add extra collection actions and manipulate existing actions through plugins
     $modified_options = hook('render_actions_add_collection_option', '', array($top_actions,$options,$collection_data));
@@ -3302,4 +3299,35 @@ function collection_download_clean_temp_files(array $deletion_array)
         {
         delete_exif_tmpfile($tmpfile);
         }
+    }
+
+/**
+* Relate all resources in a collection
+* 
+* @param integer $collection ID of collection
+*
+* @return boolean
+*/
+function relate_all_collection($collection, $checkperms = true)
+    {
+    if((string)(int)$collection != (string)$collection || ($checkperms && !allow_multi_edit($collection)))
+        {
+        return false;
+        }
+
+    $rlist = get_collection_resources($collection);
+    for ($n=0;$n<count($rlist);$n++)
+        {
+        for ($m=0;$m<count($rlist);$m++)
+            {
+            if ($rlist[$n]!=$rlist[$m]) # Don't relate a resource to itself
+                { 
+                if (count(sql_query("SELECT 1 FROM resource_related WHERE resource='".$rlist[$n]."' and related='".$rlist[$m]."' LIMIT 1"))!=1) 
+                    {
+                    sql_query("insert into resource_related (resource,related) values ('" . $rlist[$n] . "','" . $rlist[$m] . "')");
+                    }
+                }
+            }
+        }
+    return true;
     }
