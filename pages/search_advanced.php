@@ -75,7 +75,7 @@ foreach($archivechoices as $archivechoice)
     if(is_numeric($archivechoice)) {$selected_archive_states[] = $archivechoice;}  
     }
 
-$archive=implode(",",$selected_archive_states);
+$archive = implode(",", $selected_archive_states);
 $archiveonly=count(array_intersect($selected_archive_states,array(1,2)))>0;
 
 $starsearch=getvalescaped("starsearch","");	
@@ -85,8 +85,9 @@ $opensections=get_search_open_sections();
 
 # Disable auto-save function, only applicable to edit form. Some fields pick up on this value when rendering then fail to work.
 $edit_autosave=false;
+$reset_form = trim(getval("resetform", "")) !== "";
 
-if (getval("submitted","")=="yes" && getval("resetform","")=="")
+if (getval("submitted","")=="yes" && !$reset_form)
 	{
 	$restypes="";
 	reset($_POST);foreach ($_POST as $key=>$value)
@@ -143,7 +144,7 @@ foreach($advanced_search_properties as $advanced_search_property=>$code)
  
 $values=array();
 	
-if (getval("resetform","")!="")
+if($reset_form)
   { 
   $found_year="";$found_month="";$found_day="";$found_start_date="";$found_end_date="";$allwords="";$starsearch="";
   $restypes=get_search_default_restypes();
@@ -357,7 +358,7 @@ jQuery(document).ready(function()
         SetCookie("advancedsearchsection", selectedtypes);
         UpdateResultCount();
         });
-    jQuery('.CollapsibleSectionHead').click(function() 
+  /*  jQuery('.CollapsibleSectionHead').click(function() 
             {
             cur=jQuery(this).next();
             cur_id=cur.attr("id");
@@ -388,28 +389,11 @@ jQuery(document).ready(function()
                         }
                     else jQuery(this).addClass('expanded');
     
-                });
+                });*/
     
     });
 </script>
-<?php
-if(!$header_search)
-    {
-    ?>
-    <iframe src="blank.html" name="resultcount" id="resultcount" style="visibility:hidden;float:right;" width=1 height=1></iframe>
-    <?php
-    }
-    ?>
 <div class="BasicsBox">
-<?php
-if(!$header_search)
-    {
-    ?>
-    <h1><?php echo ($archiveonly)?$lang["archiveonlysearch"]:$lang["advancedsearch"];?> </h1>
-    <p class="tight"><?php echo text("introtext")?></p>
-    <?php
-    }
-    ?>
 <form method="post" id="advancedform" action="<?php echo $baseurl ?>/pages/search_advanced.php" >
 <?php generateFormToken("advancedform"); ?>
 <input type="hidden" name="submitted" id="submitted" value="yes">
@@ -552,118 +536,113 @@ if(!hook('advsearchallfields'))
     }
     ?>
 
-<?php if (!hook('advsearchresid')) { ?>
-<!-- Search for resource ID(s) -->
-<div class="Question">
-<label for="resourceids"><?php echo $lang["resourceids"]?></label><input class="SearchWidth" type=text name="resourceids" id="resourceids" value="<?php echo htmlspecialchars(getval("resourceids","")) ?>" onChange="UpdateResultCount();">
-<div class="clearerleft"> </div>
-</div>
-<?php }
-if (!hook('advsearchdate')) {
-if (!$daterange_search)
-	{
-	?>
-	<div class="Question"><label><?php echo $lang["bydate"]?></label>
-	<select id="basicyear" name="basicyear" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
-	  <option value=""><?php echo $lang["anyyear"]?></option>
-	  <?php
-	  $y=date("Y");
-	  for ($n=$minyear;$n<=$y;$n++)
-		{
-		?><option <?php if ($n==$found_year) { ?>selected<?php } ?>><?php echo $n?></option><?php
-		}
-	  ?>
-	</select>
-	<select id="basicmonth" name="basicmonth" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
-	  <option value=""><?php echo $lang["anymonth"]?></option>
-	  <?php
-	  for ($n=1;$n<=12;$n++)
-		{
-		$m=str_pad($n,2,"0",STR_PAD_LEFT);
-		?><option <?php if ($n==$found_month) { ?>selected<?php } ?> value="<?php echo $m?>"><?php echo $lang["months"][$n-1]?></option><?php
-		}
-	  ?>
-	</select>
-	<select id="basicday" name="basicday" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
-	  <option value=""><?php echo $lang["anyday"]?></option>
-	  <?php
-	  for ($n=1;$n<=31;$n++)
-		{
-		$m=str_pad($n,2,"0",STR_PAD_LEFT);
-		?><option <?php if ($n==$found_day) { ?>selected<?php } ?> value="<?php echo $m?>"><?php echo $m?></option><?php
-		}
-	  ?>
-	</select>
-	<div class="clearerleft"> </div>
-	</div>
-<?php }}
+<?php
+if(!hook('advsearchresid'))
+    {
+    ?>
+    <div class="Question">
+        <label for="resourceids"><?php echo $lang["resourceids"]?></label>
+        <input id="resourceids" class="SearchWidth"
+               type=text name="resourceids"
+               value="<?php echo htmlspecialchars(getval("resourceids","")); ?>"
+               onChange="UpdateResultCount();">
+        <div class="clearerleft"></div>
+    </div>
+    <?php
+    }
 
-hook('advsearchaddfields');
-
-# Fetch fields
-$fields=get_advanced_search_fields($archiveonly);
-$showndivide=-1;
-
-# Preload resource types
-$rtypes=get_resource_types();
-
-for ($n=0;$n<count($fields);$n++)
-	{
-	# Show a dividing header for resource type specific fields?
-	if (($fields[$n]["resource_type"]!=0) && ($showndivide!=$fields[$n]["resource_type"]))
-		{
-		$showndivide=$fields[$n]["resource_type"];
-		$label="??";
-		# Find resource type name
-		for ($m=0;$m<count($rtypes);$m++)
-			{
-			# Note: get_resource_types() has already translated the resource type name for the current user.
-			if ($rtypes[$m]["ref"]==$fields[$n]["resource_type"]) {$label=$rtypes[$m]["name"];}
-			}
-		?>
-		</div>
-            <h1 class="AdvancedSectionHead CollapsibleSectionHead ResTypeSectionHead"
-                id="AdvancedSearchTypeSpecificSection<?php echo $fields[$n]["resource_type"]; ?>Head"
-                <?php
-                if(!in_array($fields[$n]["resource_type"], $restypes) || in_array("Global", $restypes) || count($restypes) > 1)
-                    {
-                    ?> style="display: none;"
-                    <?php
-                    }
-                    ?>
-            ><?php echo $lang["typespecific"] . ": " . $label ?></h1>
-        <div class="AdvancedSection ResTypeSection"
-             id="AdvancedSearchTypeSpecificSection<?php echo $fields[$n]["resource_type"]; ?>"
-             <?php
-             if(!in_array($fields[$n]["resource_type"], $opensections))
+if(!hook('advsearchdate'))
+    {
+    if(!$daterange_search)
+        {
+        ?>
+        <div class="Question">
+            <label><?php echo $lang["bydate"]?></label>
+            <select id="basicyear" name="basicyear" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
+                <option value=""><?php echo $lang["anyyear"]?></option>
+            <?php
+            $y=date("Y");
+            for($n = $minyear; $n <= $y; $n++)
                 {
-                ?> style="display: none;"
+                $selected = ($n == $found_year ? "selected" : "");
+                ?>
+                <option <?php echo $selected; ?>><?php echo $n; ?></option>
                 <?php
                 }
                 ?>
-        >
-		<?php
-		}
+            </select>
+            <select id="basicmonth" name="basicmonth" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
+                <option value=""><?php echo $lang["anymonth"]?></option>
+            <?php
+            for($n = 1; $n <= 12; $n++)
+                {
+                $m=str_pad($n,2,"0",STR_PAD_LEFT);
+                ?>
+                <option <?php if ($n==$found_month) { ?>selected<?php } ?> value="<?php echo $m; ?>"><?php echo $lang["months"][$n-1]?></option>
+                <?php
+                }
+                ?>
+            </select>
+            <select id="basicday" name="basicday" class="SearchWidth" style="width:120px;" onChange="UpdateResultCount();">
+                <option value=""><?php echo $lang["anyday"]?></option>
+            <?php
+            for($n = 1; $n <= 31; $n++)
+                {
+                $m = str_pad($n, 2, "0", STR_PAD_LEFT);
+                ?>
+                <option <?php if ($n==$found_day) { ?>selected<?php } ?> value="<?php echo $m; ?>"><?php echo $m; ?></option>
+                <?php
+                }
+                ?>
+            </select>
+            <div class="clearerleft"> </div>
+        </div><!-- End of basic date question -->
+        <?php
+        }
+    }
 
-	# Work out a default value
-	if (array_key_exists($fields[$n]["name"],$values)) {$value=$values[$fields[$n]["name"]];} else {$value="";}
-	if (getval("resetform","")!="") {$value="";}
+hook('advsearchaddfields');
+
+$fields = get_advanced_search_fields($archiveonly);
+$rtypes = get_resource_types();
+$advanced_section_rendered = false;
+
+foreach($fields as $key => $field)
+    {
+    $simple_search_flag = $field["simple_search"] == 1 ? true : false;
+    $advanced_search_flag = $field["advanced_search"] == 1 ? true : false;
+
+    if(!$advanced_section_rendered && !$simple_search_flag && $advanced_search_flag)
+        {
+        ?>
+        <h1 class="CollapsibleSectionHead collapsed"><?php echo $lang["advanced"]; ?></h1>
+        <div id="FilterBarAdvancedSection" class="CollapsibleSection">
+        <?php
+        $advanced_section_rendered = true;
+        }
+
+    $value = "";
+    if(!$reset_form && array_key_exists($field["name"], $values))
+        {
+        $value = $values[$field["name"]];
+        }
+
+    render_search_field($field, $value, true, 'SearchWidth', false, array(), $searched_nodes);
     ?>
     <script>
-    resource_type_fields_data[<?php echo $fields[$n]["ref"]; ?>] = {
-        ref: "<?php echo $fields[$n]["ref"]; ?>",
-        name: "<?php echo $fields[$n]["name"]; ?>",
-        type: "<?php echo $fields[$n]["type"]; ?>",
+    resource_type_fields_data[<?php echo $field["ref"]; ?>] = {
+        ref: "<?php echo $field["ref"]; ?>",
+        name: "<?php echo $field["name"]; ?>",
+        type: "<?php echo $field["type"]; ?>",
     };
     </script>
     <?php
-	# Render this field
-    render_search_field($fields[$n], $value, true, 'SearchWidth', false, array(), $searched_nodes);
-	}
-?>
-</div>
+    if(($key === count($fields) - 1) && $advanced_section_rendered)
+        {
+        echo "</div> <!-- End of AdvancedSection -->";
+        }
+    }
 
-<?php
 global $advanced_search_archive_select;
 if($advanced_search_archive_select)
 	{
@@ -809,8 +788,6 @@ if (!$collection_search_includes_resource_metadata)
 <?php
 }
 
-
-
 if($advanced_search_media_section)
     {
     ?>
@@ -845,5 +822,6 @@ jQuery(document).ready(function()
     {
     UpdateActiveFilters({search: "<?php echo $search; ?>"});
     jQuery("#FilterBarContainer .Question table").PutShadowOnScrollableElement();
+    registerCollapsibleSections(false);
     });
 </script>
