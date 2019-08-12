@@ -89,9 +89,9 @@ if(count($checkfailed) > 0)
     $last_integrity_check_notify = get_sysvar('last_integrity_check_notify', '1970-01-01');
 
     # Skip if run within last 24 hours
-    if (false && time()-strtotime($last_integrity_check_notify) < 24*60*60)
+    if (time()-strtotime($last_integrity_check_notify) < 24*60*60)
         {
-        echo " - Skipping sending of integrity failure notifications - last send: " . $last_integrity_check_notify . "<br />\n";
+        echo " - Skipping sending of integrity failure notifications - last sent: " . $last_integrity_check_notify . "<br />\n";
         }
     else
         {
