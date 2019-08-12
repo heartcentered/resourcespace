@@ -2,6 +2,14 @@
 include_once __DIR__ . "/../../include/db.php";
 include_once __DIR__ . "/../../include/general.php";
 
+if (is_process_lock("file_integrity_check")) 
+    {
+    echo " - File integrity process lock is in place.Skipping.\n");}
+    return;
+    }
+
+set_process_lock("file_integrity_check");
+
 // Get resources and checksums to validate
 $resources      = sql_query("SELECT ref, archive, file_extension, file_checksum, last_verified, integrity_fail FROM resource WHERE ref>0 AND (datediff(now(),last_verified)>1 OR last_verified IS NULL) " . ((count($file_integrity_ignore_states) > 0) ? " AND archive NOT IN ('" . implode("','",$file_integrity_ignore_states) . "')" : "") . " ORDER BY last_verified ASC");
 $checkfailed    = array();
@@ -39,7 +47,7 @@ foreach($resources as $resource)
 
     $path=get_resource_path($resource['ref'],true,"",false,$resource['file_extension']);
     if(!hook('file_integrity_check','',array($resource)))
-        {              
+        {             
         if (is_readable($path))
             {
             if($file_checksums && !$file_checksums_50k)
@@ -138,3 +146,5 @@ if(count($checkfailed) > 0)
         set_sysvar("last_integrity_check_notify",date("Y-m-d H:i:s"));
         }
     }
+
+clear_process_lock("file_integrity_check");
