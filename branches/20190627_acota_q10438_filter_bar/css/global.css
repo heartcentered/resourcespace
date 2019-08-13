@@ -1774,7 +1774,7 @@ a.BrowseRefresh{
 #FilterBarContainer { padding: 10px 10px; text-align: left; color: #FFF; }
 #FilterBarContainer .SearchWidth, #FilterBarContainer .CategoryBox { width: 380px; }
 #FilterBarContainer > .BasicsBox { margin: initial; }
-#FilterBarContainer .AdvancedSectionHead, #FilterBarContainer .Question a { color: #FFF; }
+#FilterBarContainer .CollapsibleSectionHead, #FilterBarContainer .Question a { color: #FFF; }
 #FilterBarContainer .Question { padding: 0.5em 0em 0.3em 0em }
 #FilterBarContainer .Question, #FilterBarContainer .QuestionSubmit,
 #FilterBarContainer .Question:last-of-type, #FilterBarContainer .QuestionSubmit:last-of-type { border-bottom: initial; }

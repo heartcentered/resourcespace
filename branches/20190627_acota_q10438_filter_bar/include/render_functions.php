@@ -269,7 +269,7 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
     if (!$forsearchbar)
         {
         ?>
-        <div class="Question" id="question_<?php echo $n ?>" <?php if (!$displaycondition) {?>style="display:none;border-top:none;"<?php } ?><?php
+        <div class="Question" id="question_<?php echo $n ?>" data-resource_type="<?php echo htmlspecialchars($field["resource_type"]); ?>" <?php if (!$displaycondition) {?>style="display:none;border-top:none;"<?php } ?><?php
         if (strlen($field["tooltip_text"])>=1)
             {
             echo "title=\"" . htmlspecialchars(lang_or_i18n_get_translated($field["tooltip_text"], "fieldtooltip-")) . "\"";
@@ -2791,10 +2791,201 @@ function generate_browse_bar_item($id, $text)
             </div><!-- End of BrowseRowOuter -->";
 	return $html;
 	}
-	
-	
-	
-	
-	
-	
-	
+
+/**
+* Render the archive states for the filter bar
+* 
+* @param array $selected_archive_states
+* 
+* @return void
+*/
+function render_fb_archive_state(array $selected_archive_states)
+    {
+    if($GLOBALS["advanced_search_archive_select"] === false)
+        {
+        ?>
+        <input type="hidden" name="archive" value="<?php echo htmlspecialchars(implode(",", $selected_archive_states)); ?>">
+        <?php
+        return;
+        }
+
+    $available_archive_states = array();
+    $all_archive_states = array_merge(range(-2, 3), $GLOBALS["additional_archive_states"]);
+    foreach($all_archive_states as $archive_state_ref)
+        {
+        if(!checkperm("z" . $archive_state_ref))
+            {
+            $available_archive_states[$archive_state_ref] = (isset($GLOBALS["lang"]["status" . $archive_state_ref]))?$GLOBALS["lang"]["status" . $archive_state_ref]:$archive_state_ref;
+            }
+        }
+    ?>
+    <div class="Question" id="question_archive" >
+        <label><?php echo $GLOBALS["lang"]["status"]; ?></label>
+        <table cellpadding=2 cellspacing=0>
+            <?php
+            foreach($available_archive_states as $archive_state=>$state_name)
+                {
+                ?>
+                  <tr>
+                    <td width="1">
+                   <input type="checkbox"
+                          name="archive[]"
+                          value="<?php echo $archive_state; ?>"
+                          onChange="UpdateResultCount();"<?php 
+                       if (in_array($archive_state, $selected_archive_states))
+                           {
+                           ?>
+                           checked
+                           <?php
+                           }?>
+                       >
+               </td>
+               <td><?php echo htmlspecialchars(i18n_get_translated($state_name)); ?>&nbsp;</td>
+               </tr>
+                <?php  
+                }
+            ?>
+        </table>
+    </div>
+    <div class="clearerleft"></div>
+    <?php
+    return;
+    }
+
+/**
+* Render the "Contributed by" section for filter bar
+* 
+* @param int $properties_contributor Contributor user ID
+* 
+* @return void
+*/
+function render_fb_contributed_by($properties_contributor)
+    {
+    global $lang, $sharing_userlists, $baseurl, $advanced_search_contributed_by;
+    if(!$advanced_search_contributed_by)
+        {
+        return;
+        }
+        ?>
+    <div class="Question">
+        <label><?php echo $lang["contributedby"]; ?></label>
+        <?php
+        $single_user_select_field_value = $properties_contributor;
+        $single_user_select_field_id = 'properties_contributor';
+        $single_user_select_field_onchange = 'UpdateResultCount();';
+        $userselectclass = "searchWidth";
+        include "../include/user_select.php";
+        ?>
+        <script>
+        jQuery('#properties_contributor').change(function()
+            {
+            UpdateResultCount();
+            });
+        </script>
+        <?php
+        unset($single_user_select_field_value);
+        unset($single_user_select_field_id);
+        unset($single_user_select_field_onchange);
+        ?>
+    </div>
+    <?php
+    return;
+    }
+
+/**
+* Render "Media" section for filter bar
+* 
+* @param  int  $media_heightmin
+* @param  int  $media_heightmax
+* @param  int  $media_widthmin
+* @param  int  $media_widthmax
+* @param  int  $media_filesizemin
+* @param  int  $media_filesizemax
+* @param  string  $media_fileextension
+* @param  boolean  $properties_haspreviewimag
+* 
+* @return void
+*/
+function render_fb_media_section(
+    $media_heightmin,
+    $media_heightmax,
+    $media_widthmin,
+    $media_widthmax,
+    $media_filesizemin,
+    $media_filesizemax,
+    $media_fileextension,
+    $properties_haspreviewimage
+)
+    {
+    global $lang, $advanced_search_media_section;
+    if(!$advanced_search_media_section)
+        {
+        return;
+        }
+        ?>
+    <h1 class="CollapsibleSectionHead collapsed" ><?php echo $lang["media"]; ?></h1>
+    <div id="AdvancedSearchMediaSection" class="CollapsibleSection">
+    <?php 
+    render_split_text_question(
+        $lang["pixel_height"],
+        array(
+            'media_heightmin' => $lang['from'],
+            'media_heightmax' => $lang['to']
+        ),
+        $lang["pixels"],
+        true,
+        " class=\"stdWidth\" OnChange=\"UpdateResultCount();\"",
+        array(
+            'media_heightmin' => $media_heightmin,
+            'media_heightmax' => $media_heightmax
+        ));
+
+    render_split_text_question(
+        $lang["pixel_width"],
+        array(
+            'media_widthmin' => $lang['from'],
+            'media_widthmax' => $lang['to']
+        ),
+        $lang["pixels"],
+        true,
+        " class=\"stdWidth\" OnChange=\"UpdateResultCount();\"",
+        array(
+            'media_widthmin' => $media_widthmin,
+            'media_widthmax' => $media_widthmax));
+
+    render_split_text_question(
+        $lang["filesize"],
+        array(
+            'media_filesizemin' => $lang['from'],
+            'media_filesizemax' => $lang['to']
+        ),
+        $lang["megabyte-symbol"],
+        false,
+        " class=\"stdWidth\" OnChange=\"UpdateResultCount();\"",
+        array(
+            'media_filesizemin' => $media_filesizemin,
+            'media_filesizemax' => $media_filesizemax));
+
+    render_text_question(
+        $lang["file_extension_label"],
+        "media_fileextension",
+        "",
+        false,
+        " class=\"SearchWidth\" OnChange=\"UpdateResultCount();\"",
+        $media_fileextension);
+
+    render_dropdown_question(
+        $lang["previewimage"],
+        "properties_haspreviewimage",
+        array(
+            "" => "",
+            "1" => $lang["yes"],
+            "0" => $lang["no"]
+        ),
+        $properties_haspreviewimage,
+        " class=\"SearchWidth\" OnChange=\"UpdateResultCount();\"");
+    ?>
+    </div><!-- End of AdvancedSearchMediaSection -->
+    <?php
+    return;
+    }
