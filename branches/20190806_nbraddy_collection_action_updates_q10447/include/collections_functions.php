@@ -112,7 +112,11 @@ function get_collection($ref)
 	{
     # Returns all data for collection $ref.
     $return=sql_query("select c.*, c.theme2, c.theme3, c.keywords, u.fullname, u.username, c.home_page_publish, c.home_page_text, c.home_page_image, c.session_id, c.description from collection c left outer join user u on u.ref = c.user where c.ref = '" . escape_check($ref) . "'");
-	if (count($return)==0) {return false;} else 
+    if (count($return)==0)
+        {
+        return false;
+        }
+    else 
 		{
 		$return=$return[0];
 		$return["users"]=join(", ",sql_array("select u.username value from user u,user_collection c where u.ref=c.user and c.collection='" . escape_check($ref) . "' order by u.username"));

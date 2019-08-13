@@ -2760,26 +2760,6 @@ function render_browse_bar()
         </script>';
     }
 
-/*
-Tag - child is resource_type expand, show restypes, no link
- - get resource types
-
-resource_type - child is metadata field
-
-metadata field - child is node
-
-node - if cat tree - child is node, expand else none
-
-featured- child is first cat
-
-collection - child is collection name/ref
-
-workflow - child is archive states
-
-archive states -  child is metadata field
-- if archive, has extra fields
-*/
-
 
 /**
 * Generates a root row item for the browse bar
@@ -2802,11 +2782,6 @@ function generate_browse_bar_item($id, $text)
     $html .= "</div><!-- End of BrowseRowInner -->
             </div><!-- End of BrowseRowOuter -->";
 	return $html;
-	}
-	
-	
-	
-	
-	
-	
+    }
+
 	
