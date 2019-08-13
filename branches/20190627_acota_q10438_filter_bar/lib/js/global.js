@@ -1694,7 +1694,7 @@ function UpdateActiveFilters(data)
         // !propertieshmin:100;hmax:2300;wmin:200;wmax:200;fmin:500;fmax:700;cu:2
         if(s_part.indexOf("!properties") !== -1)
             {
-            RenderActiveFilter("<i aria-hidden=\"true\" class=\"fa fa-television\"></i>");
+            RenderActiveFilter("<i aria-hidden=\"true\" class=\"fa fa-television\"></i>", {media_properties: true});
             return true;
             }
 
@@ -1816,6 +1816,7 @@ function ResetActiveFiltersDisplay()
                 field_data.type = 4;
                 }
 
+            var type_handled = true;
             switch(parseInt(field_data.type))
                 {
                 case 0://FIELD_TYPE_TEXT_BOX_SINGLE_LINE
@@ -1919,9 +1920,43 @@ function ResetActiveFiltersDisplay()
                     UpdateResultCount();
                     break;
                 default:
-                    console.warn("ResetActiveFiltersDisplay() - no case detected for filter! Field details: " + JSON.stringify(field_data));
+                    type_handled = false;
                     break;
                 }
+
+                if(type_handled)
+                    {
+                    return;
+                    }
+
+                // Custom "types" - these are not an actual resource type fields. Example: "Media section" or "Contributed by"
+                if(jQuery(event.target).parent().data("media_properties") === true)
+                    {
+                    jQuery("#properties_contributor").val("");
+                    
+                    /*
+                    Media section fields:
+                    media_heightmin
+                    media_heightmax
+                    media_widthmin
+                    media_widthmax
+                    media_filesizemin
+                    media_filesizemax
+                    media_fileextension
+                    */
+                    jQuery.each(jQuery("input[name^='media_']"), function(index, element)
+                        {
+                        jQuery(element).val("");
+                        });
+
+                    jQuery("#properties_haspreviewimage").val([]);
+
+                    UpdateResultCount();
+                    return;
+                    }
+
+                console.warn("ResetActiveFiltersDisplay() - undefined type detected for filter! Field details: " + JSON.stringify(field_data));
+                return;
             });
         }
     return;
