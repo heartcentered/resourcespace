@@ -39,6 +39,8 @@ function HookRss2SearchRender_search_actions_add_option($options)
 		$options[$c]['value']='rss';
 		$options[$c]['label']=$lang["rss_feed_for_search_filter"];
 		$options[$c]['data_attr']=$data_attribute;
+		$options[$c]['category']  = ACTIONGROUP_ADVANCED;
+        $options[$c]['order_by']  = 500;
 		
 		return $options;
 		}

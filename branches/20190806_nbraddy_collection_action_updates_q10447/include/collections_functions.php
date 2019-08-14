@@ -2268,77 +2268,65 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$order_by = $default_collection_sort;
 		}
 	
-    if(!collection_is_research_request($collection_data['ref']) || !checkperm('r'))
+    
+    // View all resources
+    if(
+        !$top_actions // View all resources makes sense only from collection bar context
+        && (
+            ($k=="" || $internal_share_access)
+            && (isset($collection_data["c"]) && $collection_data["c"] > 0)
+            || (is_array($result) && count($result) > 0)
+        )
+    )
         {
-        if(!$top_actions && checkperm('s') && $pagename === 'collections')
-            {
-            // Manage My Collections
-            $data_attribute['url'] = $baseurl_short . 'pages/collection_manage.php';
-            $options[$o]['value']='manage_collections';
-            $options[$o]['label']=$lang['managemycollections'];
-            $options[$o]['data_attr']=$data_attribute;
-            $options[$o]['category'] = ACTIONGROUP_COLLECTION;
-            $o++;
+        $tempurlparams = array(
+            'sort' => 'ASC',
+            'search' => (isset($collection_data['ref']) ? "!collection{$collection_data['ref']}" : $search),
+        );
 
-            // Collection feedback
-            if(isset($collection_data['request_feedback']) && $collection_data['request_feedback'])
-                {
-                $data_attribute['url'] = sprintf('%spages/collection_feedback.php?collection=%s&k=%s',
-                    $baseurl_short,
-                    urlencode($collection_data['ref']),
-                    urlencode($k)
-                );
-                $options[$o]['value']='collection_feedback';
-				$options[$o]['label']=$lang['sendfeedback'];
-				$options[$o]['data_attr']=$data_attribute;
-				$options[$o]['category'] = ACTIONGROUP_RESOURCE;
-				$o++;
-                }
-            }
+        $data_attribute['url'] = generateURL($baseurl_short . "pages/search.php",$urlparams,$tempurlparams);
+        $options[$o]['value']='view_all_resources_in_collection';
+		$options[$o]['label']=$lang['view_all_resources'];
+		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
+		$options[$o]['order_by'] = 10;
+		$o++;
+        }
+    
+    // Download option
+    if($pagename == 'collection_manage') 
+        {
+        $min_access = collection_min_access($collection_data['ref']);
         }
     else
         {
-        $research = sql_value('SELECT ref value FROM research_request WHERE collection="' . escape_check($collection_data['ref']) . '";', 0);
-
-        // Manage research requests
-        $data_attribute['url'] = generateURL($baseurl_short . "pages/team/team_research.php",$urlparams);
-        $options[$o]['value']='manage_research_requests';
-		$options[$o]['label']=$lang['manageresearchrequests'];
-		$options[$o]['data_attr']=$data_attribute;
-		$options[$o]['category'] = ACTIONGROUP_RESEARCH;
-		$o++;
-
-        // Edit research requests
-        $data_attribute['url'] = generateURL($baseurl_short . "pages/team/team_research_edit.php",$urlparams,array("ref"=>$research));
-        $options[$o]['value']='edit_research_requests';
-		$options[$o]['label']=$lang['editresearchrequests'];
-		$options[$o]['data_attr']=$data_attribute;
-		$options[$o]['category'] = ACTIONGROUP_RESEARCH;
-		$o++;
+        $min_access = collection_min_access($result);
         }
 
-    // Select collection option - not for collection bar
-    if($pagename != 'collections' && ($k == '' || $internal_share_access) && !checkperm('b')
-        && ($pagename == 'themes' || $pagename === 'collection_manage' || $pagename === 'resource_collection_list' || $top_actions)
-        && ((isset($search_collection) && isset($usercollection) && $search_collection != $usercollection) || !isset($search_collection))
-        && collection_readable($collection_data['ref'])
-    )
+    if($min_access == 0 )
         {
-        $options[$o]['value'] = 'select_collection';
-        $options[$o]['label'] = $lang['selectcollection'];
-		$options[$o]['category'] = ACTIONGROUP_COLLECTION;
-        $o++;
-        }
-
-    // Edit Collection
-    if((($userref == $collection_data['user']) || (checkperm('h')))  && ($k == '' || $internal_share_access)) 
-        {
-        $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_edit.php",$urlparams);
-        $options[$o]['value']='edit_collection';
-		$options[$o]['label']=$lang['editcollection'];
-		$options[$o]['data_attr'] = $data_attribute;
-		$options[$o]['category'] = ACTIONGROUP_EDIT;
-		$o++;
+        if( $download_usage && ( isset($zipcommand) || $use_zip_extension || ( isset($archiver_path) && isset($collection_download_settings) ) ) && $collection_download && $count_result > 0)
+            {
+            $download_url = generateURL($baseurl_short . "pages/download_usage.php",$urlparams);
+            $data_attribute['url'] = generateURL($baseurl_short . "pages/terms.php",$urlparams,array("url"=>$download_url));
+            $options[$o]['value']='download_collection';
+            $options[$o]['label']=$lang['action-download'];
+            $options[$o]['data_attr']=$data_attribute;
+			$options[$o]['category'] = ACTIONGROUP_RESOURCE;
+            $options[$o]['order_by'] = 20;
+            $o++;
+            }
+        else if( (isset($zipcommand) || $use_zip_extension || ( isset($archiver_path) && isset($collection_download_settings) ) ) && $collection_download && $count_result > 0)
+            {
+            $download_url = generateURL($baseurl_short . "pages/collection_download.php",$urlparams);
+            $data_attribute['url'] = generateURL($baseurl_short . "pages/terms.php",$urlparams,array("url"=>$download_url));
+            $options[$o]['value']='download_collection';
+            $options[$o]['label']=$lang['action-download'];
+            $options[$o]['data_attr']=$data_attribute;
+			$options[$o]['category'] = ACTIONGROUP_RESOURCE;
+            $options[$o]['order_by'] = 20;
+            $o++;
+            }
         }
 
     // Upload to collection
@@ -2367,10 +2355,164 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label']=$lang['action-upload-to-collection'];
 		$options[$o]['data_attr']=$data_attribute;
 		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
+        $options[$o]['order_by'] = 30;
+		$o++;
+        }
+    
 
+    // Preview all
+    if((is_array($result) && count($result) != 0) && ($k=="" || $internal_share_access) && $preview_all)
+        {
+        $data_attribute['url'] = generateURL($baseurl_short . "pages/preview_all.php",$urlparams);
+        $options[$o]['value']='preview_all';
+		$options[$o]['label']=$lang['preview_all'];
+        $options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
+        $options[$o]['order_by'] = 40;
 		$o++;
         }
 
+     // Remove all resources from collection
+     if(0 < $count_result && ($k=="" || $internal_share_access) && isset($emptycollection) && $remove_resources_link_on_collection_bar && collection_writeable($collection_data['ref']))
+     {
+     $data_attribute['url'] = generateURL($baseurl_short . "pages/collections.php",$urlparams,array("emptycollection"=>$collection_data['ref'],"removeall"=>"true","ajax"=>"true","submitted"=>"removeall"));
+     $options[$o]['value']     = 'empty_collection';
+     $options[$o]['label']     = $lang['emptycollection'];
+     $options[$o]['data_attr'] = $data_attribute;
+     $options[$o]['category']  = ACTIONGROUP_RESOURCE;
+     $options[$o]['order_by'] = 50;
+     $o++;
+     }
+ 
+    if(!collection_is_research_request($collection_data['ref']) || !checkperm('r'))
+        {
+        if(!$top_actions && checkperm('s') && $pagename === 'collections')
+            {
+            // Manage My Collections
+            $data_attribute['url'] = $baseurl_short . 'pages/collection_manage.php';
+            $options[$o]['value']='manage_collections';
+            $options[$o]['label']=$lang['managemycollections'];
+            $options[$o]['data_attr']=$data_attribute;
+            $options[$o]['category'] = ACTIONGROUP_COLLECTION;
+            $options[$o]['order_by'] = 60;
+            $o++;
+
+            // Collection feedback
+            if(isset($collection_data['request_feedback']) && $collection_data['request_feedback'])
+                {
+                $data_attribute['url'] = sprintf('%spages/collection_feedback.php?collection=%s&k=%s',
+                    $baseurl_short,
+                    urlencode($collection_data['ref']),
+                    urlencode($k)
+                );
+                $options[$o]['value']='collection_feedback';
+				$options[$o]['label']=$lang['sendfeedback'];
+				$options[$o]['data_attr']=$data_attribute;
+				$options[$o]['category'] = ACTIONGROUP_RESOURCE;
+                $options[$o]['order_by'] = 70;
+				$o++;
+                }
+            }
+        }
+    else
+        {
+        $research = sql_value('SELECT ref value FROM research_request WHERE collection="' . escape_check($collection_data['ref']) . '";', 0);
+
+        // Manage research requests
+        $data_attribute['url'] = generateURL($baseurl_short . "pages/team/team_research.php",$urlparams);
+        $options[$o]['value']='manage_research_requests';
+		$options[$o]['label']=$lang['manageresearchrequests'];
+		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESEARCH;
+        $options[$o]['order_by'] = 80;
+		$o++;
+
+        // Edit research requests
+        $data_attribute['url'] = generateURL($baseurl_short . "pages/team/team_research_edit.php",$urlparams,array("ref"=>$research));
+        $options[$o]['value']='edit_research_requests';
+		$options[$o]['label']=$lang['editresearchrequests'];
+		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESEARCH;
+        $options[$o]['order_by'] = 90;
+		$o++;
+        }
+
+    // Select collection option - not for collection bar
+    if($pagename != 'collections' && ($k == '' || $internal_share_access) && !checkperm('b')
+        && ($pagename == 'themes' || $pagename === 'collection_manage' || $pagename === 'resource_collection_list' || $top_actions)
+        && ((isset($search_collection) && isset($usercollection) && $search_collection != $usercollection) || !isset($search_collection))
+        && collection_readable($collection_data['ref'])
+    )
+        {
+        $options[$o]['value'] = 'select_collection';
+        $options[$o]['label'] = $lang['selectcollection'];
+		$options[$o]['category'] = ACTIONGROUP_COLLECTION;
+        $options[$o]['order_by'] = 100;
+        $o++;
+        }
+
+    // Edit Collection
+    if((($userref == $collection_data['user']) || (checkperm('h')))  && ($k == '' || $internal_share_access)) 
+        {
+        $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_edit.php",$urlparams);
+        $options[$o]['value']='edit_collection';
+		$options[$o]['label']=$lang['editcollection'];
+		$options[$o]['data_attr'] = $data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_EDIT;
+        $options[$o]['order_by'] = 110;
+		$o++;
+        }
+    // work this out in one place to prevent multiple calls as function is expensive
+    $allow_multi_edit=allow_multi_edit(empty($resource_data) ? $collection_data['ref'] : $resource_data, $collection_data['ref']);
+
+    // Edit all
+    # If this collection is (fully) editable, then display an edit all link
+    if(($k=="" || $internal_share_access) && $show_edit_all_link && $count_result>0)
+        {
+        if($allow_multi_edit)
+            {
+            $extra_params = array(
+                'editsearchresults' => 'true',
+            );
+
+            $data_attribute['url'] = generateURL($baseurl_short . "pages/edit.php", $urlparams, $extra_params);
+            $options[$o]['value']='edit_all_in_collection';
+            $options[$o]['label']=$lang['edit_all_resources'];
+            $options[$o]['data_attr']=$data_attribute;
+			$options[$o]['category'] = ACTIONGROUP_EDIT;
+            $options[$o]['order_by'] = 120;
+            $o++;
+            }
+        }
+    
+    
+    // Edit Previews
+	if (($k=="" || $internal_share_access) && $count_result > 0 && !(checkperm('F*')) && ($userref == $collection_data['user'] || $collection_data['allow_changes'] == 1 || checkperm('h')) && $allow_multi_edit)
+        {
+        $main_pages   = array('search', 'collection_manage', 'collection_public', 'themes');
+        $back_to_page = (in_array($pagename, $main_pages) ? htmlspecialchars($pagename) : '');
+        $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_edit_previews.php",$urlparams,array("backto"=>$back_to_page));
+        $options[$o]['value']     = 'edit_previews';
+        $options[$o]['label']     = $lang['editcollectionresources'];
+        $options[$o]['data_attr'] = $data_attribute;
+        $options[$o]['category']  = ACTIONGROUP_EDIT;
+        $options[$o]['order_by']  = 130;
+        $o++;
+        }
+
+    // Share
+    if(0 < $count_result && ($k=="" || $internal_share_access) && $manage_collections_share_link && $allow_share && (checkperm('v') || checkperm ('g') || (collection_min_access($collection_data['ref'])<=1 && $restricted_share))) 
+        {
+        
+        $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_share.php",$urlparams);
+        $options[$o]['value']='share_collection';
+		$options[$o]['label']=$lang['share'];
+		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_SHARE;
+        $options[$o]['order_by']  = 140;
+		$o++;
+        }
+        
     // Home_dash is on, AND NOT Anonymous use, AND (Dash tile user (NOT with a managed dash) || Dash Tile Admin)
     if(!$top_actions && $home_dash && ($k == '' || $internal_share_access) && checkPermission_dashcreate())
         {
@@ -2388,6 +2530,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label']=$lang['createnewdashtile'];
 		$options[$o]['data_attr']=$data_attribute;
 		$options[$o]['category'] = ACTIONGROUP_SHARE;
+        $options[$o]['order_by']  = 150;
 		$o++;
         }
 		
@@ -2399,6 +2542,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label']=$lang['collection_set_theme_category'];
 		$options[$o]['data_attr']=$data_attribute;
 		$options[$o]['category'] = ACTIONGROUP_SHARE;
+        $options[$o]['order_by']  = 160;
 		$o++;
         }
 		
@@ -2421,6 +2565,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
             $options[$o]['label']=$lang['requestall'];
             $options[$o]['data_attr']=$data_attribute;
 			$options[$o]['category'] = ACTIONGROUP_RESOURCE;
+            $options[$o]['order_by']  = 170;
             $o++;
             }
         }
@@ -2432,43 +2577,10 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['label']=$lang["geolocatecollection"];
         $options[$o]['data_attr']=$data_attribute;
 		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
+        $options[$o]['order_by']  = 180;
         $o++;            
         }
 	
-    // Download option
-    # Ability to request a whole collection (only if user has restricted access to any of these resources)
-    if($pagename == 'collection_manage') 
-        {
-        $min_access = collection_min_access($collection_data['ref']);
-        }
-    else
-        {
-        $min_access = collection_min_access($result);
-        }
-
-    if($min_access ==0 )
-        {
-        if( $download_usage && ( isset($zipcommand) || $use_zip_extension || ( isset($archiver_path) && isset($collection_download_settings) ) ) && $collection_download && $count_result > 0)
-            {
-            $download_url = generateURL($baseurl_short . "pages/download_usage.php",$urlparams);
-            $data_attribute['url'] = generateURL($baseurl_short . "pages/terms.php",$urlparams,array("url"=>$download_url));
-            $options[$o]['value']='download_collection';
-            $options[$o]['label']=$lang['action-download'];
-            $options[$o]['data_attr']=$data_attribute;
-			$options[$o]['category'] = ACTIONGROUP_RESOURCE;
-            $o++;
-            }
-        else if( (isset($zipcommand) || $use_zip_extension || ( isset($archiver_path) && isset($collection_download_settings) ) ) && $collection_download && $count_result > 0)
-            {
-            $download_url = generateURL($baseurl_short . "pages/collection_download.php",$urlparams);
-            $data_attribute['url'] = generateURL($baseurl_short . "pages/terms.php",$urlparams,array("url"=>$download_url));
-            $options[$o]['value']='download_collection';
-            $options[$o]['label']=$lang['action-download'];
-            $options[$o]['data_attr']=$data_attribute;
-			$options[$o]['category'] = ACTIONGROUP_RESOURCE;
-            $o++;
-            }
-        }
 
     // Contact Sheet
     if(0 < $count_result && ($k=="" || $internal_share_access) && $contact_sheet == true && ($manage_collections_contact_sheet_link || $contact_sheet_link_on_collection_bar))
@@ -2478,18 +2590,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label']=$lang['contactsheet'];
 		$options[$o]['data_attr']=$data_attribute;
 		$options[$o]['category'] = ACTIONGROUP_ADVANCED;
-		$o++;
-        }
-
-    // Share
-    if(0 < $count_result && ($k=="" || $internal_share_access) && $manage_collections_share_link && $allow_share && (checkperm('v') || checkperm ('g') || (collection_min_access($collection_data['ref'])<=1 && $restricted_share))) 
-        {
-        
-        $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_share.php",$urlparams);
-        $options[$o]['value']='share_collection';
-		$options[$o]['label']=$lang['share'];
-		$options[$o]['data_attr']=$data_attribute;
-		$options[$o]['category'] = ACTIONGROUP_SHARE;
+        $options[$o]['order_by']  = 190;
 		$o++;
         }
 
@@ -2504,6 +2605,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='remove_collection';
 		$options[$o]['label']=$lang['action-remove'];
 		$options[$o]['category'] = ACTIONGROUP_COLLECTION;
+        $options[$o]['order_by']  = 200;
 		$o++;
         }
 
@@ -2513,6 +2615,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='delete_collection';
 		$options[$o]['label']=$lang['action-deletecollection'];
 		$options[$o]['category'] = ACTIONGROUP_EDIT;
+        $options[$o]['order_by']  = 210;
 		$o++;
         }
 
@@ -2522,6 +2625,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='purge_collection';
 		$options[$o]['label']=$lang['purgeanddelete'];
 		$options[$o]['category'] = ACTIONGROUP_EDIT;
+        $options[$o]['order_by']  = 220;
 		$o++;
         }
 
@@ -2533,54 +2637,10 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label']=$lang['action-log'];
 		$options[$o]['data_attr']=$data_attribute;
 		$options[$o]['category'] = ACTIONGROUP_ADVANCED;
+        $options[$o]['order_by']  = 230;
 		$o++;
         }
-        
-    // View all resources
-    if(
-        !$top_actions // View all resources makes sense only from collection bar context
-        && (
-            ($k=="" || $internal_share_access)
-            && (isset($collection_data["c"]) && $collection_data["c"] > 0)
-            || (is_array($result) && count($result) > 0)
-        )
-    )
-        {
-        $tempurlparams = array(
-            'sort' => 'ASC',
-            'search' => (isset($collection_data['ref']) ? "!collection{$collection_data['ref']}" : $search),
-        );
-
-        $data_attribute['url'] = generateURL($baseurl_short . "pages/search.php",$urlparams,$tempurlparams);
-        $options[$o]['value']='view_all_resources_in_collection';
-		$options[$o]['label']=$lang['view_all_resources'];
-		$options[$o]['data_attr']=$data_attribute;
-		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
-		$o++;
-        }
-
-    // work this out in one place to prevent multiple calls as function is expensive
-    $allow_multi_edit=allow_multi_edit(empty($resource_data) ? $collection_data['ref'] : $resource_data, $collection_data['ref']);
-
-    // Edit all
-    # If this collection is (fully) editable, then display an edit all link
-    if(($k=="" || $internal_share_access) && $show_edit_all_link && $count_result>0)
-        {
-        if($allow_multi_edit)
-            {
-            $extra_params = array(
-                'editsearchresults' => 'true',
-            );
-
-            $data_attribute['url'] = generateURL($baseurl_short . "pages/edit.php", $urlparams, $extra_params);
-            $options[$o]['value']='edit_all_in_collection';
-            $options[$o]['label']=$lang['edit_all_resources'];
-            $options[$o]['data_attr']=$data_attribute;
-			$options[$o]['category'] = ACTIONGROUP_EDIT;
-            $o++;
-            }
-        }
-
+          
     // Delete all
     // Note: functionality moved from edit collection page
     if(($k=="" || $internal_share_access) 
@@ -2594,43 +2654,9 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='delete_all_in_collection';
 		$options[$o]['label']=$lang['deleteallresourcesfromcollection'];
 		$options[$o]['category'] = ACTIONGROUP_EDIT;
+        $options[$o]['order_by']  = 240;
 		$o++;
         }
-
-    // Preview all
-    if((is_array($result) && count($result) != 0) && ($k=="" || $internal_share_access) && $preview_all)
-        {
-        $data_attribute['url'] = generateURL($baseurl_short . "pages/preview_all.php",$urlparams);
-        $options[$o]['value']='preview_all';
-		$options[$o]['label']=$lang['preview_all'];
-        $options[$o]['data_attr']=$data_attribute;
-		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
-		$o++;
-        }
-
-    // Remove all
-    if(0 < $count_result && ($k=="" || $internal_share_access) && isset($emptycollection) && $remove_resources_link_on_collection_bar && collection_writeable($collection_data['ref']))
-        {
-        $data_attribute['url'] = generateURL($baseurl_short . "pages/collections.php",$urlparams,array("emptycollection"=>$collection_data['ref'],"removeall"=>"true","ajax"=>"true","submitted"=>"removeall"));
-        $options[$o]['value']     = 'empty_collection';
-		$options[$o]['label']     = $lang['emptycollection'];
-		$options[$o]['data_attr'] = $data_attribute;
-		$options[$o]['category']  = ACTIONGROUP_RESOURCE;
-		$o++;
-        }
-    
-    // Edit Previews
-	if (($k=="" || $internal_share_access) && $count_result > 0 && !(checkperm('F*')) && ($userref == $collection_data['user'] || $collection_data['allow_changes'] == 1 || checkperm('h')) && $allow_multi_edit)
-		{
-		$main_pages   = array('search', 'collection_manage', 'collection_public', 'themes');
-		$back_to_page = (in_array($pagename, $main_pages) ? htmlspecialchars($pagename) : '');
-        $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_edit_previews.php",$urlparams,array("backto"=>$back_to_page));
-        $options[$o]['value']     = 'edit_previews';
-		$options[$o]['label']     = $lang['editcollectionresources'];
-		$options[$o]['data_attr'] = $data_attribute;
-		$options[$o]['category']  = ACTIONGROUP_EDIT;
-		$o++;
-		}
 
     // Show disk usage
     if(($k=="" || $internal_share_access) && !$top_actions && $show_searchitemsdiskusage && 0 < $count_result) 
@@ -2640,6 +2666,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label']=$lang['collection_disk_usage'];
 		$options[$o]['data_attr'] = $data_attribute;
 		$options[$o]['category']  = ACTIONGROUP_ADVANCED;
+        $options[$o]['order_by']  = 250;
 		$o++;
         }
 
@@ -2655,6 +2682,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $data_attribute['url'] = generateURL($baseurl_short . "pages/csv_export_results_metadata.php",$urlparams);
 		$options[$o]['data_attr'] = $data_attribute;
 		$options[$o]['category']  = ACTIONGROUP_ADVANCED;
+        $options[$o]['order_by']  = 260;
 		$o++;
         
 		// Hide Collection
@@ -2674,6 +2702,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label'] = $lang['hide_collection'];
 		$options[$o]['extra_tag_attributes']=$extra_tag_attributes;	
 		$options[$o]['category']  = ACTIONGROUP_ADVANCED;
+        $options[$o]['order_by']  = 270;
 		$o++;
         }
         
@@ -2685,6 +2714,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['label'] = $lang['relateallresources'];
         $options[$o]['data_attr']=$data_attribute;
 		$options[$o]['category']  = ACTIONGROUP_ADVANCED;
+        $options[$o]['order_by']  = 280;
         $o++;
         }
 

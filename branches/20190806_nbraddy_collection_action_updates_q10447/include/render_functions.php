@@ -896,8 +896,30 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                 }
 
             // Sort array into category groups
-            usort($actions_array, function($a, $b){return (isset($a['category']) && isset($b['category'])) ? ($a['category'] - $b['category']) : (isset($a['category']) ? -1 : 1);});
-            // exit(print_r($actions_array));                     
+           
+            usort($actions_array, function($a, $b){
+               if(isset($a['category']) && isset($b['category']))
+                    {
+                    if($a['category'] == $b['category'])
+                        {
+                        // Same category, check for order_by. If no order_by add to end of category
+                        if(isset($a['order_by']) && (!isset($b['order_by']) || ($b['order_by'] > $a['order_by'])))
+                            {
+                            return -1;
+                            }
+                        return 1;
+                        }
+                    else
+                        {
+                        return  $a['category'] - $b['category'];
+                        }
+                    }
+                else
+                    {
+                    return isset($a['category']) ? -1 : 1;
+                    }
+                });
+            //exit(print_r($actions_array));                     
             // loop and display
             $options='';
             $lastcategory = 0;
