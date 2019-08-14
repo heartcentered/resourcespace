@@ -109,3 +109,28 @@ function HookImage_banksAllClearsearchcookies()
     $clear_function .= "SetCookie('image_bank_provider_id','');";
     return true;
     }
+
+function HookImage_banksAllFb_modify_fields(array $fields)
+    {
+    $index = false;
+    foreach($fields as $key => $field)
+        {
+        // At the end of Simple Search fields
+        if($field["simple_search"] == 0 && $field["advanced_search"] == 1)
+            {
+            $index = $key;
+            break;
+            }
+        }
+
+    return array_merge(
+        array_slice($fields, 0, $index),
+        array(array(
+            "ref" => null,
+            "simple_search" => 1,
+            "advanced_search" => 0,
+            "fct_name" => "HookImage_banksAllSearchfiltertop",
+            "fct_args" => array()
+        )),
+        array_slice($fields, $index, count($fields) - 1, true));
+    }
