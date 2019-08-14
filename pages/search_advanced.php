@@ -14,6 +14,8 @@ if(!$filter_bar_reload)
     exit();
     }
 
+define("FILTER_BAR", true);
+
 function get_search_default_restypes()
 	{
 	global $search_includes_resources, $collection_search_includes_resource_metadata, $search_includes_user_collections,
@@ -145,16 +147,14 @@ foreach($advanced_search_properties as $advanced_search_property=>$code)
 $values=array();
 	
 if($reset_form)
-  { 
-  $found_year="";$found_month="";$found_day="";$found_start_date="";$found_end_date="";$allwords="";$starsearch="";
-  $restypes=get_search_default_restypes();
-  $selected_archive_states=array(0);
-  rs_setcookie("search","",0,"","",false,false);
-  rs_setcookie("saved_archive","",0,"","",false,false);
-  rs_setcookie("restypes", implode(",", $restypes), 0, "", "", false, false);
-
-  if($header_search)
     {
+    $found_year="";$found_month="";$found_day="";$found_start_date="";$found_end_date="";$allwords="";$starsearch="";
+    $restypes=get_search_default_restypes();
+    $selected_archive_states=array(0);
+    rs_setcookie("search","",0,"","",false,false);
+    rs_setcookie("saved_archive","",0,"","",false,false);
+    rs_setcookie("restypes", implode(",", $restypes), 0, "", "", false, false);
+
     $search_url = generateURL(
         "{$baseurl}/pages/search.php",
         array(
@@ -162,7 +162,7 @@ if($reset_form)
             'archive'  => implode(",", $selected_archive_states),
             'restypes' => implode(",", $restypes),
         ));
-    ?>
+        ?>
     <html>
     <script>
     jQuery(document).ready(function ()
@@ -174,7 +174,6 @@ if($reset_form)
     <?php
     exit();
     }
-  }
 else
   {
   if(getval("restypes","")=="")

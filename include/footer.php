@@ -472,14 +472,7 @@ if (getval("ajax","") == "")
             east__spacing_closed:8,
             east_resizable: true,
             east__size: 412,
-        <?php
-        if($header_search)
-            {
-            ?>                
             east__initHidden: true,
-            <?php
-            }
-            ?>
 
             north_resizable: false,
             north__closable:false,
