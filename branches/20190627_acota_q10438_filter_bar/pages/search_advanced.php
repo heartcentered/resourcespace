@@ -482,7 +482,7 @@ $advanced_section_rendered = false;
 $fake_fields = array(
     array(
         "ref" => null,
-        "simple_search" => false,
+        "simple_search" => 0,
         "advanced_search" => $advanced_search_archive_select,
         "fct_name" => "render_fb_archive_state",
         "fct_args" => array(
@@ -491,7 +491,7 @@ $fake_fields = array(
     ),
     array(
         "ref" => null,
-        "simple_search" => false,
+        "simple_search" => 0,
         "advanced_search" => $advanced_search_contributed_by,
         "fct_name" => "render_fb_contributed_by",
         "fct_args" => array(
@@ -500,7 +500,7 @@ $fake_fields = array(
     ),
     array(
         "ref" => null,
-        "simple_search" => false,
+        "simple_search" => 0,
         "advanced_search" => $advanced_search_media_section,
         "fct_name" => "render_fb_media_section",
         "fct_args" => array(
@@ -515,6 +515,12 @@ $fake_fields = array(
         ),
     ),
 );
+
+$modified_fields = hook("fb_modify_fields", "", array($fields));
+if($modified_fields !== false && is_array($modified_fields) && !empty($modified_fields))
+    {
+    $fields = $modified_fields;
+    }
 
 foreach(array_merge($fields, $fake_fields) as $field)
     {
@@ -559,9 +565,10 @@ if($advanced_section_rendered)
     {
     echo "</div> <!-- End of AdvancedSection -->";
     }
-    ?>
 
-<?php if  ($search_includes_user_collections || $search_includes_public_collections || $search_includes_themes) { ?>
+hook("fb_after_advancedsection");
+
+if($search_includes_user_collections || $search_includes_public_collections || $search_includes_themes) { ?>
 <h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionCollectionsHead" <?php if (!in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["collections"]; ?></h1>
 <div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionCollections" <?php if (!in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>>
 
