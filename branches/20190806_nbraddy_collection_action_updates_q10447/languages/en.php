@@ -2796,4 +2796,10 @@ $lang["userresources_status_change"]="Resources that you have contributed have b
 $lang["collection_description"]         = "Description";
 $lang["collection_copy_to"]             = "Copy collection resources";
 $lang["collection_copy_destination"]    = "Collection to copy resources to";
-
+$lang["collection_actiontype_1"]        = "Resources";
+$lang["collection_actiontype_2"]        = "Collection";
+$lang["collection_actiontype_3"]        = "Edit";
+$lang["collection_actiontype_4"]        = "Share";
+$lang["collection_actiontype_5"]        = "Research";
+$lang["collection_actiontype_6"]        = "Advanced";
+$lang["collection_actiontype_999"]      = "Other";

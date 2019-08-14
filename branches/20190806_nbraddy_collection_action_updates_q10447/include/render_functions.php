@@ -858,7 +858,7 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                     ?>
                 <select onchange="action_onchange_<?php echo $action_selection_id; ?>(this.value);" id="<?php echo $action_selection_id; ?>" <?php if(!$top_actions) { echo 'class="SearchWidth"'; } ?>>
             <?php } ?>
-            <option class="SelectAction" value=""><?php echo $lang["actions-select"]?></option>
+            <option class="SelectAction" selected disabled hidden value=""><?php echo $lang["actions-select"]?></option>
             <?php
 
             // Collection Actions
@@ -895,10 +895,28 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                 $actions_array = $modify_actions_array;
                 }
 
+            // Sort array into category groups
+            usort($actions_array, function($a, $b){return (isset($a['category']) && isset($b['category'])) ? ($a['category'] - $b['category']) : (isset($a['category']) ? -1 : 1);});
+            // exit(print_r($actions_array));                     
             // loop and display
-			$options='';
+            $options='';
+            $lastcategory = 0;
 			for($a = 0; $a < count($actions_array); $a++)
 				{
+                // Is this a new category?
+                if(!isset($actions_array[$a]['category']))
+                    {
+                    $actions_array[$a]['category'] = 999;  
+                    }
+                if($lastcategory != $actions_array[$a]['category'])
+                    {
+                    if($a > 0)
+                        {
+                        $options .= "</optgroup>\n";
+                        }
+                    $options .= "<optgroup label='" . htmlspecialchars($lang["collection_actiontype_" . $actions_array[$a]['category']]) . "'>\n";
+                    }
+
 				if(!isset($actions_array[$a]['data_attr']))
 					{
 					$actions_array[$a]['data_attr'] = array();
@@ -915,7 +933,12 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
 				if($add_to_options != '')
 					{
 					$options .= $add_to_options;
-					}
+                    }
+                if($a == count($actions_array))
+                    {
+                    $options .= "\n</optgroup>\n";
+                    }
+                $lastcategory = $actions_array[$a]['category'];
 				}
 
 			echo $options;

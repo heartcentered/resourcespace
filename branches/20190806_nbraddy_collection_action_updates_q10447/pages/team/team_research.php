@@ -11,7 +11,7 @@ include "../../include/authenticate.php";if (!checkperm("r")) {exit ("Permission
 include "../../include/research_functions.php";
 include_once "../../include/collections_functions.php";
 
-$offset=getvalescaped("offset",0);
+$offset=getvalescaped("offset",0, true);
 $find=getvalescaped("find","");
 $order_by=getvalescaped("order_by","ref");
 $sort=getval("sort","ASC");
@@ -35,7 +35,7 @@ include "../../include/header.php";
  
 <?php 
 $requests=get_research_requests($find,$order_by,$sort);
-
+//exit(print_r($requests));
 # pager
 $per_page=10;
 $results=count($requests);

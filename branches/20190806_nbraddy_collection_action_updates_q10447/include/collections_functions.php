@@ -2277,6 +2277,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
             $options[$o]['value']='manage_collections';
             $options[$o]['label']=$lang['managemycollections'];
             $options[$o]['data_attr']=$data_attribute;
+            $options[$o]['category'] = ACTIONGROUP_COLLECTION;
             $o++;
 
             // Collection feedback
@@ -2290,6 +2291,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
                 $options[$o]['value']='collection_feedback';
 				$options[$o]['label']=$lang['sendfeedback'];
 				$options[$o]['data_attr']=$data_attribute;
+				$options[$o]['category'] = ACTIONGROUP_RESOURCE;
 				$o++;
                 }
             }
@@ -2303,6 +2305,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='manage_research_requests';
 		$options[$o]['label']=$lang['manageresearchrequests'];
 		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESEARCH;
 		$o++;
 
         // Edit research requests
@@ -2310,6 +2313,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='edit_research_requests';
 		$options[$o]['label']=$lang['editresearchrequests'];
 		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESEARCH;
 		$o++;
         }
 
@@ -2322,6 +2326,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         {
         $options[$o]['value'] = 'select_collection';
         $options[$o]['label'] = $lang['selectcollection'];
+		$options[$o]['category'] = ACTIONGROUP_COLLECTION;
         $o++;
         }
 
@@ -2330,8 +2335,9 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         {
         $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_edit.php",$urlparams);
         $options[$o]['value']='edit_collection';
-		$options[$o]['label']=$lang['action-edit'];
+		$options[$o]['label']=$lang['editcollection'];
 		$options[$o]['data_attr'] = $data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_EDIT;
 		$o++;
         }
 
@@ -2360,6 +2366,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='upload_collection';
 		$options[$o]['label']=$lang['action-upload-to-collection'];
 		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
 
 		$o++;
         }
@@ -2380,6 +2387,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='save_collection_to_dash';
 		$options[$o]['label']=$lang['createnewdashtile'];
 		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_SHARE;
 		$o++;
         }
 		
@@ -2390,6 +2398,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='collection_set_category';
 		$options[$o]['label']=$lang['collection_set_theme_category'];
 		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_SHARE;
 		$o++;
         }
 		
@@ -2411,6 +2420,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
             $options[$o]['value']='request_all';
             $options[$o]['label']=$lang['requestall'];
             $options[$o]['data_attr']=$data_attribute;
+			$options[$o]['category'] = ACTIONGROUP_RESOURCE;
             $o++;
             }
         }
@@ -2421,6 +2431,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='geolocatecollection';
         $options[$o]['label']=$lang["geolocatecollection"];
         $options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
         $o++;            
         }
 	
@@ -2444,6 +2455,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
             $options[$o]['value']='download_collection';
             $options[$o]['label']=$lang['action-download'];
             $options[$o]['data_attr']=$data_attribute;
+			$options[$o]['category'] = ACTIONGROUP_RESOURCE;
             $o++;
             }
         else if( (isset($zipcommand) || $use_zip_extension || ( isset($archiver_path) && isset($collection_download_settings) ) ) && $collection_download && $count_result > 0)
@@ -2453,6 +2465,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
             $options[$o]['value']='download_collection';
             $options[$o]['label']=$lang['action-download'];
             $options[$o]['data_attr']=$data_attribute;
+			$options[$o]['category'] = ACTIONGROUP_RESOURCE;
             $o++;
             }
         }
@@ -2464,6 +2477,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='contact_sheet';
 		$options[$o]['label']=$lang['contactsheet'];
 		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_ADVANCED;
 		$o++;
         }
 
@@ -2475,7 +2489,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='share_collection';
 		$options[$o]['label']=$lang['share'];
 		$options[$o]['data_attr']=$data_attribute;
-		//$options[$o]['extra_tag_attributes']=$extra_tag_attributes;
+		$options[$o]['category'] = ACTIONGROUP_SHARE;
 		$o++;
         }
 
@@ -2489,6 +2503,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         {
         $options[$o]['value']='remove_collection';
 		$options[$o]['label']=$lang['action-remove'];
+		$options[$o]['category'] = ACTIONGROUP_COLLECTION;
 		$o++;
         }
 
@@ -2496,7 +2511,8 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
     if(($k=="" || $internal_share_access) && (($userref == $collection_data['user']) || checkperm('h')) && ($collection_data['cant_delete'] == 0)) 
         {
         $options[$o]['value']='delete_collection';
-		$options[$o]['label']=$lang['action-delete'];
+		$options[$o]['label']=$lang['action-deletecollection'];
+		$options[$o]['category'] = ACTIONGROUP_EDIT;
 		$o++;
         }
 
@@ -2505,6 +2521,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         {
         $options[$o]['value']='purge_collection';
 		$options[$o]['label']=$lang['purgeanddelete'];
+		$options[$o]['category'] = ACTIONGROUP_EDIT;
 		$o++;
         }
 
@@ -2515,6 +2532,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='collection_log';
 		$options[$o]['label']=$lang['action-log'];
 		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_ADVANCED;
 		$o++;
         }
         
@@ -2537,6 +2555,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='view_all_resources_in_collection';
 		$options[$o]['label']=$lang['view_all_resources'];
 		$options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
 		$o++;
         }
 
@@ -2557,6 +2576,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
             $options[$o]['value']='edit_all_in_collection';
             $options[$o]['label']=$lang['edit_all_resources'];
             $options[$o]['data_attr']=$data_attribute;
+			$options[$o]['category'] = ACTIONGROUP_EDIT;
             $o++;
             }
         }
@@ -2573,6 +2593,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         {
         $options[$o]['value']='delete_all_in_collection';
 		$options[$o]['label']=$lang['deleteallresourcesfromcollection'];
+		$options[$o]['category'] = ACTIONGROUP_EDIT;
 		$o++;
         }
 
@@ -2583,6 +2604,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='preview_all';
 		$options[$o]['label']=$lang['preview_all'];
         $options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category'] = ACTIONGROUP_RESOURCE;
 		$o++;
         }
 
@@ -2593,6 +2615,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']     = 'empty_collection';
 		$options[$o]['label']     = $lang['emptycollection'];
 		$options[$o]['data_attr'] = $data_attribute;
+		$options[$o]['category']  = ACTIONGROUP_RESOURCE;
 		$o++;
         }
     
@@ -2605,6 +2628,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']     = 'edit_previews';
 		$options[$o]['label']     = $lang['editcollectionresources'];
 		$options[$o]['data_attr'] = $data_attribute;
+		$options[$o]['category']  = ACTIONGROUP_EDIT;
 		$o++;
 		}
 
@@ -2615,6 +2639,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value']='search_items_disk_usage';
 		$options[$o]['label']=$lang['collection_disk_usage'];
 		$options[$o]['data_attr'] = $data_attribute;
+		$options[$o]['category']  = ACTIONGROUP_ADVANCED;
 		$o++;
         }
 
@@ -2629,6 +2654,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['label']            = $lang['csvExportResultsMetadata'];
         $data_attribute['url'] = generateURL($baseurl_short . "pages/csv_export_results_metadata.php",$urlparams);
 		$options[$o]['data_attr'] = $data_attribute;
+		$options[$o]['category']  = ACTIONGROUP_ADVANCED;
 		$o++;
         
 		// Hide Collection
@@ -2647,6 +2673,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
 		$options[$o]['value'] = 'hide_collection';
 		$options[$o]['label'] = $lang['hide_collection'];
 		$options[$o]['extra_tag_attributes']=$extra_tag_attributes;	
+		$options[$o]['category']  = ACTIONGROUP_ADVANCED;
 		$o++;
         }
         
@@ -2657,6 +2684,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $options[$o]['value'] = 'relate_all';
         $options[$o]['label'] = $lang['relateallresources'];
         $options[$o]['data_attr']=$data_attribute;
+		$options[$o]['category']  = ACTIONGROUP_ADVANCED;
         $o++;
         }
 
