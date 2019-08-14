@@ -647,16 +647,28 @@ function HideInapplicableFilterBarFields()
     jQuery(".SearchTypeCheckbox").each(function(index, element)
         {
         const id = (element.name).substr(12);
-        // const all_resource_types = isNaN(parseInt(id));
-        
-        if(jQuery(this).is(":checked"))
+        var show_rtype_fields = false;
+
+        if(jQuery(element).is(":checked"))
             {
-            // @todo: show resource type specific fields
+            show_rtype_fields = true;
             }
-        else
+
+        jQuery(".Question").not("#ActiveFilters").each(function()
             {
-            // @todo: hide
-            }
+            if(jQuery(this).data("resource_type") !== parseInt(id))
+                {
+                return true;
+                }
+
+            if(show_rtype_fields)
+                {
+                jQuery(this).show();
+                return true;
+                }
+
+            jQuery(this).hide();
+            });
         });
     }
 
@@ -666,25 +678,11 @@ jQuery(document).ready(function()
     jQuery("#FilterBarContainer .Question table").PutShadowOnScrollableElement();
     registerCollapsibleSections(false);
 
+    HideInapplicableFilterBarFields();
 
-    jQuery(".Question").not("#ActiveFilters").show();
     jQuery('.SearchTypeCheckbox').change(function() 
         {
         var id = (this.name).substr(12);
-        /*const all_resource_types = isNaN(parseInt(id));
-
-        jQuery(".Question").not("#ActiveFilters").show();
-
-        if(jQuery(this).is(":checked") === false)
-            {
-            jQuery(".Question").not("#ActiveFilters").each(function(index, element)
-                {
-                if(jQuery(this).data("resource_type") === parseInt(id))
-                    {
-                    jQuery(this).hide();
-                    }
-                });
-            }*/
 
         // @todo: check if still needed and remove where possible/ not applicable anymore
         if (jQuery(this).is(":checked")) {
@@ -759,6 +757,8 @@ jQuery(document).ready(function()
         }
 
         SetCookie("advancedsearchsection", selectedtypes);
+
+        HideInapplicableFilterBarFields();
         UpdateResultCount();
         });
     });
