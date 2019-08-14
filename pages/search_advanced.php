@@ -679,85 +679,99 @@ jQuery(document).ready(function()
     registerCollapsibleSections(false);
 
     HideInapplicableFilterBarFields();
-
     jQuery('.SearchTypeCheckbox').change(function() 
         {
         var id = (this.name).substr(12);
 
-        // @todo: check if still needed and remove where possible/ not applicable anymore
-        if (jQuery(this).is(":checked")) {
-            if (id=="Global") {
-                selectedtypes=["Global"];
-                //Hide specific resource type areas
-                jQuery('.ResTypeSectionHead').hide();
-                jQuery('.ResTypeSection').hide();
-                
+        if(jQuery(this).is(":checked"))
+            {
+            if(id == "Global")
+                {
+                selectedtypes = ["Global"];
+
                 // Global has been checked, check all other checkboxes
-                jQuery('.SearchTypeItemCheckbox').prop('checked',true);
+                jQuery('.SearchTypeItemCheckbox').prop('checked', true);
+
                 //Uncheck Collections
-                jQuery('#SearchCollectionsCheckbox').prop('checked',false);
-            }
-            else if (id=="Collections") {
+                jQuery('#SearchCollectionsCheckbox').prop('checked', false);
+                }
+            else if(id == "Collections")
+                {
                 //Uncheck All checkboxes
-                jQuery('.SearchTypeCheckbox').prop('checked',false);        
+                jQuery('.SearchTypeCheckbox').prop('checked', false);        
 
                 //Check Collections
-                selectedtypes=["Collections"];
-                jQuery('#SearchCollectionsCheckbox').prop('checked',true);
-                jQuery('.tickboxcoll').prop('checked',true);
-                
+                selectedtypes = ["Collections"];
+                jQuery('#SearchCollectionsCheckbox').prop('checked', true);
+                jQuery('.tickboxcoll').prop('checked', true);
 
                 // Show collection search sections  
                 jQuery('#AdvancedSearchTypeSpecificSectionCollectionsHead').show();
-                if (getCookie('advancedsearchsection')!="collapsed"){jQuery("#AdvancedSearchTypeSpecificSectionCollections").show();}
-            }
-            else {  
-                selectedtypes = jQuery.grep(selectedtypes, function(value) {return value != "Collections";});               
+                if(getCookie('advancedsearchsection') != "collapsed")
+                    {
+                    jQuery("#AdvancedSearchTypeSpecificSectionCollections").show();
+                    }
+                }
+            else
+                {
+                selectedtypes = jQuery.grep(
+                    selectedtypes,
+                    function(value)
+                        {
+                        return value != "Collections";
+                        });
                 selectedtypes.push(id); 
 
-                //Hide specific resource type areas
-                jQuery('.ResTypeSectionHead').hide();
-                jQuery('.ResTypeSection').hide();
-                
-                jQuery('#SearchGlobal').prop('checked',false);
-                jQuery('#SearchCollectionsCheckbox').prop('checked',false);
-                
-                // Show resource type specific search sections  if only one checked
-                if(selectedtypes.length==1){
-                    if (getCookie('AdvancedSearchTypeSpecificSection'+id)!="collapsed"){jQuery('#AdvancedSearchTypeSpecificSection'+id).show();}
-                    jQuery('#AdvancedSearchTypeSpecificSection'+id+'Head').show();              
-                }
-            }
-        }
-        else {// Box has been unchecked
-            if (id=="Global") {     
-                selectedtypes=[];   
-                jQuery('.SearchTypeItemCheckbox').prop('checked',false);
-            }
-            else if (id=="Collections") {
-                selectedtypes=[];
+                jQuery('#SearchGlobal').prop('checked', false);
+                jQuery('#SearchCollectionsCheckbox').prop('checked', false);
 
-                // Hide collection search sections  
-                jQuery('#AdvancedSearchTypeSpecificSectionCollectionsHead').hide();
-            }
-            else {                              
-                jQuery('#SearchGlobal').prop('checked',false);
-                
-                //Hide specific resource type areas
-                jQuery('.ResTypeSectionHead').hide();
-                jQuery('.ResTypeSection').hide();
-                
-                // If global was previously checked, make sure all other types are now checked
-                selectedtypes = jQuery.grep(selectedtypes, function(value) {return value != id;});
-                if(selectedtypes.length==1){
-                    if (getCookie('AdvancedSearchTypeSpecificSection'+selectedtypes[0])!="collapsed") jQuery('#AdvancedSearchTypeSpecificSection'+selectedtypes[0]).show();
-                    jQuery('#AdvancedSearchTypeSpecificSection'+selectedtypes[0]+'Head').show();                
+                // Show resource type specific search sections  if only one checked
+                if(selectedtypes.length == 1)
+                    {
+                    if(getCookie('AdvancedSearchTypeSpecificSection' + id) != "collapsed")
+                        {
+                        jQuery('#AdvancedSearchTypeSpecificSection' + id).show();
+                        }
+                    jQuery('#AdvancedSearchTypeSpecificSection' + id + 'Head').show();              
+                    }
                 }
             }
-        }
+        else
+            {
+            if(id == "Global")
+                {     
+                selectedtypes = [];   
+                jQuery('.SearchTypeItemCheckbox').prop('checked', false);
+                }
+            else if(id == "Collections")
+                {
+                selectedtypes = [];
+                jQuery('#AdvancedSearchTypeSpecificSectionCollectionsHead').hide();
+                }
+            else
+                {
+                jQuery('#SearchGlobal').prop('checked',false);
+
+                // If global was previously checked, make sure all other types are now checked
+                selectedtypes = jQuery.grep(
+                    selectedtypes,
+                    function(value)
+                        {
+                        return value != id;
+                        });
+
+                if(selectedtypes.length == 1)
+                    {
+                    if(getCookie('AdvancedSearchTypeSpecificSection' + selectedtypes[0]) != "collapsed")
+                        {
+                        jQuery('#AdvancedSearchTypeSpecificSection' + selectedtypes[0]).show();
+                        }
+                    jQuery('#AdvancedSearchTypeSpecificSection' + selectedtypes[0] + 'Head').show();                
+                    }
+                }
+            }
 
         SetCookie("advancedsearchsection", selectedtypes);
-
         HideInapplicableFilterBarFields();
         UpdateResultCount();
         });
