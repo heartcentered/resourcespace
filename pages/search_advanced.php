@@ -159,13 +159,18 @@ if($reset_form)
     rs_setcookie("saved_archive","",0,"","",false,false);
     rs_setcookie("restypes", implode(",", $restypes), 0, "", "", false, false);
 
+    $extra_params = array();
+
+    hook("reset_filter_bar");
+
     $search_url = generateURL(
         "{$baseurl}/pages/search.php",
         array(
             'search'   => '',
             'archive'  => implode(",", $selected_archive_states),
             'restypes' => implode(",", $restypes),
-        ));
+        ),
+        $extra_params);
         ?>
     <html>
     <script>
