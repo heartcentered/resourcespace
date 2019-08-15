@@ -430,6 +430,7 @@ if (checkPermission_anonymoususer())
         {
     	?>
     	<ul>
+        <?php render_filter_bar_component(); ?>
     	<li><a href="<?php echo $login_url; ?>" onclick="return ModalLoad(this, true);"><?php echo $lang["login"]; ?></a></li>
     	<?php hook("addtoplinksanon");?>
     	<?php if ($contact_link) { ?><li><a href="<?php echo $baseurl?>/pages/contact.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["contactus"]?></a></li><?php } ?>
@@ -444,22 +445,7 @@ else
     <ul>
     <?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php }
 
-    // Filter bar functionality
-    ?>
-    <li>
-        <form id="header_search_form" class="HeaderSearchForm"
-              method="post" action="<?php echo $baseurl?>/pages/search.php"
-              onsubmit="return CentralSpacePost(this, true);">
-            <?php generateFormToken("header_search_form"); ?>
-            <input id="ssearchbox" name="search" type="text" class="searchwidth"
-                   placeholder="<?php echo $lang['all__search']; ?>"
-                   value="<?php echo isset($quicksearch) ? $htmlspecialchars($quicksearch) : ""; ?>" />
-            <a href="<?php echo $baseurl; ?>/pages/search_advanced.php" onclick="return TogglePane('FilterBarContainer', this.href);">
-                <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
-            </a>
-        </form>
-    </li>
-    <?php
+    render_filter_bar_component();
 
     if(!hook('replaceheaderfullnamelink'))
         {
