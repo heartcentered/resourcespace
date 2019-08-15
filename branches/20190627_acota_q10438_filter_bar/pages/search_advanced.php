@@ -108,7 +108,10 @@ if (getval("submitted","")=="yes" && !$reset_form)
 	# Build a search query from the search form
 	$search=search_form_to_search_query($fields);
 	$search=refine_searchstring($search);
-	hook("moresearchcriteria");
+
+    $extra_params = array();
+
+    hook("moresearchcriteria");
 
     $search_url = generateURL(
         "{$baseurl}/pages/search.php",
@@ -118,7 +121,8 @@ if (getval("submitted","")=="yes" && !$reset_form)
             'restypes'          => $restypes,
             'filter_bar_reload' => 'false',
             'source'            => getval("source", ""),
-        ));
+        ),
+        $extra_params);
     ?>
     <html>
     <script>
@@ -646,6 +650,7 @@ function ClearFilterBar()
     var url = "<?php echo generateURL("{$baseurl}/pages/search_advanced.php", array('submitted' => true, 'resetform' => true)); ?>";
     jQuery("#FilterBarContainer").load(url);
     document.getElementById('ssearchbox').value='';
+    <?php hook("clear_filter_bar_js"); ?>
     }
 
 function HideInapplicableFilterBarFields()
