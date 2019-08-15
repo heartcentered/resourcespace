@@ -12,6 +12,12 @@
  */
 function tile_select($tile_type,$tile_style,$tile,$tile_id,$tile_width,$tile_height)
 	{
+	debug("q10697: \$tile_type = " . $tile_type);
+	debug("q10697: \$tile_style = " . $tile_style);
+	//debug("q10697: \$tile = " . $tile);
+	debug("q10697: \$tile_id = " . $tile_id);
+	debug("q10697: \$tile_width = " . $tile_width);
+	debug("q10697: \$tile_height = " . $tile_height);
 	/*
 	 * Preconfigured and the legacy tiles controlled by config.
 	 */
@@ -841,3 +847,112 @@ function tile_featured_collection_blank($tile, $tile_id)
 
     return;
     }
+
+$editlink = $baseurl_short . "pages/dash_tile.php?edit=" . $tile['ref'];
+?>
+<div id="DashTileActions_<?php echo substr($tile_id, 18); ?>" class="DashTileActions"  style="display:none;">
+<?php
+if(checkPermission_dashmanage())
+    {
+    ?>
+    <div class="tool">
+        <a href="#" onClick= >
+            <span><?php echo LINK_CARET ?><?php echo $lang['action-delete']; ?></span>
+        </a>
+    </div>
+    <?php
+    }
+if (checkPermission_dashmanage())
+    { 
+    ?><div class="tool">
+        <a href="<?php echo $editlink ?>" onClick="return ModalLoad(this,true);">
+            <span><?php echo LINK_CARET ?><?php echo $lang['action-edit']; ?></span>
+        </a>
+    </div>
+    <?php
+    }
+?>
+</div>
+
+<script>
+jQuery(document).ready(function ()
+    {
+    var tileid;
+    var tilelink;
+    var linkset = false;
+
+    jQuery('.HomePanel').off("hover").hover(
+    function(e)
+        {
+        tileid = jQuery(this).attr('id').substring(9);
+        jQuery('#DashTileActions_' + tileid).stop(true).slideDown();
+        console.log(tileid);
+        },
+    function(e)
+        {
+        tileid=jQuery(this).attr('id').substring(9);
+        jQuery('#DashTileActions_' + tileid).stop(true).slideUp();
+        });
+
+    jQuery('.DashTileActions').off("hover").hover(
+    function(e)
+        {
+        if (!linkset) 
+            {
+            console.log("IN");
+            tilelink = jQuery('a#user_tile' + tileid + '.HomePanel').attr("href");
+            console.log("1: " + tilelink);
+            jQuery('a#user_tile' + tileid + '.HomePanel').removeAttr("href");
+            console.log("2: " + jQuery('a#user_tile' + tileid + '.HomePanel').attr("href"));
+            linkset = true;
+            }
+        },
+    function(e)
+        {
+        if (linkset) 
+            {
+            console.log("OUT");
+            console.log("3: " + jQuery('a#user_tile' + tileid + '.HomePanel').attr("href"));
+            jQuery('a#user_tile' + tileid + '.HomePanel').attr("href", tilelink);
+            tilelink = ''
+            console.log("4: " + tilelink);
+            linkset = false;
+            }
+        });
+
+    jQuery(".tool").off("click").click(
+            function(event,ui) {
+            console.log("###############");
+            console.log(event);
+            console.log(ui);
+            if(jQuery("#tile"+tileid).hasClass("conftile")) {
+                jQuery("#delete_permanent_dialog").dialog({
+                    title:'<?php echo $lang["dashtiledelete"]; ?>',
+                    modal: true,
+                    resizable: false,
+                    dialogClass: 'delete-dialog no-close',
+                    buttons: {
+                        "<?php echo $lang['confirmdefaultdashtiledelete'] ?>": function() {
+                                jQuery(this).dialog("close");
+                                deleteDefaultDashTile(tileid);
+                            },    
+                        "<?php echo $lang['cancel'] ?>": function() { 
+                                jQuery(this).dialog('close');
+                            }
+                    }
+                });
+                return;
+            }
+            jQuery("#trash_bin_delete_dialog").dialog({
+                title:'<?php echo $lang["dashtiledelete"]; ?>',
+                modal: true,
+                resizable: false,
+                dialogClass: 'delete-dialog no-close',
+                buttons: {
+                    "<?php echo $lang['confirmdefaultdashtiledelete'] ?>": function() {jQuery(this).dialog("close");deleteDefaultDashTile(tileid); },    
+                    "<?php echo $lang['cancel'] ?>": function() { jQuery(this).dialog('close'); }
+                }
+            });
+        })
+    });
+</script>
