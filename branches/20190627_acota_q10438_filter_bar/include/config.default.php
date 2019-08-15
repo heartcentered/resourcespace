@@ -961,9 +961,6 @@ $disabled_plugins_message = "";
 # EXPERIMENTAL - use with caution!
 # $anonymous_autouser_group=2;
 
-# When anonymous access is on, show login in a modal.
-$anon_login_modal=false;
-
 $anonymous_user_session_collection=true;
 
 # Enable captioning and ranking of collections (deprecated - use $collection_commenting instead)
@@ -1120,10 +1117,6 @@ $watermark_open_search=false;
 # Simple search even more simple
 # Set to 'true' to make the simple search bar more basic, with just the single search box.
 $basic_simple_search=false;
-
-# Simpler search in header, expanding for the full box.
-# Work in progress - in development for larger ResourceSpace 9.0 release. Some functions may not work currently.
-$header_search=false;
 
 # include an "all" toggle checkbox for Resource Types in Search bar
 $searchbar_selectall=false;
