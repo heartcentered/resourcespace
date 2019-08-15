@@ -346,14 +346,8 @@ if($search_includes_resources && !hook("advsearchrestypes"))
     ?>
     <div class="Question">
     <?php
-    if(!$header_search)
-        {
-        ?>
-        <label><?php echo $lang["search-mode"]?></label>
-        <?php
-        }
-        $wrap = $header_search ? 5 : 0;
-        ?>
+    $wrap = 5;
+    ?>
         <table>
             <tr>
                 <td valign=middle>
@@ -372,7 +366,7 @@ if($search_includes_resources && !hook("advsearchrestypes"))
 
                 if($wrap > 4)
                     {
-                    $wrap = $header_search ? 5 : 1;
+                    $wrap = 5;
                     ?>
                     </tr>
                     <tr>
