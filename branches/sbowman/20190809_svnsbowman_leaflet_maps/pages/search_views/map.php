@@ -1,20 +1,25 @@
 <?php
-// Geographic Map Search for Resources Using Leaflet.js and Various Leaflet Plugins
-// Last Update: 7/7/2019, Steve D. Bowman
+// Map Search View Using Leaflet.js and Various Leaflet Plugins
+// Last Edit 8/16/2019, Steve D. Bowman
 
-include "../include/db.php";
-include_once "../include/general.php";
-include "../include/authenticate.php"; 
-include "../include/resource_functions.php";
-include "../include/header.php";
+// Check if geolocation/maps have been disabled.
+global $disable_geocoding, $lang;
+if($disable_geocoding)
+    {
+    header('HTTP/1.1 403 Forbidden');
+    exit($lang['error-geocodingdisabled']);
+    }
+
 include "../include/map_functions.php";
 
-// Setup initial map variables.
-global $default_display, $geo_search_modal_results, $baseurl, $mapsearch_height, $map_default,  $map_centerview, $map_zoomslider, $map_zoomnavbar, $map_kml, $map_kml_file, $map_default_cache, $map_layer_cache, $map_retina;
+// Setup initial Leaflet map variables.
+global $baseurl, $mapsearch_height, $map_default, $geomarker, $map_centerview, $map_zoomslider, $map_zoomnavbar, $map_kml, $map_kml_file, $map_retina, $marker_color1, $marker_color2, $marker_color3, $marker_color4, $marker_color5, $marker_color6, $marker_color7, $marker_color8;
+$marker_color_def = array($marker_color1, $marker_color2, $marker_color3, $marker_color4, $marker_color5, $marker_color6, $marker_color7, $marker_color8);
+$display_selector_dropdowns = false;
 $zoomslider = 'false';
 $zoomcontrol = 'true';
 
-// Set Leaflet map search view height and layer control container height based on $mapheight.
+// Set Leaflet map search view height and layer control container height based on $mapsearch_height.
 if (isset($mapsearch_height))
     {
     $map1_height = $mapsearch_height;
@@ -22,7 +27,7 @@ if (isset($mapsearch_height))
     }
 else // Default values.
     {
-    $map1_height = 500;
+    $map1_height = "500";
     $layer_controlheight = 460;
     }
 
@@ -33,13 +38,12 @@ if ($map_zoomslider)
     $zoomcontrol = 'false';
     }
 
-$display = getvalescaped("display", $default_display);
-if ($default_display == "map" || $display == "map")
-    {
-    $geo_search_modal_results = false;
-    }
-
 ?>
+<!--Map introtext-->
+<div id="map1_introtext" style="margin-top:0px; margin-bottom:0px; width: 99%;">
+    <p> <?php echo $lang["map_introtext1"];?> </p>
+</div>
+
 <!--Leaflet.js v1.5.1 files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.css"/>
 <script src="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.min.js"></script>
@@ -50,6 +54,14 @@ if ($default_display == "map" || $display == "map")
 <!--Leaflet PouchDBCached v1.0.0 plugin files with PouchDB v7.1.1 files-->
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/pouchdb-7.1.1/pouchdb-7.1.1.min.js"></script>
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-PouchDBCached-1.0.0/L.TileLayer.PouchDBCached.min.js"></script>
+
+<!--Leaflet MarkerCluster v1.4.1 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/MarkerCluster.Default.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/leaflet.markercluster.min.js"></script>
+
+<!--Leaflet ColorMarkers v1.0.0 plugin file-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-colormarkers-1.0.0/js/leaflet-color-markers.min.js"></script>
 
 <!--Leaflet NavBar v1.0.1 plugin files-->
 <?php if ($map_zoomnavbar)
@@ -67,51 +79,29 @@ if ($default_display == "map" || $display == "map")
 <!--Leaflet EasyPrint v2.1.9 plugin file-->
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.min.js"></script>
 
-<!--Leaflet StyledLayerControl v10/2/2018 plugin files-->
-<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-10-2-2018/css/styledLayerControl.css"/>
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-10-2-2018/src/styledLayerControl.min.js"></script>
+<!--Leaflet StyledLayerControl v5/16/2019 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/css/styledLayerControl.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/src/styledLayerControl.min.js"></script>
 
 <!--Leaflet Zoomslider v0.7.1 plugin files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.css"/>
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.min.js"></script>
 
-<!--Leaflet Shades v1.0.2 plugin files-->
-<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/src/css/leaflet-shades.css"/>
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/leaflet-shades.min.js"></script>
-
-<div class="BasicsBox">
-<h1><?php echo $lang["geographicsearch"] ?></h1>
-
-<!--Map introtext-->
-<div id="map_introtext" style="margin-top:0px; margin-bottom:0px; width: 99%;">
-    <p> <?php echo $lang['search_map_introtext'];?> </p>
-</div>
-
-<!-- Drag mode selector -->
-<div id="GeoDragMode">
-    <?php echo $lang["geodragmode"] ?>:&nbsp;
-    <input type="radio" name="dragmode" id="dragmodepan" checked="checked" onClick="" /><label for="dragmodepan"><?php echo $lang["geodragmodepan"] ?></label>
-        &nbsp;
-    <input type="radio" name="dragmode" id="dragmodearea" onClick="map1.editTools.startRectangle()" /><label for="dragmodearea"><?php echo $lang["geodragmodeareaselect"] ?></label>
-</div>
-
 <!--Setup Leaflet map container with sizing-->
-<div id="search_map" style="width: 99%; margin-top:0px; margin-bottom:0px; height: <?php echo $map1_height;?>px; display:block; border:1px solid black; float:none; overflow: hidden;">
+<div id="map_results" style="width: 99%; margin-top:0px; margin-bottom:0px; height: <?php echo $map1_height;?>px; display:block; border:1px solid black; float:none; overflow: hidden;">
 </div>
 
 <script type="text/javascript">
     var Leaflet = L.noConflict();
-
+    
     <!--Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js-->
-    var map1 = new L.map('search_map', {
-        editable: true,
-        preferCanvas: true,
+    var map1 = new L.map('map_results', {
         renderer: L.canvas(),
         zoomsliderControl: <?php echo $zoomslider?>,
         zoomControl: <?php echo $zoomcontrol?>
     }).setView(<?php echo $map_centerview;?>);
 
-    <!--Define available Leaflet basemaps groups and layers from ../include/map_functions.php-->
+    <!--Define available Leaflet basemaps groups and layers using leaflet.providers.js, L.TileLayer.PouchDBCached.js, and styledLayerControl.js based on map_functions.php-->
     <?php
     echo leaflet_osm_basemaps();
     echo leaflet_esri_basemaps();
@@ -119,8 +109,7 @@ if ($default_display == "map" || $display == "map")
     echo leaflet_hydda_basemaps();
     echo leaflet_nasa_basemaps();
     echo leaflet_thunderforest_basemaps();
-    echo leaflet_mapbox_basemaps();
-    ?>
+    echo leaflet_mapbox_basemaps(); ?>
 
     <!-- Define Leaflet default basemap attribution-->
     <?php switch ($map_default)
@@ -240,7 +229,7 @@ if ($default_display == "map" || $display == "map")
     <!--Set styled layer control options for basemaps and add to the Leaflet map using styledLayerControl.js-->
     var options = {
         container_maxHeight: "<?php echo $layer_controlheight?>px",
-        group_maxHeight: "380px",
+        group_maxHeight: "180px",
         exclusive: false
     };
 
@@ -272,57 +261,144 @@ if ($default_display == "map" || $display == "map")
         omnivore.kml('<?php echo $baseurl?>/filestore/system/<?php echo $map_kml_file?>').addTo(map1); <?php
         } ?>
 
-    <!--Add an Area of Interest (AOI) selection box to the Leaflet map using leaflet-shades.js-->
-    var shades = new L.LeafletShades().addTo(map1);
+    <!--If no data (markers), only show the empty Leaflet map-->
+    <?php if (!empty($geomarker))
+        { ?>
+        <!--Setup and configure initial marker info from resource data-->
+        var geomarker = <?php echo str_replace(array('"', '\\'), '', json_encode($geomarker))?>;
+        var markerArray = [];
+        var win_url;
 
-    <!--Get AOI coordinates-->
-    shades.on('shades:bounds-changed', function(e) {
-        <!--Get AOI box coordinates in World Geodetic System of 1984 (WGS84, EPSG:4326)-->
-        var trLat = e['bounds']['_northEast']['lat'];
-        var trLon = e['bounds']['_northEast']['lng'];
-        var blLat = e['bounds']['_southWest']['lat'];
-        var blLon = e['bounds']['_southWest']['lng'];
+        <!--Setup marker clustering using leaflet.markercluster.js for many overlapping markers common in low zoom levels-->
+        var markers = L.markerClusterGroup({
+            maxClusterRadius: 75,
+            disableClusteringAtZoom: 14,
+            chunkedLoading: true, <!--Load markers in chunks to avoid slow browser response-->
+            elementsPlacementStrategy: 'original-locations' <!--Cluster items placement strategy-->
+        });
 
-        <!--Create specially encoded geocoordinate search string to avoid keyword splitting-->
-        var url = "<?php echo $baseurl_short?>pages/search.php?search=!geo" + (blLat + "b" + blLon + "t" + trLat + "b" + trLon).replace(/\-/gi,'m').replace(/\./gi,'p');
+        <!--Cycle through the resources to create markers as needed and colored by resource type-->
+        for (var i=0; i<geomarker.length; i++)
+            {
+            var lon = geomarker[i][0]; <!--Resource longitude value-->
+            var lat = geomarker[i][1]; <!--Resource latitude value-->
+            var rf = geomarker[i][2]; <!--Resource reference value-->
+            var rtype = geomarker[i][3]; <!--Resource type-->
+            var cmfm = geomarker[i][4]; <!--Custom metadata field marker coloring-->
 
-        <!--Store the map window coordinate position to make it easier when returning for another search-->
-        var mapCenter = map1.getCenter();
-        SetCookie("geobound",mapCenter[1] + "," + mapCenter[0] + "," + map1.getZoom());
+            <!--Check for resources without geolocation or invalid coordinates and skip those-->
+            if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
+                { <?php
+                // Check if using a custom metadata field for coloring the markers and redefine rtype.
+                if (isset($marker_metadata_field))
+                    {
+                    for ($i = 0; $i < 8; $i++)
+                        { ?>
+                        if (cmfm >= <?php echo $marker_metadata_array[$i]['min']?> && cmfm <= <?php echo $marker_metadata_array[$i]['max']?>)
+                            {
+                            rtype = <?php echo ($i + 1);?>;
+                            } <?php
+                        }
+                    } ?>
 
-        <?php // Show the map in a modal.
-        if ($geo_search_modal_results)
-            { ?>
-            ModalClose();
-            ModalLoad(url);
-            <?php
+                <!--Set each resource marker color based on resource type or metadata field to marker color mapping up to eight-->
+                switch(rtype) {
+                    case 1:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[0]]);?>Icon;
+                        break;
+                    case 2:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[1]]);?>Icon;
+                        break;
+                    case 3:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[2]]);?>Icon;
+                        break;
+                    case 4:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[3]]);?>Icon;
+                        break;
+                    case 5:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[4]]);?>Icon;
+                        break;
+                    case 6:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[5]]);?>Icon;
+                        break;
+                    case 7:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[6]]);?>Icon;
+                        break;
+                    case 8:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[7]]);?>Icon;
+                        break;
+                    default:
+                        iconColor = blackIcon;
+                    }
+
+                <!--Define the marker arrays for the markers, zoom to the markers, and marker click function using leaflet.js and leaflet-color-markers.js-->
+                <!--Create a marker for each resource for map zoom to the markers-->
+                markerArray.push(new L.marker([lat, lon], {
+                    opacity: 0
+                }).addTo(map1));
+
+                <!--Create a marker for each resource-->
+                var marker = new L.marker([lat, lon], {
+                    icon: iconColor,
+                    title: 'ID# ' + rf,
+                    riseOnHover: true,
+                    win_url: geomarker[i][2]
+                }).on('click', showModal);
+
+                <!--Add markers to the layer array-->
+                markers.addLayer(marker);
+                }
             }
 
-        // Show the map in a new window.
-        if ($display == "map" && !$geo_search_modal_results)
-            { ?>
-            window.open(url, '_blank'); <?php
-            }
-        elseif (!$geo_search_modal_results)
-            { ?>
-            window.location.href = url; <?php
-            } ?>
-    });
+        <!--Add the markers layer to the map-->
+        map1.addLayer(markers);
 
-    <?php if (isset($_COOKIE["geobound"]))
-        {
-        $bounds = $_COOKIE["geobound"];
-        }
-    else
-        {
-        $bounds = $geolocation_default_bounds;
-        }
-    $bounds = explode(",",$bounds);
-    ?>
+        <!--Zoom to the markers on the map regardless of the initial view-->
+        var group = L.featureGroup(markerArray);
+        map1.fitBounds(group.getBounds().pad(0.1));
+
+        <!--On marker click, open a modal corresponding to the specific resource-->
+        function showModal(e)
+            {
+            ModalLoad(baseurl + '/pages/view.php?ref=' + this.options.win_url);
+            }
+
+  <?php } ?>
 </script>
-</div>
 
-<?php
-include "../include/footer.php";
-?>
+<!--Create a map marker legend below the map and only show for defined types up to eight.-->
+<p style="margin-top:4px;margin-bottom:0px;">
+    <b> <?php
+
+    // Resource type color markers legend.
+    if (!isset($marker_metadata_field) || $lang['custom_metadata_markers'] == "")
+        {
+        echo $lang["legend_text"]?>&nbsp;</b> <?php
+
+        for ($i = 1; $i < 9; $i++) // Start at 1, since we are not using the Global resource type.
+            {
+            if (!empty(get_resource_type_name($i)))
+                {
+                $ic = $i - 1; // Start at 0 for $marker_color_def array.
+
+                ?> <img src="../lib/leaflet_plugins/leaflet-colormarkers-1.0.0/img/marker-icon-<?php echo strtolower($marker_colors[$marker_color_def[$ic]])?>.png" alt="<?php echo $marker_colors[$marker_color_def[$ic]]?> Icon" style="width:19px;height:31px;"> <?php echo get_resource_type_name($i); ?> &nbsp; <?php
+                }
+            }
+        }
+    else // Custom metadata field color markers legend.
+        {
+        echo $lang['custom_metadata_markers']?>&nbsp;</b> <?php
+
+        // Loop through and create the custom color marker legend text.
+        for ($i = 0; $i < 8; $i++)
+            {
+            $ltext[$i] = $marker_metadata_array[$i]['min'] . "-" . $marker_metadata_array[$i]['max'];
+            }
+
+        for ($i = 0; $i < 8; $i++)
+            {
+            ?> <img src="../lib/leaflet_plugins/leaflet-colormarkers-1.0.0/img/marker-icon-<?php echo strtolower($marker_colors[$marker_color_def[$i]])?>.png" alt="<?php echo $marker_colors[$marker_color_def[$i]]?> Icon" style="width:19px;height:31px;"> <?php echo $ltext[$i]; ?> &nbsp; <?php
+            }
+        } ?>
+</p>
 
