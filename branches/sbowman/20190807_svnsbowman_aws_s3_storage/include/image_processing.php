@@ -10,6 +10,10 @@
  */
 
 include_once 'metadata_functions.php';
+if ($aws_s3)
+    {
+    include_once 'aws_sdk.php';
+    }
 
 if (!function_exists("upload_file")){
 function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_path="",$after_upload_processing=false)
@@ -28,7 +32,7 @@ function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_p
         return false;
         }
 
-    global $lang, $upload_then_process, $offline_job_queue;
+    global $lang, $upload_then_process, $offline_job_queue, $aws_s3;
     
     if($upload_then_process && !$offline_job_queue)
         {
@@ -191,10 +195,17 @@ function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_p
             hook("beforeremoveexistingfile", "", array( "resourceId" => $ref ) );
 
             $old_extension=sql_value("select file_extension value from resource where ref='" . escape_check($ref) . "'","");
-            if ($old_extension!="") 
+            if ($old_extension != "") 
                 {
-                $old_path=get_resource_path($ref,true,"",true,$old_extension);
-                if (file_exists($old_path)) {unlink($old_path);}
+                $old_path = get_resource_path($ref, true, "", true, $old_extension);
+                if (!$aws_s3 && file_exists($old_path)) 
+                    {
+                    unlink($old_path);
+                    }
+                elseif ($aws_s3) // Delete original file in AWS S3 storage.
+                    {
+                    aws_s3_object_delete(false, $old_path);
+                    }
                 }
 
             // also remove any existing extracted icc profiles

@@ -7847,3 +7847,28 @@ function check_script_last_ran($name, $fail_notify_allowance, &$last_ran_datetim
 
     return false;
     }
+
+// Function to format date and time by $date_d_m_y and $year_yyyy settings.
+function format_datetime()
+    {
+    global $date_d_m_y, $year_yyyy;
+
+    if($date_d_m_y && !$year_yyyy)
+        {
+        $date_format = "d/m/y H:i:s";
+        }
+    elseif($date_d_m_y && $year_yyyy)
+        {
+        $date_format = "d/m/Y H:i:s";
+        }
+    elseif(!$date_d_m_y && !$year_yyyy)
+        {
+        $date_format = "m/d/y h:i:s A";
+        }
+    else
+        {
+        $date_format = "m/d/Y h:i:s A";
+        }
+
+    return $date_format;
+    }
