@@ -29,42 +29,36 @@ include ("../../include/header.php");
 		
 		<?php
         if($use_plugins_manager == true)
-            {
-            ?>
+            { ?>
             <li><i aria-hidden="true" class="fa fa-fw fa-plug"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/team/team_plugins.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["pluginssetup"]?></a></li>
             <?php
             }
 
         if(checkperm('a'))
-            {
-            ?>
+            { ?>
             <li><i aria-hidden="true" class="fa fa-fw fa-picture-o"></i>&nbsp;<a href="<?php echo $baseurl_short; ?>pages/admin/admin_manage_slideshow.php" onClick="return CentralSpaceLoad(this, true);"><?php echo $lang['manage_slideshow']; ?></a></li>
             <?php
             }
 
         if($team_centre_bug_report && !hook("custom_bug_report"))
-            {
-            ?>
+            { ?>
             <li><i aria-hidden="true" class="fa fa-fw fa-bug"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/admin/admin_reportbug.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["reportbug"]?></a></li>
             <?php
             }
 
         if('' != $mysql_bin_path)
-            {
-            ?>
+            { ?>
             <li><i aria-hidden="true" class="fa fa-fw fa-database"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/team/team_export.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["exportdata"]?></a></li>
             <?php
             }
 
 		if (checkperm('a'))
 			{
-			
 			if ($enable_remote_apis)
-			  {
-			  ?>
-			  <li><i aria-hidden="true" class="fa fa-fw fa-stethoscope"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/api_test.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["api-test-tool"]?></a></li>
-			  <?php
-			  }
+                { ?>
+                <li><i aria-hidden="true" class="fa fa-fw fa-stethoscope"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/api_test.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["api-test-tool"]?></a></li>
+                <?php
+                }
 			?>
 			<li><i aria-hidden="true" class="fa fa-fw fa-check-square"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/check.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["installationcheck"]?></a></li>
 			<li><i aria-hidden="true" class="fa fa-fw fa-history"></i>&nbsp;<a href="<?php echo $baseurl_short; ?>pages/admin/admin_system_log.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["systemlog"]; ?></a></li>
@@ -72,6 +66,11 @@ include ("../../include/header.php");
 			<li><i aria-hidden="true" class="fa fa-fw fa-bolt"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/admin/admin_system_performance.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["system_performance"]?></a></li>
 			<li><i aria-hidden="true" class="fa fa-fw fa-cog"></i>&nbsp;<a href="<?php echo $baseurl; ?>/pages/admin/admin_system_config.php" onClick="return CentralSpaceLoad(this, true);"><?php echo $lang['systemconfig']; ?></a></li>
 			<?php
+            // Show AWS dashboard link if using S3.
+            if($aws_s3)
+                { ?>
+                <li><i aria-hidden="true" class="fa fa-fw fa-amazon"></i>&nbsp;<a href="<?php echo $baseurl; ?>/pages/admin/admin_system_aws.php" onClick="return CentralSpaceLoad(this, true);"><?php echo $lang['system_aws']; ?></a></li> <?php
+                }
 			}
 hook("customadminfunction");
 ?>
@@ -80,8 +79,5 @@ hook("customadminfunction");
 	</div>
 </div> <!-- End of BasicsBox -->
 
-
 <?php
-
-
 include("../../include/footer.php");

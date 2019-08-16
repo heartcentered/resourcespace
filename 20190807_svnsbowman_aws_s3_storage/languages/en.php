@@ -1,7 +1,5 @@
 <?php
-# English
-# Language File for ResourceSpace
-# -------
+# English Language File for ResourceSpace
 # Note: when translating to a new language, preserve the original case if possible.
 
 # User group names (for the default user groups)
@@ -1155,7 +1153,7 @@ $lang["clicktoviewlog"]="Click to view log";
 $lang["addkeyword"]="Add keyword";
 $lang["selectedresources"]="Selected resources";
 $lang["addresourcebatchlocalfolder"]="Add resource batch - fetch from local upload folder";
-$lang["phpextensions"]="PHP extensions";
+$lang["phpextensions"]="Installed PHP extensions";
 
 # Setup Script
 $lang["setup-alreadyconfigured"]="Your ResourceSpace installation is already configured.  To reconfigure, you may delete <pre>include/config.php</pre> and point your browser to this page again.";
@@ -1659,7 +1657,7 @@ $lang["nowriteaccesstohomeanim"]="$homeanim_folder not writable. Open permission
 $lang["blockedbrowsingoffilestore"]="Blocked browsing of 'filestore' directory";
 $lang["noblockedbrowsingoffilestore"]="filestore folder appears to be browseable; remove 'Indexes' from Apache 'Options' list.";
 $lang["execution_failed"]="Unexpected output when executing %command command. Output was '%output'.";  # %command and %output will be replaced, e.g. Execution failed; unexpected output when executing convert command. Output was '[stdout]'.
-$lang["exif_extension"]="EXIF extension";
+$lang["exif_extension"]="PHP EXIF extension";
 $lang["archiver_utility"]="Archiver utility";
 $lang["zipcommand_deprecated"]="Using \$zipcommand is deprecated and replaced by \$collection_download and \$collection_download_settings.";
 $lang["zipcommand_overridden"]="But please note that \$zipcommand is defined and overridden.";
@@ -1667,9 +1665,9 @@ $lang["lastscheduledtaskexection"]="Last scheduled task execution (days)";
 $lang["executecronphp"]="Relevance matching will not be effective and periodic e-mail reports will not be sent. Ensure <a href='../batch/cron.php'>batch/cron.php</a> is executed at least once daily via a cron job or similar.";
 $lang["shouldbeormore"]="should be ? or greater"; # E.g. should be 200M or greater
 $lang["config_file"]="(config: %file)"; # %file will be replaced, e.g. (config: /etc/php5/apache2/php.ini)
-$lang['large_file_support_64_bit'] = 'Large file support (64 bit platform)';
+$lang['large_file_support_64_bit'] = 'PHP large file support (64 bit platform)?';
 $lang['large_file_warning_32_bit'] = 'WARNING: Running 32 bit PHP. Files larger than 2GB will not be supported.';
-$lang['server_timezone_check'] = 'PHP timezone is the same as the one MySQL uses';
+$lang['server_timezone_check'] = 'Is the PHP timezone the same as the one MySQL uses?';
 $lang['server_timezone_check_fail'] = 'PHP timezone is "%phptz%" and MySQL timezone is "%mysqltz%"';
 
 $lang["starsminsearch"]="Stars (minimum)";
@@ -2808,3 +2806,39 @@ $lang["replacebatch_resource_max"]      = "Highest resource ID to replace";
 $lang["replacebatch_collection"]        = "Enter a collection ID if you only want to replace resources within this collection";
 $lang["replacebatch_job_created"]       = "Batch replacement job created. You will receive a notification message when the job has completed.";
 $lang["start"]                          = "Start";
+
+// Amazon Web Services (AWS) SDK for PHP
+$lang["system_aws"] = "AWS S3 Dashboard";
+$lang["aws_s3"] = "Amazon Web Services (AWS) Simple Storage Service (S3) Based Original Filestore";
+$lang["aws_s3_text"] = "Use AWS S3 object-based original file filestore?";
+$lang["aws_s3_region"] = "Bucket located in region: ";
+$lang["aws_s3_bucket"] = "Bucket: ";
+$lang["aws_s3_bucket_access"] = "S3 bucket accessible?";
+$lang["aws_s3_owner"] = "Bucket owner: ";
+$lang["aws_s3_id"] = "Owner ID: ";
+$lang["aws_s3_storage_class"] = "S3 bucket storage class:";
+$lang["aws_s3_dashboard"] = "Amazon Web Services (AWS) Simple Storage Service (S3) Dashboard";
+$lang["aws_s3_object_number"] = "Number of objects in the S3 bucket:";
+$lang["aws_s3_bucketsizebytes"] = "S3 bucket size:";
+$lang["aws_s3_putrequests"] = "S3 PUT requests";
+$lang["aws_s3_getrequests"] = "S3 GET requests";
+$lang["aws_s3_headrequests"] = "S3 HEAD requests";
+$lang["aws_s3_postrequests"] = "S3 POST requests";
+$lang["aws_s3_bytesdownloaded"] = "S3 bytes downloaded";
+$lang["aws_s3_bytesuploaded"] = "S3 bytes uploaded";
+$lang["aws_s3_download_text"] = "Downloading file from long-term storage, please stand by.";
+$lang["aws_s3_keypair"] = "AWS key pair (key / secret) set?";
+
+$lang["filestore_type2"] = "Using original file separated filestore";
+$lang["deletefilecheck"] = "Filestore delete file check";
+$lang["deletefilecheck_s3"] = "Filestore and AWS S3 delete file check";
+$lang["deletefilechecktext"] = "Checking the server filestore for remaining folders and files.";
+$lang["deletefilechecktext_s3"] = "Checking the server filestore and AWS S3 bucket for remaining folders and files.";
+$lang["filestore"] = "Filestore";
+$lang["purge_temp_folder_age"] = "Purge temp folder age";
+$lang["exiftool_write"] = "Allow ExifTool metadata writing (\$exiftool_write = true)?";
+$lang["exiftool_write_option"] = "Require ExifTool metadata writing (\$exiftool_write_option = true)?";
+$lang["created2"] = "Created Resource ID";
+$lang["rs_parameters_check"] = "ResourceSpace parameters check (\$exiftool_write = true, \$exiftool_write_option = true, \$force_exiftool_write_metadata = true, \$replace_resource_preserve_option = false, \$replace_resource_preserve_default = false, \$replace_batch_existing = false, and \$custompermshowfile = false)?";
+$lang["aws_dashboard_introtext"] = 'Before uploading any files, make sure that all fields below do not indicate FAIL and ensure that your parameters are set correctly.  The AWS S3 Management Console (<a target="_blank" href="https://s3.console.aws.amazon.com/s3">https://s3.console.aws.amazon.com/s3</a>) should also be used to initially verify the correct uploads are occuring.  The AWS Billing & Cost Management Dashboard (<a target="_blank" href="https://console.aws.amazon.com/billing">https://console.aws.amazon.com/billing</a>) is helpful to understand the storage and usage costs of using S3 storage.  For more information, see the AWS S3 storage instruction sheet at ../documentation/RS_AWS_S3_Knowledgebase_Text.pdf.';
+$lang["aws_dashboard_lowertext"] = "The size of the S3 bucket and the number of objects (files) in the bucket are daily metrics reported once per day, and may not reflect the exact current values at the time the page is refreshed.";

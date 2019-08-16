@@ -6,6 +6,8 @@ include "../include/search_functions.php";
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref","",true),$k))) {include "../include/authenticate.php";}
 
+global $aws_s3;
+
 $ref=getval("ref","");
 $size=getval("size","");
 $ext=getval("ext","");
@@ -52,24 +54,29 @@ if (!$save_as)
 
 <div class="BasicsBox">
 
-    
-	<?php if ($save_as) { 
+	<?php if ($save_as) {
 	# $save_as set or Opera browser? Provide a download link instead. Opera blocks any attempt to send it a download (meta/js redirect)	?>
-    <h2>&nbsp;<h2> 
+    <h2>&nbsp;<h2>
     <h1><?php echo $lang["downloadresource"]?></h1>
     <p style="font-weight:bold;"><?php echo LINK_CARET ?><a href="<?php echo $url?>"><?php echo $lang["rightclicktodownload"]?></a></p>
-	<?php } else { 
+	<?php } else {
 	# Any other browser - standard 'your download will start shortly' text.
 	?>
 	<h2>&nbsp;<h2>
     <h1><?php echo $lang["downloadinprogress"]?></h1>
-    <p><?php echo text("introtext")?></p>
-	<?php } 
+    <p><?php echo text("introtext");
+     if($aws_s3)
+        { ?>
+        <br/> <?php
+        echo $lang["aws_s3_download_text"];
+        }
+    ?></p>
+	<?php }
 	$offset= getval("saved_offset",getval("offset",""));
 	$order_by= getval("saved_order_by",getval("order_by",""));
 	$sort= getval("saved_sort",getval("sort",""));
 	$archive= getval("saved_archive",getval("archive",""));
-	
+
 	// Set parameters for links
 	$url_parameters=array
 		(
@@ -81,17 +88,17 @@ if (!$save_as)
 		"sort"=>$sort,
 		"archive"=>$archive
 		);
-	
+
 	?>
 	<?php if (!hook("downloadfinishlinks")) { ?>
     <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/view.php",$url_parameters) ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
     <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/search.php", $url_parameters) ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresults"]?></a></p>
-    
+
     <?php if ($k=="") { ?>
     <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short  . "pages/home.php") ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtohome"]?></a></p>
 	<?php } ?>
     <?php } ?>
-	
+
 </div>
 
 <?php

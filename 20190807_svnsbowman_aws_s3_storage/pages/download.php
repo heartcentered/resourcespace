@@ -1,5 +1,5 @@
 <?php
-/*we will use output buffering to prevent any included files 
+/*we will use output buffering to prevent any included files
 from outputting stray characters that will mess up the binary download
 we will clear the buffer and start over right before we download the file*/
 ob_start(); $nocache=true;
@@ -7,7 +7,11 @@ include_once dirname(__FILE__) . '/../include/db.php';
 include_once dirname(__FILE__) . '/../include/general.php';
 include_once dirname(__FILE__) . '/../include/resource_functions.php';
 include_once dirname(__FILE__) . '/../include/search_functions.php';
-ob_end_clean(); 
+if ($aws_s3)
+    {
+    include_once dirname(__FILE__) . '/../include/aws_sdk.php';
+    }
+ob_end_clean();
 
 $k="";
 
@@ -30,7 +34,7 @@ if(!($direct_download_noauth && $direct))
         }
     }
 
-    
+
 // Set a flag for logged in users if $external_share_view_as_internal is set and logged on user is accessing an external share
 $internal_share_access = ('' != $k && $external_share_view_as_internal && isset($is_authenticated) && $is_authenticated);
 
@@ -103,8 +107,8 @@ else
         exit('Permission denied');
         }
 
-    // additional access check, as the resource download may be allowed, but access restriction should force watermark.  
-    $access        = get_resource_access($ref);  
+    // additional access check, as the resource download may be allowed, but access restriction should force watermark.
+    $access        = get_resource_access($ref);
     $use_watermark = check_use_watermark($ref);
 
     // If no extension was provided, we fallback to JPG.
@@ -116,6 +120,43 @@ else
     $noattach = getval('noattach','');
     $path     = get_resource_path($ref, true, $size, false, $ext, -1, $page, $use_watermark && $alternative == -1, '', $alternative);
 
+    // If using AWS S3 storage, get original file from the specified S3 bucket and save to the tmp folder.
+    if($aws_s3 && $size == '')
+        {
+        global $aws_bucket, $s3Client;
+
+        // Determine local S3 object tmpfile name.
+        $s3_tmpfile = aws_s3_file_tempname($path);
+
+        // Cleanup tmp folder by purging files based on file age.
+        filestore_temp_cleanup(5);
+
+        try
+            {
+            // Check if file exists in the specified AWS S3 bucket.
+            $s3_path = aws_s3_object_path($path);
+            $s3_result = $s3Client->doesObjectExist($aws_bucket, $s3_path);
+            debug("PAGES/DOWNLOAD S3 DoesObjectExist: " . boolean_convert($s3_result, "ok"));
+
+            // Download original file from the AWS S3 bucket and save in the tmp location.
+            if ($s3_result)
+                {
+                $s3_result = $s3Client->getObject([
+                    'Bucket' => $aws_bucket,
+                    'Key' => $s3_path,
+                    'SaveAs' => $s3_tmpfile
+                ]);
+                debug("PAGES/DOWNLOAD S3 GetObject: " . boolean_convert($s3_result, "ok"));
+                $path = $s3_tmpfile;
+                }
+            }
+        catch (Aws\S3\Exception\S3Exception $e) // Error check.
+            {
+            debug("PAGES/DOWNLOAD S3 Download Error: " . $e->getMessage());
+            }
+
+        }
+
     // Snapshots taken for videos? Make sure we convert to the real snapshot file
     if(1 < $ffmpeg_snapshot_frames && 0 < $snapshot_frame)
         {
@@ -123,7 +164,7 @@ else
         }
 
     hook('modifydownloadpath');
-        
+
     if(!file_exists($path) && '' != $noattach)
         {
         # Return icon for file (for previews)
@@ -170,7 +211,7 @@ if(!file_exists($path))
     exit();
     }
 
-hook('modifydownloadfile'); 
+hook('modifydownloadfile');
 
 $file_size   = filesize_unlimited($path);
 $file_handle = fopen($path, 'rb');
@@ -202,7 +243,7 @@ if('' == $noattach)
         // is zero to support installations that did not previously have a new_hit_count column (i.e. upgrade compatability).
         sql_query("UPDATE resource SET new_hit_count = greatest(hit_count, new_hit_count) + 1 WHERE ref = '{$ref}'");
         }
-    
+
     // We compute a file name for the download.
     $filename = get_download_filename($ref, $size, $alternative, $ext);
     }
@@ -307,13 +348,20 @@ if(!hook('replacefileoutput'))
 
         $sent += $download_chunk_size;
 
-        if(0 != connection_status()) 
+        if(0 != connection_status())
             {
             break;
             }
         }
 
     fclose($file_handle);
+    }
+
+// Delete download tmp file created from using AWS S3 storage.
+if ($aws_s3 && file_exists($s3_tmpfile))
+    {
+    $result = unlink($s3_tmpfile);
+    debug("PAGES/DOWNLOAD Delete Temp File: " . boolean_convert($result, "ok"));
     }
 
 // Deleting Exiftool temp File:

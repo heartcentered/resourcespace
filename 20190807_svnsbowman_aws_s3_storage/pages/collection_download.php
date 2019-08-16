@@ -1,4 +1,4 @@
-<?php 
+<?php
 ini_set('zlib.output_compression','off'); // disable PHP output compression since it breaks collection downloading
 include "../include/db.php";
 include_once "../include/general.php";
@@ -10,8 +10,12 @@ include "../include/resource_functions.php";
 include_once '../include/csv_export_functions.php';
 include_once '../include/pdf_functions.php';
 ob_end_clean();
-$uniqid="";$id="";
-$collection=getvalescaped("collection","",true);  if ($k!=""){$usercollection=$collection;}
+global $aws_s3;
+
+$uniqid="";
+$id="";
+$collection=getvalescaped("collection","",true);
+if ($k!=""){$usercollection=$collection;}
 $size=getvalescaped("size","");
 $submitted=getvalescaped("submitted","");
 $includetext=getvalescaped("text","false");
@@ -40,7 +44,7 @@ else
 			}
 		}
 	}
-	
+
 $settings_id=(isset($collection_download_settings) && count($collection_download_settings)>1)?getvalescaped("settings",""):0;
 $uniqid=getval("id",uniqid("Col" . $collection));
 
@@ -60,11 +64,11 @@ if (!isset($zipcommand) && !$use_zip_extension)
     else if (!is_array($collection_download_settings)) {exit($lang["collection_download_settings-not-an-array"]);}
     if (!isset($archiver_listfile_argument)) {exit($lang["listfile-argument-not-defined"]);}
     }
-    
+
 $archiver = $collection_download && ($archiver_fullpath!=false) && (isset($archiver_listfile_argument)) && (isset($collection_download_settings) ? is_array($collection_download_settings) : false);
 
 # initiate text file
-if (($zipped_collection_textfile==true)&&($includetext=="true")) { 
+if (($zipped_collection_textfile==true)&&($includetext=="true")) {
     $text = i18n_get_collection_name($collectiondata) . "\r\n" .
     $lang["downloaded"] . " " . nicedate(date("Y-m-d H:i:s"), true, true) . "\r\n\r\n" .
     $lang["contents"] . ":\r\n\r\n";
@@ -86,11 +90,11 @@ for ($n=0;$n<count($result);$n++)
 	$ref=$result[$n]["ref"];
 	# Load access level (0,1,2) for this resource
 	$access=get_resource_access($result[$n]);
-	
+
 	# get all possible sizes for this resource
 	$sizes=get_all_image_sizes(false,$access>=1);
 
-	#check availability of original file 
+	#check availability of original file
 	$p=get_resource_path($ref,true,"",false,$result[$n]["file_extension"]);
 	if (file_exists($p) && (($access==0) || ($access==1 && $restricted_full_download)) && resource_download_allowed($ref,'',$result[$n]['resource_type']))
 		{
@@ -143,7 +147,7 @@ if ($submitted != "")
 			$exiftool_write_option = true;
 			}
 		}
-					
+
 	# Estimate the total volume of files to zip
 	$totalsize=0;
 	for ($n=0;$n<count($result);$n++)
@@ -151,18 +155,25 @@ if ($submitted != "")
         $ref = $result[$n]['ref'];
 		$usesize = ($size == 'original') ? "" : $usesize=$size;
 		$use_watermark=check_use_watermark();
-		
-		# Find file to use
-		$f=get_resource_path($ref,true,$usesize,false,$pextension,-1,1,$use_watermark);
-		if (!file_exists($f))
-			{
-			# Selected size doesn't exist, use original file
-			$f=get_resource_path($ref,true,'',false,$result[$n]['file_extension'],-1,1,$use_watermark);
-			}
-		if (file_exists($f))
-			{
-			$totalsize+=filesize_unlimited($f);
-			}
+
+		# Find file to use.
+		$f = get_resource_path($ref, true, $usesize, false, $pextension, -1, 1, $use_watermark);
+		if (!file_exists($f) && !$aws_s3)
+            {
+            # Selected size does not exist, use original file.
+            $f = get_resource_path($ref, true, '', false, $result[$n]['file_extension'], -1 , 1, $use_watermark);
+            }
+        if (file_exists($f) && !$aws_s3)
+            {
+            $totalsize += filesize_unlimited($f);
+            debug("COLLECTION_DOWNLOAD/ID: " . $ref . " Filesize = " . filesize_unlimited($f));
+            }
+        else // Use fize size value in existing resource table for AWS S3 stored files.
+            {
+            $ref_data = get_resource_data($ref);
+            $totalsize += $ref_data['file_size'];
+            debug("COLLECTION_DOWNLOAD/S3 ID: " . $ref . " Filesize = " . $ref_data['file_size']);
+            }
 		}
 	if ($totalsize>$collection_download_max_size  && !$collection_download_tar)
 		{
@@ -174,14 +185,14 @@ if ($submitted != "")
 		<?php
 		exit();
 		}
-	
+
     $id=getvalescaped("id","");
     if(!ctype_alnum($id)){exit($lang["error"]);}
 	// Get a temporary directory for this download - $id should be unique
 	$usertempdir=get_temp_dir(false,"rs_" . $userref . "_" . $id);
-	
+
 	// Clean up old user temp directories if they exist
-	$tempdirbase=get_temp_dir(false);	
+	$tempdirbase=get_temp_dir(false);
 	$tempfoldercontents = new DirectoryIterator($tempdirbase);
 	$folderstodelete=array();
 	$delindex=0;
@@ -190,18 +201,18 @@ if ($submitted != "")
 		$tmpfilename = $object->getFilename();
 		if ($object->isDir())
 			{
-			if((substr($tmpfilename,0,strlen("rs_" . $userref . "_"))=="rs_" . $userref . "_"  || substr($tmpfilename,0,3)== "Col") && time()-$object->getMTime()>24*60*60) 
+			if((substr($tmpfilename,0,strlen("rs_" . $userref . "_"))=="rs_" . $userref . "_"  || substr($tmpfilename,0,3)== "Col") && time()-$object->getMTime()>24*60*60)
 			   {
 			   debug ("Collection download - found old temp directory: " . $tmpfilename .  "  age (minutes): " . (time()-$object->getMTime())/60);
 			   // This directory belongs to the user and is older than a day, delete it
-			   $folderstodelete[]=$tempdirbase . DIRECTORY_SEPARATOR . $tmpfilename;				
+			   $folderstodelete[]=$tempdirbase . DIRECTORY_SEPARATOR . $tmpfilename;
 			   }
 			}
 		elseif($purge_temp_folder_age!=0 && time()-$object->getMTime()>$purge_temp_folder_age*24*60*60)
 			{
-			unlink($tempdirbase . DIRECTORY_SEPARATOR . $tmpfilename); 				
+			unlink($tempdirbase . DIRECTORY_SEPARATOR . $tmpfilename);
 			}
-		
+
 		}
 	foreach ($folderstodelete as $foldertodelete)
 		{
@@ -209,7 +220,7 @@ if ($submitted != "")
 		@rcRmdir($foldertodelete);
 		}
 	$progress_file=$usertempdir . "/progress_file.txt";
-	
+
 	# Define the archive file.
 	if(!$collection_download_tar)
 		{
@@ -219,8 +230,8 @@ if ($submitted != "")
 	$path="";
 	$deletion_array=array();
 	// set up an array to store the filenames as they are found (to analyze dupes)
-	$filenames=array();	
-	
+	$filenames=array();
+
     if(!$collection_download_tar && $offline_job_queue)
         {
         $collection_download_job_data = array(
@@ -257,7 +268,7 @@ if ($submitted != "")
 	for ($n=0;$n<count($result);$n++)
 		{
 		resource_type_config_override($result[$n]["resource_type"]);
-		$copy=false; 
+		$copy=false;
 		$ref=$result[$n]["ref"];
 		# Load access level
 		$access=get_resource_access($result[$n]);
@@ -297,34 +308,275 @@ if ($submitted != "")
 			# Process the file if it exists, and (if restricted access) that the user has access to the requested size
 			if ((($target_exists && $access==0) ||
 				($target_exists && $access==1 &&
-					(image_size_restricted_access($size) || ($usesize='' && $restricted_full_download))) 
+					(image_size_restricted_access($size) || ($usesize='' && $restricted_full_download)))
 					) && resource_download_allowed($ref,$usesize,$result[$n]['resource_type']))
 				{
 				$used_resources[]=$ref;
 				$tmpfile = false;
 				if($exiftool_write_option)
 					{
-					# when writing metadata, we take an extra security measure by copying the files to tmp
-					$tmpfile = write_metadata($p, $ref, $id); // copies file
-	
-					if($tmpfile!==false && file_exists($tmpfile))
-						{
-						$p=$tmpfile; // file already in tmp, just rename it
-						}
-					else if (!$replaced_file)
-						{
-						$copy=true; // copy the file from filestore rather than renaming
-						}
+					// If using AWS S3 storage, get original files from the AWS S3 bucket instead.
+                    if($aws_s3)
+                        {
+                        include_once '../include/aws_sdk.php';
+                        global $s3Client, $storagedir, $exiftool_remove_existing, $exiftool_write, $exiftool_no_process, $mysql_charset, $exiftool_write_omit_utf8_conversion, $aws_bucket;
+
+                        // Fetch file extension and resource type.
+                        $resource_data = get_resource_data($ref);
+                        $extension = $resource_data["file_extension"];
+                        $resource_type = $resource_data["resource_type"];
+
+                        // Check if an attempt to write the metadata shall be performed.
+                        $exiftool_fullpath = get_utility_path("exiftool");
+                        if(false != $exiftool_fullpath && $exiftool_write && $exiftool_write_option && !in_array($extension, $exiftool_no_process))
+                            {
+                            // Trust ExifTool's list of writable formats.
+                            $writable_formats = run_command("{$exiftool_fullpath} -listwf");
+                            $writable_formats = str_replace("\n", "", $writable_formats);
+                            $writable_formats_array = explode(" ", $writable_formats);
+                            if(!in_array(strtoupper($extension), $writable_formats_array))
+                                {
+                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: No ExifTool writable file formats.");
+                                exit(); // No writable file formats.
+                                }
+                            else
+                                {
+                                // Determine tmp directory.
+                                $tmp_dir = get_temp_dir(false, $uniqid);
+                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA tmp folder: " . $tmp_dir);
+
+                                // Determine tmp filename to save as.
+                                $file_path_info = pathinfo($p);
+                                $filename = md5(mt_rand()) . "_{$file_path_info['basename']}";
+                                $tmpfile = "{$tmp_dir}/{$filename}";
+                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA tmpfile: " . $tmpfile);
+
+                                // Strip $storagedir and trailing slash from path for original file in the AWS S3 bucket.
+                                $p = str_replace($storagedir . DIRECTORY_SEPARATOR, "", $p);
+
+                                // Check the AWS S3 file path for a leading slash and if present, delete it.
+                                $path_check = substr($p, 0, 1);
+                                if($path_check == DIRECTORY_SEPARATOR)
+                                    {
+                                    $p = substr($p,1); // Strip leading slash in path for AWS S3.
+                                    }
+                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA Download Path: " . $p);
+
+                                // Check if file exists in the specified AWS S3 bucket.
+                                try {
+                                    $s3result = $s3Client->doesObjectExist($aws_bucket, $p);
+                                    if($s3result == 1)
+                                        {
+                                        $s3result = "Ok";
+                                        }
+                                    debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA doesObjectExist: " . $s3result);
+                                    }
+                                catch (Aws\S3\Exception\S3Exception $e)
+                                    {
+                                    debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA doesObjectExist Error: " . $e->getMessage());
+                                    }
+
+                                // Only proceed if file exists in the specified AWS S3 bucket.
+                                if($s3result == "Ok")
+                                    {
+                                    // Download file from the AWS S3 bucket to the tmp directory.
+                                    try {
+                                        $s3result2 = $s3Client->getObject([
+                                            'Bucket' => $aws_bucket,
+                                            'Key' => $p,
+                                            'SaveAs' => $tmpfile
+                                        ]);
+                                        }
+                                    catch (Aws\S3\Exception\S3Exception $e) // Error check.
+                                        {
+                                        debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA S3 Download Error: " . $e->getMessage());
+                                        }
+
+                                    // Check for successful file download from the AWS S3 bucket to the tmp location.
+                                    if(file_exists($tmpfile) && is_readable($tmpfile))
+                                        {
+                                        debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA S3 File Downloaded To: " . $tmpfile);
+                                        }
+                                    else
+                                        {
+                                        debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA S3 Download Failure");
+                                        }
+
+                                    // Add a call to ExifTool and some generic arguments to the command string.
+                                    $command = $exiftool_fullpath . " -m -overwrite_original -E ";
+                                    if($exiftool_remove_existing)
+                                        {
+                                        $command = stripMetadata(null) . ' ';
+                                        }
+
+                                    // Returns an array of ExifTool fields for the particular resource type, which are basically fields with an 'exiftool field' set.
+                                    $metadata_all = get_resource_field_data($ref, false, true, -1, getval("k","") != ""); // Using get_resource_field_data and honor field permissions.
+
+                                    $write_to = array();
+                                    foreach($metadata_all as $metadata_item)
+                                        {
+                                        if(trim($metadata_item["exiftool_field"]) != "")
+                                            {
+                                            $write_to[] = $metadata_item;
+                                            }
+                                        }
+
+                                        $writtenfields = array(); // Check if writing to an embedded field from more than one RS field where subsequent values need to be appended, not replaced.
+
+                                        for($i = 0; $i < count($write_to); $i++) // Loop through all the found fields.
+                                            {
+                                            $fieldtype = $write_to[$i]['type'];
+                                            $writevalue = $write_to[$i]['value'];
+
+                                            // Formatting and cleaning of the value to be written depending on the RS field type.
+                                            switch ($fieldtype)
+                                                {
+                                                case 2:
+                                                case 3:
+                                                case 9:
+                                                case 12: // Check box list, dropdown, radio buttons, or dynamic keyword list: remove initial comma if present.
+                                                    if (substr($writevalue, 0, 1) == ",")
+                                                        {
+                                                        $writevalue = substr($writevalue, 1);
+                                                        }
+                                                    break;
+                                                case 4:
+                                                case 6:
+                                                case 10: // Date/Expiry Date: write datetype fields in ExifTool preferred format.
+                                                    if($writevalue != '')
+                                                        {
+                                                        $writevalue_to_time = strtotime($writevalue);
+                                                        if($writevalue_to_time != '')
+                                                            {
+                                                            $writevalue = date("Y:m:d H:i:sP", strtotime($writevalue));
+                                                            }
+                                                        }
+                                                    break; // Other types, already set.
+                                                }
+                                            $filtervalue = hook("additionalmetadatafilter", "", array($write_to[$i]["exiftool_field"], $writevalue));
+                                            if ($filtervalue) $writevalue = $filtervalue;
+
+                                            # Add the tag name(s) and the value to the command string.
+                                            $group_tags = explode(",", $write_to[$i]['exiftool_field']); # Each 'exiftool field' may contain more than one tag.
+                                            foreach ($group_tags as $group_tag)
+                                                {
+                                                $group_tag = strtolower($group_tag); // IPTC:Keywords -> iptc:keywords
+                                                if (strpos($group_tag, ":") === false)
+                                                    { // subject -> subject
+                                                    $tag = $group_tag;
+                                                    }
+                                                else // iptc:keywords -> keywords
+                                                    {
+                                                    $tag = substr($group_tag, strpos($group_tag, ":") + 1);
+                                                    }
+
+                                                $exifappend = false; // Need to replace values by default.
+                                                if(isset($writtenfields[$group_tag]))
+                                                    {
+                                                    // This embedded field is already being updated, we need to append values from this field.
+                                                    $exifappend = true;
+                                                    debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: More than one field mapped to the tag '" . $group_tag . "'. Enabling append mode for this tag.");
+                                                    }
+
+                                                switch ($tag)
+                                                    {
+                                                    case "filesize": // Do nothing, no point to try to write the filesize.
+                                                        break;
+                                                    case "filename": // Do nothing, no point to try to write the filename either as RS controls this.
+                                                        break;
+                                                    case "directory": // Do nothing, we do not want metadata to control this.
+                                                        break;
+                                                    case "keywords": // Keywords shall be written one at a time and not all together.
+                                                        if(!isset($writtenfields["keywords"]))
+                                                            {
+                                                            $writtenfields["keywords"] = "";
+                                                            }
+                                                        $keywords = explode(",", $writevalue); // "keyword1,keyword2, keyword3" (with or without spaces).
+                                                        if (implode("", $keywords) != "")
+                                                            {
+                                                            # Only write non-empty keywords, may be more than one field mapped to keywords so we do not want to overwrite with blank.
+                                                            foreach ($keywords as $keyword)
+                                                                {
+                                                                $keyword = trim($keyword);
+                                                                if ($keyword != "")
+                                                                    {
+                                                                    debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: Writing keyword: " . $keyword);
+                                                                    $writtenfields[$group_tag] .= "," . $keyword;
+
+                                                                    # Convert the data to UTF-8 if not already.
+                                                                    if (!$exiftool_write_omit_utf8_conversion && (!isset($mysql_charset) || (isset($mysql_charset) && strtolower($mysql_charset) != "utf8")))
+                                                                        {
+                                                                        $keyword = mb_convert_encoding($keyword, mb_detect_encoding($keyword), 'UTF-8');
+                                                                        }
+                                                                    $command.= escapeshellarg("-" . $group_tag . "-=" . htmlentities($keyword, ENT_QUOTES, "UTF-8")) . " "; // In case value is already embedded, need to manually remove it to prevent duplication
+                                                                    $command.= escapeshellarg("-" . $group_tag . "+=" . htmlentities($keyword, ENT_QUOTES, "UTF-8")) . " ";
+                                                                    }
+                                                                }
+                                                            }
+                                                        break;
+                                                    default:
+                                                        if($exifappend && ($writevalue == "" || ($writevalue != "" && strpos($writtenfields[$group_tag], $writevalue) !== false)))
+                                                            {
+                                                            // The new value is blank or already included in what is being written; skip to next group tag.
+                                                            continue;
+                                                            }
+
+                                                        $writtenfields[$group_tag] = $writevalue;
+                                                        debug ("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: Updating Tag: " . $group_tag);
+                                                        // Write as is, convert the data to UTF-8 if not already.
+
+                                                        global $strip_rich_field_tags;
+                                                        if (!$exiftool_write_omit_utf8_conversion && (!isset($mysql_charset) || (isset($mysql_charset) && strtolower($mysql_charset) != "utf8")))
+                                                            {
+                                                            $writevalue = mb_convert_encoding($writevalue, mb_detect_encoding($writevalue), 'UTF-8');
+                                                            }
+                                                            if ($strip_rich_field_tags)
+                                                                {
+                                                            $command .= escapeshellarg("-" . $group_tag . "=" . trim(strip_tags($writevalue))) . " ";
+                                                                }
+                                                            else
+                                                                {
+                                                                $command .= escapeshellarg("-" . $group_tag . "=" . htmlentities($writevalue, ENT_QUOTES, "UTF-8")) . " ";
+                                                                }
+                                                    }
+                                                }
+                                            }
+
+                                                // Add the filename to the command string and execute.
+                                                $command .= " " . escapeshellarg($tmpfile);
+                                                $output = run_command($command);
+                                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA Complete: " . $tmpfile);
+                                                }
+                                            else
+                                                {
+                                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: Fail " . $p);
+                                                }
+                                }
+                            }
+                        }
+                    else
+                        {
+                        $tmpfile = write_metadata($p, $ref, $id); // Copies file from normal filestore.
+                        }
+
+                    if ($tmpfile !== false && file_exists($tmpfile)) // File already in tmp, just rename it.
+                        {
+                        $p = $tmpfile;
+                        }
+                    elseif (!$replaced_file) // Copy the file from filestore rather than renaming.
+                        {
+                        $copy = true;
+                        }
 					}
 
-				# if the tmpfile is made, from here on we are working with that. 
-				
+				# if the tmpfile is made, from here on we are working with that.
+
 				# If using original filenames when downloading, copy the file to new location so the name is included.
 				$filename = '';
-				if ($original_filenames_when_downloading)	
+				if ($original_filenames_when_downloading)
 					{
-					# Compute a filename for this resource		
-					$filename=get_download_filename($ref,$size,0,$pextension);	
+					# Compute a filename for this resource
+					$filename=get_download_filename($ref,$size,0,$pextension);
 
 					collection_download_use_original_filenames_when_downloading($filename, $ref, $collection_download_tar, $filenames);
 					}
@@ -334,9 +586,9 @@ if ($submitted != "")
                 collection_download_process_text_file($ref, $collection, $filename);
 
 				hook('modifydownloadfile');
-								
-				$path.=$p . "\r\n";	
-				
+
+				$path.=$p . "\r\n";
+
                 if($collection_download_tar)
                     {
                     $ln_link_name = $usertempdir . DIRECTORY_SEPARATOR . $filename;
@@ -430,7 +682,7 @@ if ($submitted != "")
 		$suffix = '.zip';
 
 	collection_download_process_collection_download_name($filename, $collection, $size, $suffix, $collectiondata);
-		
+
     collection_download_process_archive_command($collection_download_tar, $zip, $filename, $usertempdir, $archiver, $settings_id, $zipfile);
 
     collection_download_clean_temp_files($deletion_array);
@@ -453,7 +705,7 @@ if ($submitted != "")
 		# New method
 		$sent = 0;
 		$handle = fopen($zipfile, "r");
-	
+
 		// Now we need to loop through the file and echo out chunks of file data
 		while($sent < $filesize)
 			{
@@ -461,7 +713,7 @@ if ($submitted != "")
 			$sent += $download_chunk_size;
 			}
 		}
-		
+
 	# Remove archive.
 	//unlink($zipfile);
 	//unlink($progress_file);
@@ -484,7 +736,7 @@ include "../include/header.php";
 <h1><?php echo $lang["downloadzip"]?></h1>
 <?php
 $intro=text("introtext");
-if ($intro!="") { ?><p><?php echo $intro ?></p><?php } 
+if ($intro!="") { ?><p><?php echo $intro ?></p><?php }
 ?>
 <script>
 
@@ -500,7 +752,7 @@ function ajax_download(download_offline)
         return false;
         }
 
-	document.getElementById('downloadbuttondiv').style.display='none';	
+	document.getElementById('downloadbuttondiv').style.display='none';
 	document.getElementById('progress').innerHTML='<br /><br /><?php echo $lang["collectiondownloadinprogress"];?>';
 	document.getElementById('progress3').style.display='none';
 	document.getElementById('progressdiv').style.display='block';
@@ -511,44 +763,39 @@ function ajax_download(download_offline)
 	jQuery('#text').prop('disabled', true);
 	jQuery('#archivesettings').prop('disabled', true);
 
-	
+
 	progress= jQuery("progress3").PeriodicalUpdater("<?php echo $baseurl_short?>pages/ajax/collection_download_progress.php?id=<?php echo urlencode($uniqid) ?>&user=<?php echo urlencode($userref) ?>", {
         method: 'post',          // method; get or post
         data: '',               //  e.g. {name: "John", greeting: "hello"}
         minTimeout: 500,       // starting value for the timeout in milliseconds
         maxTimeout: 2000,       // maximum length of time between requests
         multiplier: 1.5,          // the amount to expand the timeout by if the response hasn't changed (up to maxTimeout)
-        type: 'text'           // response type - text, xml, json, etc.  
+        type: 'text'           // response type - text, xml, json, etc.
     }, function(remoteData, success, xhr, handle) {
          if (remoteData.indexOf("file")!=-1){
 					var numfiles=remoteData.replace("file ","");
 					if (numfiles==1){
 						var message=numfiles+' <?php echo $lang['fileaddedtozip']?>';
-					} else { 
+					} else {
 						var message=numfiles+' <?php echo $lang['filesaddedtozip']?>';
-					}	 
+					}
 					var status=(numfiles/<?php echo count($result)?>*100)+"%";
 					console.log(status);
 					document.getElementById('progress2').innerHTML=message;
 				}
-				else if (remoteData=="complete"){ 
+				else if (remoteData=="complete"){
 				   document.getElementById('progress2').innerHTML="<?php echo $lang['zipcomplete']?>";
                    document.getElementById('progress').style.display="none";
-                   progress.stop();    
-                }  
+                   progress.stop();
+                }
                 else {
 					// fix zip message or allow any
 					console.log(remoteData);
 					document.getElementById('progress2').innerHTML=remoteData.replace("zipping","<?php echo $lang['zipping']?>");
                 }
-     
     });
-		
+
 }
-
-
-        
-
 
 </script>
 
@@ -564,7 +811,7 @@ function ajax_download(download_offline)
 	<iframe id="downloadiframe" <?php if (!$debug_direct_download){?>style="display:none;"<?php } ?>></iframe>
 
 
-<?php 
+<?php
 hook("collectiondownloadmessage");
 
 if (!hook('replacesizeoptions'))
@@ -673,14 +920,14 @@ else{
 	?><option value="true"><?php echo $lang["yes"]?></option>
 	<option value="false"><?php echo $lang["no"]?></option><?php
 }
-?>	
+?>
 </select>
 <div class="clearerleft"></div>
 </div>
 
 <?php
 }
- 
+
 # Archiver settings
 if ($archiver && count($collection_download_settings)>1)
     { ?>
@@ -705,9 +952,8 @@ if ($archiver && count($collection_download_settings)>1)
 </div>
 
 <?php
-if($exiftool_write && !$force_exiftool_write_metadata)
-    {
-    ?>
+if($exiftool_write && !$force_exiftool_write_metadata && !$aws_s3)
+    { ?>
     <!-- Let user say (if allowed - ie. not enforced by system admin) whether metadata should be written to the file or not -->
     <div class="Question" id="exiftool_question" <?php if($collection_download_tar_option){echo "style=\"display:none;\"";} ?>>
         <label for="write_metadata_on_download"><?php echo $lang['collection_download__write_metadata_on_download_label']; ?></label>
@@ -717,24 +963,24 @@ if($exiftool_write && !$force_exiftool_write_metadata)
     <?php
     }
 ?>
-	
+
 <div class="Question"  <?php if(!$collection_download_tar){echo "style=\"display:none;\"";} ?>>
 	<label for="tardownload"><?php echo $lang["collection_download_format"]?></label>
 	<div class="tickset">
 	<select name="tardownload" class="stdwidth" id="tardownload" onChange="if(jQuery(this).val()=='off'){ajax_on=true;jQuery('#exiftool_question').slideDown();jQuery('#archivesettings_question').slideDown();}else{ajax_on=false;jQuery('#exiftool_question').slideUp();jQuery('#archivesettings_question').slideUp();}">
 		   <option value="off"><?php echo $lang["collection_download_no_tar"]; ?></option>
-		   <option value="on" <?php if($collection_download_tar_option) {echo "selected";} ?> ><?php echo$lang["collection_download_use_tar"]; ?></option>	   
+		   <option value="on" <?php if($collection_download_tar_option) {echo "selected";} ?> ><?php echo$lang["collection_download_use_tar"]; ?></option>
 	</select>
-	
+
 	<div class="clearerleft"></div></div><br />
 	<div class="clearerleft"></div>
 	<label for="tarinfo"></label>
 	<div class="Fixed"><?php echo $lang["collection_download_tar_info"]  . "<br />" . $lang["collection_download_tar_applink"]?></div>
-	
+
 	<div class="clearerleft"></div>
 </div>
-	
-<div class="QuestionSubmit" id="downloadbuttondiv"> 
+
+<div class="QuestionSubmit" id="downloadbuttondiv">
 	<label for="download"> </label>
 	<script>var ajax_on=<?php echo ($collection_download_tar)?"true":"false"; ?>;</script>
 	<input type="submit"
@@ -746,27 +992,22 @@ if($exiftool_write && !$force_exiftool_write_metadata)
                 }
            "
            value="&nbsp;&nbsp;<?php echo $lang["action-download"]?>&nbsp;&nbsp;" />
-	
+
 	<div class="clearerleft"> </div>
 </div>
 
 <div id="progress"></div>
 
-
-<div class="Question" id="progressdiv" style="display:none;border-top:none;"> 
+<div class="Question" id="progressdiv" style="display:none;border-top:none;">
 <label><?php echo $lang['progress']?></label>
 <div class="Fixed" id="progress3" ></div>
 <div class="Fixed" id="progress2" ></div>
-
 
 <div class="clearerleft"></div></div>
 
 </form>
 
-
-
 </div>
-<?php 
+<?php
 include "../include/footer.php";
 ?>
-

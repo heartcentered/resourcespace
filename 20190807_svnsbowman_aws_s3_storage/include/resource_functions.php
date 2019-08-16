@@ -3,6 +3,11 @@
 # Functions to create, edit and index resources
 
 include_once __DIR__ . '/definitions.php';		// includes log code definitions for resource_log() callers.
+global $aws_s3;
+if ($aws_s3)
+    {
+    include_once 'aws_sdk.php';
+    }
 
 function create_resource($resource_type,$archive=999,$user=-1)
     {
@@ -1961,105 +1966,140 @@ function email_resource($resource,$resourcename,$fromusername,$userlist,$message
 	}
 }
 
-function delete_resource($ref)
-	{
-	# Delete the resource, all related entries in tables and all files on disk
-	$ref      = escape_check($ref);
-	$resource = get_resource_data($ref);
-        
-	if (!$resource
-        ||
-            (
-                (
-                checkperm("D")
-                ||
-                (isset($allow_resource_deletion) && !$allow_resource_deletion)
-                ||
-                !get_edit_access($ref,$resource["archive"], false,$resource)
-                )
-            &&
-                !hook('check_single_delete')
-            &&
-                PHP_SAPI != 'cli'
-            )
-        )
-        {return false;} 
-	
-	$current_state=$resource['archive'];
-	
-	global $resource_deletion_state, $staticsync_allow_syncdir_deletion, $storagedir;
-	if (isset($resource_deletion_state) && $current_state!=$resource_deletion_state) # Really delete if already in the 'deleted' state.
-		{
-		# $resource_deletion_state is set. Do not delete this resource, instead move it to the specified state.
-		update_archive_status($ref, $resource_deletion_state, $current_state);
+// Delete the resource, all related entries in tables. and all files on disk.
+function delete_resource($ref, $coll_delete = false)
+    {
+    global $resource_deletion_state, $staticsync_allow_syncdir_deletion, $aws_s3, $storagedir, $aws_s3_version, $aws_region, $aws_key, $aws_secret, $aws_bucket;
 
-        # log this so that administrator can tell who requested deletion
+    $ref = escape_check($ref);
+    $resource = get_resource_data($ref);
+
+    if (!$resource || ((checkperm("D") || (isset($allow_resource_deletion) && !$allow_resource_deletion) || !get_edit_access($ref, $resource["archive"], false, $resource)) && !hook('check_single_delete') && PHP_SAPI != 'cli'))
+        {
+        return false;
+        }
+
+    $current_state = $resource['archive'];
+
+    if (isset($resource_deletion_state) && $current_state!=$resource_deletion_state) // Really delete if already in the 'deleted' state.
+        {
+        // $resource_deletion_state is set. Do not delete this resource, instead move it to the specified state.
+        update_archive_status($ref, $resource_deletion_state, $current_state);
+
+        // Log this so that administrator can tell who requested deletion.
         resource_log($ref,'x','');
-		
-		# Remove the resource from any collections
-		sql_query("delete from collection_resource where resource='$ref'");
-			
-		return true;
-		}
-	
-    # FStemplate support - do not allow samples from the template to be deleted
-    if (resource_file_readonly($ref)) {return false;}
-    
-    	
-	# Is transcoding
-	if ($resource['is_transcoding']==1) {return false;} # Can't delete when transcoding
 
-	# Delete files first
-	$extensions = array();
-	$extensions[]=$resource['file_extension']?$resource['file_extension']:"jpg";
-	$extensions[]=$resource['preview_extension']?$resource['preview_extension']:"jpg";
-	$extensions[]=$GLOBALS['ffmpeg_preview_extension'];
-	$extensions[]='icc'; // also remove any extracted icc profiles
-	$extensions=array_unique($extensions);
-	
-	foreach ($extensions as $extension)
-		{
-		$sizes=get_image_sizes($ref,true,$extension);
-		foreach ($sizes as $size)
-			{
-			if (file_exists($size['path']) && ($staticsync_allow_syncdir_deletion || false !== strpos ($size['path'],$storagedir))) // Only delete if file is in filestore
-				 {unlink($size['path']);}
-			}
-		}
-	
-	# Delete any alternative files
-	$alternatives=get_alternative_files($ref);
-	for ($n=0;$n<count($alternatives);$n++)
-		{
-		delete_alternative_file($ref,$alternatives[$n]['ref']);
-		}
+        // Remove the resource from any collections.
+        sql_query("DELETE FROM collection_resource WHERE resource = '$ref'");
 
-	
-	//attempt to remove directory
-	$resource_path = get_resource_path($ref, true, "pre", true);
+        return true;
+        }
 
-	$dirpath = dirname($resource_path);
-	@rcRmdir ($dirpath); // try to delete directory, but if we do not have permission fail silently for now
-    
-	# Log the deletion of this resource for any collection it was in. 
-	$in_collections=sql_query("select * from collection_resource where resource = '$ref'");
-	if (count($in_collections)>0){
-		if (!function_exists("collection_log")){include_once ("collections_functions.php");}
-		for($n=0;$n<count($in_collections);$n++)
-			{
-			collection_log($in_collections[$n]['collection'],'d',$in_collections[$n]['resource']);
-			}
-		}
+    // FStemplate support, do not allow samples from the template to be deleted.
+    if (resource_file_readonly($ref))
+        {
+        return false;
+        }
 
-	hook("beforedeleteresourcefromdb","",array($ref));
+    // Is transcoding? Cannot delete when transcoding.
+    if ($resource['is_transcoding'] == 1)
+        {
+        return false;
+        }
 
-	# Delete all database entries
+    // Delete the original file stored in an AWS S3 bucket.
+    if ($aws_s3 && $coll_delete)
+        {
+        // Strip the $storagedir and leading slash from path to match AWS S3 bucket path.
+        $fs_path = get_resource_path($ref, true, '', false);
+        $s3_path = aws_s3_object_path($fs_path);
+        debug("Collection DELETE_RESOURCE S3 Path: " . $s3_path);
+
+        // Create a new S3 client, due to issues with deleting all resources in a collection with a function.
+        try
+            {
+            $s3Client2 = new Aws\S3\S3Client([
+                'version' => $aws_s3_version,
+                'region' => $aws_region,
+                'credentials' => [
+                    'key'    => $aws_key,
+                    'secret' => $aws_secret,
+                ],
+            ]);
+            debug("Collection DELETE_RESOURCE S3 Client Setup: OK");
+
+            $s3_result = $s3Client2->deleteObject([
+            'Bucket' => $aws_bucket,
+            'Key' => $s3_path,
+            ]);
+            debug("Collection DELETE_RESOURCE S3: " . boolean_convert($s3_result['DeleteMarker'], "yes") . "-" . $s3_path);
+            }
+        catch  (Aws\S3\Exception\S3Exception $e) // Error catch.
+            {
+            debug("Collection DELETE_RESOURCE S3 Error: " . $e->getMessage());
+            }
+        }
+    elseif ($aws_s3 && !$coll_delete)
+        {
+        aws_s3_object_delete($ref);
+        }
+
+    // Delete files first.
+    $extensions = array();
+    $extensions[] = $resource['file_extension'] ? $resource['file_extension'] : "jpg";
+    $extensions[] = $resource['preview_extension'] ? $resource['preview_extension'] : "jpg";
+    $extensions[] = $GLOBALS['ffmpeg_preview_extension'];
+    $extensions[] = 'ICC'; // Also remove any extracted ICC profiles.
+    $extensions = array_unique($extensions);
+
+    foreach ($extensions as $extension)
+        {
+        $sizes = get_image_sizes($ref, true, $extension);
+        foreach ($sizes as $size)
+            {
+            if (file_exists($size['path']) && ($staticsync_allow_syncdir_deletion || false !== strpos ($size['path'],$storagedir))) // Only delete if file is in filestore.
+                 {
+                unlink($size['path']);
+                }
+            }
+        }
+
+    // Delete any alternative files.
+    $alternatives = get_alternative_files($ref);
+    for ($n = 0; $n < count($alternatives); $n++)
+        {
+        delete_alternative_file($ref, $alternatives[$n]['ref']);
+        }
+
+    // Attempt to remove directory.
+    $resource_path = get_resource_path($ref, true, "pre", true);
+
+    $dirpath = dirname($resource_path);
+    @rcRmdir ($dirpath); // Try to delete directory, but if we do not have permission fail silently for now.
+
+    // Log the deletion of this resource for any collection it was in.
+    $in_collections = sql_query("SELECT * FROM collection_resource WHERE resource = '$ref'");
+    if (count($in_collections) > 0)
+        {
+        if (!function_exists("collection_log"))
+            {
+            include_once ("collections_functions.php");
+            }
+        for($n = 0; $n < count($in_collections); $n++)
+            {
+            collection_log($in_collections[$n]['collection'], 'd', $in_collections[$n]['resource']);
+            }
+        }
+
+    hook("beforedeleteresourcefromdb", "", array($ref));
+
+    // Delete all database entries.
     clear_resource_data($ref);
-	sql_query("delete from resource where ref='$ref'");
-    sql_query("delete from collection_resource where resource='$ref'");
-    sql_query("delete from resource_custom_access where resource='$ref'");
-    sql_query("delete from external_access_keys where resource='$ref'");
-	sql_query("delete from resource_alt_files where resource='$ref'");
+    sql_query("DELETE FROM resource WHERE ref = '$ref'");
+    sql_query("DELETE FROM collection_resource WHERE resource = '$ref'");
+    sql_query("DELETE FROM resource_custom_access WHERE resource = '$ref'");
+    sql_query("DELETE FROM external_access_keys WHERE resource = '$ref'");
+    sql_query("DELETE FROM resource_alt_files WHERE resource = '$ref'");
     sql_query(
         "    DELETE an
                FROM annotation_node AS an
@@ -2067,11 +2107,11 @@ function delete_resource($ref)
               WHERE a.resource = '{$ref}'"
     );
     sql_query("DELETE FROM annotation WHERE resource = '{$ref}'");
-	hook("afterdeleteresource");
-	
-	return true;
-	}
-    
+    hook("afterdeleteresource");
+
+    return true;
+    }
+
 function clear_resource_data($resource)
     {
     # Clears stored data for a resource.
@@ -2554,30 +2594,50 @@ function get_exiftool_fields($resource_type)
 * 
 * @uses get_temp_dir()
 * 
-* @param  string  $path      File path
+* @param  string  $path      File path.
 * @param  string  $uniqid    If a uniqid is provided, create a folder within tmp. See get_temp_dir() for more information.
-* @param  string  $filename  Filename of the new file
+* @param  string  $filename  Filename of the new file.
+* @param  boolean $aws_s3_download TRUE if downloading original file from an AWS S3 bucket.
 * 
-* @return boolean|string  Returns FALSE or the file path of the temporary file
+* @return boolean|string     Returns FALSE or the file path of the temporary file.
 */
-function createTempFile($path, $uniqid, $filename)
+function createTempFile($path, $uniqid, $filename, $aws_s3_download = false)
     {
-    if(!file_exists($path) || !is_readable($path))
+    global $aws_s3, $aws_bucket, $aws_tmp_purge, $s3Client;
+
+    if(!$aws_s3 && (!file_exists($path) || !is_readable($path)))
         {
         return false;
         }
 
+    // Determine tmp directory.
     $tmp_dir = get_temp_dir(false, $uniqid);
+    debug("CREATETEMPFILE Tmp Folder: " . $tmp_dir);
 
+    // Determine tmpfile name.
     if(trim($filename) == '')
         {
         $file_path_info = pathinfo($path);
         $filename = md5(mt_rand()) . "_{$file_path_info['basename']}";
         }
-
     $tmpfile = "{$tmp_dir}/{$filename}";
 
-    copy($path, $tmpfile);
+    // Download file from a specified AWS S3 bucket to the tmp directory.
+    if($aws_s3 && $aws_s3_download)
+        {        
+        // Cleanup tmp folder by purging files based on file age and then download the file from AWS S3 storage.
+        filestore_temp_cleanup(5);            
+        $s3_result = aws_s3_object_download($path, $tmpfile);
+        
+        if (!$s3_result)
+            {
+            return false;
+            }
+        }
+    else // Copy file from normal filestore to the tmp location.
+        {
+        copy($path, $tmpfile);
+        }
 
     return $tmpfile;
     }
@@ -2620,23 +2680,35 @@ function stripMetadata($file_path)
     return true;
     }
 
-function write_metadata($path, $ref, $uniqid="")
-	{
-	// copys the file to tmp and runs exiftool on it	
-	// uniqid tells the tmp file to be placed in an isolated folder within tmp
-	global $exiftool_remove_existing, $storagedir, $exiftool_write, $exiftool_write_option, $exiftool_no_process, $mysql_charset, $exiftool_write_omit_utf8_conversion;
+/**
+* Writes metadata to a file copied to the tmp directory from filestore or AWS S3 storage.
+*
+* @uses get_utility_path()
+* @uses run_command()
+*
+* @param string  $path            Physical path to file.
+* @param integer $ref             Resource ID.
+* @param string  $uniqid          If a uniqid is provided, create a folder within tmp.
+* @param boolean $aws_s3_download TRUE if original files stored in an AWS S3 bucket.
+*
+* @return boolean|string          Returns TRUE or the file path metadata was added to.
+*/
+function write_metadata($path, $ref, $uniqid = "", $aws_s3_download = false)
+    {
+    // Copies the file to tmp and runs ExifTool on it, uniqid tells the tmp file to be placed in an isolated folder within tmp.
+    global $exiftool_remove_existing, $exiftool_write, $exiftool_write_option, $exiftool_no_process, $mysql_charset, $exiftool_write_omit_utf8_conversion, $aws_s3;
 
     # Fetch file extension and resource type.
-	$resource_data=get_resource_data($ref);
-	$extension=$resource_data["file_extension"];
-	$resource_type=$resource_data["resource_type"];
+    $resource_data = get_resource_data($ref);
+    $extension = $resource_data["file_extension"];
+    $resource_type = $resource_data["resource_type"];
 
-	$exiftool_fullpath = get_utility_path("exiftool");
+    $exiftool_fullpath = get_utility_path("exiftool");
 
     # Check if an attempt to write the metadata shall be performed.
-	if(false != $exiftool_fullpath && $exiftool_write && $exiftool_write_option && !in_array($extension, $exiftool_no_process))
-		{
-        // Trust Exiftool's list of writable formats 
+    if(false != $exiftool_fullpath && $exiftool_write && $exiftool_write_option && !in_array($extension, $exiftool_no_process))
+        {
+        // Trust Exiftool's list of writable formats .
         $writable_formats = run_command("{$exiftool_fullpath} -listwf");
         $writable_formats = str_replace("\n", "", $writable_formats);
         $writable_formats_array = explode(" ", $writable_formats);
@@ -2645,8 +2717,31 @@ function write_metadata($path, $ref, $uniqid="")
             return false;
             }
 
-		$tmpfile = createTempFile($path, $uniqid, '');
-		if($tmpfile === false)
+        // If using AWS S3 storage, get original file from a S3 bucket instead.
+        if($aws_s3 && $aws_s3_download)
+            {
+            // Determine filestore tmp filename.
+            if(trim($filename) == '')
+                {
+                $tmpfile = pathinfo(aws_s3_file_tempname($path, $uniqid), PATHINFO_FILENAME);
+                }
+            $tmpfile = "{$tmp_dir}/{$filename}";
+
+            // Download and check for successful file download from the AWS S3 bucket to the temp location.
+            $s3_result = aws_s3_object_download($path, $tmpfile);
+
+            if (!$s3_result)
+                {
+                return false;
+                }
+            }
+        else // Normal filestore.
+            {
+            debug("WRITE_METADATA createTempFile Path: " . $path);
+            $tmpfile = createTempFile($path, $uniqid, '');
+            }
+
+        if($tmpfile === false)
             {
             return false;
             }
@@ -2655,19 +2750,19 @@ function write_metadata($path, $ref, $uniqid="")
         # Argument -overwrite_original: Now that we have already copied the original file, we can use exiftool's overwrite_original on the tmpfile.
         # Argument -E: Escape values for HTML. Used for handling foreign characters in shells not using UTF-8.
         # Arguments -EXIF:all= -XMP:all= -IPTC:all=: Remove the metadata in the tag groups EXIF, XMP and IPTC.
-		$command = $exiftool_fullpath . " -m -overwrite_original -E ";
+        $command = $exiftool_fullpath . " -m -overwrite_original -E ";
         if($exiftool_remove_existing)
             {
             $command = stripMetadata(null) . ' ';
             }
 
         //$write_to = get_exiftool_fields($resource_type); # Returns an array of exiftool fields for the particular resource type, which are basically fields with an 'exiftool field' set.
-        $metadata_all=get_resource_field_data($ref, false,true,-1,getval("k","")!=""); // Using get_resource_field_data means we honour field permissions
+        $metadata_all = get_resource_field_data($ref, false, true, -1, getval("k", "") != ""); // Using get_resource_field_data means we honour field permissions.
         $read_only_fields = array_column(array_filter($metadata_all, function($value) {
             return ((bool) $value['read_only'] == true);
         }), 'ref');
 
-        $write_to=array();
+        $write_to = array();
         foreach($metadata_all as $metadata_item)
             {
             if(trim($metadata_item["exiftool_field"]) != "" && !in_array($metadata_item['ref'], $read_only_fields))
@@ -2676,55 +2771,68 @@ function write_metadata($path, $ref, $uniqid="")
                 }
             }
 
-        $writtenfields=array(); // Need to check if we are writing to an embedded field from more than one RS field, in which case subsequent values need to be appended, not replaced
-           
-        for($i = 0; $i<count($write_to); $i++) # Loop through all the found fields.
-	    {
+        $writtenfields = array(); // Need to check if we are writing to an embedded field from more than one RS field, in which case subsequent values need to be appended, not replaced.
+
+        for($i = 0; $i < count($write_to); $i++) # Loop through all the found fields.
+            {
             $fieldtype = $write_to[$i]['type'];
             $writevalue = $write_to[$i]['value'];
-            # Formatting and cleaning of the value to be written - depending on the RS field type.
+            # Formatting and cleaning of the value to be written, depending on the RS field type.
             switch ($fieldtype)
                 {
                 case 2:
                 case 3:
                 case 9:
                 case 12:
-                    # Check box list, drop down, radio buttons or dynamic keyword list: remove initial comma if present
-                    if (substr($writevalue, 0, 1)==",") {$writevalue = substr($writevalue, 1);}
-                    break;                   
+                    # Check box list, drop down, radio buttons or dynamic keyword list: remove initial comma if present.
+                    if (substr($writevalue, 0, 1) == ",")
+                        {
+                        $writevalue = substr($writevalue, 1);
+                        }
+                    break;
                 case 4:
                 case 6:
                 case 10:
-                    # Date / Expiry Date: write datetype fields in exiftool preferred format
-                    if($writevalue!='')
+                    # Date / Expiry Date: write datetype fields in exiftool preferred format.
+                    if($writevalue != '')
                         {
-                        $writevalue_to_time=strtotime($writevalue);
-                        if($writevalue_to_time!='')
+                        $writevalue_to_time = strtotime($writevalue);
+                        if($writevalue_to_time != '')
                             {
                             $writevalue = date("Y:m:d H:i:sP", strtotime($writevalue));
                             }
-                        }				
+                        }
                     break;
-                    # Other types, already set
+                    # Other types, already set.
                 }
-            $filtervalue=hook("additionalmetadatafilter", "", Array($write_to[$i]["exiftool_field"], $writevalue));
-            if ($filtervalue) $writevalue=$filtervalue;
+            $filtervalue = hook("additionalmetadatafilter", "", array($write_to[$i]["exiftool_field"], $writevalue));
+            if ($filtervalue)
+                {
+                $writevalue = $filtervalue;
+                }
+
             # Add the tag name(s) and the value to the command string.
             $group_tags = explode(",", $write_to[$i]['exiftool_field']); # Each 'exiftool field' may contain more than one tag.
             foreach ($group_tags as $group_tag)
-                {                
+                {
                 $group_tag = strtolower($group_tag); # E.g. IPTC:Keywords -> iptc:keywords
-                if (strpos($group_tag,":")===false) {$tag = $group_tag;} # E.g. subject -> subject
-                else {$tag = substr($group_tag, strpos($group_tag,":")+1);} # E.g. iptc:keywords -> keywords
-                
-                $exifappend=false; // Need to replace values by default
-                if(isset($writtenfields[$group_tag])) 
-                        { 
-                        // This embedded field is already being updated, we need to append values from this field                          
-                        $exifappend=true;
+                if (strpos($group_tag, ":") === false) # E.g. subject -> subject
+                    {
+                    $tag = $group_tag;
+                    }
+                else # E.g. iptc:keywords -> keywords
+                    {
+                    $tag = substr($group_tag, strpos($group_tag, ":") + 1);
+                    }
+
+                $exifappend = false; // Need to replace values by default.
+                if(isset($writtenfields[$group_tag]))
+                        {
+                        // This embedded field is already being updated, we need to append values from this field.
+                        $exifappend = true;
                         debug("write_metadata - more than one field mappped to the tag '" . $group_tag . "'. Enabling append mode for this tag. ");
                         }
-                        
+
                 switch ($tag)
                     {
                     case "filesize":
@@ -2734,62 +2842,71 @@ function write_metadata($path, $ref, $uniqid="")
                         # Do nothing, no point to try to write the filename either as ResourceSpace controls this.
                         break;
                     case "directory":
-                        # Do nothing, we don't want metadata to control this
+                        # Do nothing, we do not want metadata to control this.
                         break;
-                    case "keywords":                  
+                    case "keywords":
                         # Keywords shall be written one at a time and not all together.
-						if(!isset($writtenfields["keywords"])){$writtenfields["keywords"]="";} 
-						$keywords = explode(",", $writevalue); # "keyword1,keyword2, keyword3" (with or without spaces)
-						if (implode("", $keywords) != "")
-                        	{
-                        	# Only write non-empty keywords/ may be more than one field mapped to keywords so we don't want to overwrite with blank
-	                        foreach ($keywords as $keyword)
-	                            {
+                        if(!isset($writtenfields["keywords"]))
+                            {
+                            $writtenfields["keywords"] = "";
+                            }
+                        $keywords = explode(",", $writevalue); # "keyword1,keyword2, keyword3" (with or without spaces).
+                        if (implode("", $keywords) != "")
+                            {
+                            # Only write non-empty keywords, may be more than one field mapped to keywords so we do not want to overwrite with blank.
+                            foreach ($keywords as $keyword)
+                                {
                                 $keyword = trim($keyword);
-	                            if ($keyword != "")
-	                            	{    
-									debug("write_metadata - writing keyword:" . $keyword);
-									$writtenfields[$group_tag].="," . $keyword;
-										 
-									# Convert the data to UTF-8 if not already.
-									if (!$exiftool_write_omit_utf8_conversion && (!isset($mysql_charset) || (isset($mysql_charset) && strtolower($mysql_charset)!="utf8"))){$keyword = mb_convert_encoding($keyword, mb_detect_encoding($keyword), 'UTF-8');}
-									$command.= escapeshellarg("-" . $group_tag . "-=" . htmlentities($keyword, ENT_QUOTES, "UTF-8")) . " "; // In case value is already embedded, need to manually remove it to prevent duplication
-									$command.= escapeshellarg("-" . $group_tag . "+=" . htmlentities($keyword, ENT_QUOTES, "UTF-8")) . " ";
-									}
-	                            }
-	                        }
+                                if ($keyword != "")
+                                    {
+                                    debug("write_metadata - writing keyword:" . $keyword);
+                                    $writtenfields[$group_tag] .= "," . $keyword;
+
+                                    # Convert the data to UTF-8 if not already.
+                                    if (!$exiftool_write_omit_utf8_conversion && (!isset($mysql_charset) || (isset($mysql_charset) && strtolower($mysql_charset) != "utf8")))
+                                        {
+                                        $keyword = mb_convert_encoding($keyword, mb_detect_encoding($keyword), 'UTF-8');
+                                        }
+                                    $command .= escapeshellarg("-" . $group_tag . "-=" . htmlentities($keyword, ENT_QUOTES, "UTF-8")) . " "; // In case value is already embedded, need to manually remove it to prevent duplication.
+                                    $command .= escapeshellarg("-" . $group_tag . "+=" . htmlentities($keyword, ENT_QUOTES, "UTF-8")) . " ";
+                                    }
+                                }
+                            }
                         break;
                     default:
-                        if($exifappend && ($writevalue=="" || ($writevalue!="" && strpos($writtenfields[$group_tag],$writevalue)!==false)))
-                            {                                                            
-                            // The new value is blank or already included in what is being written, skip to next group tag
-                            continue 2; # @see https://www.php.net/manual/en/control-structures.continue.php note
-                            }                               
-                        $writtenfields[$group_tag]=$writevalue;                          
-                        debug ("write_metadata - updating tag " . $group_tag);
-                        # Write as is, convert the data to UTF-8 if not already.
-                        
-                        global $strip_rich_field_tags;
-                        if (!$exiftool_write_omit_utf8_conversion && (!isset($mysql_charset) || (isset($mysql_charset) && strtolower($mysql_charset)!="utf8"))){$writevalue = mb_convert_encoding($writevalue, mb_detect_encoding($writevalue), 'UTF-8');}
-                            if ($strip_rich_field_tags)
+                        if($exifappend && ($writevalue == "" || ($writevalue != "" && strpos($writtenfields[$group_tag],$writevalue) !== false)))
                             {
-                                $command.= escapeshellarg("-" . $group_tag . "=" . trim(strip_tags($writevalue))) . " ";
+                            // The new value is blank or already included in what is being written, skip to next group tag.
+                            continue 2; # @see https://www.php.net/manual/en/control-structures.continue.php note.
                             }
-                            else
+                        $writtenfields[$group_tag] = $writevalue;
+                        debug ("write_metadata - updating tag " . $group_tag);
+
+                        # Write as is, convert the data to UTF-8 if not already.
+                        global $strip_rich_field_tags;
+                        if (!$exiftool_write_omit_utf8_conversion && (!isset($mysql_charset) || (isset($mysql_charset) && strtolower($mysql_charset) != "utf8")))
                             {
-                                $command.= escapeshellarg("-" . $group_tag . "=" . htmlentities($writevalue, ENT_QUOTES, "UTF-8")) . " ";
+                            $writevalue = mb_convert_encoding($writevalue, mb_detect_encoding($writevalue), 'UTF-8');
+                            }
+                        if ($strip_rich_field_tags)
+                            {
+                            $command .= escapeshellarg("-" . $group_tag . "=" . trim(strip_tags($writevalue))) . " ";
+                            }
+                        else
+                            {
+                            $command .= escapeshellarg("-" . $group_tag . "=" . htmlentities($writevalue, ENT_QUOTES, "UTF-8")) . " ";
                             }
                     }
                 }
             }
-            
-            # Add the filename to the command string.
-            $command.= " " . escapeshellarg($tmpfile);
-            
-            # Perform the actual writing - execute the command string.
-            $output = run_command($command);
+
+        # Add the filename to the command string.
+        $command .= " " . escapeshellarg($tmpfile);
+
+        # Perform the actual writing - execute the command string.
+        $output = run_command($command);
         return $tmpfile;
-       }
+        }
     else
         {
         return false;
@@ -3009,61 +3126,78 @@ function add_alternative_file($resource,$name,$description="",$file_name="",$fil
 	sql_query("insert into resource_alt_files(resource,name,creation_date,description,file_name,file_extension,file_size,alt_type) values ('" . escape_check($resource) . "','" . escape_check($name) . "',now(),'" . escape_check($description) . "','" . escape_check($file_name) . "','" . escape_check($file_extension) . "','" . escape_check($file_size) . "','" . escape_check($alt_type) . "')");
 	return sql_insert_id();
 	}
-	
-function delete_alternative_file($resource,$ref)
-	{
-	# Delete any uploaded file.
-	$info=get_alternative_file($resource,$ref);
-	$path=get_resource_path($resource, true, "", true, $info["file_extension"], -1, 1, false, "", $ref);
-	if (file_exists($path)) {unlink($path);}
-	
-        // run through all possible extensions/sizes
-	$extensions = array();
-	$extensions[]=$info['file_extension']?$info['file_extension']:"jpg";
-	$extensions[]=isset($info['preview_extension'])?$info['preview_extension']:"jpg";
-	$extensions[]=$GLOBALS['ffmpeg_preview_extension'];
-        $extensions[]='jpg'; // always look for jpegs, just in case
-	$extensions[]='icc'; // always look for extracted icc profiles
-	$extensions=array_unique($extensions);
-        $sizes = sql_array('select id value from preview_size');
-	
-        // in some cases, a jpeg original is generated for non-jpeg files like PDFs. Delete if it exists.
-        $path=get_resource_path($resource, true,'', true, 'jpg', -1, 1, false, "", $ref);
-        if (file_exists($path)) {
-            unlink($path);
+
+function delete_alternative_file($resource, $ref)
+    {
+    global $aws_s3;
+
+    # Delete any uploaded file.
+    $info = get_alternative_file($resource, $ref);
+    $path = get_resource_path($resource, true, "", true, $info["file_extension"], -1, 1, false, "", $ref);
+
+    if (!$aws_s3 && file_exists($path)) // Delete file in normal filestore storage.
+        {
+        unlink($path);
+        }
+    elseif ($aws_s3) // Delete object in AWS S3 storage.
+        {
+        $s3_result = aws_s3_object_delete("", $path);
+        debug("DELETE_ALTERNATIVE_FILE S3: " . $path . " - " . boolean_convert($s3_result, "ok"));
         }
 
-        // in some cases, a mp3 original is generated for non-mp3 files like WAVs. Delete if it exists.
-        $path=get_resource_path($resource, true,'', true, 'mp3', -1, 1, false, "", $ref);
-        if (file_exists($path)) {
-            unlink($path);
+    // Run through all possible extensions and sizes.
+    $extensions = array();
+    $extensions[] = $info['file_extension'] ? $info['file_extension'] : "jpg";
+    $extensions[] = isset($info['preview_extension']) ? $info['preview_extension'] : "jpg";
+    $extensions[] = $GLOBALS['ffmpeg_preview_extension'];
+    $extensions[] = 'jpg'; // Always look for JPGs, just in case.
+    $extensions[] = 'icc'; // Always look for extracted ICC profiles.
+    $extensions = array_unique($extensions);
+    $sizes = sql_array('select id value from preview_size');
+
+    // In some cases, a JPG original is generated for non-JPG files like PDFs, delete if it exists.
+    $path = get_resource_path($resource, true,'', true, 'jpg', -1, 1, false, "", $ref);
+    if (file_exists($path))
+        {
+        unlink($path);
         }
 
-        foreach ($extensions as $extension){
-            foreach ($sizes as $size){
-                $page = 1;
-                $lastpage = 0;
-                while ($page <> $lastpage){
-                    $lastpage = $page;
-                    $path=get_resource_path($resource, true, $size, true, $extension, -1, $page, false, "", $ref);
-                    if (file_exists($path)) {
-                        unlink($path);
-                        $page++;
+    // In some cases, a MP3 original is generated for non-MP3 files like WAVs, delete if it exists.
+    $path = get_resource_path($resource, true,'', true, 'mp3', -1, 1, false, "", $ref);
+    if (file_exists($path))
+        {
+        unlink($path);
+        }
+
+    foreach ($extensions as $extension)
+        {
+        foreach ($sizes as $size)
+            {
+            $page = 1;
+            $lastpage = 0;
+            while ($page <> $lastpage)
+                {
+                $lastpage = $page;
+                $path = get_resource_path($resource, true, $size, true, $extension, -1, $page, false, "", $ref);
+                if (file_exists($path))
+                    {
+                    unlink($path);
+                    $page++;
                     }
                 }
             }
         }
-        
-	# Delete the database row
-	sql_query("delete from resource_alt_files where resource='" . escape_check($resource) . "' and ref='" . escape_check($ref) . "'");
-	
-	# Log the deletion
-	resource_log($resource,'y','');
-	
-	# Update disk usage
-	update_disk_usage($resource);
-	}
-	
+
+    # Delete the database row.
+    sql_query("DELETE FROM resource_alt_files WHERE resource = '" . escape_check($resource) . "' AND ref = '" . escape_check($ref) . "'");
+
+    # Log the deletion.
+    resource_log($resource, 'y', '');
+
+    # Update disk usage.
+    update_disk_usage($resource);
+    }
+
 function get_alternative_file($resource,$ref)
 	{
 	# Returns the row for the requested alternative file
