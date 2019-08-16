@@ -1235,32 +1235,49 @@ function render_text_question($label, $input, $additionaltext="", $numeric=false
 	}
 	
 /**
-* render_split_text_question - Used to display a question with two inputs e.g. for a from/to range
+* Used to display a question with two inputs e.g. for a from/to range
 * 
 * @param string $label	Label of question
 * @param array  $inputs  Array of input names and labels(eg. array('pixelwidthmin'=>'From','pixelwidthmin'=>'To')
-* @param string $additionaltext (optional) 	Text to to display after input
-* @param boolean $numeric 					Set to true to force numeric input
+* @param string $additionaltext Text to display after input
+* @param boolean $numeric       Set to true to force numeric input
+* 
+* @return void
 */
-function render_split_text_question($label, $inputs = array(), $additionaltext="", $numeric=false, $extra="", $currentvals=array())
+function render_split_text_question(
+    $label,
+    array $inputs = array(),
+    $additionaltext = "",
+    $numeric = false,
+    $extra = "",
+    array $currentvals = array()
+)
     {
-	?>
-	<div class="Question" id = "pixelwidth">
-		<label><?php echo $label; ?></label>
-		<div>
-		<?php
-		foreach ($inputs as $inputname=>$inputtext)
-			{
-			echo "<div class=\"SplitSearch\">" . $inputtext . "</div>\n";
-			echo "<input name=\"" . $inputname . "\" class=\"SplitSearch\" type=\"text\"". ($numeric?"numericinput":"") . "\" value=\"" . $currentvals[$inputname] . "\"" . $extra . " />\n";
-			}
-		echo $additionaltext;
-		?>
-		</div>
-	</div>
-	<div class="clearerleft"> </div>
-	<?php
-	}
+    ?>
+    <div class="Question">
+        <label><?php echo $label; ?></label>
+        <div class="SplitTextQuestionContent">
+        <?php
+        foreach($inputs as $inputname => $inputtext)
+            {
+            $numericinput_prop = $numeric ? "numericinput" : "";
+            ?>
+            <span><?php echo htmlspecialchars($inputtext); ?></span>
+            <input type="text"
+                   name="<?php echo htmlspecialchars($inputname); ?>"
+                   class="SplitSearch"
+                   value="<?php htmlspecialchars($currentvals[$inputname]); ?>"
+                   <?php echo $numericinput_prop; ?> <?php echo $extra; ?>>
+            <?php
+            }
+            ?>
+            <span><?php echo htmlspecialchars($additionaltext); ?></span>
+        </div>
+    </div>
+    <div class="clearerleft"></div>
+    <?php
+    return;
+    }
 
 /**
 * render_dropdown_question - Used to display a question with a dropdown selector
