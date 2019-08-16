@@ -2789,11 +2789,11 @@ function generate_browse_bar_item($id, $text)
 	}
 
 /**
-* Generates a help icon that opens the relavent KnowledgeBase article in a modal
+* Generates a help icon that opens the relevant Knowledge Base article in a modal
 *  
-* These links can be disabled be setting $contextual_help_links=false;
+* These links can be disabled by setting $contextual_help_links=false;
 * 
-* @param string $page   KnowledgeBase article to display, leave blank to show the KnowledgeBase homepage
+* @param string $page   Knowledge Base article to display, leave blank to show the Knowledge Base homepage
 * 
 * @return void
 */
