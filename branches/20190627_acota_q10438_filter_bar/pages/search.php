@@ -49,11 +49,6 @@ $search = getvalescaped('search', '');
 $modal  = ('true' == getval('modal', ''));
 $collection_add=getvalescaped("collection_add",""); // Need this if redirected here from upload
 
-if(false !== strpos($search, TAG_EDITOR_DELIMITER))
-    {
-    $search = str_replace(TAG_EDITOR_DELIMITER, ' ', $search);
-    }
-
 hook("moresearchcriteria");
 
 // When searching for specific field options we convert search into nodeID search format (@@nodeID)
