@@ -402,6 +402,19 @@ if($responsive_ui)
 
 hook("headertop");
 
+$omit_filter_bar_pages = array(
+    'index',
+    'preview_all',
+    'search_advanced',
+    'preview',
+    'admin_header',
+    'login',
+    'user_request',
+    'user_password',
+    'user_change_password',
+    'document_viewer'
+);
+
 if (!isset($allow_password_change)) {$allow_password_change=true;}
 if(isset($username) && !in_array($pagename, $not_authenticated_pages) && false == $loginterms && '' == $k || $internal_share_access)
     {
@@ -421,7 +434,12 @@ if (checkPermission_anonymoususer())
         {
     	?>
     	<ul>
-        <?php render_filter_bar_component(); ?>
+        <?php
+        if(!in_array($pagename, $omit_filter_bar_pages))
+            {
+            render_filter_bar_component();
+            }
+            ?>
     	<li><a href="<?php echo $login_url; ?>" onclick="return ModalLoad(this, true);"><?php echo $lang["login"]; ?></a></li>
     	<?php hook("addtoplinksanon");?>
     	<?php if ($contact_link) { ?><li><a href="<?php echo $baseurl?>/pages/contact.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["contactus"]?></a></li><?php } ?>
@@ -436,7 +454,10 @@ else
     <ul>
     <?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php }
 
-    render_filter_bar_component();
+    if(!in_array($pagename, $omit_filter_bar_pages))
+        {
+        render_filter_bar_component();
+        }
 
     if(!hook('replaceheaderfullnamelink'))
         {
@@ -503,7 +524,12 @@ if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false 
 <?php } else if (!hook("replaceloginheader")) { # Empty Header?>
 <div id="HeaderNav1" class="HorizontalNav ">
     <ul>
-    <?php render_filter_bar_component(); ?>
+    <?php
+    if(!in_array($pagename, $omit_filter_bar_pages))
+        {
+        render_filter_bar_component();
+        }
+        ?>
     </ul>
 </div>
 <div id="HeaderNav2" class="HorizontalNav HorizontalWhiteNav">&nbsp;</div>
@@ -516,22 +542,9 @@ if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false 
 <div class="clearer"></div><?php if ($pagename!="preview" && $pagename!="preview_all") { ?></div><?php } #end of header ?>
 
 <?php
- $omit_searchbar_pages = array(
-        'index',
-        'preview_all',
-        'search_advanced',
-        'preview',
-        'admin_header',
-        'login',
-        'user_request',
-        'user_password',
-        'user_change_password',
-        'document_viewer'
-    );
-
 if($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login)
     {
-        array_push($omit_searchbar_pages, 'terms');
+        array_push($omit_filter_bar_pages, 'terms');
         $collections_footer = false;
     }
 
@@ -548,7 +561,7 @@ if (($pagename=="login") || ($pagename=="user_password") || ($pagename=="user_re
 else
     {
     $div="CentralSpace";
-    if (in_array($pagename,$omit_searchbar_pages))
+    if (in_array($pagename,$omit_filter_bar_pages))
         {
         $uicenterclass="NoSearch";
         }
