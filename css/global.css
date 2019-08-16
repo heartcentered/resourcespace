@@ -1794,6 +1794,8 @@ a.BrowseRefresh{
 #FilterBarContainer #AdvancedSearchMediaSection .Question label { float: initial; }
 #FilterBarContainer #AdvancedSearchMediaSection .SplitTextQuestionContent { margin: 10px 0px 0px 5px; }
 #FilterBarContainer #AdvancedSearchMediaSection input.SplitSearch { width: 80px; }
+#FilterBarContainer .Question .indent, #FilterBarContainer .Question .stdwidth, #FilterBarContainer .stdwidth { width: initial; }
+#FilterBarContainer div[class*='_range'] select { width: 89px; }
 
 .FullWidth { width: -webkit-fill-available; }
 .InsetBottomShadow { background: rgba(0, 0, 0, 0.2); }
