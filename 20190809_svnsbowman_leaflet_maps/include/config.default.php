@@ -2377,50 +2377,191 @@ $use_plugins_manager = true;
 # Allow Plugin Upload
 $enable_plugin_upload = true;
 
-
-# ------------- Geocoding / geolocation -------------
-# Note that a Google Maps API key is no longer required.
-#Disable geocoding features?
+// GEOCODING AND GEOLOCATION -------------
+// Disable geocoding features?
 $disable_geocoding = false;
-$use_google_maps = false;
 
-# After obtaining an API key, please set the following config option:
+// Enable Google Maps? If true, also set $google_maps_api_key.
+$use_google_maps = false;
 # $google_maps_api_key = '';
 
-#Enable geolocating multiple assets on a map that are part of a collection
-$geo_locate_collection = false;
+// Enable geolocating multiple resources on a map that are part of a collection?
+$geo_locate_collection = true;
 
-# OpenLayers: The default center and zoom for the map view when searching or selecting a new location. This is a world view.
-# For example, to specify the USA use: #$geolocation_default_bounds="-10494743.596017,4508852.6025659,4";
-# For example, to specify Utah, use $geolocation_default_bounds="-12328577.96607,4828961.5663655,6";
-$geolocation_default_bounds="-3.058839178216e-9,2690583.3951564,2";
+// OpenLayers: The default center and zoom for the map view when selecting a new location, as a world view.
+// For example, to specify the USA use: #$geolocation_default_bounds = "-10494743.596017,4508852.6025659,4"; or to specify Utah, use $geolocation_default_bounds = "-12328577.96607,4828961.5663655,6";
+$geolocation_default_bounds = "-3.058839178216e-9,2690583.3951564,2";
 
-# The layers to make available. The first is the default.
-$geo_layers="osm";
-# To enable Google layers, use:
-# $geo_layers="osm, gmap, gsat, gphy";
+// The OpenLayers layers to make available, the first is the default.
+$geo_layers = "osm"; // To enable Google layers, use: $geo_layers = "osm, gmap, gsat, gphy";
 
-# Height of map in pixels on resource view page
-$view_mapheight=200;
+// Cache OpenLayers OpenStreetMap tiles on your server? This is slower when loading, but eliminates non-SSL content warnings if your site uses SSL (requires curl).
+$geo_tile_caching = false;
 
-# Cache openstreetmap tiles on your server. This is slower when loading, but eliminates non-ssl content warnings if your site is SSL (requires curl)
-$geo_tile_caching=false;
+// Optional path to OpenLayers tile cache directory.
+# $geo_tile_cache_directory = "";
 
-# Optional path to tile cache directory
-#$geo_tile_cache_directory="";
-
-# A list of upper/lower long/lat bounds, defining areas that will be excluded from geographical search results.
-# Areas are defined using values in the following sequence: southwest lat, southwest long, northeast lat, northeast long
-$geo_search_restrict=array
-	(	
-	# array(50,-3,54,3) # Example omission zone
-	# ,array(-10,-20,-8,-18) # Example omission zone 2
-	# ,array(1,1,2,2) # Example omission zone 3
-	);
-
-# Add OpenLayers configuration options to this variable to overwrite all other options. 
+// Add OpenLayers configuration options to this variable to overwrite all other options.
 $geo_override_options = "";
 
+// GEOLOCATION MAP CONFIGURATION------------
+    // Disable geocoding features?
+    $disable_geocoding = false;
+
+    // Enable geolocating multiple resources on a map that are part of a collection?
+    $geo_locate_collection = true;
+
+    // Hide map location panel by default (a link to show it will be displayed instead)?
+    $hide_geolocation_panel = false;
+
+    // Show map search results in a modal?
+    $geo_search_modal_results = false;
+
+    // OpenLayers default center and zoom for the map view when selecting a new location, as a world view.
+    // For example, to specify the USA, use $geolocation_default_bounds = "-10494743.596017,4508852.6025659,4"; or for Utah, use $geolocation_default_bounds = "-12328577.96607,4828961.5663655,6";
+    $geolocation_default_bounds = "-3.058839178216e-9,2690583.3951564,2";
+
+    // Enable Google Maps for OpenLayers maps? If true, also set $google_maps_api_key.
+    $use_google_maps = false;
+    # $google_maps_api_key = '';
+
+    // OpenLayers map layers to make available, the first is the default.
+    $geo_layers = "osm"; // To enable Google layers, use: $geo_layers = "osm, gmap, gsat, gphy";
+
+    // Cache OpenLayers OpenStreetMap tiles on the server? This is slower when loading, but eliminates non-SSL content warnings if your site uses SSL (requires curl).
+    $geo_tile_caching = true;
+
+    // Optional path to OpenLayers tile cache directory.
+    # $geo_tile_cache_directory = "";
+
+    // Add OpenLayers configuration options to this variable to overwrite all other options.
+    $geo_override_options = "";
+
+    // Leaflet default EPSG:3857 Web Mercator latitude and longitude in decimal degrees and zoom level to center map.
+    $map_centerview = '[40.66, -111.44], 12';
+
+    // Array of southwest (SW) and northeast (NE) latitude/longitude bounds, defining areas that will be excluded from map search results, and defined in sequence: SW latitude, SW longitude, NE latitude, NE longitude.
+    $geo_search_restrict = array(
+        # array(50,-3,54,3)      # Example omission zone 1.
+        # ,array(-10,-20,-8,-18) # Example omission zone 2.
+        # ,array(1,1,2,2)        # Example omission zone 3.
+    );
+
+    // Map height in pixels on the Resource View page.
+    $view_mapheight = 350;
+
+    // Map height in pixels on the Geographic/Map Search page.
+    $mapsearch_mapheight = 625;
+
+    // Leaflet: Use zoom slidebar instead of standard +/- buttons?
+    $map_zoomslider = true;
+
+    // Leaflet: Show zoom history navigation bar?
+    $map_zoomnavbar = true;
+
+    // Leaflet: Show a KML overlay on the map?
+    $map_kml = false;
+    $map_kml_file = ""; # Place KML file in ../filestore/system/, example: overlay.kml
+
+    // Leaflet: Cache map layer tiles in the browser (recommended to reduce tile server load)?
+    $map_default_cache = true; # Default basemap?
+    $map_layer_cache = true; # All basemaps?
+
+    // Leaflet: Enable retina display tiles (four tiles of half size and a larger zoom level in place of one to utilize higher resolution)?
+    $map_retina = false;
+
+    // Leaflet default basemap.
+    $map_default = "OpenStreetMap.Mapnik"; # Options: 'OpenStreetMap.Mapnik', 'OpenStreetMap.DE', 'OpenTopoMap', 'HikeBike.HikeBike', 'OpenStreetMap.HOT', 'MtbMap', 'OpenStreetMap.France', 'OpenStreetMap.BZH', 'OpenStreetMap.CH', and 'OpenMapSurfer.Roads'.
+
+    // Leaflet available marker colors.
+    $marker_colors = array('Blue', 'Red', 'Green', 'Orange', 'Yellow', 'Black', 'Grey', 'Violet');
+
+    // Default Leaflet marker color options based on resource type (0 = Blue, 1 = Red, 2 = Green, 3 = Orange, 4 = Yellow, 5 = Black, 6 = Gray, and 7 = Violet).
+    $marker_color1 = 0; # Photo resource type.
+    $marker_color2 = 1; # Document resource type.
+    $marker_color3 = 2; # Video resource type.
+    $marker_color4 = 3; # Audio resource type.
+    $marker_color5 = 4; # User added resource type 1.
+    $marker_color6 = 5; # User added resource type 2.
+    $marker_color7 = 6; # User added resource type 3.
+    $marker_color8 = 7; # User added resource type 4.
+
+    // Custom map marker coloring based on a selected numeric value metadata field, instead of coloring by resource type, enable by setting a metadata field ID and descriptive text value.
+    # $marker_metadata_field = 85; # Example is fieldID 85.
+    $lang['custom_metadata_markers'] = ""; # Custom metadata field map legend header text.
+
+    // Array of minimum and maximum numeric values for the markers on the map up to eight marker pairs (min >=, max <=) when using custom marker coloring.  Example below shows a range of years.
+    $marker_metadata_array = [
+        ['min' => 1935, 'max' => 1939], # Marker 1
+        ['min' => 1940, 'max' => 1949], # Marker 2
+        ['min' => 1950, 'max' => 1959], # Marker 3
+        ['min' => 1960, 'max' => 1969], # Marker 4
+        ['min' => 1970, 'max' => 1979], # Marker 5
+        ['min' => 1980, 'max' => 1989], # Marker 6
+        ['min' => 1990, 'max' => 1999], # Marker 7
+        ['min' => 2000, 'max' => 2010]  # Marker 8
+    ];
+
+    // LEAFLET PROVIDERS AVAILABLE FREE WORLDWIDE BASEMAPS
+        // Enabled OpenStreetMap (OSM) basemap layers.
+        $map_osm = true; # Standard, mapnik
+        $map_osmde = false; # Germany
+        $map_osmfr = false; # France
+        $map_osmch = false; # Switzerland
+        $map_osmbzh = false; # BZH
+        $map_osmhot = false; # Humanitarian
+        $map_osmmtb = false; # Mountain bike map
+        $map_osmhikebike = false; # Hike and bike map
+        $map_otm = true; # OpenTopoMap
+        $map_omsroads = false; # OpenMapSurfer roads
+
+        // Enabled Stamen basemap layers.
+        $map_stamentoner = false; # Toner
+        $map_stamentonerlt = false; # Toner light
+        $map_stamentonerback = false; # Toner background
+        $map_stamenterrain = false; # Terrian
+        $map_stamenterrainback = false; # Terrian background
+        $map_stamenrelief = false; # Relief
+        $map_stamenwatercolor = false; # Watercolor
+
+        // Enabled Hydda basemap layers.
+        $map_hyddafull = false; # Full
+        $map_hyddabase = false; # Base
+
+        // Enabled NASA Global Imagery Browse Services (GIBS) basemap layers.
+        $map_nasagibscolor = false; # MODIS-TERRA true color
+        $map_nasagibsfalsecolor = false; # MODIS-TERRA bands 3, 6, and 7 false color
+        $map_nasagibsnight = false; # Earth at night 2012
+
+    // LEAFLET PROVIDERS AVAILABLE WORLDWIDE BASEMAPS (REGISTRATION REQUIRED)
+        // Enabled ESRI basemap layers, no API code required.
+        $map_esristreet = true; # WorldStreetMap
+        $map_esridelorme = true; # Delorme
+        $map_esritopo = true; # World topographic
+        $map_esriimagery = true; # World imagery
+        $map_esriterrain = true; # World terrain
+        $map_esrirelief = true; # World shaded relief
+        $map_esriphysical = true; # World physical
+        $map_esriocean = false; # Ocean basemap
+        $map_esrinatgeo = true; # National Geographic
+        $map_esrigray = false; # World gray canvas
+
+        // Enabled Thunderforest basemap layers, API code required.
+        $map_tfapi = '';
+        $map_tfocm = false; # OpenCycleMap
+        $map_tftransport = false; # Transport
+        $map_tftransportdark = false; # Transport dark
+        $map_tflandscape = false; # Landscape
+        $map_tfoutdoors = false; # Outdoors
+        $map_tfpioneer = false; # Pioneer
+        $map_tfmobileatlas = false; # Mobile atlas
+        $map_tfneighbourhood = false; # Neighbourhood
+
+        // Enabled Mapbox basemap layers, ID and access token required.
+        $map_mapbox = false;
+        $map_mapboxid = '';
+        $map_mapboxtoken = '';
+        $map_mapboxattribution = '';
 
 # QuickLook previews (Mac Only)
 # If configured, attempt to produce a preview for files using Mac OS-X's built in QuickLook preview system which support multiple files.
@@ -2430,8 +2571,6 @@ $geo_override_options = "";
 #
 # A list of extensions that QLPreview should NOT be used for.
 $qlpreview_exclude_extensions=array("tif","tiff");
-
-
 
 # Log developer debug information to the debug log (filestore/tmp/debug.txt)?
 # As the default location is world-readable it is recommended for live systems to change the location to somewhere outside of the web directory by setting $debug_log_location below
@@ -2944,11 +3083,9 @@ $usage_comment_blank=false;
 # Option to add a link to the resource view page that allows a user to email the $email_notify address about the resource
 $resource_contact_link=false;
 
-# Hide geolocation panel by default (a link to show it will be displayed instead)
-$hide_geolocation_panel=false;
-
 # Option to move the welcome text into the Home Picture Panel. Stops text from falling behind other panels.
 $welcome_text_picturepanel=false;
+
 # Hide Welcome Text
 $no_welcometext = false;
 
@@ -3130,9 +3267,6 @@ $resource_view_use_pre = false;
 
 # Only use use the larger layout on the view page for certain file extensions.
 # $resource_view_large_ext = array("jpg", "jpeg", "tif", "tiff", "gif", "png", "svg");
-
-# Show geographical search results in a modal
-$geo_search_modal_results = true;
 
 # Show an edit icon/link in the search results.
 $search_results_edit_icon=true;

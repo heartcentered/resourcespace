@@ -1,7 +1,5 @@
 <?php
-# English
-# Language File for ResourceSpace
-# -------
+# English Language File for ResourceSpace
 # Note: when translating to a new language, preserve the original case if possible.
 
 # User group names (for the default user groups)
@@ -1432,12 +1430,15 @@ $lang['plugins-configvar'] = 'Sets configuration variable: $%cvn'; //%cvn is rep
 $lang['plugins-search-plugin-placeholder'] = 'Search plugins';
 $lang['plugins-disabled-plugin-message'] = 'Disabled in configuration';
 
-#Location Data
+// Location Data
 $lang['location-title'] = 'Location data';
 $lang['location-add'] = 'Add location';
 $lang['location-edit'] = 'Edit location';
 $lang['location-details'] = 'Use "Drag mode" to switch between pin positioning and panning. Use zoom controls to zoom in and out. Click Save to save pin position and zoom level.';
 $lang['location-missing'] = 'The following resources lack geolocation data and are not displayed:';
+$lang['maps-disabled'] = "Maps disabled.";
+$lang['mapadd-introtext'] = "Pan and zoom to the map view of interest for this resource, then click the Add Marker button below the zoom control on the map left and click the map location where the resource is located.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
+$lang['mapadd2-introtext'] = "The blue marker indicates the location for the resource which can be moved by dragging.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
 $lang['location-noneselected']="No location selected";
 $lang['location-noneselected']="No location data";
 $lang['location'] = 'Location';
@@ -1447,6 +1448,81 @@ $lang['google_terrain'] = "Google terrain";
 $lang['google_default_map'] = "Google default map";
 $lang['google_satellite'] = "Google satellite";
 $lang["markers"] = "Markers";
+$lang['map_configuration'] = "Search Results Map";
+$lang['map_introtext1'] = "The map below shows resources from the search result that have a location associated with them. The marker color is set to the resource type (key below the map). When markers would overprint other markers, green-colored clustering is used with a number indicating the number of clustered markers, zoom-in or double click a cluster.  Click on an individual marker to load a window for that resource.  Hover over an individual marker for the Resource ID.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
+$lang['search_map_introtext'] = "Pan and zoom to the map view of interest, then draw a blue box on the map by dragging to select a search area for resources with a geolocation that lie within the box.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
+$lang['mapview'] = "Map";
+$lang['maptitle'] = "Map view";
+$lang['mapemptysearch'] = "No search results.";
+$lang['map_print_title'] = "Search Results Map";
+
+// Search map options.
+$lang['map_options'] = "Search Map Options";
+$lang['legend_text'] = "Resource Types:";
+$lang['map_download'] = "Download map as a PNG file, select a size to the right";
+
+// OpenSteetMap basemap group.
+$lang['map_osm_group'] = "OpenStreetMap (OSM)";
+$lang['map_osm'] = "Default";
+$lang['map_osmde'] = "German Style";
+$lang['map_osmfr'] = "OSM France";
+$lang['map_osmch'] = "OSM Switzerland";
+$lang['map_osmbzh'] = "OSM Luxembourg";
+$lang['map_osmhot'] = "Humanitarian";
+$lang['map_osmmtb'] = "Mountain Bike Map of Europe";
+$lang['map_osmhikebike'] = "Hike & Bike Map";
+$lang['map_otm'] = "OSM Topographic";
+$lang['map_omsroads'] = "OpenMapSurfer Roads";
+
+// Thunderforest basemap group.
+$lang['map_tf_group'] = "Thunderforest";
+$lang['map_tfapi'] = "API Code";
+$lang['map_tfocm'] = "OpenCycleMap (OCM)";
+$lang['map_tftransport'] = "Transport";
+$lang['map_tftransportdark'] = "Transport Dark";
+$lang['map_tflandscape'] = "Landscape";
+$lang['map_tfoutdoors'] = "Outdoors";
+$lang['map_tfpioneer'] = "Pioneer";
+
+// Hydda basemap group.
+$lang['map_hydda_group'] = "Hydda";
+$lang['map_hyddafull'] = "Default Map";
+$lang['map_hyddabase'] = "Base";
+
+// Stamen basemap group.
+$lang['map_stamen_group'] = "Stamen";
+$lang['map_stamentoner'] = "Toner";
+$lang['map_stamentonerlt'] = "Toner Light";
+$lang['map_stamentonerback'] = "Toner Background";
+$lang['map_stamenterrain'] = "Terrain";
+$lang['map_stamenterrainback'] = "Terrain Background";
+$lang['map_stamenrelief'] = "Relief";
+$lang['map_stamenwatercolor'] = "Watercolor";
+
+// ESRI basemap group.
+$lang['map_esri_group'] = "ESRI";
+$lang['map_esristreet'] = "Streets";
+$lang['map_esridelorme'] = "DeLorme";
+$lang['map_esritopo'] = "Topographic";
+$lang['map_esriimagery'] = "Imagery";
+$lang['map_esriterrain'] = "Terrain";
+$lang['map_esrirelief'] = "Shaded Relief";
+$lang['map_esriphysical'] = "Physical";
+$lang['map_esriocean'] = "Ocean";
+$lang['map_esrinatgeo'] = "National Geographic";
+$lang['map_esrigray'] = "Gray Canvas";
+
+// NASA GIBS basemap group.
+$lang['map_nasagibs_group'] = "NASA GIBS";
+$lang['map_nasagibscolor'] = "Modis/Terra Color Imagery";
+$lang['map_nasagibsfalsecolor'] = "Modis/Terra False Color Imagery";
+$lang['map_nasagibsnight'] = "Night Imagery";
+
+// Mapbox basemap group.
+$lang['map_mapbox_group'] = "Mapbox";
+$lang['map_mapboxid'] = "ID";
+$lang['map_mapboxtoken'] = "Access Token";
+$lang['map_mapbox'] = "Default Map";
 
 $lang["publiccollections"]="Public collections";
 $lang["viewmygroupsonly"]="View my groups only";
