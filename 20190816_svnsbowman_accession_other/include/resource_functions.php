@@ -42,8 +42,10 @@ function create_resource($resource_type,$archive=999,$user=-1)
 	$insert=sql_insert_id();
 	
 	# set defaults for resource here (in case there are edit filters that depend on them)
-	set_resource_defaults($insert);	
-	
+	set_resource_defaults($insert);
+
+    hook("resourcecreate", '', array($insert, $resource_type));
+
 	# Autocomplete any blank fields.
 	autocomplete_blank_fields($insert, true);
 
@@ -3003,13 +3005,16 @@ function get_alternative_files($resource,$order_by="",$sort="")
 	$extrasql=hook("get_alternative_files_extra_sql","",array($resource));
 	return sql_query("select ref,name,description,file_name,file_extension,file_size,creation_date,alt_type from resource_alt_files where resource='".escape_check($resource)."' $extrasql order by ".escape_check($ordersort)." name asc, file_size desc");
 	}
-	
-function add_alternative_file($resource,$name,$description="",$file_name="",$file_extension="",$file_size=0,$alt_type='')
-	{
-	sql_query("insert into resource_alt_files(resource,name,creation_date,description,file_name,file_extension,file_size,alt_type) values ('" . escape_check($resource) . "','" . escape_check($name) . "',now(),'" . escape_check($description) . "','" . escape_check($file_name) . "','" . escape_check($file_extension) . "','" . escape_check($file_size) . "','" . escape_check($alt_type) . "')");
-	return sql_insert_id();
-	}
-	
+
+function add_alternative_file($resource, $name, $description = "", $file_name = "", $file_extension = "", $file_size = 0, $alt_type = '')
+    {
+    sql_query("INSERT INTO resource_alt_files(resource, name, creation_date, description, file_name, file_extension, file_size, alt_type) VALUES ('" . escape_check($resource) . "','" . escape_check($name) . "', now(), '" . escape_check($description) . "','" . escape_check($file_name) . "','" . escape_check($file_extension) . "','" . escape_check($file_size) . "','" . escape_check($alt_type) . "')");
+
+    $alt_ref = sql_insert_id();
+    $result = hook("add_alternative_file_extra", "", array($resource, $alt_ref));
+    return $alt_ref;
+    }
+
 function delete_alternative_file($resource,$ref)
 	{
 	# Delete any uploaded file.

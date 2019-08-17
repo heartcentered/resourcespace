@@ -152,6 +152,9 @@ $collection_download_tar_option=false; // Default to using tar downloads for all
 // IMPORTANT: requires JAVA > 1.7
 // $fits_path = '/opt/fits-1.2.0';
 
+// Path to GDAL (Geospatial Data Abstraction Library) ogr2ogr executible for spatial vector metadata export.
+$ogr2ogr_path = '/usr/bin/ogr2ogr';
+
 /* ---------------------------------------------------
 OTHER PARAMETERS
 
@@ -3270,6 +3273,12 @@ $external_share_groups_config_options=false;
 
 // CSV Download - add original URL column
 $csv_export_add_original_size_url_column = false;
+
+// CSV download, hide personal metadata question?
+$csv_hidepersonal = false;
+
+// Use GDAL spatial library to enable non-CSV format metadata export?  Must install gdal-bin library.
+$use_gdal = false;
 
 // Show required field legend on upload
 $show_required_field_label = true;

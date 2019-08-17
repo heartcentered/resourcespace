@@ -65,6 +65,7 @@ if ($alt_access)
 		<?php endif; ?>
 		<h2 class="breakall"><?php echo htmlspecialchars($altfiles[$n]["name"])?></h2>
 		<p><?php echo htmlspecialchars($altfiles[$n]["description"])?></p>
+        <?php hook("view_altfiles_table", "", array($altfiles[$n])) ?>
 		</td>
 		<td class="DownloadFileSize"><?php echo formatfilesize($altfiles[$n]["file_size"])?></td>
 		

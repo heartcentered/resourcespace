@@ -45,15 +45,12 @@ $page_def[] = config_add_single_select('image_text_banner_position', $lang['imag
 $page_def[] = config_add_text_input('image_text_height_proportion',$lang['image_text_height_proportion']);
 $page_def[] = config_add_text_input('image_text_max_height',$lang['image_text_max_height']);
 $page_def[] = config_add_text_input('image_text_min_height',$lang['image_text_min_height']);
-
-
+$page_def[] = config_add_boolean_select('image_text_save_file', $lang['image_text_save_file']);
 
 // Do the page generation ritual -- don't change this section.
 $upload_status = config_gen_setup_post($page_def, $plugin_name);
 include '../../../include/header.php';
 
 config_gen_setup_html($page_def, $plugin_name, $upload_status, $plugin_page_heading);
-
-
 
 include '../../../include/footer.php';
