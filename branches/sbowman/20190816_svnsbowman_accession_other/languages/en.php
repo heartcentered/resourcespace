@@ -1893,11 +1893,27 @@ $lang["searchitemsdiskusage"]="Disk space used by results";
 $lang['collection_disk_usage'] = 'Disk space used by all resources';
 $lang["matchingresourceslabel"]="Matching resources";
 
-# CSV Export of Search results
-$lang['csvExportResultsMetadata'] = 'CSV Export - metadata';
-$lang['csvExportResultsMetadataPersonal'] = 'Only include data from fields expected to contain personal data';
-$lang['csvExportResultsMetadataAll'] = 'Include data from all accessible fields e.g. technical metadata and detailed file information';
+// CSV and Spatial Format Metadata Export
+$lang['csvExportResultsMetadata'] = "Collection Resources Metadata Export";
+$lang['metadata_export_introtext'] = "Export the metadata associated with resources in this collection by selecting the metadata file format (CSV, pipe separated CSV, GeoJSON, GPX, KML, or XLSX) and the options below.  CSV files can also be saved with a TXT extension to resolve automatic data parsing issues upon opening in certain software.";
+$lang['metadata_export_introtext2'] = "Export the metadata associated with resources in this collection by selecting the metadata file format (CSV or pipe separated CSV) and the options below.  CSV files can also be saved with a TXT extension to resolve automatic data parsing issues upon opening in certain software.";
+$lang['csvExportResultsMetadataPersonal'] = 'Only include data from fields expected to contain personal data?';
+$lang['csvExportResultsMetadataAll'] = 'Include data from all accessible fields e.g. technical metadata and detailed file information?';
 $lang['csvAddMetadataCSVToArchive'] = 'Include metadata CSV file to the archive?';
+$lang['csvExportResultsLineStrip'] = "Strip unexcaped line endings from fields before output (i.e. some OCR'd PDF files)?";
+$lang['csv_geolat'] = "Latitude";
+$lang['csv_geolong'] = "Longitude";
+$lang['metadata_export_type'] = "Metadata export file format:";
+$lang['csv'] = "CSV (Comma Separated Value)";
+$lang['csv_pipe_delimited'] = "CSV (Pipe Separated Value)";
+$lang['csv_pipe_delimitedtext'] = "CSV (Pipe Separated Value) as TXT file";
+$lang['csv_text'] = "CSV (Comma Separated Value) as TXT file";
+$lang['kml'] = "KML (Keyhole Markup Language)";
+$lang['geojson'] = "GeoJSON as TXT file (JavaScript Object Notation)";
+$lang['gpx'] = "GPX (GPS Exchange Format)";
+$lang['xlsx'] = "XLSX (Microsoft Excel Open XML)";
+$lang['gdal'] = "GDAL library";
+$lang['gdal_check'] = "only required for non-CSV metadata export.";
 
 $lang["saving"]="Saving...";
 $lang["saved"]="Saved";

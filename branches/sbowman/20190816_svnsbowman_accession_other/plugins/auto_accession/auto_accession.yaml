@@ -1,0 +1,6 @@
+name: auto_accession
+author: Steve D. Bowman
+version: 1.0
+desc: Enables automatic assigning of a resource accession identification.
+config_url: /plugins/auto_accession/pages/setup.php
+category: Asset processing

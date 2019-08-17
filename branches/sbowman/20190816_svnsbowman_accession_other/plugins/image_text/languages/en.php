@@ -1,10 +1,5 @@
 <?php
-# English
-# Language File for the image_text plugin
-# -------
-#
-#
-
+# English Language File for the image_text plugin
 
 $lang['image_text_configuration']="Image text configuration";
 $lang['image_text_summary'] = "<div>This plugin will use the data from the specified field and overlay it at the base of the image. The selected groups will see an option to download the original file without the added text<br><br></div>";
@@ -23,5 +18,4 @@ $lang['image_text_banner_position']="Position of banner relative to image.";
 $lang['image_text_banner_position_list']=array("top"=>"top", "bottom"=>"bottom");
 $lang['image_text_font']="Font to use, must be supported by imagemagick version installed";
 $lang['image_text_noim']="This plugin requires Imagemagick to be installed.";
-
-
+$lang['image_text_save_file'] = "Save image text files in the filestore (/tmp) for later use?";

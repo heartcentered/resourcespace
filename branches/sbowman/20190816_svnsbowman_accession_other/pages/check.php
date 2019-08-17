@@ -176,6 +176,23 @@ else
 # Check ExifTool
 display_utility_status("exiftool");
 
+// Check GDAL (Geospatial Data Abstraction Library).
+if ($use_gdal)
+    {
+    $result = run_command("ogrinfo --version");
+    if (substr($result, 0, 4) == "GDAL")
+        {
+        $version = $result;
+        $result = $lang["status-ok"];
+        }
+    else
+        {
+        $version = $lang["status-notinstalled"] . ", " . $lang['gdal_check'];
+        $result = $lang["status-fail"];
+        }
+    ?><tr><td><?php echo str_replace("?", "GD", $lang['gdal']); ?></td><td><?php echo $version?></td><td><b><?php echo $result?></b></td></tr><?php
+    }
+
 # Check archiver
 if (!$use_zip_extension){
 if ($collection_download || isset($zipcommand)) # Only check if it is going to be used.

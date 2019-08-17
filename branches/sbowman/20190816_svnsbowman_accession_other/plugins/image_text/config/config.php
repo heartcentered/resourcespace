@@ -10,5 +10,4 @@ $image_text_height_proportion=.05;
 $image_text_font="Arial-Regular";
 $image_text_position="east";
 $image_text_banner_position="bottom";
-
-
+$image_text_save_file = false;
