@@ -1104,7 +1104,8 @@ var pluploadconfig = {
                         <?php }
                         else { ?>
                                 //Show diff instructions if supports drag and drop
-                                if(!uploader.files.length && uploader.features.dragdrop && uploader.settings.dragdrop)	{jQuery('#plupload_instructions').html('<p><?php echo escape_check($lang["intro-plupload_dragdrop"]);render_help_link("user/uploading")?></p>');}
+                                $help_link = render_help_link("user/uploading");
+                                if(!uploader.files.length && uploader.features.dragdrop && uploader.settings.dragdrop)	{jQuery('#plupload_instructions').html('<p><?php echo escape_check($lang["intro-plupload_dragdrop"]) . $help_link?></p>');}
                         <?php }?>
                         
                         uploader.bind('FileUploaded', function(up, file, info) {
