@@ -1248,7 +1248,7 @@ else
     ?>
     
     <h1><?php echo $titleh1 ?></h1>
-    <p><?php echo $lang["intro-batch_edit"] ?></p>
+    <p><?php echo $lang["intro-batch_edit"];render_help_link("user/uploading");?></p>
     
     <?php
  }
