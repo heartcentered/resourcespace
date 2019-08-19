@@ -2451,6 +2451,18 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $o++;
         }
 
+    // Copy resources to another collection
+    if(!checkperm('b') && collection_readable($collection_data['ref']))
+        {
+        $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_copy_resources.php",array("ref"=>$collection_data['ref']));
+        $options[$o]['data_attr'] = $data_attribute;
+        $options[$o]['value'] = 'copy_collection';
+        $options[$o]['label'] = $lang['copy'];
+		$options[$o]['category'] = ACTIONGROUP_COLLECTION;
+        $options[$o]['order_by'] = 105;
+        $o++;
+        }
+
     // Edit Collection
     if((($userref == $collection_data['user']) || (checkperm('h')))  && ($k == '' || $internal_share_access)) 
         {

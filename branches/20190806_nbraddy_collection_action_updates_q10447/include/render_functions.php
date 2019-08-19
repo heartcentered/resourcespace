@@ -1093,6 +1093,11 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                     CollectionDivLoad(option_url);
                     break;
 
+                case 'copy_collection':
+                    var option_url = jQuery('#<?php echo $action_selection_id; ?> option:selected').data('url');
+                    ModalLoad(option_url, false, true);
+                    break;
+
             <?php
             if(!$top_actions)
                 {
