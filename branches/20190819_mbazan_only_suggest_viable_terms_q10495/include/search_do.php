@@ -1,7 +1,7 @@
 <?php
 /**
-* Takes a search string $search, as provided by the user, and returns a results set of matching resources. If there are
-* no matches, instead returns an array of suggested searches
+* Takes a search string $search, as provided by the user, and returns a results set of matching resources.
+* If there are no matches then it returns an array of viable suggested searches which will yield matches.
 * 
 * @uses debug()
 * @uses hook()
@@ -31,6 +31,11 @@
 * @param boolean     $return_refs_only
 * @param boolean     $editable_only
 * @param boolean     $returnsql
+* @param boolean     $suggestion_check        Governs whether (true) this search is purely for checking the effectiveness of suggestions
+*                                                          or (false) this is a regular search
+*                                             Regular searches perform one recursive do_search call per suggestion to determine whether suggestions are viable
+*                                             Suggestions which are not viable are removed from the suggestion array
+*                                             Suggestion check searches do not make suggestions themselves and therefore do not call do_search recursively
 * 
 * @return null|string|array
 */
@@ -50,7 +55,8 @@ function do_search(
     $stats_logging = true,
     $return_refs_only = false,
     $editable_only = false,
-    $returnsql = false
+    $returnsql = false,
+    $suggestion_check = false
 )
     {
     debug("search=$search $go $fetchrows restypes=$restypes archive=$archive daylimit=$recent_search_daylimit editable_only=" . ($editable_only?"true":"false"));
@@ -1023,43 +1029,98 @@ function do_search(
     //                                                         END add node conditions
     // *******************************************************************************
 
-    # Could not match on provided keywords? Attempt to return some suggestions.
-    if ($fullmatch==false)
+
+    // *******************************************************************************
+    //                                                               START Suggestions
+    // *******************************************************************************
+
+    if ($suggestion_check) # This is a recursive call which checks viability
         {
-        if ($suggested==$keywords)
+        # Nothing happens here because a suggestion check is in progress and does not itself suggest anything     
+        }
+    else # This is a regular search call; here we assemble a suggestion and pass on to a suggestion check for viability 
+        {
+        # Could not match on provided keywords? Attempt to return some suggestions.
+        if ($fullmatch==false)
             {
-            # Nothing different to suggest.
-            debug("No alternative keywords to suggest.");
-            return "";
-            }
-        else
-            {
-            # Suggest alternative spellings/sound-a-likes
-            $suggest="";
-            if (strpos($search,",")===false)
+            if ($suggested==$keywords)
                 {
-                $suggestjoin=" ";
+                # Nothing different to suggest, so suggest nothing
+                debug("No alternative keywords to suggest.");
+                return "";
                 }
             else
                 {
-                $suggestjoin=", ";
-                }
-
-            for ($n=0;$n<count($suggested);$n++)
-                {
-                if ($suggested[$n]!="")
+                # Suggest alternative spellings/sound-a-likes
+                $suggest="";
+                if (strpos($search,",")===false)
                     {
-                    if ($suggest!="")
+                    $suggestjoin=" ";
+                    }
+                else
+                    {
+                    $suggestjoin=", ";
+                    }
+
+                for ($n=0;$n<count($suggested);$n++)
+                    {
+                    if ($suggested[$n]!="")
                         {
-                        $suggest.=$suggestjoin;
+                        if ($suggest!="")
+                            {
+                            $suggest.=$suggestjoin;
+                            }
+                        $suggest.=$suggested[$n];
                         }
-                    $suggest.=$suggested[$n];
+                    }
+
+                # If searching for multiple archive states, ensure they are passed as a string    
+                if(is_array($archive))
+                    {
+                    $archive=implode(",",$archive);
+                    }
+
+                # Check for viability of this suggest
+                $suggested_refs=do_search(
+                    $suggest,                   # $search
+                    $restypes,
+                    $order_by,
+                    $archive,
+                    $fetchrows,
+                    $sort,
+                    $access_override,
+                    $starsearch,
+                    $ignore_filters,
+                    false,                      # $return_disk_usage
+                    $recent_search_daylimit,
+                    $go,
+                    false,                      # $stats_logging
+                    true,                       # $return_refs_only
+                    $editable_only,
+                    false,                      # $returnsql
+                    true                        # $suggestion_check
+                );
+
+                if(is_array($suggested_refs))
+                    {
+                    # Suggested keywords yielded results and are therefore viable, so pass back this suggestion
+                    debug("Suggest alternative viable keywords '".$suggest."'.");
+                    return $suggest;
+                    }
+                else
+                    {
+                    # Suggested keywords yield nothing and therefore not viable, so suggest nothing
+                    debug("Alternative keywords '".$suggest."' not viable.");
+                    return "";
                     }
                 }
-            debug ("Suggesting $suggest");
-            return $suggest;
+                
             }
         }
+
+    // *******************************************************************************
+    //                                                                 END Suggestions
+    // *******************************************************************************
 
     hook("additionalsqlfilter");
     hook("parametricsqlfilter", '', array($search));
