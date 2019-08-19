@@ -286,6 +286,7 @@ function tile_freetext($tile,$tile_id,$tile_width,$tile_height)
 	<h2> <?php echo htmlspecialchars(i18n_get_translated($tile["title"])); ?></h2>
 	<p><?php echo htmlspecialchars(i18n_get_translated($tile["txt"])); ?></p>
 	<?php
+	generate_dash_tile_toolbar($tile,$tile_id);
 	}
 
 /*
@@ -427,6 +428,7 @@ function tile_search_thumbs($tile,$tile_id,$tile_width,$tile_height,$promoted_im
 		</script>
 		<?php
 		}
+	generate_dash_tile_toolbar($tile,$tile_id);
 	}
 
 function tile_search_multi($tile,$tile_id,$tile_width,$tile_height)
@@ -522,6 +524,7 @@ function tile_search_multi($tile,$tile_id,$tile_width,$tile_height)
 		</script>
 		<?php
 		}
+	generate_dash_tile_toolbar($tile,$tile_id);
 	}
 
 function tile_search_blank($tile,$tile_id,$tile_width,$tile_height)
@@ -600,6 +603,7 @@ function tile_search_blank($tile,$tile_id,$tile_width,$tile_height)
 		</script>
 		<?php
 		}
+	generate_dash_tile_toolbar($tile,$tile_id);
 	}
 
 
@@ -712,7 +716,7 @@ function tile_featured_collection_thumbs($tile, $tile_id, $tile_width, $tile_hei
         <script>jQuery('#<?php echo $tile_id; ?>').addClass('TileContentShadow');</script>
         <?php
         }
-
+	generate_dash_tile_toolbar($tile,$tile_id);
     return;
     }
 
@@ -808,7 +812,7 @@ function tile_featured_collection_multi($tile, $tile_id, $tile_width,$tile_heigh
         <script>jQuery('#<?php echo $tile_id; ?>').addClass('TileContentShadow');</script>
         <?php
         }
-
+	generate_dash_tile_toolbar($tile,$tile_id);
     return;
     }
 
@@ -844,115 +848,6 @@ function tile_featured_collection_blank($tile, $tile_id)
         <script>jQuery('#<?php echo $tile_id; ?>').addClass('TileContentShadow');</script>
         <?php
         }
-
+	generate_dash_tile_toolbar($tile,$tile_id);
     return;
     }
-
-$editlink = $baseurl_short . "pages/dash_tile.php?edit=" . $tile['ref'];
-?>
-<div id="DashTileActions_<?php echo substr($tile_id, 18); ?>" class="DashTileActions"  style="display:none;">
-<?php
-if(checkPermission_dashmanage())
-    {
-    ?>
-    <div class="tool">
-        <a href="#" onClick= >
-            <span><?php echo LINK_CARET ?><?php echo $lang['action-delete']; ?></span>
-        </a>
-    </div>
-    <?php
-    }
-if (checkPermission_dashmanage())
-    { 
-    ?><div class="tool">
-        <a href="<?php echo $editlink ?>" onClick="return ModalLoad(this,true);">
-            <span><?php echo LINK_CARET ?><?php echo $lang['action-edit']; ?></span>
-        </a>
-    </div>
-    <?php
-    }
-?>
-</div>
-
-<script>
-jQuery(document).ready(function ()
-    {
-    var tileid;
-    var tilelink;
-    var linkset = false;
-
-    jQuery('.HomePanel').off("hover").hover(
-    function(e)
-        {
-        tileid = jQuery(this).attr('id').substring(9);
-        jQuery('#DashTileActions_' + tileid).stop(true).slideDown();
-        console.log(tileid);
-        },
-    function(e)
-        {
-        tileid=jQuery(this).attr('id').substring(9);
-        jQuery('#DashTileActions_' + tileid).stop(true).slideUp();
-        });
-
-    jQuery('.DashTileActions').off("hover").hover(
-    function(e)
-        {
-        if (!linkset) 
-            {
-            console.log("IN");
-            tilelink = jQuery('a#user_tile' + tileid + '.HomePanel').attr("href");
-            console.log("1: " + tilelink);
-            jQuery('a#user_tile' + tileid + '.HomePanel').removeAttr("href");
-            console.log("2: " + jQuery('a#user_tile' + tileid + '.HomePanel').attr("href"));
-            linkset = true;
-            }
-        },
-    function(e)
-        {
-        if (linkset) 
-            {
-            console.log("OUT");
-            console.log("3: " + jQuery('a#user_tile' + tileid + '.HomePanel').attr("href"));
-            jQuery('a#user_tile' + tileid + '.HomePanel').attr("href", tilelink);
-            tilelink = ''
-            console.log("4: " + tilelink);
-            linkset = false;
-            }
-        });
-
-    jQuery(".tool").off("click").click(
-            function(event,ui) {
-            console.log("###############");
-            console.log(event);
-            console.log(ui);
-            if(jQuery("#tile"+tileid).hasClass("conftile")) {
-                jQuery("#delete_permanent_dialog").dialog({
-                    title:'<?php echo $lang["dashtiledelete"]; ?>',
-                    modal: true,
-                    resizable: false,
-                    dialogClass: 'delete-dialog no-close',
-                    buttons: {
-                        "<?php echo $lang['confirmdefaultdashtiledelete'] ?>": function() {
-                                jQuery(this).dialog("close");
-                                deleteDefaultDashTile(tileid);
-                            },    
-                        "<?php echo $lang['cancel'] ?>": function() { 
-                                jQuery(this).dialog('close');
-                            }
-                    }
-                });
-                return;
-            }
-            jQuery("#trash_bin_delete_dialog").dialog({
-                title:'<?php echo $lang["dashtiledelete"]; ?>',
-                modal: true,
-                resizable: false,
-                dialogClass: 'delete-dialog no-close',
-                buttons: {
-                    "<?php echo $lang['confirmdefaultdashtiledelete'] ?>": function() {jQuery(this).dialog("close");deleteDefaultDashTile(tileid); },    
-                    "<?php echo $lang['cancel'] ?>": function() { jQuery(this).dialog('close'); }
-                }
-            });
-        })
-    });
-</script>
