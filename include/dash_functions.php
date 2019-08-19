@@ -1628,3 +1628,116 @@ function render_upgrade_available_tile($user)
 
     return;
     }
+
+function generate_dash_tile_toolbar(array $tile, $tile_id)
+    {
+    /*echo '<pre>';echo print_r($tile_id, true);echo '</pre>';
+    echo '<pre>';echo print_r($tile, true);echo '</pre>';
+    die('Died at line ' . __LINE__ . ' in ' . __FILE__);*/
+    global $baseurl_short, $lang;
+    $editlink = $baseurl_short . "pages/dash_tile.php?edit=" . $tile['ref'];
+    ?>
+    <div id="DashTileActions_<?php echo substr($tile_id, 18); ?>" class="DashTileActions"  style="display:none;">
+    <?php
+    if(checkPermission_dashmanage())
+        {
+        ?>
+        <div class="tool dash-delete">
+            <a href="#">
+                <span><?php echo LINK_CARET ?><?php echo $lang['action-delete']; ?></span>
+            </a>
+        </div>
+        <?php
+        }
+    if (checkPermission_dashmanage())
+        { 
+        ?><div class="tool">
+            <a href="<?php echo $editlink ?>" onClick="return ModalLoad(this,true);">
+                <span><?php echo LINK_CARET ?><?php echo $lang['action-edit']; ?></span>
+            </a>
+        </div>
+        <?php
+        }
+    ?>
+    </div>
+
+    <script>
+    jQuery(document).ready(function ()
+        {
+        var tileid = "#<?php echo htmlspecialchars($tile_id); ?>";
+        var usertile = "#<?php echo htmlspecialchars(substr($tile_id, 9)); ?>";
+        var dashtileid = "#DashTileActions_<?php echo htmlspecialchars(substr($tile_id, 18)); ?>";
+        var editlink = "<?php echo $tile["url"]; ?>";
+        var tilehref;
+        var tileonclick;
+
+        console.log(tileid);
+        console.log(usertile);
+        console.log(dashtileid);
+        console.log(editlink);
+
+        jQuery(tileid).hover(
+        function(e)
+            {
+            jQuery(dashtileid).stop(true, true).slideDown();
+            },
+        function(e)
+            {
+            jQuery(dashtileid).stop(true, true).slideUp();
+            });
+
+        jQuery(dashtileid).hover(
+        function(e)
+            {
+            tilehref = jQuery(usertile).attr("href");
+            tileonclick = jQuery(usertile).attr("onclick");
+            jQuery(usertile).attr("href", "#");
+            jQuery(usertile).attr("onclick", "return false;");
+            },
+        function(e)
+            {
+            jQuery(usertile).attr("href", tilehref);
+            jQuery(usertile).attr("onclick", tileonclick);
+            tilehref = '';
+            tileonclick = '';
+            });
+
+    jQuery(".dash-delete").click(
+            function(event,ui) {
+            console.log("###############");
+            console.log(event);
+            console.log(ui);
+            if(jQuery("#tile"+tileid).hasClass("conftile")) {
+                jQuery("#delete_permanent_dialog").dialog({
+                    title:'<?php echo $lang["dashtiledelete"]; ?>',
+                    modal: true,
+                    resizable: false,
+                    dialogClass: 'delete-dialog no-close',
+                    buttons: {
+                        "<?php echo $lang['confirmdefaultdashtiledelete'] ?>": function() {
+                                jQuery(this).dialog("close");
+                                deleteDefaultDashTile(tileid);
+                            },    
+                        "<?php echo $lang['cancel'] ?>": function() { 
+                                jQuery(this).dialog('close');
+                            }
+                    }
+                });
+                return;
+            }
+            jQuery("#trash_bin_delete_dialog").dialog({
+                title:'<?php echo $lang["dashtiledelete"]; ?>',
+                modal: true,
+                resizable: false,
+                dialogClass: 'delete-dialog no-close',
+                buttons: {
+                    "<?php echo $lang['confirmdefaultdashtiledelete'] ?>": function() {jQuery(this).dialog("close");deleteDefaultDashTile(tileid); },    
+                    "<?php echo $lang['cancel'] ?>": function() { jQuery(this).dialog('close'); }
+                }
+            });
+        })
+    });
+    </script>
+    <?php  
+    }
+?>
