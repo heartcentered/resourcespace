@@ -917,6 +917,24 @@ if($enable_themes && $enable_theme_breadcrumbs && !$search_titles && isset($them
         $theme_link);
     }
 
+// Show collection title and description.
+if ($collectionsearch && !$search_titles)
+    {
+    if ($show_collection_name)
+        { ?>
+        <div class="RecordHeader">
+            <h1 class="SearchTitle">
+            <?php echo i18n_get_collection_name($collectiondata); ?>
+            </h1>
+        <?php
+        if(trim($collectiondata['description']) != "")
+            {
+            echo "<p>" . htmlspecialchars($collectiondata['description']) . "</p>";
+            }
+        echo "</div>";
+        }
+    }
+
 if (!hook("replacesearchheader")) # Always show search header now.
     {
     $resources_count=is_array($result)?count($result):0;
@@ -1268,7 +1286,7 @@ if($responsive_ui)
     // Generate a URL for drag drop function - fires same URL as "upload here" when dragging.
     $drag_upload_params=render_upload_here_button($searchparams,true);
     $drag_over="";
-    if (is_array($drag_upload_params))
+    if (is_array($drag_upload_params) && ($display=='thumbs' || $display=='xlthumbs'))
         {
         $drag_url=generateURL("{$GLOBALS['baseurl']}/pages/upload_plupload.php", $drag_upload_params);
         $drag_over=" onDragOver=\"UploadViaDrag('" . $drag_url . "');\" ";

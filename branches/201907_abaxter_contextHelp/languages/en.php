@@ -130,7 +130,7 @@ $lang['property-automatic_nodes_ordering_label'] = 'Automatic ordering';
 $lang["property-required"]="Required";
 $lang["property-order_by"]="Order by";
 $lang["property-indexing"]="<b>Indexing</b>";
-$lang["information-if_you_enable_indexing_below_and_the_field_already_contains_data-you_will_need_to_reindex_this_field"]="If you enable indexing below and the field already contains data, you will need to <a target=_blank href=../tools/reindex_field.php?field=%ref>reindex this field</a>"; # %ref will be replaced with the field id
+$lang["information-if_you_enable_indexing_below_and_the_field_already_contains_data-you_will_need_to_reindex_this_field"]='If you enable indexing below and the field already contains data, you will need to <i aria-hidden="true" class="fa fa-sync-alt reloadicon">&nbsp;</i><a target=_blank href=../tools/reindex_field.php?field=%ref>reindex this field</a>'; # %ref will be replaced with the field id
 $lang["property-index_this_field"]="Index this field";
 $lang["information-enable_partial_indexing"]="Partial keyword indexing (prefix+infix indexing) should be used sparingly as it will significantly increase the index size. See the Knowledge Base for details.";
 $lang["property-enable_partial_indexing"]="Enable partial indexing";
@@ -1099,6 +1099,7 @@ $lang["relatedkeywords"]="Related Keywords";
 $lang["matchingrelatedkeywords"]="Matching related keywords";
 $lang["newkeywordrelationship"]="Create new relationship for keyword...";
 $lang["searchkeyword"]="Search keyword";
+$lang["keywordfailedregexfilter"]="Keyword failed expression validation";
 
 $lang["exportdata"]="Export data";
 $lang["exporttype"]="Export type";
@@ -2499,6 +2500,7 @@ $lang['systemconfig_browse_bar_section'] = 'Browse Bar';
 $lang['systemconfig_browse_bar_enable'] = 'Enable Browse Bar';
 $lang['systemconfig_browse_bar_workflow'] = 'Display workflow states in Browse Bar';
 $lang['systemconfig_user_local_timezone'] = 'User local time zone';
+$lang['systemconfig_show_collection_name'] = "Show collection name and description when viewing collection resources";
 
 /* Error Messages */
 $lang['error_check_html_first'] = 'Please Check HTML! The text used does not contain valid HTML.';
@@ -2741,11 +2743,13 @@ $lang["share-invalid"] = "Invalid access key or password";
 /* Offline jobs */
 $lang["oj-collection-download-success-text"] = "Collection ready for download";
 $lang["oj-collection-download-failure-text"] = "Unable to prepare collection archive for download";
+$lang["oj-batch-replace-local-success-text"] = "Batch replace has successfully replaced %TOTALRESOURCES resources";
+$lang["oj-batch-replace-local-failure-text"] = "Batch replace failed. Please check logs for errors";
 /* End of offline jobs */
 
 $lang["email_auto_digest_inactive"] = "This is a summary of your unread messages";
 $lang["email_digest_disable"]       = "You can disable these notifications by logging in and adjusting your user preferences at the link below:-";
-$lang["user_pref_inactive_digest"]  = "Send me a daily email with all unread notifications if not logged on for than %%DAYS%% days?";
+$lang["user_pref_inactive_digest"]  = "Send me a daily email with all unread notifications if not logged on for more than %%DAYS%% days?";
 $lang["edit_copy_from_field"]       = "Copy data from field";
 
 $lang['home_page'] = "Home page";
@@ -2781,7 +2785,6 @@ $lang["filter_or"]                  = "OR";
 $lang["filter_and"]                 = "AND";
 $lang['see_log'] = "Please refer to the log below for more details on this upload.";$lang['login_word'] = "Login";$lang["edit_copy_from_field"]       = "Copy data from field";
 
-
 /* Browse bar */
 $lang['browse_bar_text']                = "Browse";
 $lang['field_show_in_browse_bar']       = "Show in Browse Bar";
@@ -2791,6 +2794,18 @@ $lang['error-invalid_browse_action']    = "Invalid action. Please check existing
 $lang['browse_by_tag']                  = "Browse by tag";
 $lang['browse_by_workflow_state']       = "Workflow";
 
+# Updates to workflow
+$lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+
+$lang["collection_description"] = "Description";
 
 # Updates to workflow
 $lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+
+# Batch replace updates
+$lang["replacebatchlocalfolder"]        = "Retrieve files from local folder on server? (this will create an offline job)";
+$lang["replacebatch_resource_min"]      = "Lowest resource ID to replace (ignored if a collection is specified)";
+$lang["replacebatch_resource_max"]      = "Highest resource ID to replace";
+$lang["replacebatch_collection"]        = "Enter a collection ID if you only want to replace resources within this collection";
+$lang["replacebatch_job_created"]       = "Batch replacement job created. You will receive a notification message when the job has completed.";
+$lang["start"]                          = "Start";
