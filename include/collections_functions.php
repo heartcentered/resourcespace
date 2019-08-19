@@ -110,8 +110,8 @@ function get_user_collections($user,$find="",$order_by="name",$sort="ASC",$fetch
 if (!function_exists("get_collection")){
 function get_collection($ref)
 	{
-	# Returns all data for collection $ref
-	$return=sql_query("select c.*, c.theme2, c.theme3, c.keywords, u.fullname, u.username, c.home_page_publish, c.home_page_text, c.home_page_image,c.session_id from collection c left outer join user u on u.ref = c.user where c.ref = '" . escape_check($ref) . "'");
+    # Returns all data for collection $ref.
+    $return=sql_query("select c.*, c.theme2, c.theme3, c.keywords, u.fullname, u.username, c.home_page_publish, c.home_page_text, c.home_page_image, c.session_id, c.description from collection c left outer join user u on u.ref = c.user where c.ref = '" . escape_check($ref) . "'");
 	if (count($return)==0) {return false;} else 
 		{
 		$return=$return[0];
@@ -150,12 +150,21 @@ function get_collection($ref)
 
 function get_collection_resources($collection)
     {
+    global $userref;
+
     # Returns all resources in collection
     # For many cases (e.g. when displaying a collection for a user) a search is used instead so permissions etc. are honoured.
     if((string)(int)$collection != (string)$collection)
         {
         return false;
         }
+
+    # Check if review collection if so delete any resources moved out of users archive status permissions by other users
+    if((string)$collection == "-".$userref)
+        {
+        collection_cleanup_inaccessible_resources($collection);
+        }
+
     $plugin_collection_resources=hook('replace_get_collection_resources');
     if(is_array($plugin_collection_resources))
         {
@@ -656,7 +665,7 @@ function index_collection($ref,$index_string='')
 
 	if ($index_collection_titles)
 		{
-			$indexfields = 'c.ref,c.name,c.keywords';
+			$indexfields = 'c.ref,c.name,c.keywords,c.description';
 		} else {
 			$indexfields = 'c.ref,c.keywords';
 		}
@@ -3302,4 +3311,19 @@ function collection_download_clean_temp_files(array $deletion_array)
         {
         delete_exif_tmpfile($tmpfile);
         }
+    }
+
+
+function collection_cleanup_inaccessible_resources($collection)
+    {
+    global $userref;
+
+    # Delete any resources from collection moved out of users archive status permissions by other users
+    $editable_states = array_column(get_editable_states($userref), 'id');
+    sql_query("DELETE a 
+                FROM   collection_resource AS a 
+                INNER JOIN resource AS b 
+                ON a.resource = b.ref 
+                WHERE  a.collection = '" . $collection . "' 
+                AND b.archive NOT IN ( '" . implode("', '", $editable_states) . "' );");
     }

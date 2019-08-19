@@ -1069,6 +1069,7 @@ function get_image_sizes($ref,$internal=false,$extension="jpg",$onlyifexists=tru
     }
     # loop through all image sizes
     $sizes=sql_query("select * from preview_size order by width desc");
+    
     for ($n=0;$n<count($sizes);$n++)
         {
         $path=get_resource_path($ref,true,$sizes[$n]["id"],false,"jpg");
@@ -4149,7 +4150,7 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                 // If display status changed then toggle the visibility
                 if(newfield<?php echo $field['ref']; ?>status != field<?php echo $field['ref']; ?>status)
                     {
-                    jQuery('#question_<?php echo $n ?>').slideToggle();
+                    jQuery('#question_<?php echo $n ?>').css("display", newfield<?php echo $field['ref']; ?>status);                   
 
                 <?php
                 // Batch edit mode
@@ -4349,7 +4350,7 @@ function check_access_key($resource,$key)
                         
                         if($co_parts[0]!='' && isset($co_parts[1]))
                             {
-                            $name=str_replace("$","",ltrim($co_parts[0]));
+                            $name=str_replace("$","",trim($co_parts[0]));
                             $value=ltrim($co_parts[1]); 
                             if(strtolower($value)=='false'){$value=0;}
                             elseif(strtolower($value)=='true'){$value=1;}
@@ -5327,11 +5328,12 @@ function error_alert($error,$back=true){
         $$key=$value;
     } 
     if ($back){include(dirname(__FILE__)."/header.php");}
+    http_response_code(403);
     echo "<script type='text/javascript'>
-        ModalClose();
-    alert('$error');";
+    ModalClose();
+    styledalert('" . $lang["error"] . "', '$error');";
     if ($back){echo "history.go(-1);";}
-    echo "</script>";
+    echo "\n</script>";
 }
 /**
  * Returns an xml compliant string in UTF-8
