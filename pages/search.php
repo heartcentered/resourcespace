@@ -606,7 +606,13 @@ if($k == "")
 
     if(!filter_bar_search)
         {
-        TogglePane('FilterBarContainer', '<?php echo $baseurl; ?>/pages/search_advanced.php', true);
+        TogglePane(
+            'FilterBarContainer',
+            {
+                load_url: '<?php echo $baseurl; ?>/pages/search_advanced.php',
+                <?php echo generateAjaxToken("ToggleFilterBar"); ?>
+            },
+            true);
         }
 
     if(filter_bar_search && require_filter_bar_reload)

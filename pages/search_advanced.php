@@ -1,11 +1,17 @@
 <?php
 include_once "../include/db.php";
 include_once RS_ROOT . "/include/general.php";
-include RS_ROOT . "/include/authenticate.php"; if (!checkperm("s")) {exit ("Permission denied.");}
+include RS_ROOT . "/include/authenticate.php";
 include_once RS_ROOT . "/include/search_functions.php";
 include_once RS_ROOT . "/include/resource_functions.php";
 include_once RS_ROOT . "/include/collections_functions.php";
 include_once RS_ROOT . '/include/render_functions.php';
+
+if(!checkperm("s"))
+    {
+    http_response_code(403);
+    exit($lang["error-permissiondenied"]);
+    }
 
 $filter_bar_reload = trim(getval('filter_bar_reload', '')) !== 'false' ? true : false;
 if(!$filter_bar_reload)
