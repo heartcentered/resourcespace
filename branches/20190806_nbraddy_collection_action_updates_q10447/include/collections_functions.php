@@ -2217,7 +2217,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
            $download_usage, $home_dash, $top_nav_upload_type, $pagename, $offset, $col_order_by, $find, $default_sort,
            $default_collection_sort, $starsearch, $restricted_share, $hidden_collections, $internal_share_access, $search,
            $usercollection, $disable_geocoding, $geo_locate_collection, $collection_download_settings, $contact_sheet,
-           $allow_resource_deletion, $pagename,$upload_then_edit, $enable_related_resources;
+           $allow_resource_deletion, $pagename,$upload_then_edit, $enable_related_resources,$list;
                
 	#This is to properly render the actions drop down in the themes page	
 	if ( isset($collection_data['ref']) && $pagename!="collections" )
@@ -2451,14 +2451,14 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $o++;
         }
 
-    // Copy resources to another collection
-    if(!checkperm('b') && collection_readable($collection_data['ref']))
+    // Copy resources from another collection. Must be in top actions or have more than one collection available if on collections.php
+    if(!checkperm('b') && collection_readable($collection_data['ref']) && ($top_actions || (is_array($list) && count($list) > 1)))
         {
         $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_copy_resources.php",array("ref"=>$collection_data['ref']));
         $options[$o]['data_attr'] = $data_attribute;
         $options[$o]['value'] = 'copy_collection';
-        $options[$o]['label'] = $lang['copy'];
-		$options[$o]['category'] = ACTIONGROUP_COLLECTION;
+        $options[$o]['label'] = $lang['copyfromcollection'];
+        $options[$o]['category'] = ACTIONGROUP_RESOURCE;
         $options[$o]['order_by'] = 105;
         $o++;
         }

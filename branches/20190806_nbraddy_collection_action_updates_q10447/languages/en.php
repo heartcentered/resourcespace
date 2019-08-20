@@ -2794,8 +2794,7 @@ $lang['browse_by_workflow_state']       = "Workflow";
 $lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
 
 $lang["collection_description"]         = "Description";
-$lang["collection_copy_to"]             = "Copy collection resources";
-$lang["collection_copy_destination"]    = "Collection to copy resources to";
+$lang["collection_copy_resources"]      = "Copy collection resources";
 $lang["collection_actiontype_1"]        = "Resources";
 $lang["collection_actiontype_2"]        = "Collection";
 $lang["collection_actiontype_3"]        = "Edit";
