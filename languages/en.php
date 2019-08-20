@@ -130,7 +130,7 @@ $lang['property-automatic_nodes_ordering_label'] = 'Automatic ordering';
 $lang["property-required"]="Required";
 $lang["property-order_by"]="Order by";
 $lang["property-indexing"]="<b>Indexing</b>";
-$lang["information-if_you_enable_indexing_below_and_the_field_already_contains_data-you_will_need_to_reindex_this_field"]="If you enable indexing below and the field already contains data, you will need to <a target=_blank href=../tools/reindex_field.php?field=%ref>reindex this field</a>"; # %ref will be replaced with the field id
+$lang["information-if_you_enable_indexing_below_and_the_field_already_contains_data-you_will_need_to_reindex_this_field"]='If you enable indexing below and the field already contains data, you will need to <i aria-hidden="true" class="fa fa-sync-alt reloadicon">&nbsp;</i><a target=_blank href=../tools/reindex_field.php?field=%ref>reindex this field</a>'; # %ref will be replaced with the field id
 $lang["property-index_this_field"]="Index this field";
 $lang["information-enable_partial_indexing"]="Partial keyword indexing (prefix+infix indexing) should be used sparingly as it will significantly increase the index size. See the Knowledge Base for details.";
 $lang["property-enable_partial_indexing"]="Enable partial indexing";
@@ -863,6 +863,7 @@ $lang['single_width'] = 'Single width';
 $lang['double_width'] = 'Double width';
 $lang['filter_by_table'] = 'Filter by table...';
 $lang['upload_here'] = "Upload here";
+$lang['help-tooltip'] = "Get more information on this page";
 $lang["active_filters"] = "Active filters";
 $lang["advanced"] = "Advanced";
 
@@ -2809,4 +2810,21 @@ $lang["replacebatch_resource_min"]      = "Lowest resource ID to replace (ignore
 $lang["replacebatch_resource_max"]      = "Highest resource ID to replace";
 $lang["replacebatch_collection"]        = "Enter a collection ID if you only want to replace resources within this collection";
 $lang["replacebatch_job_created"]       = "Batch replacement job created. You will receive a notification message when the job has completed.";
-$lang["start"]                          = "Start";
+$lang["start"]                          = "Start";$lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+
+# File integrity checks
+$lang["file_integrity_summary"]             = "File integrity report";
+$lang["file_integrity_summary_failed"]      = "Resource files have failed integrity checks or are missing. Please follow the link to see these resources and take action as required e.g. restore files from backup";
+$lang["file_integrity_fail_search"]         = "File integrity failures";
+$lang["all__file_integrity_fail_email"]     = "[img_headerlogo]<br />\n[lang_file_integrity_summary_failed] <br /><br /> \n[lang_file_integrity_fail_search] <br /><br /> \n<a href=\"[url]\">[url]</a><br /><br />\n[text_footer]\n";
+$lang["team_resource_integrity_fail"]       = "View suspect resources";
+$lang["team_resource_integrity_fail_info"]  = "Resources with missing or possibly corrupted files";
+$lang["collection_description"]         = "Description";
+$lang["collection_copy_resources"]      = "Copy collection resources";
+$lang["collection_actiontype_1"]        = "Resources";
+$lang["collection_actiontype_2"]        = "Collection";
+$lang["collection_actiontype_3"]        = "Edit";
+$lang["collection_actiontype_4"]        = "Share";
+$lang["collection_actiontype_5"]        = "Research";
+$lang["collection_actiontype_6"]        = "Advanced";
+$lang["collection_actiontype_999"]      = "Other";
