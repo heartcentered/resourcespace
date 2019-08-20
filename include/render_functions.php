@@ -2848,7 +2848,7 @@ function render_fb_archive_state(array $selected_archive_states)
                    <input type="checkbox"
                           name="archive[]"
                           value="<?php echo $archive_state; ?>"
-                          onChange="UpdateResultCount();"<?php 
+                        <?php 
                        if (in_array($archive_state, $selected_archive_states))
                            {
                            ?>
@@ -2863,6 +2863,22 @@ function render_fb_archive_state(array $selected_archive_states)
                 }
             ?>
         </table>
+        <script>
+        jQuery(document).ready(function()
+            {
+            jQuery("#question_archive input[name='archive[]']").change(function()
+                {
+                if(jQuery("#question_archive input[name='archive[]']:checked").length > 0)
+                    {
+                    UpdateResultCount();
+                    }
+                else
+                    {
+                    jQuery(this).prop("checked", true);
+                    }
+                });
+            });
+        </script>
     </div>
     <div class="clearerleft"></div>
     <?php
