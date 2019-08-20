@@ -1616,6 +1616,11 @@ function get_default_search_states()
         {
         $defaultsearchstates[] = -1;
         }
-
+    
+    $modifiedstates = hook("modify_default_search_states","",array($defaultsearchstates));
+    if(is_array($modifiedstates))
+        {
+        return $modifiedstates;
+        }
     return $defaultsearchstates;
     }
