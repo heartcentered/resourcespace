@@ -3026,7 +3026,8 @@ function render_filter_bar_component()
             <input id="ssearchbox" name="search" type="text" class="searchwidth"
                    placeholder="<?php echo $lang['all__search']; ?>"
                    value="<?php echo isset($quicksearch) ? $htmlspecialchars($quicksearch) : ""; ?>" />
-            <a href="<?php echo $baseurl; ?>/pages/search_advanced.php"onclick="return TogglePane('FilterBarContainer', this.href);">
+            <a href="<?php echo $baseurl; ?>/pages/search_advanced.php"
+               onclick='return ToggleFilterBar(this.href, {<?php echo generateAjaxToken("ToggleFilterBar"); ?>});'>
                 <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
             </a>
         </form>

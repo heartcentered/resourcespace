@@ -522,16 +522,7 @@ if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false 
 </div> 
 
 <?php } else if (!hook("replaceloginheader")) { # Empty Header?>
-<div id="HeaderNav1" class="HorizontalNav ">
-    <ul>
-    <?php
-    if(!in_array($pagename, $omit_filter_bar_pages))
-        {
-        render_filter_bar_component();
-        }
-        ?>
-    </ul>
-</div>
+<div id="HeaderNav1" class="HorizontalNav "></div>
 <div id="HeaderNav2" class="HorizontalNav HorizontalWhiteNav">&nbsp;</div>
 <?php } ?>
 
