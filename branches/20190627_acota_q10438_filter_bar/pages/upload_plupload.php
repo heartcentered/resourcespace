@@ -417,7 +417,7 @@ if ($_FILES)
 	hook('additional_plupload_checks');
 	// Clean the filename for security reasons
 	if($replace){$origuploadedfilename=escape_check($plfilename);}
-	$plfilename = preg_replace('/[^\w\._]+/', '_', $plfilename);
+	$plfilename = preg_replace('/[^\w\.-]+/', '_', $plfilename);
 	
 	// Make sure the fileName is unique but only if chunking is disabled
 	if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $plfilename)) {
@@ -1104,7 +1104,8 @@ var pluploadconfig = {
                         <?php }
                         else { ?>
                                 //Show diff instructions if supports drag and drop
-                                if(!uploader.files.length && uploader.features.dragdrop && uploader.settings.dragdrop)	{jQuery('#plupload_instructions').html('<p><?php echo escape_check($lang["intro-plupload_dragdrop"] )?></p>');}
+                                $help_link = render_help_link("user/uploading");
+                                if(!uploader.files.length && uploader.features.dragdrop && uploader.settings.dragdrop)	{jQuery('#plupload_instructions').html('<p><?php echo escape_check($lang["intro-plupload_dragdrop"]) . $help_link?></p>');}
                         <?php }?>
                         
                         uploader.bind('FileUploaded', function(up, file, info) {
@@ -1164,12 +1165,13 @@ var pluploadconfig = {
                                         {
                                         filename = filename.substr(0, file.name.lastIndexOf('.' + filename_ext));
                                         }
-
+                                    
                                     // Add resource ID - filename map only for original resources
                                     if(filename.lastIndexOf(alternative_suffix) === -1)
                                         {
                                         resource_ids_for_alternatives[uploaded_resource_id] = filename;
                                         }
+
                                     <?php
                                     }?>
                                         
@@ -1358,7 +1360,7 @@ if($attach_alternatives_found_to_resources)
             }
 
         filename = file.name.substr(0, file.name.lastIndexOf('.' + getFilePathExtension(file.name)));
-
+        
         // Check if original file, in which case we stop here
         if(filename.lastIndexOf(alternative_suffix) === -1)
             {
@@ -1379,6 +1381,7 @@ if($attach_alternatives_found_to_resources)
 
         // If we've got so far, it means we can upload this file as an alternative for this resource ID
         uploader.settings.url = ReplaceUrlParameter(uploader.settings.url, 'alternative', resource_id);
+
         });
 
     uploader.bind('UploadComplete', function (up, files)
@@ -1550,8 +1553,10 @@ else
 <?php hook("upload_page_top"); ?>
 
 <?php if (!hook("replacepluploadtitle")){?><h1><?php echo $titleh1 ?></h1><?php } ?>
-<div id="plupload_instructions"><p><?php echo $intro?></p></div>
-<?php if (isset($plupload_max_file_size))
+<div id="plupload_instructions"><p><?php echo $intro;render_help_link("user/uploading");?></p></div>
+<?php
+
+if (isset($plupload_max_file_size))
 	{
 	if (is_numeric($plupload_max_file_size))
 		$sizeText = formatfilesize($plupload_max_file_size);

@@ -448,7 +448,7 @@ if($ajax)
     </p>
     <h1><?php echo $lang['manage_metadata_field_options'] . (isset($field_data['title']) ? ' - ' . $field_data['title'] : ''); ?></h1>
 
-    <p><?php echo $lang['metadata_option_change_warning']; ?></p>
+    <p><?php echo $lang['metadata_option_change_warning']; render_help_link("resourceadmin/modifying-field-options");?></p>
     <?php
     if(in_array($field, $default_to_first_node_for_fields))
         {
@@ -488,6 +488,7 @@ if($ajax)
         <?php
         }
         ?>
+        <div class="Listview">
         <table class="ListviewStyle" border="0" cellspacing="0" cellpadding="5">
         <?php
         // When editing a category tree we won't show the table headers since the data
@@ -499,7 +500,6 @@ if($ajax)
                 <tr class="ListviewTitleStyle">
                     <td><?php echo $lang['name']; ?></td>
                     <td><?php echo $lang['resources']; ?></td>
-                    
                     <td><?php echo $lang['property-order_by']; ?></td>
                     <td><?php echo $lang['actions']; ?></td>
                     <td> </td>
@@ -545,6 +545,7 @@ if($ajax)
                                     id="option_<?php echo $node['ref']; ?>_order_by" 
                                     readonly='true'
                                     min='1'
+                                    class="TableOrderBy"
                                 >
                             </td>
                         <?php
@@ -577,11 +578,12 @@ if($ajax)
                                 </button>
                                 <button type="submit" onclick="ReorderNode(<?php echo $node['ref']; ?>, 'moveup'); return false;"><?php echo $lang['action-move-up']; ?></button>
                                 <button type="submit" onclick="ReorderNode(<?php echo $node['ref']; ?>, 'movedown'); return false;"><?php echo $lang['action-move-down']; ?></button>
-                            </td>
+                                </td>
                             <?php
                             }
                             ?>
-                        <td> <!-- Action buttons -->
+                        <!-- Action buttons -->
+                        <td>
                             <button type="submit" onclick="SaveNode(<?php echo $node['ref']; ?>); return false;"><?php echo $lang['save']; ?></button>
                             <button type="submit" onclick="DeleteNode(<?php echo $node['ref']; ?>); return false;"><?php echo $lang['action-delete']; ?></button>
                         </td>
@@ -601,6 +603,7 @@ if($ajax)
             }
             ?>
         </table>
+        </div>
     <?php
     if(7 != $field_data['type'])
         {

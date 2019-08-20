@@ -862,7 +862,7 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                     ?>
                 <select onchange="action_onchange_<?php echo $action_selection_id; ?>(this.value);" id="<?php echo $action_selection_id; ?>" <?php if(!$top_actions) { echo 'class="SearchWidth"'; } ?>>
             <?php } ?>
-            <option class="SelectAction" value=""><?php echo $lang["actions-select"]?></option>
+            <option class="SelectAction" selected disabled hidden value=""><?php echo $lang["actions-select"]?></option>
             <?php
 
             // Collection Actions
@@ -899,10 +899,50 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                 $actions_array = $modify_actions_array;
                 }
 
+            // Sort array into category groups
+           
+            usort($actions_array, function($a, $b){
+               if(isset($a['category']) && isset($b['category']))
+                    {
+                    if($a['category'] == $b['category'])
+                        {
+                        // Same category, check for order_by. If no order_by add to end of category
+                        if(isset($a['order_by']) && (!isset($b['order_by']) || ($b['order_by'] > $a['order_by'])))
+                            {
+                            return -1;
+                            }
+                        return 1;
+                        }
+                    else
+                        {
+                        return  $a['category'] - $b['category'];
+                        }
+                    }
+                else
+                    {
+                    return isset($a['category']) ? -1 : 1;
+                    }
+                });
+                                    
             // loop and display
-			$options='';
+            $options='';
+            $lastcategory = 0;
 			for($a = 0; $a < count($actions_array); $a++)
 				{
+                // Is this a new category?
+                if(!isset($actions_array[$a]['category']))
+                    {
+                    $actions_array[$a]['category'] = 999;  
+                    }
+                if($lastcategory != $actions_array[$a]['category'])
+                    {
+                    if($a > 0)
+                        {
+                        $options .= "</optgroup>\n";
+                        }
+                    $options .= "<optgroup label='" . htmlspecialchars($lang["collection_actiontype_" . $actions_array[$a]['category']]) . "'>\n";
+                    }
+
 				if(!isset($actions_array[$a]['data_attr']))
 					{
 					$actions_array[$a]['data_attr'] = array();
@@ -919,7 +959,12 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
 				if($add_to_options != '')
 					{
 					$options .= $add_to_options;
-					}
+                    }
+                if($a == count($actions_array))
+                    {
+                    $options .= "\n</optgroup>\n";
+                    }
+                $lastcategory = $actions_array[$a]['category'];
 				}
 
 			echo $options;
@@ -935,7 +980,6 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                 {
                 return false;
                 }
-
             switch(v)
                 {
             <?php
@@ -1053,6 +1097,11 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                     CollectionDivLoad(option_url);
                     break;
 
+                case 'copy_collection':
+                    var option_url = jQuery('#<?php echo $action_selection_id; ?> option:selected').data('url');
+                    ModalLoad(option_url, false, true);
+                    break;
+
             <?php
             if(!$top_actions)
                 {
@@ -1093,6 +1142,23 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                             success: function(data) {
 								if (data.trim() == "HIDDEN") {
 									CollectionDivLoad('<?php echo $baseurl; ?>/pages/collections.php?collection='+mycol);
+								}
+							},
+							error: function (err) {
+								console.log("AJAX error : " + JSON.stringify(err, null, 2));
+							}
+						}); 
+						break;
+
+                        case 'relate_all':
+						var collection = <?php echo urlencode($collection_data['ref']);?>;
+						jQuery.ajax({
+							type: 'POST',
+							url: baseurl_short + 'pages/ajax/relate_resources.php?collection=' + collection,
+							data: {<?php echo generateAjaxToken("relate_resources"); ?>},
+                            success: function(data) {
+								if (data.trim() == "SUCCESS") {
+									stylerAlert("OK","Related ok");
 								}
 							},
 							error: function (err) {
@@ -2486,7 +2552,7 @@ function render_share_options($collectionshare=true, $ref, $emailing=false)
         
         <div class="Question">
             <label for="sharepassword"><?php echo htmlspecialchars($lang["share-set-password"]) ?></label>
-            <input type="password" id="sharepassword" name="sharepassword" class="stdwidth" <?php if(getval("posting","") == "true"){echo "value=\"(unchanged)\"";} ?>>
+            <input type="password" id="sharepassword" name="sharepassword" class="stdwidth">
         </div>
         <?php
         hook("additionalresourceshare");
@@ -2765,26 +2831,6 @@ function render_browse_bar()
         </script>';
     }
 
-/*
-Tag - child is resource_type expand, show restypes, no link
- - get resource types
-
-resource_type - child is metadata field
-
-metadata field - child is node
-
-node - if cat tree - child is node, expand else none
-
-featured- child is first cat
-
-collection - child is collection name/ref
-
-workflow - child is archive states
-
-archive states -  child is metadata field
-- if archive, has extra fields
-*/
-
 
 /**
 * Generates a root row item for the browse bar
@@ -2808,6 +2854,35 @@ function generate_browse_bar_item($id, $text)
             </div><!-- End of BrowseRowOuter -->";
 	return $html;
 	}
+
+/**
+* Generates a help icon that opens the relevant Knowledge Base article in a modal
+*  
+* These links can be disabled by setting $contextual_help_links=false;
+* 
+* @param string $page   Knowledge Base article to display, leave blank to show the Knowledge Base homepage
+* 
+* @return void
+*/
+function render_help_link($page='')
+    {
+    global $contextual_help_links,$pagename,$lang,$help_modal,$baseurl;
+    if ($contextual_help_links === false){return;}
+    ?>
+    <a 
+        href="<?php echo $baseurl . '/pages/help.php?page=' . $page ?>"
+        title="<?php echo $lang['help-tooltip']; ?>"
+        class="HelpLink"
+        <?php 
+        if ($help_modal) 
+            { echo "onClick='return ModalLoad(this, true);'";}
+        else
+            { echo "target='_blank'";}
+        ?>
+    >
+    <i aria-hidden="true" class="fa fa-fw fa-question-circle"></i>
+    </a>
+    <?php }
 
 /**
 * Render the archive states for the filter bar

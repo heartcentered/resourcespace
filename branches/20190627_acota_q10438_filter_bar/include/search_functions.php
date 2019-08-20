@@ -619,6 +619,8 @@ function compile_search_actions($top_actions)
             $options[$o]['label']=$lang['savethissearchtocollection'];
             $data_attribute['url'] = generateURL($baseurl_short . "pages/collections.php", $urlparams, array("addsearch" => $search));
             $options[$o]['data_attr']=$data_attribute;
+            $options[$o]['category']  = ACTIONGROUP_COLLECTION;
+            $options[$o]['order_by']  = 70;
             $o++;
             }
 
@@ -648,6 +650,8 @@ function compile_search_actions($top_actions)
             $options[$o]['value'] = $option_name;
             $options[$o]['label'] = $lang['savethissearchtodash'];
             $options[$o]['data_attr'] = $data_attribute;
+            $options[$o]['category']  = ACTIONGROUP_SHARE;
+            $options[$o]['order_by']  = 170;
             $o++;
             }
             
@@ -668,6 +672,8 @@ function compile_search_actions($top_actions)
             $options[$o]['label']=$lang['savesearchassmartcollection'];
             $options[$o]['data_attr']=array();
             $options[$o]['extra_tag_attributes']=$extra_tag_attributes;
+            $options[$o]['category']  = ACTIONGROUP_COLLECTION;
+            $options[$o]['order_by']  = 170;
             $o++;
             }
 
@@ -715,6 +721,8 @@ function compile_search_actions($top_actions)
                 $options[$o]['label']=$lang['savesearchitemstocollection'];
                 $options[$o]['data_attr']=array();
                 $options[$o]['extra_tag_attributes']=$extra_tag_attributes;
+                $options[$o]['category']  = ACTIONGROUP_COLLECTION;
+                $options[$o]['order_by']  = 170;
                 $o++;
                 
 
@@ -738,6 +746,8 @@ function compile_search_actions($top_actions)
                 $options[$o]['label']=$lang['searchitemsdiskusage'];
                 $options[$o]['data_attr']=array();
                 $options[$o]['extra_tag_attributes']=$extra_tag_attributes;
+                $options[$o]['category']  = ACTIONGROUP_ADVANCED;
+                $options[$o]['order_by']  = 300;
                 $o++;
                 }
             }
@@ -754,6 +764,8 @@ function compile_search_actions($top_actions)
             $options[$o]['value']='editsearchresults';
             $options[$o]['label']=$lang['edit_all_resources'];
             $options[$o]['data_attr']=$data_attribute;
+            $options[$o]['category'] = ACTIONGROUP_EDIT;
+            $options[$o]['order_by']  = 130;
             $o++;
             }
         }
@@ -771,7 +783,8 @@ function compile_search_actions($top_actions)
             urlencode($sort),
             urlencode($starsearch)
         );
-
+        $options[$o]['category'] = ACTIONGROUP_ADVANCED;
+        $options[$o]['order_by']  = 290;
         $o++;
         }
 
@@ -790,7 +803,7 @@ function search_filter($search,$archive,$restypes,$starsearch,$recent_search_day
     global $userref,$userpermissions,$resource_created_by_filter,$uploader_view_override,$edit_access_for_contributor,$additional_archive_states,$heightmin,
     $heightmax,$widthmin,$widthmax,$filesizemin,$filesizemax,$fileextension,$haspreviewimage,$geo_search_restrict,$pending_review_visible_to_all,
     $search_all_workflow_states,$pending_submission_searchable_to_all,$collections_omit_archived,$k,$collection_allow_not_approved_share,$archive_standard,
-    $open_access_for_contributor;
+    $open_access_for_contributor, $searchstates;
 
     # Convert the provided search parameters into appropriate SQL, ready for inclusion in the do_search() search query.
     if(!is_array($archive)){$archive=explode(",",$archive);}
@@ -884,26 +897,27 @@ function search_filter($search,$archive,$restypes,$starsearch,$recent_search_day
         $sql_filter.="(r.access<>'2' OR (r.access=2 AND ((rca.access IS NOT null AND rca.access<>2) OR (rca2.access IS NOT null AND rca2.access<>2))))";
         }
         
-    # append archive searching. Updated Jan 2016 to apply to collections as resources in a pending state that are in a shared collection could bypass approval process
+    # append standard archive searching criteria. Updated Jan 2016 to apply to collections as resources in a pending state that are in a shared collection could bypass approval process
     if (!$access_override)
         {
-        if(substr($search,0,11)=="!collection" || substr($search,0,5)=="!list")
+        if(substr($search,0,11)=="!collection" || substr($search,0,5)=="!list" || substr($search,0,15)=="!archivepending" || substr($search,0,12)=="!userpending")
             {
             # Resources in a collection or list may be in any archive state
+            # Other special searches define the archive state in search_special()
             if(substr($search,0,11)=="!collection" && $collections_omit_archived && !checkperm("e2"))
                 {
                 $sql_filter.= (($sql_filter!="")?" AND ":"") . "archive<>2";
-                }           
+                }
             }
         elseif ($search_all_workflow_states || substr($search,0,8)=="!related")
             {hook("search_all_workflow_states_filter");}   
-        elseif ($archive_standard && $pending_review_visible_to_all)
+        elseif ($archive_standard)
             {
-            # If resources pending review are visible to all, when performing a default search with no archive specified 
-            # that normally returns only active resources, include pending review (-1) resources too.
+            # If no archive specified add in default archive states (set by config options or as set in rse_workflow plugin)
             if ($sql_filter!="") {$sql_filter.=" AND ";}
-            $sql_filter.="archive in('0','-1')";
-            } 
+            $defaultsearchstates = get_default_search_states();
+            $sql_filter.="archive IN (" . implode(",",$defaultsearchstates) . ")";
+            }
         else
             {
             # Append normal filtering - extended as advanced search now allows searching by archive state
@@ -1172,7 +1186,7 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
 
         if ($ref!="") 
             {
-            $sql="SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE $sql_filter AND file_checksum= (SELECT file_checksum FROM (SELECT file_checksum FROM resource WHERE archive = 0 AND ref=$ref AND file_checksum IS NOT null)r2) ORDER BY file_checksum, ref";    
+            $sql="SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE $sql_filter AND file_checksum= (SELECT file_checksum FROM (SELECT file_checksum FROM resource WHERE ref=$ref AND file_checksum IS NOT null)r2) ORDER BY file_checksum, ref";    
             if($returnsql) {return $sql;}
             $results=sql_query($sql,false,$fetchrows);
             $count=count($results);
@@ -1187,7 +1201,7 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
             }
         else
             {
-            $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE $sql_filter AND file_checksum IN (SELECT file_checksum FROM (SELECT file_checksum FROM resource WHERE archive = 0 AND file_checksum <> '' AND file_checksum IS NOT null GROUP BY file_checksum having count(file_checksum)>1)r2) ORDER BY file_checksum, ref" . $sql_suffix;
+            $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE $sql_filter AND file_checksum IN (SELECT file_checksum FROM (SELECT file_checksum FROM resource WHERE file_checksum <> '' AND file_checksum IS NOT null GROUP BY file_checksum having count(file_checksum)>1)r2) ORDER BY file_checksum, ref" . $sql_suffix;
             return $returnsql?$sql:sql_query($sql,false,$fetchrows);
             }
         }
@@ -1195,11 +1209,9 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
     # View Collection
     if (substr($search, 0, 11) == '!collection')
         {
-
         $colcustperm = $sql_join;
         $colcustfilter = $sql_filter; // to avoid allowing this sql_filter to be modified by the $access_override search in the smart collection update below!!!
-        
-              
+             
         # Special case if a key has been provided.
         if(getval('k', '') != '')
             {
@@ -1295,7 +1307,7 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
         
         global $pagename, $related_search_show_self;
         $sql_self = '';
-        if ($related_search_show_self && $pagename == 'search') 
+        if ($related_search_show_self && $pagename == 'search')
             {
             $sql_self = " SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE r.ref=$resource AND $sql_filter GROUP BY r.ref UNION ";
             }
@@ -1305,8 +1317,6 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
         ORDER BY $order_by" . $sql_suffix;
         return $returnsql?$sql:sql_query($sql,false,$fetchrows);
         }
-
-
 
     # Geographic search
     if (substr($search,0,4)=="!geo")
@@ -1341,33 +1351,33 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
         $searchsql=$sql_prefix . $sql . $sql_suffix;
         return $returnsql ? $searchsql : sql_query($searchsql,false,$fetchrows);
         }
-        
+
     # Similar to a colour
     if (substr($search,0,4)=="!rgb")
         {
         $rgb=explode(":",$search);$rgb=explode(",",$rgb[1]);
-        
+
         $searchsql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE has_image=1 AND $sql_filter GROUP BY r.ref ORDER BY (abs(image_red-" . $rgb[0] . ")+abs(image_green-" . $rgb[1] . ")+abs(image_blue-" . $rgb[2] . ")) ASC LIMIT 500" . $sql_suffix;
         return $returnsql ? $searchsql : sql_query($searchsql,false,$fetchrows);
         }
-        
+
     # Has no preview image
     if (substr($search,0,10)=="!nopreview")
         {
         $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE has_image=0 AND $sql_filter GROUP BY r.ref" . $sql_suffix;
         return $returnsql ? $sql : sql_query($sql,false,$fetchrows);
-        }       
-        
+        }
+
     # Similar to a colour by key
     if (substr($search,0,10)=="!colourkey")
         {
         # Extract the colour key
         $colourkey=explode(" ",$search);$colourkey=str_replace("!colourkey","",$colourkey[0]);
-        
+
         $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE has_image=1 AND left(colour_key,4)='" . $colourkey . "' and $sql_filter GROUP BY r.ref" . $sql_suffix;
         return $returnsql?$sql:sql_query($sql,false,$fetchrows);
         }
-    
+
     global $config_search_for_number;
     if (($config_search_for_number && is_numeric($search)) || substr($search,0,9)=="!resource")
         {
@@ -1383,7 +1393,7 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
         $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE archive=1 AND ref>0 AND $sql_filter GROUP BY r.ref ORDER BY $order_by" . $sql_suffix;
         return $returnsql ? $sql : sql_query($sql,false,$fetchrows);
         }
-    
+
     if (substr($search,0,12)=="!userpending")
         {
         if ($orig_order=="rating") {$order_by="request_count DESC," . $order_by;}
@@ -1395,10 +1405,10 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
     if (substr($search,0,14)=="!contributions")
         {
         global $userref;
-        
+
         # Extract the user ref
         $cuser=explode(" ",$search);$cuser=str_replace("!contributions","",$cuser[0]);
-        
+
         // Don't filter if user is searching for their own resources and $open_access_for_contributor=true;
         global $open_access_for_contributor;
         if($open_access_for_contributor && $userref == $cuser)
@@ -1406,12 +1416,12 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
             $sql_filter="archive IN (" . implode(",",$archive) . ")";
             $sql_join="";
             }
-        
+
         $select=str_replace(",rca.access group_access,rca2.access user_access ",",null group_access, null user_access ",$select);
         $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE created_by='" . $cuser . "' AND r.ref > 0 AND $sql_filter GROUP BY r.ref ORDER BY $order_by" . $sql_suffix;
         return $returnsql ? $sql : sql_query($sql,false,$fetchrows);
         }
-    
+
     # Search for resources with images
     if ($search=="!images") 
         {
@@ -1420,16 +1430,16 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
         }
 
     # Search for resources not used in Collections
-    if (substr($search,0,7)=="!unused") 
+    if (substr($search,0,7)=="!unused")
         {
         $sql=$sql_prefix . "SELECT DISTINCT $select FROM resource r $sql_join WHERE r.ref>0 AND r.ref NOT IN (select c.resource FROM collection_resource c) AND $sql_filter" . $sql_suffix;
         return $returnsql ? $sql : sql_query($sql,false,$fetchrows);
-        }   
-    
+        }
+
     # Search for a list of resources
     # !listall = archive state is not applied as a filter to the list of resources.
-    if (substr($search,0,5)=="!list") 
-        {   
+    if (substr($search,0,5)=="!list")
+        {  
         $resources=explode(" ",$search);
         if (substr($search,0,8)=="!listall")
             {
@@ -1449,7 +1459,7 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
             {
             $resources="where (r.ref='".str_replace(":","' OR r.ref='",$resources) . "')";
             }
-    
+
         $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join $resources AND $sql_filter ORDER BY $order_by" . $sql_suffix;
         return $returnsql?$sql:sql_query($sql,false,$fetchrows);
         }
@@ -1539,6 +1549,13 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
             
         $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE r.ref > 0 AND $sql_filter GROUP BY r.ref ORDER BY $order_by" . $sql_suffix;
         return $returnsql?$sql:sql_query($sql,false,$fetchrows);
+        }
+
+    # Search for resources where the file integrity has been marked as problematic or the file is missing
+    if ($search=="!integrityfail") 
+        {
+        $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE integrity_fail=1 AND $sql_filter GROUP BY r.ref ORDER BY $order_by" . $sql_suffix;
+        return $returnsql ? $sql : sql_query($sql,false,$fetchrows);
         }
 
     # Within this hook implementation, set the value of the global $sql variable:
@@ -1662,4 +1679,31 @@ function get_upload_here_selected_nodes($search, array $nodes)
         }
 
     return array_merge($nodes, $upload_here_nodes);
+    }
+
+/**
+* get the default archive states to search
+*  
+* @return array
+*/
+function get_default_search_states()
+    {
+    global $searchstates, $pending_submission_searchable_to_all, $pending_review_visible_to_all;
+
+    $defaultsearchstates = isset($searchstates) ? $searchstates : array();// May be set by rse_workflow plugin
+    if($pending_submission_searchable_to_all)
+        {
+        $defaultsearchstates[] = -2;
+        }
+    if($pending_review_visible_to_all)
+        {
+        $defaultsearchstates[] = -1;
+        }
+    
+    $modifiedstates = hook("modify_default_search_states","",array($defaultsearchstates));
+    if(is_array($modifiedstates))
+        {
+        return $modifiedstates;
+        }
+    return $defaultsearchstates;
     }

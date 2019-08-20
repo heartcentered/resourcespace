@@ -12,7 +12,7 @@ function PopCollection(thumbs) {
 function ChangeCollection(collection,k,last_collection,searchParams) {
     console.log("changecollection");
     if(typeof last_collection == 'undefined'){last_collection='';}
-    if(typeof searchParams == 'undefiend') {searchParams='';}
+    if(typeof searchParams == 'undefined') {searchParams='';}
     thumbs = getCookie("thumbs");
     PopCollection(thumbs);
     // Set the collection and update the count display
@@ -79,7 +79,7 @@ function AddResourceToCollection(event,resource,size, collection_id) {
     thumbs = getCookie("thumbs");
     PopCollection(thumbs);
 
-    jQuery('#CollectionDiv').load(baseurl_short + 'pages/collections.php?add=' + resource + '&toCollection=' + collection_id + '&size=' + size + '&thumbs=' + thumbs);
+    jQuery('#CollectionDiv').load(baseurl_short + 'pages/collections.php?add=' + resource + '&toCollection=' + collection_id + '&size=' + size + '&thumbs=' + thumbs + '&ajax=true');
     delete prevremoved;
     if(collection_bar_hide_empty){
 	CheckHideCollectionBar();
