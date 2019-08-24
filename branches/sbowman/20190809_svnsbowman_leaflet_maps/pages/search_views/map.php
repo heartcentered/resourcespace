@@ -1,6 +1,6 @@
 <?php
 // Map Search View Using Leaflet.js and Various Leaflet Plugins
-// Last Edit 8/16/2019, Steve D. Bowman
+// Last Edit 8/24/2019, Steve D. Bowman
 
 // Check if geolocation/maps have been disabled.
 global $disable_geocoding, $lang;
@@ -86,6 +86,9 @@ if ($map_zoomslider)
 <!--Leaflet Zoomslider v0.7.1 plugin files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.css"/>
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.min.js"></script>
+
+<!--Polyfill for Internet Explorer and Edge browser compatibility-->
+<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=default%2Ces5%2Ces6"></script>
 
 <!--Setup Leaflet map container with sizing-->
 <div id="map_results" style="width: 99%; margin-top:0px; margin-bottom:0px; height: <?php echo $map1_height;?>px; display:block; border:1px solid black; float:none; overflow: hidden;">
@@ -285,6 +288,7 @@ if ($map_zoomslider)
             var rf = geomarker[i][2]; <!--Resource reference value-->
             var rtype = geomarker[i][3]; <!--Resource type-->
             var cmfm = geomarker[i][4]; <!--Custom metadata field marker coloring-->
+            var preview = geomarker[i][5]; <!--Resource preview image path-->
 
             <!--Check for resources without geolocation or invalid coordinates and skip those-->
             if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
@@ -344,6 +348,8 @@ if ($map_zoomslider)
                     riseOnHover: true,
                     win_url: geomarker[i][2]
                 }).on('click', showModal);
+
+                marker.bindPopup("<img src='" + preview + "'/>");
 
                 <!--Add markers to the layer array-->
                 markers.addLayer(marker);

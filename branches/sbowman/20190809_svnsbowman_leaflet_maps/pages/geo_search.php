@@ -1,6 +1,6 @@
 <?php
 // Geographic Map Search for Resources Using Leaflet.js and Various Leaflet Plugins
-// Last Update: 7/7/2019, Steve D. Bowman
+// Last Update: 8/24/2019, Steve D. Bowman
 
 include "../include/db.php";
 include_once "../include/general.php";
@@ -78,6 +78,9 @@ if ($default_display == "map" || $display == "map")
 <!--Leaflet Shades v1.0.2 plugin files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/src/css/leaflet-shades.css"/>
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/leaflet-shades.min.js"></script>
+
+<!--Polyfill for Internet Explorer and Edge browser compatibility-->
+<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=default%2Ces5%2Ces6"></script>
 
 <div class="BasicsBox">
 <h1><?php echo $lang["geographicsearch"] ?></h1>
