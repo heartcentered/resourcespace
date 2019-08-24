@@ -1411,14 +1411,18 @@ if($responsive_ui)
     // Determine geolocation parameters for map search view.
     if (!$disable_geocoding)
         {
-        global $marker_metadata_field;
+        global $marker_metadata_field, $use_watermark;
 
         // Loop through search results.
         for ($n = 0; $n < count($result); $n++)
             {
             // Get resource data for resources returned by the current search.
             $geo = $result[$n]["ref"];
-            $geomark = get_resource_data($result[$n]["ref"], $cache=false);
+            $geomark = get_resource_data($result[$n]["ref"], $cache = false);
+            $preview_path = get_resource_path($result[$n]["ref"], false, 'thm', false, $result[$n]["preview_extension"], true, 1, $use_watermark, $result[$n]["file_modified"]);
+            $geomark["preview"] = $preview_path;
+            //$geomark["preview"] = str_ireplace("/include/..", "", $preview_path);
+            debug("PAGES/SEARCH GEOLOCATION REF ID: " . $geomark["preview"]);
             debug("PAGES/SEARCH GEOLOCATION REF ID: " . $result[$n]["ref"]);
 
             // Get custom metadata field value.
