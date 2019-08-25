@@ -13,7 +13,7 @@ if($disable_geocoding)
 include "../include/map_functions.php";
 
 // Setup initial Leaflet map variables.
-global $baseurl, $mapsearch_height, $map_default, $geomarker, $map_centerview, $map_zoomslider, $map_zoomnavbar, $map_kml, $map_kml_file, $map_retina, $marker_color1, $marker_color2, $marker_color3, $marker_color4, $marker_color5, $marker_color6, $marker_color7, $marker_color8;
+global $baseurl, $mapsearch_height, $map_default, $geomarker, $preview_paths, $map_centerview, $map_zoomslider, $map_zoomnavbar, $map_kml, $map_kml_file, $map_retina, $marker_resource_preview, $marker_color1, $marker_color2, $marker_color3, $marker_color4, $marker_color5, $marker_color6, $marker_color7, $marker_color8;
 $marker_color_def = array($marker_color1, $marker_color2, $marker_color3, $marker_color4, $marker_color5, $marker_color6, $marker_color7, $marker_color8);
 $display_selector_dropdowns = false;
 $zoomslider = 'false';
@@ -269,6 +269,7 @@ if ($map_zoomslider)
         { ?>
         <!--Setup and configure initial marker info from resource data-->
         var geomarker = <?php echo str_replace(array('"', '\\'), '', json_encode($geomarker))?>;
+        var previewPaths = <?php echo json_encode($preview_paths); ?>;
         var markerArray = [];
         var win_url;
 
@@ -288,7 +289,7 @@ if ($map_zoomslider)
             var rf = geomarker[i][2]; <!--Resource reference value-->
             var rtype = geomarker[i][3]; <!--Resource type-->
             var cmfm = geomarker[i][4]; <!--Custom metadata field marker coloring-->
-            var preview = geomarker[i][5]; <!--Resource preview image path-->
+            var preview = previewPaths[i]; <!--Resource preview image path-->
 
             <!--Check for resources without geolocation or invalid coordinates and skip those-->
             if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
@@ -342,14 +343,34 @@ if ($map_zoomslider)
                 }).addTo(map1));
 
                 <!--Create a marker for each resource-->
-                var marker = new L.marker([lat, lon], {
-                    icon: iconColor,
-                    title: 'ID# ' + rf,
-                    riseOnHover: true,
-                    win_url: geomarker[i][2]
-                }).on('click', showModal);
-
-                marker.bindPopup("<img src='" + preview + "'/>");
+                <?php if ($marker_resource_preview)
+                    { ?>
+                    var marker = new L.marker([lat, lon], {
+                        icon: iconColor,
+                        riseOnHover: true,
+                        win_url: geomarker[i][2]
+                    }); 
+                    
+                    <!--Show the resource preview image-->
+                    var imagePath = "<img src='" + preview + "'/>";
+                    var text1 = "<?php echo $lang["resourceid"]; ?>";
+                    var imageLink = '<a href=' + baseurl + '/pages/view.php?ref=' + rf + " target='_blank'" + '>' + '<img src=' + preview + '>' + '</a>';
+                    marker.bindPopup(imageLink + text1 + " " + rf, {
+                        minWidth: 155,
+                        autoPan: true,
+                        autoPanPaddingTopLeft: 5,
+                        autoPanPaddingBottomRight: 5
+                    }); <?php
+                    } 
+                else // Show resource ID in marker tooltip.
+                    { ?> 
+                    var marker = new L.marker([lat, lon], {
+                        icon: iconColor,
+                        title: 'ID# ' + rf,
+                        riseOnHover: true,
+                        win_url: geomarker[i][2]
+                    }).on('click', showModal); <?php
+                    } ?>
 
                 <!--Add markers to the layer array-->
                 markers.addLayer(marker);

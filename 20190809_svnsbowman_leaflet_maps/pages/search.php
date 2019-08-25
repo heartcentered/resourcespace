@@ -1418,12 +1418,8 @@ if($responsive_ui)
             {
             // Get resource data for resources returned by the current search.
             $geo = $result[$n]["ref"];
-            $geomark = get_resource_data($result[$n]["ref"], $cache = false);
-            $preview_path = get_resource_path($result[$n]["ref"], false, 'thm', false, $result[$n]["preview_extension"], true, 1, $use_watermark, $result[$n]["file_modified"]);
-            $geomark["preview"] = $preview_path;
-            //$geomark["preview"] = str_ireplace("/include/..", "", $preview_path);
-            debug("PAGES/SEARCH GEOLOCATION REF ID: " . $geomark["preview"]);
-            debug("PAGES/SEARCH GEOLOCATION REF ID: " . $result[$n]["ref"]);
+            $geomark = get_resource_data($geo, $cache = false);
+            $geomark["preview_path"] = strstr(get_resource_path($geo, false, 'thm', false, $result[$n]["preview_extension"], true, 1, $use_watermark, $result[$n]["file_modified"]), "?", true);
 
             // Get custom metadata field value.
             if (isset($marker_metadata_field))
@@ -1440,6 +1436,7 @@ if($responsive_ui)
                 {
                 // Create array of geolocation parameters.
                 $geomarker[] = "[{$geomark["geo_long"]}, {$geomark["geo_lat"]}, {$geomark["ref"]}, {$geomark["resource_type"]}, {$geomark2[0]["value"]}]";
+                $preview_paths[] = $geomark["preview_path"];
                 }
             }
         }

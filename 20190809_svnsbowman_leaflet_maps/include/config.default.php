@@ -2473,6 +2473,9 @@ $geo_override_options = "";
     // Leaflet default basemap.
     $map_default = "OpenStreetMap.Mapnik"; # Options: 'OpenStreetMap.Mapnik', 'OpenStreetMap.DE', 'OpenTopoMap', 'HikeBike.HikeBike', 'OpenStreetMap.HOT', 'MtbMap', 'OpenStreetMap.France', 'OpenStreetMap.BZH', 'OpenStreetMap.CH', and 'OpenMapSurfer.Roads'.
 
+    // Leaflet show resource thumbnail marker popup, instead of resource ID tooltip?
+    $marker_resource_preview = true;
+
     // Leaflet available marker colors.
     $marker_colors = array('Blue', 'Red', 'Green', 'Orange', 'Yellow', 'Black', 'Grey', 'Violet');
 
