@@ -2464,8 +2464,8 @@ $geo_override_options = "";
     $map_kml_file = ""; # Place KML file in ../filestore/system/, example: overlay.kml
 
     // Leaflet: Cache map layer tiles in the browser (recommended to reduce tile server load)?
-    $map_default_cache = true; # Default basemap?
-    $map_layer_cache = true; # All basemaps?
+    $map_default_cache = false; # Default basemap?
+    $map_layer_cache = false; # All basemaps?
 
     // Leaflet: Enable retina display tiles (four tiles of half size and a larger zoom level in place of one to utilize higher resolution)?
     $map_retina = false;

@@ -51,9 +51,12 @@ if ($map_zoomslider)
 <!--Leaflet Providers v1.8.0 plugin files-->
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.min.js"></script>
 
-<!--Leaflet PouchDBCached v1.0.0 plugin files with PouchDB v7.1.1 files-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/pouchdb-7.1.1/pouchdb-7.1.1.min.js"></script>
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-PouchDBCached-1.0.0/L.TileLayer.PouchDBCached.min.js"></script>
+<!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
+<?php if ($map_default_cache || $map_layer_cache)
+    { ?>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/pouchdb-7.1.1/pouchdb-7.1.1.min.js"></script>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-PouchDBCached-1.0.0/L.TileLayer.PouchDBCached.min.js"></script> <?php
+    } ?>
 
 <!--Leaflet MarkerCluster v1.4.1 plugin files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/MarkerCluster.css"/>
@@ -88,7 +91,7 @@ if ($map_zoomslider)
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.min.js"></script>
 
 <!--Polyfill for Internet Explorer and Edge browser compatibility-->
-<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=default%2Ces5%2Ces6"></script>
+<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces5%2Ces6%2Ces2017%2Cdefault%2Ces2018%2Ces7"></script>
 
 <!--Setup Leaflet map container with sizing-->
 <div id="map_results" style="width: 99%; margin-top:0px; margin-bottom:0px; height: <?php echo $map1_height;?>px; display:block; border:1px solid black; float:none; overflow: hidden;">
