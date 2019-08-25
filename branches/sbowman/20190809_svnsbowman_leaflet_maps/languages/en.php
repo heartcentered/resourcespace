@@ -1449,12 +1449,13 @@ $lang['google_default_map'] = "Google default map";
 $lang['google_satellite'] = "Google satellite";
 $lang["markers"] = "Markers";
 $lang['map_configuration'] = "Search Results Map";
-$lang['map_introtext1'] = "The map below shows resources from the search result that have a location associated with them. The marker color is set to the resource type (key below the map). When markers would overprint other markers, green-colored clustering is used with a number indicating the number of clustered markers, zoom-in or double click a cluster.  Click on an individual marker to load a window for that resource.  Hover over an individual marker for the Resource ID.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
+$lang['map_introtext1'] = "The map below shows resources from the search result that have a latitude and longitude coordinate location associated with them. The marker color is set to the resource type or a custom metadata field (key below the map). When markers would overprint other markers, green-colored clustering is used with a number indicating the number of clustered markers, zoom-in or double click a cluster.  Click on an individual marker to load a window for that resource.  Hover over an individual marker for the Resource ID.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
 $lang['search_map_introtext'] = "Pan and zoom to the map view of interest, then draw a blue box on the map by dragging to select a search area for resources with a geolocation that lie within the box.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
 $lang['mapview'] = "Map";
 $lang['maptitle'] = "Map view";
 $lang['mapemptysearch'] = "No search results.";
 $lang['map_print_title'] = "Search Results Map";
+$lang['leaflet_mapdownload'] = "Map Download";
 
 // Search map options.
 $lang['map_options'] = "Search Map Options";
@@ -1483,6 +1484,8 @@ $lang['map_tftransportdark'] = "Transport Dark";
 $lang['map_tflandscape'] = "Landscape";
 $lang['map_tfoutdoors'] = "Outdoors";
 $lang['map_tfpioneer'] = "Pioneer";
+$lang['map_tfmobileatlas'] = "Mobile Atlas";
+$lang['map_tfneighbourhood'] = "Neighbourhood";
 
 // Hydda basemap group.
 $lang['map_hydda_group'] = "Hydda";
