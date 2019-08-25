@@ -50,8 +50,11 @@ if (count($geo_search_restrict) > 0)
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.min.js"></script>
 
 <!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/pouchdb-7.1.1/pouchdb-7.1.1.min.js"></script>
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-PouchDBCached-1.0.0/L.TileLayer.PouchDBCached.min.js"></script>
+<?php if ($map_default_cache || $map_layer_cache)
+    { ?>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/pouchdb-7.1.1/pouchdb-7.1.1.min.js"></script>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-PouchDBCached-1.0.0/L.TileLayer.PouchDBCached.min.js"></script> <?php
+    } ?>
 
 <!--Leaflet NavBar v1.0.1 plugin files-->
 <?php if ($map_zoomnavbar)
@@ -81,7 +84,7 @@ if (count($geo_search_restrict) > 0)
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.min.js"></script>
 
 <!--Polyfill for Internet Explorer and Edge browser compatibility-->
-<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=default%2Ces5%2Ces6"></script>
+<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces5%2Ces6%2Ces2017%2Cdefault%2Ces2018%2Ces7"></script>
 
 <?php
 if($hide_geolocation_panel && !isset($geolocation_panel_only))
