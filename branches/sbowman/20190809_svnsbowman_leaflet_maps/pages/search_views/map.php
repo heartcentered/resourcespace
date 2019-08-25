@@ -397,13 +397,12 @@ if ($map_zoomslider)
 </script>
 
 <!--Create a map marker legend below the map and only show for defined types up to eight.-->
-<p style="margin-top:4px;margin-bottom:0px;">
-    <b> <?php
+<p style="margin-top:4px;margin-bottom:0px;"> <?php
 
     // Resource type color markers legend.
     if (!isset($marker_metadata_field) || $lang['custom_metadata_markers'] == "")
-        {
-        echo $lang["legend_text"]?>&nbsp;</b> <?php
+        { ?>
+        <b> <?php echo $lang["legend_text"]?>&nbsp;</b> <?php
 
         for ($i = 1; $i < 9; $i++) // Start at 1, since we are not using the Global resource type.
             {
@@ -416,8 +415,8 @@ if ($map_zoomslider)
             }
         }
     else // Custom metadata field color markers legend.
-        {
-        echo $lang['custom_metadata_markers']?>&nbsp;</b> <?php
+        { ?>
+        <b> <?php echo $lang['custom_metadata_markers']?>&nbsp;</b> <?php
 
         // Loop through and create the custom color marker legend text.
         for ($i = 0; $i < 8; $i++)
