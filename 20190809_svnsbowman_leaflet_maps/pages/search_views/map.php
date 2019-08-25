@@ -49,7 +49,7 @@ if ($map_zoomslider)
 <script src="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.min.js"></script>
 
 <!--Leaflet Providers v1.8.0 plugin files-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.min.js"></script>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.babel.min.js"></script>
 
 <!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
 <?php if ($map_default_cache || $map_layer_cache)

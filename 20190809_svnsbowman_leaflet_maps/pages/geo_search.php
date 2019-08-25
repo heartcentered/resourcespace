@@ -45,7 +45,7 @@ if ($default_display == "map" || $display == "map")
 <script src="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.min.js"></script>
 
 <!--Leaflet Providers v1.8.0 plugin files-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.min.js"></script>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.babel.min.js"></script>
 
 <!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
 <?php if ($map_default_cache || $map_layer_cache)
@@ -108,7 +108,7 @@ if ($default_display == "map" || $display == "map")
 <script type="text/javascript">
     var Leaflet = L.noConflict();
 
-    <!--Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js-->
+    // Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js.
     var map1 = new L.map('search_map', {
         editable: true,
         preferCanvas: true,
