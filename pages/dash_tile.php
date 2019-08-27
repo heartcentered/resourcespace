@@ -24,6 +24,7 @@ $error=false;
  * Process Submitted Tile 
  */
 $submitdashtile=getvalescaped("submitdashtile",FALSE);
+debug("q10697: \$submitdashtile = {$submitdashtile}");
 if($submitdashtile && enforcePostRequest(false))
 	{
 	$buildurl = getvalescaped("url","");
@@ -373,7 +374,9 @@ else if($edit)
 
 	$allusers=$tile["all_users"];
 	$url=$tile["url"];
+    debug("q10697: \$url = {$url}");
 	$link=$tile["link"];
+    debug("q10697: \$link = {$link}");
 	$title=$tile["title"];
 	$resource_count=$tile["resource_count"];
     $current_specific_user_groups = get_tile_user_groups($edit);
@@ -459,7 +462,7 @@ if(!$validpage)
 	echo $formextra;
 
 	if($modifylink)
-		{ 
+		{ debug("q10697: \$modifylink = {$modifylink}");
 		?>
 		<div class="Question">
 			<label for="link"><?php echo $lang["dashtilelink"];?></label> 
@@ -469,7 +472,7 @@ if(!$validpage)
 		<?php
 		}
 	else
-		{?>
+		{debug("q10697: 1");?>
 		<input type="hidden" name="link" id="previewlink" value="<?php echo htmlspecialchars($link);?>" />
 		<?php
 		}
