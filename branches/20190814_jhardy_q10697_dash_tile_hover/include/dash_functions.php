@@ -1191,6 +1191,7 @@ function get_user_dash($user)
 		          	nonDraggableTiles = jQuery(".HomePanel").length - jQuery(".DashTileDraggable").length;
 		          	newIndex = (ui.item.index() - nonDraggableTiles) + 1;
 		          	var id=jQuery(ui.item).attr("id").replace("user_tile","");
+                    console.log("ID:" + id);
 		          	updateDashTileOrder(newIndex,id);
 		          }
 			  	});
@@ -1221,11 +1222,11 @@ function get_user_dash($user)
 				if((checkperm("h") && !checkperm("hdta")) || (checkperm("dta") && !checkperm("h")))
 					{
 					?>
-			      	if(jQuery(ui.draggable).hasClass("allUsers")) {console.log("THIS1");
+			      	if(jQuery(ui.draggable).hasClass("allUsers")) {
 			      		// This tile is set for all users so provide extra options
 				        <?php render_delete_dialog_JS(true); ?>
 		            }
-		            else {console.log("THIS2");
+		            else {
 		            	//This tile belongs to this user only
                         <?php render_delete_dialog_JS(false); ?>
 		            }
@@ -1628,79 +1629,82 @@ function generate_dash_tile_toolbar(array $tile, $tile_id)
     die('Died at line ' . __LINE__ . ' in ' . __FILE__);*/
     global $baseurl_short, $lang;
     $editlink = $baseurl_short . "pages/dash_tile.php?edit=" . $tile['ref'];
-    ?>
-    <div id="DashTileActions_<?php echo substr($tile_id, 18); ?>" class="DashTileActions"  style="display:none;">
-    <?php
-    if(checkPermission_dashmanage())
-        {
+    if((checkperm("h") && !checkperm("hdta")) || (checkperm("dta") && !checkperm("h")) || !checkperm("dtu"))
+        {debug("q10697: IN HERE");
         ?>
-        <div class="tool dash-delete">
-            <a href="#">
-                <span><?php echo LINK_CARET ?><?php echo $lang['action-delete']; ?></span>
-            </a>
-        </div>
+        <div id="DashTileActions_<?php echo substr($tile_id, 18); ?>" class="DashTileActions"  style="display:none;">
         <?php
-        }
-    if (checkPermission_dashmanage())
-        { 
-        ?><div class="tool">
-            <a href="<?php echo $editlink ?>" onClick="return CentralSpaceLoad(this,true);">
-                <span><?php echo LINK_CARET ?><?php echo $lang['action-edit']; ?></span>
-            </a>
+        if(checkPermission_dashmanage())
+            {
+            ?>
+            <div class="tool dash-delete_<?php echo substr($tile_id, 18); ?>">
+                <a href="#">
+                    <span><?php echo LINK_CARET ?><?php echo $lang['action-delete']; ?></span>
+                </a>
+            </div>
+            <div class="tool edit">
+                <a href="<?php echo $editlink ?>" onClick="return CentralSpaceLoad(this,true);">
+                    <span><?php echo LINK_CARET ?><?php echo $lang['action-edit']; ?></span>
+                </a>
+            </div>
+            <?php
+            }
+        ?>
         </div>
-        <?php
+        <?php  
         }
-    ?>
-    </div>
+        ?>
 
     <script>
     jQuery(document).ready(function ()
         {
+        var id = "<?php echo htmlspecialchars(substr($tile_id, 18)); ?>"
         var tileid = "#<?php echo htmlspecialchars($tile_id); ?>";
-        var usertile = "#<?php echo htmlspecialchars(substr($tile_id, 9)); ?>";
-        var dashtileid = "#DashTileActions_<?php echo htmlspecialchars(substr($tile_id, 18)); ?>";
+        var usertileid = "#<?php echo htmlspecialchars(substr($tile_id, 9)); ?>";
+        var dashtileactionsid = "#DashTileActions_" + id;
+        var deletetileid = ".dash-delete_" + id;
         var editlink = "<?php echo $tile["url"]; ?>";
         var tilehref;
         var tileonclick;
 
-        console.log(tileid);
-        console.log(usertile);
-        console.log(dashtileid);
-        console.log(editlink);
+        console.log("tileid: " + tileid);
+        console.log("usertileid: " + usertileid);
+        console.log("dashtileactionsid: " + dashtileactionsid);
+        console.log("editlink: " + editlink);
 
         jQuery(tileid).hover(
         function(e)
             {
-            jQuery(dashtileid).stop(true, true).slideDown();
+            jQuery(dashtileactionsid).stop(true, true).slideDown();
             },
         function(e)
             {
-            jQuery(dashtileid).stop(true, true).slideUp();
+            jQuery(dashtileactionsid).stop(true, true).slideUp();
             });
 
-        jQuery(dashtileid).hover(
+        jQuery(dashtileactionsid).hover(
         function(e)
             {
-            tilehref = jQuery(usertile).attr("href");
-            tileonclick = jQuery(usertile).attr("onclick");
-            jQuery(usertile).attr("href", "#");
-            jQuery(usertile).attr("onclick", "return false;");
+            tilehref = jQuery(usertileid).attr("href");
+            tileonclick = jQuery(usertileid).attr("onclick");
+            jQuery(usertileid).attr("href", "#");
+            jQuery(usertileid).attr("onclick", "return false;");
             },
         function(e)
             {
-            jQuery(usertile).attr("href", tilehref);
-            jQuery(usertile).attr("onclick", tileonclick);
+            jQuery(usertileid).attr("href", tilehref);
+            jQuery(usertileid).attr("onclick", tileonclick);
             tilehref = '';
             tileonclick = '';
             });
 
-    jQuery(".dash-delete").click(
+    jQuery(deletetileid).click(
             function(event,ui) {
             <?php
             if((checkperm("h") && !checkperm("hdta")) || (checkperm("dta") && !checkperm("h")))
                 {
-                ?>console.log("XX" + usertile);
-                if(jQuery(usertile).hasClass("allUsers")) {
+                ?>
+                if(jQuery(usertileid).hasClass("allUsers")) {
                     // This tile is set for all users so provide extra options
                     <?php render_delete_dialog_JS(true); ?>
                 }
