@@ -468,9 +468,10 @@ if ($_FILES)
         // Get current chunk, queue index and filename so we can know if we processed it before or not
         $processed_file_content = file_get_contents($plupload_processed_filepath);
         $processed_file_content = explode(',', $processed_file_content);
-
-        // If this chunk-file-filename has been processed, don't process it again
-        if($chunk == $processed_file_content[0] && $queue_index == $processed_file_content[1])
+        
+        
+        // If this chunk-file-filename has been processed, don't process it again, unless it is a part of a batch replace file operation identified by keep_original GET variable == 1
+        if($chunk == $processed_file_content[0] && $queue_index == $processed_file_content[1] && (getval('keep_original', '') != 1))
             {
             debug("PLUPLOAD - Duplicate chunk [" . $chunk . "] of file " . $plfilename . " found at index [" . $queue_index . "] in the upload queue");
             die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "Duplicate chunk [' . $chunk . '] of file ' . $plfilename . ' found at index [' . $queue_index . '] in the upload queue"}, "id" : "id"}');
@@ -792,57 +793,16 @@ if ($_FILES)
                             // Replacing an existing resource file
                             daily_stat('Resource upload', $replace_resource);
 
-							if($replace_resource_preserve_option && '' != getval('keep_original', ''))
+                            // save original file as an alternative file
+                            if($replace_resource_preserve_option && '' != getval('keep_original', ''))
 								{
-								// Make the original into an alternative, need resource data so we can get filepath/extension
-								$origdata     = get_resource_data($replace_resource);
-								$origfilename = get_data_by_field($replace_resource, $filename_field);
-
-								$newaltname        = str_replace('%EXTENSION', strtoupper($origdata['file_extension']), $lang['replace_resource_original_description']);
-								$newaltdescription = nicedate(date('Y-m-d H:i'), true);
-
-                                if('' != $replace_resource_original_alt_filename)
+                                $save_original_as_alternative =  save_original_file_as_alternative($replace_resource);    
+                                if (!$save_original_as_alternative)
                                     {
-                                    $newaltname = $replace_resource_original_alt_filename;
-                                    $newaltdescription = '';
+                                    debug("PLUPLOAD ERROR- Failed to save original file as alternative file : " . $ref );
+                                    die('{"jsonrpc" : "2.0", "error" : {"code": 110, "message": "Failed to save original file as alternative file."}, "id" : "id"}');
                                     }
-
-								$newaref = add_alternative_file($replace_resource, $newaltname, $newaltdescription, escape_check($origfilename), $origdata['file_extension'], $origdata['file_size']);
-																
-								$origpath=get_resource_path($replace_resource, true, "", true, $origdata["file_extension"]);
-								$newaltpath=get_resource_path($replace_resource, true, "", true, $origdata["file_extension"], -1, 1, false, "", $newaref);
-								
-								# Move the old file to the alternative file location
-								$result=rename($origpath, $newaltpath);								
-								
-								# Save alternative file data.
-								//sql_query("update resource_alt_files set file_name='" . escape_check($origfilename) . "',file_extension='" . $origdata["file_extension"] . "',file_size='" . $origdata["file_size"] . "',creation_date=now() where resource='$replace_resource' and ref='$newaref'");
-								
-								if ($alternative_file_previews)
-										{
-										// Move the old previews to new paths
-										$ps=sql_query("select * from preview_size");
-										for ($n=0;$n<count($ps);$n++)
-											{
-											# Find the original 
-											$orig_preview_path=get_resource_path($replace_resource, true, $ps[$n]["id"],false, "");
-											if (file_exists($orig_preview_path))
-												{
-												# Move the old preview file to the alternative preview file location
-												$alt_preview_path=get_resource_path($replace_resource, true, $ps[$n]["id"], true, "", -1, 1, false, "", $newaref);
-												rename($orig_preview_path, $alt_preview_path);			
-												}
-											# Also for the watermarked versions.
-											$wmpath=get_resource_path($replace_resource,true,$ps[$n]["id"],false,"jpg",-1,1,true,"",$alternative);
-											if (file_exists($wmpath))
-												{
-												# Move the old preview file to the alternative preview file location
-												$alt_preview_wmpath=get_resource_path($replace_resource, true, $ps[$n]["id"], true, "", -1, 1, true, "", $newaref);
-												rename($wmpath, $alt_preview_wmpath);			
-												}
-											}
-										}
-								}
+                                }  
 								
                             $status = upload_file($replace_resource, (('yes' == $no_exif) && '' == getval('exif_override', '')), false, ('' != getval('autorotate','')), $plupload_upload_location);
 
@@ -961,8 +921,16 @@ if ($_FILES)
                                             debug("batch_replace upload: replacing resource with id " . $ref);
                                             daily_stat("Resource upload",$ref);
 
-                                            $status = upload_file($ref, ('yes' == $no_exif && '' == getval('exif_override', '')), false, ('' != getval('autorotate', '')), $plupload_upload_location);
+                                            # Save the original file as an alternative file?                                            
+                                            $keep_original = getval('keep_original', '');
+                                            $save_original_as_alternative = ($keep_original == 1) ? save_original_file_as_alternative($ref) : "";
+                                            if (!$save_original_as_alternative){
+                                                # if attempt to save original file as alternative failed then output error
+                                                debug("PLUPLOAD ERROR- Failed to save original file as alternative file : " . $ref );
+                                                die('{"jsonrpc" : "2.0", "error" : {"code": 110, "message": "Failed to save original file as alternative file."}, "id" : "id"}');
+                                            }
 
+                                            $status = upload_file($ref, ('yes' == $no_exif && '' == getval('exif_override', '')), false, ('' != getval('autorotate', '')), $plupload_upload_location);
                                             die('{"jsonrpc" : "2.0", "message" : "' . $lang["replacefile"] . '", "id" : "' . htmlspecialchars($ref) . '"}');
                                             }
                                         else
