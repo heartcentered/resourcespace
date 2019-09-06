@@ -167,6 +167,8 @@ if('true' === $ajax && getval("static","")!="")
     }
     
 include '../../include/header.php';
+
+
 ?>
 <div class="BasicsBox">
     <p>
@@ -291,8 +293,7 @@ if($slideshow_big)
     </div>
     <?php
     }
-
-hook('render_new_element_for_manage_slideshow', '', array($slideshow_files));
+    hook('render_new_element_for_manage_slideshow', '', array($slideshow_files));
 ?>
 </div>
 <script>
