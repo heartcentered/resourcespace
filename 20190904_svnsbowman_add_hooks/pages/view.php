@@ -1704,7 +1704,7 @@ hook ("resourceactions") ?>
         }
 
     } /* End replaceresourceactions */ 
-hook("afterresourceactions");
+hook("afterresourceactions", "", array($ref));
 hook("afterresourceactions2");
 ?>
 <?php } /* End if ($k!="")*/ 

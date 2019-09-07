@@ -43,7 +43,9 @@ function create_resource($resource_type,$archive=999,$user=-1)
 	
 	# set defaults for resource here (in case there are edit filters that depend on them)
 	set_resource_defaults($insert);	
-	
+
+    hook("create_resource", '', array($insert, $resource_type));
+
 	# Autocomplete any blank fields.
 	autocomplete_blank_fields($insert, true);
 
@@ -3031,7 +3033,10 @@ function get_alternative_files($resource,$order_by="",$sort="")
 function add_alternative_file($resource,$name,$description="",$file_name="",$file_extension="",$file_size=0,$alt_type='')
 	{
 	sql_query("insert into resource_alt_files(resource,name,creation_date,description,file_name,file_extension,file_size,alt_type) values ('" . escape_check($resource) . "','" . escape_check($name) . "',now(),'" . escape_check($description) . "','" . escape_check($file_name) . "','" . escape_check($file_extension) . "','" . escape_check($file_size) . "','" . escape_check($alt_type) . "')");
-	return sql_insert_id();
+
+    $alt_ref = sql_insert_id();
+    $return = hook("add_alternative_file_extra", "", array($resource, $alt_ref));
+    return $alt_ref;
 	}
 	
 function delete_alternative_file($resource,$ref)

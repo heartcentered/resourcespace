@@ -785,7 +785,7 @@ if ($_FILES)
                                 unlink($plupload_processed_filepath);
                                 }
                                 
-                            $wait = hook('afterpluploadfile', '', array($ref, $extension));
+                            $wait = hook('afterpluploadfile', '', array($ref, $extension, $resource_type));
                             die('{"jsonrpc" : "2.0", "message" : "' . $lang["created"] . '", "id" : "' . htmlspecialchars($ref) . '", "collection" : "' . $collection_add . '" }');
                             }
                         else if ($replace=="" && $replace_resource!="")
