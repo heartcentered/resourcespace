@@ -1,6 +1,6 @@
 <?php
 // Geographic Map Search for Resources Using Leaflet.js and Various Leaflet Plugins
-// Last Update: 8/24/2019, Steve D. Bowman
+// Last Update: 9/7/2019, Steve D. Bowman
 
 include "../include/db.php";
 include_once "../include/general.php";
@@ -70,9 +70,9 @@ if ($default_display == "map" || $display == "map")
 <!--Leaflet EasyPrint v2.1.9 plugin file-->
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.min.js"></script>
 
-<!--Leaflet StyledLayerControl v10/2/2018 plugin files-->
-<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-10-2-2018/css/styledLayerControl.css"/>
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-10-2-2018/src/styledLayerControl.min.js"></script>
+<!--Leaflet StyledLayerControl v5/16/2019 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/css/styledLayerControl.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/src/styledLayerControl.min.js"></script>
 
 <!--Leaflet Zoomslider v0.7.1 plugin files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.css"/>
@@ -81,6 +81,10 @@ if ($default_display == "map" || $display == "map")
 <!--Leaflet Shades v1.0.2 plugin files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/src/css/leaflet-shades.css"/>
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/leaflet-shades.min.js"></script>
+
+<!--Leaflet Control Geocoder 1.9.0 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-control-geocoder-1.9.0/dist/Control.Geocoder.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-control-geocoder-1.9.0/dist/Control.Geocoder.min.js"></script>
 
 <!--Polyfill for Internet Explorer and Edge browser compatibility-->
 <script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces5%2Ces6%2Ces2017%2Cdefault%2Ces2018%2Ces7"></script>
@@ -252,6 +256,9 @@ if ($default_display == "map" || $display == "map")
 
     var control = L.Control.styledLayerControl(baseMaps,options);
     map1.addControl(control);
+
+    <!--Add geocoder search bar using control.geocoder.min.js-->
+    L.Control.geocoder().addTo(map1);
 
     <!--Show zoom history navigation bar and add to Leaflet map using Leaflet.NavBar.min.js-->
     <?php if ($map_zoomnavbar)
