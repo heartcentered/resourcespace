@@ -117,6 +117,8 @@ if(file_exists(get_resource_path($resource , true, 'thm', true, 'jpg', true, 1, 
 </div>
 
 <?php
+hook("alternative_file_question", "");
+
 	// if the system is configured to support a type selector for alt files, show it
 	if (isset($alt_types) && count($alt_types) > 1){
 		echo "<div class='Question'>\n<label for='alt_type'>".$lang["alternatetype"]."</label><select name='alt_type' id='alt_type'>";
