@@ -3615,3 +3615,5 @@ $batch_replace_local_folder = "/upload";
 // Display help links on pages
 $contextual_help_links=true;
 
+// Option to always show search bar 
+$filter_bar_default_open = false;

@@ -504,7 +504,8 @@ $searchparams= array(
     'sort'                                      => $sort,
     'restypes'                                  => $restypes,
     'recentdaylimit'                            => getvalescaped('recentdaylimit', '', true),
-    'foredit'                                   => ($editable_only?"true":"")
+    'foredit'                                   => ($editable_only?"true":""),
+    'source'                                    => trim(getval("source", ""))
 );
 
 $checkparams = array();
@@ -601,7 +602,7 @@ if($k=="" || $internal_share_access)
     <?php
     }
 
-if($k == "")
+if($k == "" && getval("go","") == "")
     {
     ?>
     <script>
@@ -609,20 +610,32 @@ if($k == "")
     var require_filter_bar_reload = <?php echo trim(getval("filter_bar_reload", "")) !== "false" ? "true" : "false"; ?>;
 
     if(!filter_bar_search)
-        {
-        TogglePane(
-            'FilterBarContainer',
+        {        
+        var filter_state_saved = getCookie('filter_state');
+        filter_state = (typeof filter_state_saved !== 'undefined') ? filter_state_saved : '<?php echo ($filter_bar_default_open) ? "open" : "closed"; ?>';
+        if(filter_state == "open") 
             {
-                load_url: '<?php echo $baseurl; ?>/pages/search_advanced.php',
-                <?php echo generateAjaxToken("ToggleFilterBar"); ?>
-            },
-            true);
+            // Already open - reload the filter bar
+            var url = "<?php echo generateURL("{$baseurl}/pages/search_advanced.php", array('search' => $search)); ?>";
+            jQuery("#FilterBarContainer").load(url);
+            }
+        else
+            {
+            TogglePane(
+                'FilterBarContainer',
+                {
+                    load_url: '<?php echo $baseurl; ?>/pages/search_advanced.php',
+                    <?php echo generateAjaxToken("ToggleFilterBar"); ?>
+                },filter_state);
+            }
+        SetCookie('filter_state', filter_state);
         }
-
+            
     if(filter_bar_search && require_filter_bar_reload)
         {
         ReloadFilterBar('<?php echo $search; ?>');
         }
+    
     </script>
     <?php
     }
