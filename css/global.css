@@ -1752,7 +1752,7 @@ a.BrowseRefresh{
     vertical-align: text-top;
 }
 
-#FilterBarContainer { padding: 10px 10px; text-align: left; color: #FFF; }
+#FilterBarContainer { padding: 10px 10px; text-align: left; color: #FFF; z-index:50 !important;}
 #FilterBarContainer .SearchWidth, #FilterBarContainer .CategoryBox { width: 380px; }
 #FilterBarContainer > .BasicsBox { margin: initial; }
 #FilterBarContainer .CollapsibleSectionHead, #FilterBarContainer .Question a { color: #FFF; }
@@ -1779,6 +1779,25 @@ a.BrowseRefresh{
 #FilterBarContainer div[class*='_range'] select { width: 89px; }
 #FilterBarContainer div.Fixed { max-height: 200px; overflow-y: scroll; }
 #FilterBarContainer .Question .Fixed { width: 100%; }
+#FilterBarContainer a:link, #FilterBarContainer a:visited, #FilterBarContainer a:hover {font-weight: bold; }
+#FilterBarAdvancedToggleDiv {margin-top:5px; padding-top:10px; border-top: 1px solid;}
+#FilterBarAdvancedToggle.FilterBarAdvancedClosed:before {
+    content: "\f055";
+    display: inline-block;
+    font: normal normal normal 14px/1 "Font Awesome 5 Free";
+    font-weight: 600;
+    text-rendering: auto;
+    padding-right:12px; 
+} 
+
+#FilterBarAdvancedToggle.FilterBarAdvancedOpen:before {
+    content: "\f056";
+    display: inline-block;
+    font: normal normal normal 14px/1 "Font Awesome 5 Free";
+    font-weight: 600;
+    text-rendering: auto;
+    padding-right:12px; 
+} 
 
 .FullWidth { width: -webkit-fill-available; }
 .InsetBottomShadow { background: rgba(0, 0, 0, 0.2); }

@@ -409,18 +409,8 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
                 $setnames=trim_array(explode(";",$value));
                 $wrap=0;
 
-                $al_multiplier_factor = (defined("FILTER_BAR") && FILTER_BAR) ? 2.7 : 1;
-                $l = average_length($node_options) * $al_multiplier_factor;
-                switch($l)
-                    {
-                    case($l > 40): $cols = 1; break; 
-                    case($l > 25): $cols = 2; break;
-                    case($l > 15): $cols = 3; break;
-                    case($l > 10): $cols = 4; break;
-                    case($l > 5):  $cols = 5; break;
-                    default:       $cols = 10;
-                    }
-
+                $l = average_length($node_options);
+                $cols = ($l>0)? floor(50/$l) : 10;
                 $height = ceil(count($field['nodes']) / $cols);
 
                 global $checkbox_ordered_vertically, $checkbox_vertical_columns;
