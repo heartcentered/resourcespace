@@ -1466,6 +1466,7 @@ function TogglePane(pane_id, data, target_state)
     var pane_closed = myLayout.state[active_pane].isClosed;
     if(target_state == "closed" || (!pane_closed && target_state == "toggle"))
         {
+        myLayout.panes["east"].width(412);
         myLayout.close(active_pane);
         SetCookie('filter_state', "closed");
         return true;
@@ -2063,4 +2064,25 @@ function isFilterBarOpen()
         }
 
     return !myLayout.state["east"].isClosed;
+    }
+
+	
+function toggleFilterAdvanced()
+    {   
+    jQuery('#FilterBarAdvancedSection').slideToggle(50,function(){
+        if(jQuery('#FilterBarAdvancedSection').is(":visible"))
+            {
+            myLayout.panes["east"].width(705);
+            //myLayout.resizeAll();
+            document.getElementById('FilterBarAdvancedToggle').className = "FilterBarAdvancedOpen";
+            var adv_pos = jQuery('#FilterBarAdvancedSection').offset().top - jQuery('#Header').height() - jQuery('#ActiveFilters').height() - 50;
+            jQuery('#FilterBarContainer').animate({scrollTop: adv_pos}, 'fast');
+            }
+        else
+            {
+            myLayout.panes["east"].width(412);
+            //myLayout.resizeAll();
+            document.getElementById('FilterBarAdvancedToggle').className = "FilterBarAdvancedClosed";
+            };
+        });
     }

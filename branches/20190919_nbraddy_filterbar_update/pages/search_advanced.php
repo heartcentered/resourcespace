@@ -279,7 +279,7 @@ jQuery(document).ready(function()
     if(selectedtypes[0]===""){selectedtypes.shift();}
     });
 </script>
-<div class="BasicsBox">
+<div class="BasicsBox" id="FilterBarBox">
 <form method="post" id="advancedform" action="<?php echo $baseurl ?>/pages/search_advanced.php" >
 <?php generateFormToken("advancedform"); ?>
 <input type="hidden" name="submitted" id="submitted" value="yes">
@@ -533,6 +533,8 @@ if($modified_fields !== false && is_array($modified_fields) && !empty($modified_
 $advanced_section_rendered = false;
 $n = 0; # this is used by render_search_field()
 
+foreach(array_merge($fields, $fake_fields) as $field)
+
 $array_filter_fields_all = array_merge($fields, $fake_fields);
 
 // order the array by the simple_search flag.. descending order i.e. 1 first then 0
@@ -549,8 +551,10 @@ foreach($array_filter_fields_all as $field)
     if(!$advanced_section_rendered && !$simple_search_flag && $advanced_search_flag)
         {
         ?>
-        <h1 class="CollapsibleSectionHead collapsed"><?php echo $lang["advanced"]; ?></h1>
-        <div id="FilterBarAdvancedSection" class="CollapsibleSection">
+        <p>
+            <a id="filter_advanced_toggle" class="filter_advanced_closed" name="filter_advanced_toggle" onclick="toggleFilterAdvanced();return false;" href="#"><?php echo $lang["advanced"]; ?></a>
+        </p>
+        <div id="FilterBarAdvancedSection" style="display:none;">
         <?php
         $advanced_section_rendered = true;
         }
@@ -663,6 +667,7 @@ if (!$collection_search_includes_resource_metadata)
 <script>
 function ClearFilterBar(load)
     {
+        console.log("ClearFilterBar");
     load = typeof load !== "undefined" && load === true ? true : false;
     var url = "<?php echo generateURL("{$baseurl}/pages/search_advanced.php", array('submitted' => true, 'resetform' => true)); ?>";
 
@@ -718,6 +723,8 @@ function HideInapplicableFilterBarFields()
 
 jQuery(document).ready(function()
     {
+    var filter_state_saved = getCookie('filter_state');
+    filter_state = (typeof filter_state_saved !== 'undefined') ? filter_state_saved : '<?php echo ($filter_bar_default_open) ? "open" : "closed"; ?>';
     UpdateActiveFilters({search: "<?php echo $search; ?>"});
     jQuery("#FilterBarContainer .Question table").PutShadowOnScrollableElement();
     jQuery(document).on("categoryTreeAfterOpen", function(event, data)
@@ -730,17 +737,33 @@ jQuery(document).ready(function()
         });
     registerCollapsibleSections(false);
 
+    jQuery("#CentralSpace").unbind("CentralSpaceLoaded");
     jQuery("#CentralSpace").on("CentralSpaceLoaded", function(event, data)
         {
         var page_name = typeof data.pagename !== "undefined" ? data.pagename : "";
-
+        
         if(pagename != "search" && (typeof filter_state === 'undefined' || filter_state=="closed"))
             {
+                console.log("Clearing filter bar");
             ClearFilterBar(false);
             }
 
         return true;
         });
+
+    // Prevent default submit of clear button when enter is pressed unless it has focus 
+    jQuery('#advancedform').on('keyup keypress', function(e) {
+        var keyCode = e.keyCode || e.which;
+        if (keyCode === 13) { 
+            var actelm = jQuery(document.activeElement);
+            if (actelm[0].name == 'resetform') 
+                {
+                return true;
+                }
+            e.preventDefault();
+            return false;
+        }
+        });    
 
     HideInapplicableFilterBarFields();
     jQuery('.SearchTypeCheckbox').change(function() 
