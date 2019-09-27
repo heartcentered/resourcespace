@@ -1067,7 +1067,7 @@ function get_user_available_tiles($user,$tile="null")
  *
  */
 function get_user_dash($user)
-	{debug("q10697: get_user_dash");
+	{
 	global $baseurl,$baseurl_short,$lang,$dash_tile_shadows,$help_modal, $dash_tile_colour, $dash_tile_colour_options;
 
 	#Build User Dash and recalculate order numbers on display
@@ -1075,7 +1075,7 @@ function get_user_dash($user)
 
 	$order=10;
 	foreach($user_tiles as $tile)
-		{debug("q10697: A");
+		{
 		if($order != $tile["order_by"] || ($tile["order_by"] % 10) > 0){update_user_dash_tile_order($user,$tile["user_tile"],$order);}
 		$order+=10;
 
@@ -1098,12 +1098,12 @@ function get_user_dash($user)
 			<?php 
 			# Check link for external or internal
 			if(mb_strtolower(substr($tile["link"],0,4))=="http")
-				{debug("q10697: B");
+				{
 				$link = $tile["link"];
 				$newtab = true;
 				}
 			else
-				{debug("q10697: C");
+				{
 				$link = $baseurl."/".htmlspecialchars($tile["link"]);
 				$newtab=false;
 				}
@@ -1129,7 +1129,7 @@ function get_user_dash($user)
 		}
 	# Check Permissions to Display Deleting Dash Tiles
 	if((checkperm("h") && !checkperm("hdta")) || (checkperm("dta") && !checkperm("h")) || !checkperm("dtu"))
-		{ debug("q10697: D");
+		{
 		render_trash("dash_tile", $lang['confirmdeleteconfigtile']);
 		?>
 		<script>
@@ -1630,7 +1630,7 @@ function generate_dash_tile_toolbar(array $tile, $tile_id)
     global $baseurl_short, $lang;
     $editlink = $baseurl_short . "pages/dash_tile.php?edit=" . $tile['ref'];
     if((checkperm("h") && !checkperm("hdta")) || (checkperm("dta") && !checkperm("h")) || !checkperm("dtu"))
-        {debug("q10697: IN HERE");
+        {
         ?>
         <div id="DashTileActions_<?php echo substr($tile_id, 18); ?>" class="DashTileActions"  style="display:none;">
         <?php
