@@ -12,12 +12,6 @@
  */
 function tile_select($tile_type,$tile_style,$tile,$tile_id,$tile_width,$tile_height)
 	{
-	debug("q10697: \$tile_type = " . $tile_type);
-	debug("q10697: \$tile_style = " . $tile_style);
-	//debug("q10697: \$tile = " . $tile);
-	debug("q10697: \$tile_id = " . $tile_id);
-	debug("q10697: \$tile_width = " . $tile_width);
-	debug("q10697: \$tile_height = " . $tile_height);
 	/*
 	 * Preconfigured and the legacy tiles controlled by config.
 	 */
