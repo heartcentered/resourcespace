@@ -1191,7 +1191,6 @@ function get_user_dash($user)
 		          	nonDraggableTiles = jQuery(".HomePanel").length - jQuery(".DashTileDraggable").length;
 		          	newIndex = (ui.item.index() - nonDraggableTiles) + 1;
 		          	var id=jQuery(ui.item).attr("id").replace("user_tile","");
-                    console.log("ID:" + id);
 		          	updateDashTileOrder(newIndex,id);
 		          }
 			  	});
@@ -1666,11 +1665,6 @@ function generate_dash_tile_toolbar(array $tile, $tile_id)
         var editlink = "<?php echo $tile["url"]; ?>";
         var tilehref;
         var tileonclick;
-
-        console.log("tileid: " + tileid);
-        console.log("usertileid: " + usertileid);
-        console.log("dashtileactionsid: " + dashtileactionsid);
-        console.log("editlink: " + editlink);
 
         jQuery(tileid).hover(
         function(e)
