@@ -227,7 +227,7 @@ $lang["changethemeto"] = "Change theme to";
 
 # Search bar
 $lang["simplesearch"]="Simple search";
-$lang["searchbutton"]=$lang["all__search"]="Search";
+$lang["searchbutton"]="Search";
 $lang["clearbutton"]="Clear";
 $lang["bycountry"]="By country";
 $lang["bydate"]="By date";
@@ -864,9 +864,6 @@ $lang['double_width'] = 'Double width';
 $lang['filter_by_table'] = 'Filter by table...';
 $lang['upload_here'] = "Upload here";
 $lang['help-tooltip'] = "Get more information on this page";
-$lang["active_filters"] = "Active filters";
-$lang["advanced"] = "Advanced";
-$lang["filter_results"] = "Filter results";
 
 # Pager
 $lang["next"]="Next";
@@ -1025,7 +1022,7 @@ $lang["removetext"]="Remove text / option(s)";
 $lang["find"]="Find";
 $lang["andreplacewith"]="...and replace with...";
 $lang["relateallresources"]="Relate all resources in this collection";
-$lang['relateallresources_confirmation'] = 'Are you sure you want to RELATE ALL resources in this collection?';
+$lang['relateallresources_confirmation'] = 'All resources in this collection are now related';
 
 # New for 1.5
 $lang["columns"]="Columns";
@@ -2445,6 +2442,7 @@ $lang['userpreference_use_checkboxes_for_selection_label'] = 'Use checkboxes to 
 $lang['userpreference_resource_view_modal_label'] = 'Resource view modal';
 $lang["userpreference_modal_default"] = "Show standard pages in a modal (popup) window where enabled?";
 $lang['userpreference_thumbs_default_label'] = 'Default collection bar display';
+$lang['userpreference_basic_simple_search_label'] = 'Basic simple search';
 $lang['userpreference_cc_me_label'] = 'CC me when sending resources and collections';
 $lang['userpreference_email_me_label'] = 'Send me emails instead of system notifications where possible';
 $lang['userpreference_email_digest_label'] = 'Send me a daily digest of notifications, instead of separate emails';
@@ -2813,7 +2811,9 @@ $lang["replacebatch_resource_min"]      = "Lowest resource ID to replace (ignore
 $lang["replacebatch_resource_max"]      = "Highest resource ID to replace";
 $lang["replacebatch_collection"]        = "Enter a collection ID if you only want to replace resources within this collection";
 $lang["replacebatch_job_created"]       = "Batch replacement job created. You will receive a notification message when the job has completed.";
-$lang["start"]                          = "Start";$lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+$lang["error_saveorigalternative"]      = "Error saving original as alternative file";   
+
+$lang["start"]                          = "Start";
 
 # File integrity checks
 $lang["file_integrity_summary"]             = "File integrity report";

@@ -49,6 +49,11 @@ $search = getvalescaped('search', '');
 $modal  = ('true' == getval('modal', ''));
 $collection_add=getvalescaped("collection_add",""); // Need this if redirected here from upload
 
+if(false !== strpos($search, TAG_EDITOR_DELIMITER))
+    {
+    $search = str_replace(TAG_EDITOR_DELIMITER, ' ', $search);
+    }
+
 hook("moresearchcriteria");
 
 // When searching for specific field options we convert search into nodeID search format (@@nodeID)
@@ -506,12 +511,13 @@ $searchparams= array(
     'recentdaylimit'                            => getvalescaped('recentdaylimit', '', true),
     'foredit'                                   => ($editable_only?"true":"")
 );
-
+ 
 $checkparams = array();
 $checkparams[] = "order_by";
 $checkparams[] = "sort";
 $checkparams[] = "display";
 $checkparams[] = "k";
+
 foreach($checkparams as $checkparam)
     {
     if(preg_match('/[^a-z:_\-0-9]/i', $$checkparam))
@@ -520,9 +526,10 @@ foreach($checkparams as $checkparam)
         }
     }
 
+
 if(false === strpos($search, '!') || '!properties' == substr($search, 0, 11))
     {
-    rs_setcookie("search", $search, 0, "", "", false, false);
+    rs_setcookie('search', $search,0,"","",false,false);
     }
 
 hook('searchaftersearchcookie');
@@ -597,32 +604,6 @@ if($k=="" || $internal_share_access)
     if (dontReloadSearchBar !== true)
         ReloadSearchBar();
     ReloadLinks();
-    </script>
-    <?php
-    }
-
-if($k == "")
-    {
-    ?>
-    <script>
-    var filter_bar_search = <?php echo trim(getval("source", "")) == "filter_bar" ? "true" : "false"; ?>;
-    var require_filter_bar_reload = <?php echo trim(getval("filter_bar_reload", "")) !== "false" ? "true" : "false"; ?>;
-
-    if(!filter_bar_search)
-        {
-        TogglePane(
-            'FilterBarContainer',
-            {
-                load_url: '<?php echo $baseurl; ?>/pages/search_advanced.php',
-                <?php echo generateAjaxToken("ToggleFilterBar"); ?>
-            },
-            true);
-        }
-
-    if(filter_bar_search && require_filter_bar_reload)
-        {
-        ReloadFilterBar('<?php echo $search; ?>');
-        }
     </script>
     <?php
     }
@@ -1219,7 +1200,6 @@ if($responsive_ui)
 
         if(isset($is_authenticated) && $is_authenticated)
             {
-            render_filter_results_button();
             render_upload_here_button($searchparams);
             }
         
@@ -1279,7 +1259,8 @@ if($responsive_ui)
     
     # Archive link
     if ((!$archivesearched) && (strpos($search,"!")===false) && $archive_search) 
-        { 
+        {
+        $archive_standard = false;
         $arcresults=do_search($search,$restypes,$order_by,2,0);
         if (is_array($arcresults)) {$arcresults=count($arcresults);} else {$arcresults=0;}
         if ($arcresults>0) 

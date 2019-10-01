@@ -472,8 +472,7 @@ if (getval("ajax","") == "")
             east__spacing_open:0,
             east__spacing_closed:8,
             east_resizable: true,
-            east__size: 412,
-            east__initHidden: true,
+            east__size: 295,
 
             north_resizable: false,
             north__closable:false,
@@ -596,6 +595,26 @@ if (getval("ajax","") == "")
 		<!-- Responsive -->
 		<script src="<?php echo $baseurl_short; ?>lib/js/responsive.js?css_reload_key=<?php echo $css_reload_key; ?>"></script>
 		<script>
+        function toggleSimpleSearch()
+            {
+            if(jQuery("#searchspace").hasClass("ResponsiveSimpleSearch"))
+                {
+                jQuery("#searchspace").removeClass("ResponsiveSimpleSearch");
+                jQuery("#SearchBarContainer").removeClass("FullSearch");
+                jQuery("#Rssearchexpand").val("<?php echo $lang["responsive_more"];?>");
+                jQuery('#UICenter').show(0);
+                search_show = false;
+                }
+            else
+                {
+                jQuery("#searchspace").addClass("ResponsiveSimpleSearch");
+                jQuery("#SearchBarContainer").addClass("FullSearch");
+                jQuery("#Rssearchexpand").val(" <?php echo $lang["responsive_less"];?> ");
+                jQuery('#UICenter').hide(0);
+                search_show = true;
+                }
+            }
+		
 		function toggleResultOptions()
 			{
 			jQuery("#CentralSpace .TopInpageNavLeft .InpageNavLeftBlock").slideToggle(100);
@@ -649,49 +668,56 @@ if (getval("ajax","") == "")
 			hideMyCollectionsCols();
 			responsiveCollectionBar();
 			});
-        if(jQuery(window).width()<=900)
-            {
-            jQuery('#CollectionDiv').hide(0);
-            }
-        jQuery("#HeaderNav1Click").click(function(event)
-            {
-            event.preventDefault();
-            if(jQuery(this).hasClass("RSelectedButton"))
-                {
-                jQuery(this).removeClass("RSelectedButton");
-                jQuery("#HeaderNav1").slideUp(0);
-                jQuery("#Header").removeClass("HeaderMenu");
-				}
-            else
-                {
-                jQuery("#HeaderNav2Click").removeClass("RSelectedButton");
-                jQuery("#HeaderNav2").slideUp(80);				
-                jQuery("#Header").addClass("HeaderMenu");				
-                jQuery(this).addClass("RSelectedButton");
-                jQuery("#HeaderNav1").slideDown(80);
-                }
-            jQuery('#FilterBarContainer').css('top', jQuery('#Header').outerHeight());  
-            });
-
-		jQuery("#HeaderNav2Click").click(function(event)
-            {
+		if(jQuery(window).width()<=900)
+			{
+			jQuery('#CollectionDiv').hide(0);
+			}
+		jQuery("#HeaderNav1Click").click(function(event)
+			{
 			event.preventDefault();
-            if(jQuery(this).hasClass("RSelectedButton"))
-                {
-                jQuery(this).removeClass("RSelectedButton");
-                jQuery("#HeaderNav2").slideUp(0);
-                jQuery("#Header").removeClass("HeaderMenu");
-                }
-            else
-                {
-                jQuery("#Header").addClass("HeaderMenu");
-                jQuery("#HeaderNav1Click").removeClass("RSelectedButton");
-                jQuery("#HeaderNav1").slideUp(80);
-                jQuery(this).addClass("RSelectedButton");
-                jQuery("#HeaderNav2").slideDown(80);
-                }
-            jQuery('#FilterBarContainer').css('top', jQuery('#Header').outerHeight());
-            });
+			if(jQuery(this).hasClass("RSelectedButton"))
+				{
+				jQuery(this).removeClass("RSelectedButton");
+				jQuery("#HeaderNav1").slideUp(0);
+				jQuery("#Header").removeClass("HeaderMenu");
+				}
+			else
+				{
+				jQuery("#HeaderNav2Click").removeClass("RSelectedButton");
+				jQuery("#HeaderNav2").slideUp(80);				
+				jQuery("#Header").addClass("HeaderMenu");				
+				jQuery(this).addClass("RSelectedButton");
+				jQuery("#HeaderNav1").slideDown(80);
+				}
+			if(jQuery("#searchspace").hasClass("ResponsiveSimpleSearch"))
+				{
+				toggleSimpleSearch();
+				}      
+			});
+		
+		jQuery("#HeaderNav2Click").click(function(event)
+			{
+			event.preventDefault();
+			if(jQuery(this).hasClass("RSelectedButton"))
+				{
+				jQuery(this).removeClass("RSelectedButton");
+				jQuery("#HeaderNav2").slideUp(0);
+				jQuery("#Header").removeClass("HeaderMenu");
+				
+				}
+			else
+				{
+				jQuery("#Header").addClass("HeaderMenu");
+				jQuery("#HeaderNav1Click").removeClass("RSelectedButton");
+				jQuery("#HeaderNav1").slideUp(80);
+				jQuery(this).addClass("RSelectedButton");
+				jQuery("#HeaderNav2").slideDown(80);
+				} 
+			if(jQuery("#searchspace").hasClass("ResponsiveSimpleSearch"))
+				{
+				toggleSimpleSearch();
+				}  
+			});
 		
 		jQuery("#HeaderNav2").on("click","a",function()
 			{
@@ -709,6 +735,7 @@ if (getval("ajax","") == "")
 				jQuery("#HeaderNav1Click").removeClass("RSelectedButton");
 				}
 			});
+		jQuery("#SearchBarContainer").on("click","#Rssearchexpand",toggleSimpleSearch);
 		jQuery("#CentralSpaceContainer").on("click","#Responsive_ResultDisplayOptions",function(event)
 			{
 			if(jQuery(this).hasClass("RSelectedButton"))

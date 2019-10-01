@@ -318,8 +318,8 @@ function get_resource_path(
             $scramble_key = $scramble_key_saved;
             $migrating_scrambled = true;
             }
-            
-    if($storagedir != '') # If $storagedir != ''; return '$storagedir' as alternative folder [t20341]
+
+    if(isset($originals_separate_storage) && $originals_separate_storage === true) 
         {  
         if (strpos($file, '/filestore/') !== false) 
             { 
@@ -327,9 +327,9 @@ function get_resource_path(
             $storagedir_end = end($storagedir_explode);
             $file = str_replace('filestore', "$storagedir_end", $file);
             }
-        }
+        } 
 
-    return  $file;
+    return $file;
     }
 
 

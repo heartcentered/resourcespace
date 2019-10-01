@@ -16,8 +16,6 @@ include_once 'debug_functions.php';
 include_once 'log_functions.php';
 include_once 'file_functions.php';
 
-define('RS_ROOT', dirname(__DIR__));
-
 # Switch on output buffering.
 ob_start(null,4096);
 
@@ -1704,9 +1702,7 @@ function get_ip()
 	
 	if ($ip_forwarded_for)
 		{
-		# Attempt to read Apache forwarding header instead.
-		$headers = @apache_request_headers();
-		if (@array_key_exists('X-Forwarded-For', $headers)) {return $headers["X-Forwarded-For"];}
+		if (isset($_SERVER) && array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)) {return $_SERVER["HTTP_X_FORWARDED_FOR"];}
 		}
 		
 	# Returns the IP address for the current user.

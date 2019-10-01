@@ -715,6 +715,9 @@ $country_search=false;
 # Resource ID search blank in right nav? (probably only needed if $config_search_for_number is set to true) 
 $resourceid_simple_search=false;
 
+# Enable date option on simple search bar
+$simple_search_date=true;
+
 # Enable sorting resources in other ways:
 $colour_sort=true;
 $popularity_sort=true;
@@ -728,7 +731,7 @@ $original_filename_sort=false; // deprecated, based on resource table column
 $default_sort="relevance";
 
 # What is the default sort order when viewing collection resources?
-# Options are date, colour, collection, popularity, country
+# Options are date, colour, collection, popularity, country, resourcetype
 # Note: when users are expecting resources to be shown in the order they provided, make sure this is set to 'collection'
 $default_collection_sort = 'collection';
 
@@ -958,6 +961,9 @@ $disabled_plugins_message = "";
 # EXPERIMENTAL - use with caution!
 # $anonymous_autouser_group=2;
 
+# When anonymous access is on, show login in a modal.
+$anon_login_modal=false;
+
 $anonymous_user_session_collection=true;
 
 # Enable captioning and ranking of collections (deprecated - use $collection_commenting instead)
@@ -1111,6 +1117,14 @@ $watermark_open=false;
 # Set to true to extend $watermark_open to the search page. $watermark_open must be set to true.
 $watermark_open_search=false; 
 
+# Simple search even more simple
+# Set to 'true' to make the simple search bar more basic, with just the single search box.
+$basic_simple_search=false;
+
+# Simpler search in header, expanding for the full box.
+# Work in progress - in development for larger ResourceSpace 9.0 release. Some functions may not work currently.
+$header_search=false;
+
 # include an "all" toggle checkbox for Resource Types in Search bar
 $searchbar_selectall=false;
 
@@ -1119,6 +1133,10 @@ $searchbar_buttons_at_bottom=true;
 
 # Hide the main simple search field in the searchbar (if using only simple search fields for the searchbar)
 $hide_main_simple_search=false;
+
+/*Display keywords as pills on Simple Search. Use tab to create new tags/ pills
+Note: full text strings are also accepted as a pill*/
+$simple_search_pills_view = false;
 
 # Custom top navigation links.
 # You can add as many panels as you like. They must be numbered sequentially starting from zero (0,1,2,3 etc.)
@@ -2254,6 +2272,10 @@ $staticsync_allow_syncdir_deletion=false;
 # Show tabs on the edit/upload page. Disables collapsible sections
 $tabs_on_edit=false;
 
+# Show additional clear and 'show results' buttons at top of advanced search page
+$advanced_search_buttons_top=false;
+
+
 # Enable multi-lingual free text fields
 # By default, only the checkbox list/dropdown fields can be multilingual by using the special syntax when defining
 # the options. However, setting the below to true means that free text fields can also be multi-lingual. Several text boxes appear when entering data so that translations can be entered.
@@ -2881,6 +2903,9 @@ $hide_resource_share_link=false; // Configurable option to hide the "Share" link
 # Option to email the contributor when their resources have been approved (moved from pending submission/review to active)
 $user_resources_approved_email=false; 
 
+# Set to true to move the Search button before the Clear button
+$swap_clear_and_search_buttons=false;
+
 # Option to have default date left blank, instead of current date.
 $blank_date_upload_template=false;
 
@@ -3268,9 +3293,6 @@ $prevent_external_requests=false;
 /*
 Display watermark without repeating it
 Possible values for position: NorthWest, North, NorthEast, West, Center, East, SouthWest, South, SouthEast
-
-IMPORTANT: the watermark used will need to have an aspect ratio of 1 for this to work as expected. A different aspect ratio
-           will return unexpected results
 
 $watermark_single_image = array(
     'scale'    => 40,
