@@ -317,11 +317,12 @@ function get_activity_log($search, $offset, $rows, array $where_statements, $tab
 */
 function get_user_downloads($userref,$user_dl_days)
     {
+    $daylimit = (int)$user_dl_days != 0 ? (int)$user_dl_days : 99999;
     $count = sql_value("SELECT COUNT(DISTINCT resource) value 
         FROM resource_log rl
         WHERE rl.type='d'
         AND rl.user = '" . (int)$userref . "'
-        AND datediff(now(),date)<=" . (int)$user_dl_days,0);
+        AND datediff(now(),date)<=" . $daylimit,0);
         
     return $count;
     }

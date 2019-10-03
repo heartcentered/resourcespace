@@ -5354,15 +5354,19 @@ function error_alert($error, $back = true, $code = 403)
         }
 
     echo "<script type='text/javascript'>
-        ModalClose();
-        styledalert('" . $lang["error"] . "', '$error');";
-
+        jQuery(document).ready(function()
+            {
+            ModalClose();
+            styledalert('" . $lang["error"] . "', '$error');
+            " . ($back ? "history.go(-1);" : "") ."
+            });
+        </script>";
     if($back)
         {
-        echo "history.go(-1);";
+        include(dirname(__FILE__)."/footer.php");
         }
-
-    echo "\n</script>";
+    
+    
     }
 /**
  * Returns an xml compliant string in UTF-8
