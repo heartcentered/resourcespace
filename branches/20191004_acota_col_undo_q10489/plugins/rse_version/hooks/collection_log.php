@@ -13,7 +13,7 @@ function HookRse_versionCollection_logLog_extra_columns_header()
 
 function HookRse_versionCollection_logLog_extra_columns_row($log, array $collection_info)
     {
-    global $lang;
+    global $lang, $baseurl;
 
     if(!$log['revert_state_enabled'])
         {
@@ -22,10 +22,19 @@ function HookRse_versionCollection_logLog_extra_columns_row($log, array $collect
         <?php
         return;
         }
+
+    $url = generateURL(
+        "{$baseurl}/plugins/rse_version/pages/revert.php",
+        array(
+            "collection" => $collection_info["ref"],
+            "date"       => $log["date"],
+            "resource"   => $log["resource"],
+        )
+    );
     ?>
     <td>
         <div class="ListTools">
-        <a href="../plugins/rse_version/pages/revert.php?collection=<?php echo $collection_info["ref"]; ?>"
+        <a href="<?php echo $url; ?>"
            onclick="CentralSpaceLoad(this, true); return false;"><?php echo LINK_CARET . $lang["rse_version_revert_state"]; ?></a>
         </div>
     </td>
