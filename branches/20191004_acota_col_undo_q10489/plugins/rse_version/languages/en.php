@@ -10,3 +10,4 @@ $lang["revertingwillignore"]="These obsolete options will be ignored:";
 $lang["revert_log_note"]="(revert)";
 $lang["revertmetadatatodatetime"]="Revert to state as of date/time (YYYY-MM-DD HH:MM)";
 $lang["logdownloadearlierversion"]="Download this earlier version of the file";
+$lang["rse_version_revert_state"] = "Revert state";
