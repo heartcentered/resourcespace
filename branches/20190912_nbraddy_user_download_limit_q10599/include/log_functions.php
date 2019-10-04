@@ -322,7 +322,7 @@ function get_user_downloads($userref,$user_dl_days)
         FROM resource_log rl
         WHERE rl.type='d'
         AND rl.user = '" . (int)$userref . "'
-        AND datediff(now(),date)<=" . $daylimit,0);
+        AND TIMESTAMPDIFF(SECOND,date,now()) <=" . $daylimit*60*60*24,0);
         
     return $count;
     }
