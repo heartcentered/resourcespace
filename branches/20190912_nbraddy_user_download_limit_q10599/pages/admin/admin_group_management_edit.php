@@ -353,10 +353,9 @@ include "../../include/header.php";
             <label for="derestrict_filter"><?php echo $lang["fieldtitle-derestrict_filter"]; ?></label>
             <textarea name="derestrict_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['derestrict_filter']; ?></textarea>
             <div class="clearerleft"></div>
-        </div>
-
-        <div class="FormHelp">
-            <div class="FormHelpInner"><?php echo $lang["information-derestrict_filter"]; ?></div>
+            <div class="FormHelp">
+                <div class="FormHelpInner"><?php echo $lang["information-derestrict_filter"]; ?></div>
+            </div>
         </div>
 
         <div class="Question">
