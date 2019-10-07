@@ -6,12 +6,14 @@ include '../../../include/authenticate.php';
 include_once '../../../include/general.php';
 include_once '../../../include/resource_functions.php';
 include_once '../../../include/image_processing.php';
+include_once '../../../include/collections_functions.php';
 include_once '../include/rse_version_functions.php';
 
 $ref=getvalescaped("ref","");
 
 if(is_valid_revert_state_request())
     {
+    process_revert_state_form();
     include "../../../include/header.php";
     render_revert_state_form();
     include "../../../include/footer.php";
