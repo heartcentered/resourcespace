@@ -777,36 +777,22 @@ if ($_FILES)
                         else if ($replace=="" && $replace_resource!="")
                             {
                             // Replacing an existing resource file
-                            daily_stat('Resource upload', $replace_resource);
-
-                            // save original file as an alternative file
-                            if($replace_resource_preserve_option && '' != getval('keep_original', ''))
-								{
-                                save_original_file_as_alternative($replace_resource);    
-                                }  
-								
-                            $status = upload_file($replace_resource, (('yes' == $no_exif) && '' == getval('exif_override', '')), false, ('' != getval('autorotate','')), $plupload_upload_location);
-
-                            hook("additional_replace_existing");
-                            
+                            // Extract data unless user has selected not to extract exif data and there are no per field options set
+                            $no_exif = ('yes' == $no_exif) && '' == getval('exif_override', '');
+                            $keep_original = getval('keep_original', '') != '';
+                            replace_resource_file($replace_resource,$plupload_upload_location,$no_exif,$keep_original);
                             if(file_exists($plupload_processed_filepath))
                                 {
                                 unlink($plupload_processed_filepath);
                                 }
 
-                            
-											
-							// Check to see if we need to notify users of this change							
-							if($notify_on_resource_change_days!=0)
-								{								
-								// we don't need to wait for this..
-								ob_flush();flush();	
-								notify_resource_change($replace_resource);
-								}							
                             die('{"jsonrpc" : "2.0", "message" : "' . $lang["replacefile"] . '", "id" : "' . htmlspecialchars($replace_resource) . '"}');
                             }
                     else
                             {
+                            $no_exif = ('yes' == $no_exif) && '' == getval('exif_override', '');
+                            $keep_original = getval('keep_original', '') != '';
+                               
                             if (!isset($batch_replace_col) || $batch_replace_col == 0)
                                 {
                                 $conditions = array();
@@ -828,28 +814,21 @@ if ($_FILES)
                                 $target_resource=array_values(array_intersect($target_resource,$replace_resources));
                                 if(count($target_resource)==1  && !resource_file_readonly($target_resource[0]))
 									{
-									// A single resource has been found with the same filename
-									daily_stat("Resource upload",$target_resource[0]);
-									$status=upload_file($target_resource[0],($no_exif=="yes" && getval("exif_override","")==""),false,(getval('autorotate','')!=''), $plupload_upload_location); # Upload to the specified ref.
-									if(file_exists($plupload_processed_filepath))
+                                    // A single resource has been found with the same filename                                    
+                                    replace_resource_file($target_resource[0],$plupload_upload_location,$no_exif,$keep_original);
+                                    unlink($plupload_upload_location);
+                                    if(file_exists($plupload_processed_filepath))
                                         {
                                         unlink($plupload_processed_filepath);
                                         }
-                                    // Check to see if we need to notify users of this change							
-									if($notify_on_resource_change_days!=0)
-										{								
-										// we don't need to wait for this..
-										ob_flush();flush();
-										
-										notify_resource_change($target_resource[0]);
-										}
+
 									die('{"jsonrpc" : "2.0", "message" : "' . $lang["upload_success"] . ' - ' . $lang["replacefile"] . '", "id" : "' . htmlspecialchars($target_resource[0]) . '"}');
 									}
 								elseif(count($target_resource)==0)
 									{
 									// No resource found with the same filename
 									header('Content-Type: application/json');
-                                    unlink($plfilepath);
+                                    unlink($plupload_upload_location);
                                     if(file_exists($plupload_processed_filepath))
                                         {
                                         unlink($plupload_processed_filepath);
@@ -865,6 +844,12 @@ if ($_FILES)
 										{
 										foreach ($target_resource as $replaced)
 											{
+                                            replace_resource_file($replaced,$plupload_upload_location,$no_exif,$keep_original);
+                                            unlink($plupload_upload_location);
+                                            if(file_exists($plupload_processed_filepath))
+                                                {
+                                                unlink($plupload_processed_filepath);
+                                                }
 											$status = upload_file($replaced, ('yes' == $no_exif && '' == getval('exif_override', '')), false, ('' != getval('autorotate', '')), $plupload_upload_location);
 											}
                                         unlink($plfilepath);
@@ -874,7 +859,7 @@ if ($_FILES)
 										{
 										// Multiple resources found with the same filename
 										header('Content-Type: application/json');
-                                        unlink($plfilepath);
+                                        unlink($plupload_upload_location);
                                         if(file_exists($plupload_processed_filepath))
                                             {
                                             unlink($plupload_processed_filepath);
@@ -905,12 +890,12 @@ if ($_FILES)
                                             # Save the original file as an alternative file?                                            
                                             $keep_original = getval('keep_original', '');
                                             $save_original = ($keep_original == 1) ? save_original_file_as_alternative($ref) : true;
-                                            if (!$save_original)
+                                            
+                                            $status = replace_resource_file($ref,$plupload_upload_location,$no_exif,$keep_original);
+                                            if ($status !== TRUE && isstring($status))
                                                 {
-                                                die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "' . $lang["error_saveorigalternative"] . '"}, "id" : "' . htmlspecialchars($ref) . '"}');
+                                                die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "' . $status . '"}, "id" : "' . htmlspecialchars($ref) . '"}');
                                                 }
-
-                                            $status = upload_file($ref, ('yes' == $no_exif && '' == getval('exif_override', '')), false, ('' != getval('autorotate', '')), $plupload_upload_location);
 
                                             die('{"jsonrpc" : "2.0", "message" : "' . $lang["replacefile"] . '", "id" : "' . htmlspecialchars($ref) . '"}');
                                             }
