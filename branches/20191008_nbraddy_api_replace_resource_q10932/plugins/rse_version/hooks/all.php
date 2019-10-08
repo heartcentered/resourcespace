@@ -4,6 +4,12 @@
 function HookRse_VersionAllBeforeremoveexistingfile($ref)
     {
     # Hook into upload_file and move out the existing file when uploading a new one.
+    global $rse_version_allow_override, $rse_version_block;
+    if($rse_version_allow_override && isset($rse_version_block) && $rse_version_block)
+        {
+        // Versioning has been disabled, no action required.
+        return false;
+        }
 
     $old_extension=sql_value("select file_extension value from resource where ref='$ref'","");
     if ($old_extension!="")	
