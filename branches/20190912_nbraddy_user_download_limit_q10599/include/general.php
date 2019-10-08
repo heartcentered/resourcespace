@@ -5358,7 +5358,7 @@ function error_alert($error, $back = true, $code = 403)
             {
             ModalClose();
             styledalert('" . $lang["error"] . "', '$error');
-            " . ($back ? "history.go(-1);" : "") ."
+            " . ($back ? "window.setTimeout(function(){history.go(-1);},2000);" : "") ."
             });
         </script>";
     if($back)
