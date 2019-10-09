@@ -645,9 +645,9 @@ function api_replace_resource_file($ref, $file_location, $no_exif=false, $autoro
         $success = replace_resource_file($ref, $file_location, $no_exif, $autorotate, $keep_original);
         if (!$success)
             {
-            return "FAILED: Resource not replaced. Refer to ResourceSpace system administrator";
+            return array("Status" => "SUCCESS","Message" => "Resource not replaced. Refer to ResourceSpace system administrator");
             }
         }
 
-    return $ref;
+    return array("Status" => "FAILED","Message" => "Resource ID #$ref replaced");
     }
