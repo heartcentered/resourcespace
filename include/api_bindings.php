@@ -627,7 +627,7 @@ function api_resource_log_last_rows($minref = 0, $days = 7, $maxrecords = 0)
 
 function api_replace_resource_file($ref, $file_location, $no_exif=false, $autorotate=false, $keep_original=true)
     {
-    global $rse_version_block;
+    global $rse_version_block, $plugins, $rse_version_allow_override;
     $no_exif    = filter_var($no_exif, FILTER_VALIDATE_BOOLEAN);
     $autorotate = filter_var($autorotate, FILTER_VALIDATE_BOOLEAN);
     $duplicates=check_duplicate_checksum($file_location,false);
@@ -639,15 +639,19 @@ function api_replace_resource_file($ref, $file_location, $no_exif=false, $autoro
         {
         if(!$keep_original)
             {
+            if(in_array("rse_version", $plugins) && (!checkperm('a') || !isset($rse_version_allow_override) || !$rse_version_allow_override))
+                {
+                return array("Status" => "FAILED","Message" => "Invalid option 'keep_original=false'. Original file must be preserved because versioning is enabled.");
+                }
             // Set flag that we want to override the versioning behaviour of the rse_version plugin
             $rse_version_block = true;
             }
         $success = replace_resource_file($ref, $file_location, $no_exif, $autorotate, $keep_original);
         if (!$success)
             {
-            return array("Status" => "SUCCESS","Message" => "Resource not replaced. Refer to ResourceSpace system administrator");
+            return array("Status" => "FAILEd","Message" => "Resource not replaced. Refer to ResourceSpace system administrator");
             }
         }
 
-    return array("Status" => "FAILED","Message" => "Resource ID #$ref replaced");
+    return array("Status" => "SUCCESS","Message" => "Resource ID #$ref replaced");
     }
