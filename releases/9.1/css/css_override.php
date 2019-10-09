@@ -74,7 +74,7 @@ if ((isset($collection_bar_foreground_override) && $collection_bar_foreground_ov
         {
         background-color: <?php echo $collection_bar_foreground_override; ?>;
         }
-    #Collection Div option, #CollectionDiv optgroup 
+    #CollectionDiv option, #CollectionDiv optgroup 
         {
         font-style:normal;
         background-color: #474747;
