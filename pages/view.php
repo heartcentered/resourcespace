@@ -93,7 +93,21 @@ hook("chgffmpegpreviewext", "", array($ref));
 
 # Load resource data
 $resource=get_resource_data($ref);
-if ($resource===false) {exit($lang['resourcenotfound']);}
+if ($resource===false)
+    {
+    $error = $lang['resourcenotfound'];
+    if(getval("ajax","") != "")
+        {
+        error_alert($error, false);
+        }
+    else
+        {
+        include "../include/header.php";
+        $onload_message = array("title" => $lang["error"],"text" => $error);
+        include "../include/footer.php";
+        }
+    exit();
+    }
 
 hook("aftergetresourcedataview","",array($ref,$resource));
 
@@ -140,15 +154,27 @@ if($use_mp3_player)
 # Load access level
 $access=get_resource_access($resource);
 hook("beforepermissionscheck");
-# check permissions (error message is not pretty but they shouldn't ever arrive at this page unless entering a URL manually)
+
+# check permissions
 if($access == 2) 
 	{
 	if(isset($anonymous_login) && isset($username) && $username==$anonymous_login)
 		{
-		redirect('login.php');
+        redirect('login.php');
+        exit();
 		}
-
-	exit('This is a confidential resource.');
+    $error = $lang['error-permissiondenied'];
+    if(getval("ajax","") != "")
+        {
+        error_alert($error, false);
+        }
+    else
+        {
+        include "../include/header.php";
+        $onload_message = array("title" => $lang["error"],"text" => $error);
+        include "../include/footer.php";
+        }
+    exit();
 	}
 		
 hook("afterpermissionscheck");
@@ -1313,7 +1339,14 @@ function add_download_column($ref, $size_info, $downloadthissize)
 			?><td class="DownloadButton"><?php
 			if ($request_adds_to_collection && ($k=="" || $internal_share_access) && !checkperm('b')) // We can't add to a collection if we are accessing an external share, unless we are a logged in user
 				{
-				echo add_to_collection_link($ref,$search,"alert('" . addslashes($lang["requestaddedtocollection"]) . "');",$size_info["id"]);
+				if (isset($size_info["id"])) 
+					{
+					echo add_to_collection_link($ref,$search,"alert('" . addslashes($lang["requestaddedtocollection"]) . "');",$size_info["id"]);
+					}
+				else
+					{
+					echo add_to_collection_link($ref,$search);
+					}
 				}
 			else
 				{
@@ -1447,7 +1480,7 @@ elseif (strlen($resource["file_extension"])>0 && !($access==1 && $restricted_ful
 			<td class="DownloadFileSize"><?php echo formatfilesize(filesize_unlimited($path))?></td>
 			<td <?php hook("modifydownloadbutton") ?>  class="DownloadButton">
 			<?php if (!$direct_download || $save_as){ ?>
-				<a <?php if (!hook("downloadlink","",array("ref=" . $ref . "&k=" . $k . "&ext=" . $resource["file_extension"] ))) { ?>href="<?php echo generateURL($baseurl_short . "pages/terms.php",$urlparams, array("url"=> generateURL($baseurl_short . "pages/download_progress.php",$urlparams,array("ext"=>$resource["file_extension"])))); } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["action-download"] ?></a>
+				<a <?php if (!hook("downloadlink","",array("ref=" . $ref . "&k=" . $k . "&ext=" . $resource["file_extension"] ))) { ?>href="<?php echo generateURL($baseurl_short . "pages/terms.php",$urlparams, array("url"=> generateURL($baseurl_short . "pages/download_progress.php",$urlparams,array("ext"=>$resource["file_extension"],"modal"=>"true")))); } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["action-download"] ?></a>
 			<?php } else { ?>
 				<a href="#" onclick="directDownload('<?php echo  generateURL($baseurl_short . "pages/download_progress.php",$urlparams, array("ext"=>$resource['file_extension'])); ?>')"><?php echo $lang["action-download"]?></a>
 			<?php } // end if direct_download ?>

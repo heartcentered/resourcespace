@@ -12,6 +12,7 @@ header("Content-type: text/css");
 
 global $header_colour_style_override, $header_link_style_override, $home_colour_style_override, $collection_bar_background_override,
 $collection_bar_foreground_override;
+
 $browse_on = has_browsebar();
 
 # Override the header background colour
