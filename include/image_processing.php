@@ -3129,7 +3129,7 @@ function upload_file_by_url($ref,$no_exif=false,$revert=false,$autorotate=false,
     $file_path=get_temp_dir(false,$userref) . "/" . basename($url); # Temporary path creation for the downloaded file.
     $s=explode("?",$file_path);$file_path=$s[0]; # Remove query string if it was present in the URL
 
-    $copied = copy($url, $file_path); # Download the file.
+    $copied = @copy($url, $file_path); # Download the file.
     if(!$copied)
         {
         debug("upload_file_by_url - failed to copy file from '$url' to '$file_path'");
