@@ -1122,7 +1122,7 @@ function do_search(
                 $glue = " OR ";
                 }
             
-            $filter_add =  implode($glue, $filters);
+            $filter_add = "( " . implode($glue, $filters) . " )";
             
             # If custom access has been granted for the user or group, nullify the search filter, effectively selecting "true".
             if (!checkperm("v") && !$access_override && $custom_access_overrides_search_filter) # only for those without 'v' (which grants access to all resources)
