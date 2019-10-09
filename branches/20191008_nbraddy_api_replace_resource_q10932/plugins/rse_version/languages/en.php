@@ -12,3 +12,4 @@ $lang["revertmetadatatodatetime"]   = "Revert to state as of date/time (YYYY-MM-
 $lang["logdownloadearlierversion"]  = "Download this earlier version of the file";
 $lang["rse_version_configuration"]  = "Resource Versioning (rse_version) configuration";
 $lang["rse_version_allow_override"] = "Allow system functions and API calls to prevent the preservation of the existing file when replacing a resource?";
+$lang["rse_version_log_not_found"]  = "Log entry not found";

@@ -5634,11 +5634,17 @@ function save_original_file_as_alternative($ref)
 * @return boolean
 */
 
-function replace_resource_file($ref, $filepath, $no_exif=false, $keep_original=true)
+function replace_resource_file($ref, $file_location, $no_exif=false, $autorotate=false, $keep_original=true)
     {
-    debug("replace_resource_file : \$ref=" . $ref . ", \$filepath=" . $filepath . ", \$no_exif=" . ($no_exif ? "TRUE" : "FALSE") . " , \$keep_original=" . ($keep_original ? "TRUE" : "FALSE"));
     global $replace_resource_preserve_option, $notify_on_resource_change_days, $lang;
-
+    debug("replace_resource_file(ref=" . $ref . ", file_location=" . $file_location . ", no_exif=" . ($no_exif ? "TRUE" : "FALSE") . " , keep_original=" . ($keep_original ? "TRUE" : "FALSE"));
+    
+    $resource = get_resource_data($ref);
+    if (!get_edit_access($ref,$resource["archive"],false,$resource))
+        {
+        return false;
+        }
+    
     // save original file as an alternative file
     if($replace_resource_preserve_option && $keep_original)
         {
@@ -5647,14 +5653,27 @@ function replace_resource_file($ref, $filepath, $no_exif=false, $keep_original=t
             {
             return false;
             }
-        }  
-        
-    $uploadstatus = upload_file($ref, $no_exif, false, false,$filepath);
-    if(!$uploadstatus)
-        {
-        return false;
         }
     
+    if (filter_var($file_location, FILTER_VALIDATE_URL))
+        {
+        $uploadstatus = upload_file_by_url($ref,$no_exif,false,$autorotate,$file_location);
+        if(!$uploadstatus)
+            {
+            debug("replace_resource_file - upload_file_by_url() failed");
+            return false;
+            }
+        }
+    else
+        {
+        $uploadstatus = upload_file($ref,$no_exif,false,$autorotate,$file_location);
+        if(!$uploadstatus)
+            {
+            debug("replace_resource_file - upload_file() failed");
+            return false;
+            }
+        }
+
     resource_log($ref,LOG_CODE_REPLACED,'','','');
     daily_stat('Resource upload', $ref);
     hook("additional_replace_existing");        

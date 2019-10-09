@@ -26,6 +26,7 @@ $search                                 = getvalescaped('search', '');
 $offset                                 = getvalescaped('offset', '', true);
 $order_by                               = getvalescaped('order_by', '');
 $no_exif                                = getval('no_exif', $metadata_read_default ? '' : 'yes') == "yes";
+$autorotate                             = getval('autorotate','') != '';
 // This is the archive state for searching, NOT the archive state to be set from the form POST
 $archive                                = getvalescaped('archive', '', true);
 
@@ -522,7 +523,7 @@ if ($_FILES)
                     }
                 else
                     {
-		    debug("PLUPLOAD ERROR- failed  to find temp file " . $_FILES['file']['tmp_name'] . " file received from user " . $username . ",  filename " . $plfilename . ", chunk " . ($chunk+1)  . " of " . $chunks);
+		            debug("PLUPLOAD ERROR- failed  to find temp file " . $_FILES['file']['tmp_name'] . " file received from user " . $username . ",  filename " . $plfilename . ", chunk " . ($chunk+1)  . " of " . $chunks);
                     die('{"jsonrpc" : "2.0", "error" : {"code": 103, "message": "Failed to move uploaded file."}, "id" : "id"}');
                     }
 	} else {
@@ -716,7 +717,7 @@ if ($_FILES)
                             # Log this			
                             daily_stat("Resource upload",$ref);
                             
-                            $status=upload_file($ref,($no_exif=="yes" && getval("exif_override","")==""),false,(getval('autorotate','')!=''),$plupload_upload_location);
+                            $status=upload_file($ref,($no_exif=="yes" && getval("exif_override","")==""),false,$autorotate,$plupload_upload_location);
 
                             if($status && $auto_generated_resource_title_format != '' && !$upload_then_edit)
                                 {
@@ -780,7 +781,11 @@ if ($_FILES)
                             // Extract data unless user has selected not to extract exif data and there are no per field options set
                             $no_exif = ('yes' == $no_exif) && '' == getval('exif_override', '');
                             $keep_original = getval('keep_original', '') != '';
-                            replace_resource_file($replace_resource,$plupload_upload_location,$no_exif,$keep_original);
+                            $success = replace_resource_file($replace_resource,$plupload_upload_location,$autorotate,$no_exif,$keep_original);
+                            if (!$success)
+                                {
+                                die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "Failed to replace resource file"}, "id" : "' . htmlspecialchars($replace_resource) . '"}');
+                                }
                             if(file_exists($plupload_processed_filepath))
                                 {
                                 unlink($plupload_processed_filepath);
@@ -815,7 +820,11 @@ if ($_FILES)
                                 if(count($target_resource)==1  && !resource_file_readonly($target_resource[0]))
 									{
                                     // A single resource has been found with the same filename                                    
-                                    replace_resource_file($target_resource[0],$plupload_upload_location,$no_exif,$keep_original);
+                                    $success = replace_resource_file($target_resource[0],$plupload_upload_location,$no_exif,$autorotate,$keep_original);
+                                    if (!$success)
+                                        {
+                                        die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "Failed to replace resource file"}, "id" : "' . htmlspecialchars($target_resource[0]) . '"}');
+                                        }
                                     unlink($plupload_upload_location);
                                     if(file_exists($plupload_processed_filepath))
                                         {
@@ -844,13 +853,18 @@ if ($_FILES)
 										{
 										foreach ($target_resource as $replaced)
 											{
-                                            replace_resource_file($replaced,$plupload_upload_location,$no_exif,$keep_original);
+                                            $success = replace_resource_file($replaced,$plupload_upload_location,$no_exif,$autorotate,$keep_original);
+                                            if (!$success)
+                                                {
+                                                die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "Failed to replace resource file"}, "id" : "' . htmlspecialchars($replaced) . '"}');
+                                                }
+                                            
                                             unlink($plupload_upload_location);
                                             if(file_exists($plupload_processed_filepath))
                                                 {
                                                 unlink($plupload_processed_filepath);
                                                 }
-											$status = upload_file($replaced, ('yes' == $no_exif && '' == getval('exif_override', '')), false, ('' != getval('autorotate', '')), $plupload_upload_location);
+											$status = upload_file($replaced, ('yes' == $no_exif && '' == getval('exif_override', '')), false, $autorotate, $plupload_upload_location);
 											}
                                         unlink($plfilepath);
                                         die('{"jsonrpc" : "2.0", "message" : "' . $lang["replacefile"] . '", "id" : "' . $resourcelist . '"}');
@@ -891,10 +905,10 @@ if ($_FILES)
                                             $keep_original = getval('keep_original', '');
                                             $save_original = ($keep_original == 1) ? save_original_file_as_alternative($ref) : true;
                                             
-                                            $status = replace_resource_file($ref,$plupload_upload_location,$no_exif,$keep_original);
-                                            if ($status !== TRUE && isstring($status))
+                                            $success = replace_resource_file($ref,$plupload_upload_location,$no_exif,$autorotate,$keep_original);
+                                            if (!$success)
                                                 {
-                                                die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "' . $status . '"}, "id" : "' . htmlspecialchars($ref) . '"}');
+                                                die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "Failed to replace resource file"}, "id" : "' . htmlspecialchars($ref) . '"}');
                                                 }
 
                                             die('{"jsonrpc" : "2.0", "message" : "' . $lang["replacefile"] . '", "id" : "' . htmlspecialchars($ref) . '"}');
@@ -1189,7 +1203,7 @@ var pluploadconfig = {
                                   uploader.bind('UploadComplete', function(up, files) {
                                   if(!upRedirBlock)
                                       {
-                                      CentralSpaceLoad('<?php echo $redirecturl ?>',true);
+                                      //CentralSpaceLoad('<?php echo $redirecturl ?>',true);
                                       }
                                   upRedirBlock = false; 
                                   });
