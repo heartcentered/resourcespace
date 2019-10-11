@@ -1628,19 +1628,19 @@ function generate_dash_tile_toolbar(array $tile, $tile_id)
     die('Died at line ' . __LINE__ . ' in ' . __FILE__);*/
     global $baseurl_short, $lang;
     $editlink = $baseurl_short . "pages/dash_tile.php?edit=" . $tile['ref'];
-    if((checkperm("h") && !checkperm("hdta")) || (checkperm("dta") && !checkperm("h")) || !checkperm("dtu"))
+    if(checkPermission_dashadmin() || checkPermission_dashuser())
         {
         ?>
         <div id="DashTileActions_<?php echo substr($tile_id, 18); ?>" class="DashTileActions"  style="display:none;">
+        <div class="tool dash-delete_<?php echo substr($tile_id, 18); ?>">
+            <a href="#">
+                <span><?php echo LINK_CARET ?><?php echo $lang['action-delete']; ?></span>
+            </a>
+        </div>
         <?php
-        if(checkPermission_dashmanage())
+        if(checkPermission_dashadmin() || $tile['all_users'] == 0)
             {
             ?>
-            <div class="tool dash-delete_<?php echo substr($tile_id, 18); ?>">
-                <a href="#">
-                    <span><?php echo LINK_CARET ?><?php echo $lang['action-delete']; ?></span>
-                </a>
-            </div>
             <div class="tool edit">
                 <a href="<?php echo $editlink ?>" onClick="return CentralSpaceLoad(this,true);">
                     <span><?php echo LINK_CARET ?><?php echo $lang['action-edit']; ?></span>
@@ -1695,7 +1695,7 @@ function generate_dash_tile_toolbar(array $tile, $tile_id)
     jQuery(deletetileid).click(
             function(event,ui) {
             <?php
-            if((checkperm("h") && !checkperm("hdta")) || (checkperm("dta") && !checkperm("h")))
+            if(checkPermission_dashadmin())
                 {
                 ?>
                 if(jQuery(usertileid).hasClass("allUsers")) {
