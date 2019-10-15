@@ -12,7 +12,7 @@
 include_once 'metadata_functions.php';
 
 if (!function_exists("upload_file")){
-function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_path="",$after_upload_processing=false)
+function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_path="",$after_upload_processing=false, $deletesource=true)
     {
     debug("upload_file(ref = $ref, no_exif = $no_exif,revert = $revert, autorotate = $autorotate, file_path = $file_path, after_upload_processing = $after_upload_processing)");
 
@@ -251,15 +251,16 @@ function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_p
             if(!$after_upload_processing)
                 {
                 global $replace_batch_existing;
-                if (!$replace_batch_existing && $file_path!="")
+                if ($file_path!="" && ($replace_batch_existing || !$deletesource))
+                    {
+                    $result=copy($file_path, $filepath);    
+                    }
+                elseif (!$replace_batch_existing && $file_path!="")
                     {
                     # File path has been specified. Let's use that directly.
                     $result=rename($file_path, $filepath);
                     }
-                elseif ($file_path!="" && $replace_batch_existing)
-                    {
-                    $result=copy($file_path, $filepath);    
-                    }
+               
                 else
                     {
                     # Standard upload.
