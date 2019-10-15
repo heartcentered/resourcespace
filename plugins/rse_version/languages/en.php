@@ -11,5 +11,5 @@ $lang["revert_log_note"]            = "(revert)";
 $lang["revertmetadatatodatetime"]   = "Revert to state as of date/time (YYYY-MM-DD HH:MM)";
 $lang["logdownloadearlierversion"]  = "Download this earlier version of the file";
 $lang["rse_version_configuration"]  = "Resource Versioning (rse_version) configuration";
-$lang["rse_version_allow_override"] = "Allow system functions and API calls by system administrators to bypass the preservation of the existing file when replacing a resource?";
+$lang["rse_version_allow_override"] = "API calls by the following user groups can bypass the preservation of the existing file when replacing a resource";
 $lang["rse_version_log_not_found"]  = "Log entry not found";

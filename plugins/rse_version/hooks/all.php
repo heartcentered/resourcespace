@@ -4,8 +4,8 @@
 function HookRse_VersionAllBeforeremoveexistingfile($ref)
     {
     # Hook into upload_file and move out the existing file when uploading a new one.
-    global $rse_version_allow_override, $rse_version_block;
-    if($rse_version_allow_override && isset($rse_version_block) && $rse_version_block)
+    global $rse_version_override_groups, $rse_version_block, $usergroup;
+    if(isset($rse_version_override_groups) && in_array($usergroup,$rse_version_override_groups) && isset($rse_version_block) && $rse_version_block)
         {
         // Versioning has been disabled, no action required.
         return false;
@@ -44,6 +44,12 @@ function HookRse_VersionAllBeforeremoveexistingfile($ref)
     
 function HookRse_VersionAllUpload_image_after_log_write($ref,$log_ref)
     {
+    global $rse_version_override_groups, $rse_version_block, $usergroup;
+    if(isset($rse_version_override_groups) && in_array($usergroup,$rse_version_override_groups) && isset($rse_version_block) && $rse_version_block)
+        {
+        // Versioning has been disabled, no action required.
+        return false;
+        }
     # After uploading an image and writing to the resource log, update the resource log so it stores the ref of the alternative file.
     global $previous_file_alt_ref;
     if (isset($previous_file_alt_ref))
