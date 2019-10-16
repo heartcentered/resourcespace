@@ -1378,19 +1378,19 @@ if (!function_exists("nicedate")) {
 * 
 * @uses offset_user_local_timezone()
 * 
-* @return string
+* @return string Returns an empty string if date not set/invalid
 */
 function nicedate($date, $time = false, $wordy = true)
     {
     global $lang, $date_d_m_y, $date_yyyy;
 
-    if($date == '')
+    if($date == '' || strtotime($date) === false)
         {
         return '';
         }
 
     $original_time_part = substr($date, 11, 5);
-    if($original_time_part !== false || $original_time_part !== '')
+    if($original_time_part !== false || $original_time_part != '')
         {
         $date = offset_user_local_timezone($date, 'Y-m-d H:i:s');
         }
@@ -2130,7 +2130,8 @@ function setup_user($userdata)
            $anonymous_user_session_collection, $global_permissions_mask, $user_preferences, $userrequestmode,
            $usersearchfilter, $usereditfilter, $userderestrictfilter, $hidden_collections, $userresourcedefaults,
            $userrequestmode, $request_adds_to_collection, $usercollection, $lang, $validcollection, $userpreferences,
-           $userorigin, $actions_enable, $actions_permissions, $actions_on, $usersession, $anonymous_login, $resource_created_by_filter;
+           $userorigin, $actions_enable, $actions_permissions, $actions_on, $usersession, $anonymous_login, $resource_created_by_filter,
+           $user_dl_limit,$user_dl_days;
 		
 	# Hook to modify user permissions
 	if (hook("userpermissions")){$userdata["permissions"]=hook("userpermissions");} 
@@ -2246,6 +2247,8 @@ function setup_user($userdata)
         $hidden_collections=explode(",",$userdata["hidden_collections"]);
         $userresourcedefaults=$userdata["resource_defaults"];
         $userrequestmode=trim($userdata["request_mode"]);
+        $user_dl_limit=trim($userdata["download_limit"]);
+        $user_dl_days=trim($userdata["download_log_days"]);
 
     	$userpreferences = ($user_preferences) ? sql_query("SELECT user, `value` AS colour_theme FROM user_preferences WHERE user = '" . escape_check($userref) . "' AND parameter = 'colour_theme';") : FALSE;
     	$userpreferences = ($userpreferences && isset($userpreferences[0])) ? $userpreferences[0]: FALSE;
@@ -2338,7 +2341,9 @@ function validate_user($user_select_sql, $getuserdata=true)
                        u.hidden_collections,
                        u.accepted_terms,
                        u.session,
-                       g.search_filter_id
+                       g.search_filter_id,
+                       g.download_limit,
+                       g.download_log_days
                   FROM user AS u
              LEFT JOIN usergroup AS g on u.usergroup = g.ref
 			 LEFT JOIN usergroup AS pg ON g.parent=pg.ref

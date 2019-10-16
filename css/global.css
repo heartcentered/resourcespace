@@ -482,8 +482,8 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 #previewimagewrapper {float:left;margin: 0px 15px 15px 0px; position: relative; min-width: 720px;}
 
 /* Larger layout changes */
-.RecordPanelLarge #previewimagewrapper {float: none; text-align: center; margin: 0px 15px 10px 0;}
-.RecordPanel.RecordPanelLarge .Picture {display: inline-block; max-width: unset;}
+.RecordPanelLarge #previewimagewrapper {float: none; text-align: center; margin: 0 0 10px 0;}
+.RecordPanel.RecordPanelLarge .Picture {display: inline-block; max-width: 100%;}
 .RecordPanel.RecordPanelLarge .RecordDownload {width: 100%;}
 .RecordPanel.RecordPanelLarge #ResourceDownloadOptions {
     width: 70%;
@@ -998,6 +998,25 @@ a.HomePanel:hover {
 .DoubleWidthDashTile {
     /*Note: check .HomePanel width to be sure it is ok*/
     width: 515px;
+}
+
+.DashTileActions {
+    position: absolute;
+    color: #fff;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background: #000;
+    height: 20px;
+    text-align: right;
+    z-index:3;
+}
+
+.DashTileActions .tool {
+    margin-left: 8px;
+    vertical-align: middle;
+    display: inline-block;
+    padding-right: 5px;    
 }
 
 .tools a{white-space: nowrap;}
