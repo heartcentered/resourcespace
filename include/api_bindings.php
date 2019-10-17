@@ -627,7 +627,7 @@ function api_resource_log_last_rows($minref = 0, $days = 7, $maxrecords = 0)
 
 function api_replace_resource_file($ref, $file_location, $no_exif=false, $autorotate=false, $keep_original=true)
     {
-    global $rse_version_block, $plugins, $usergroup,$rse_version_override_groups;
+    global $rse_version_block, $plugins, $usergroup,$rse_version_override_groups, $replace_resource_preserve_option;
     $no_exif    = filter_var($no_exif, FILTER_VALIDATE_BOOLEAN);
     $autorotate = filter_var($autorotate, FILTER_VALIDATE_BOOLEAN);
     $duplicates=check_duplicate_checksum($file_location,false);
@@ -645,6 +645,11 @@ function api_replace_resource_file($ref, $file_location, $no_exif=false, $autoro
                 }
             // Set flag that we want to override the versioning behaviour of the rse_version plugin
             $rse_version_block = true;
+            }
+        else
+            {
+            // Set global otion so that this is not dependent on config
+            $replace_resource_preserve_option = true;
             }
         $success = replace_resource_file($ref, $file_location, $no_exif, $autorotate, $keep_original);
         if (!$success)
