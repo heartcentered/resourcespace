@@ -5644,3 +5644,54 @@ return true;
 
 
 }
+
+
+/**
+* Return all sizes available for a specific resource. Multi page resources should have each page size included as well 
+* in the output.
+* 
+* @param integer $ref Resource ID
+* 
+* @return array
+*/
+function get_resource_all_image_sizes($ref)
+    {
+    if(get_resource_access($ref) !== 0)
+        {
+        return array();
+        }
+
+    $resource_data = get_resource_data($ref, true);
+    if($resource_data["file_extension"] == "" || $resource_data["preview_extension"] == "")
+        {
+        return array();
+        }
+
+    $extensions = array($resource_data["file_extension"], $resource_data["preview_extension"]);
+    $all_image_sizes = array();
+
+    foreach($extensions as $extension)
+        {
+        $available_sizes_by_extension = get_image_sizes($ref, true, $extension, true);
+
+        foreach($available_sizes_by_extension as $size_data)
+            {
+            $size_id = trim($size_data["id"]) === "" ? "original" : $size_data["id"];
+
+            if(array_key_exists($size_id, $all_image_sizes))
+                {
+                continue;
+                }
+
+            // @todo: consider using a hash of this key instead
+            $key = "{$size_id}_{$size_data["extension"]}";
+
+            $all_image_sizes[$key]["size_code"] = $size_id;
+            $all_image_sizes[$key]["extension"] = $size_data["extension"];
+            $all_image_sizes[$key]["path"] = $size_data["path"];
+            $all_image_sizes[$key]["url"] = $size_data["url"];
+            }
+        }
+
+    return $all_image_sizes;
+    }
