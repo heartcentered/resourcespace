@@ -5594,7 +5594,6 @@ function save_original_file_as_alternative($ref)
 
     $origpath=get_resource_path($ref, true, "", true, $origdata["file_extension"]);
     $newaltpath=get_resource_path($ref, true, "", true, $origdata["file_extension"], -1, 1, false, "", $newaref);
-
     # Move the old file to the alternative file location
     $result=rename($origpath, $newaltpath);								
 
@@ -5622,6 +5621,7 @@ function save_original_file_as_alternative($ref)
                 }
             }
         }
+    debug("save_original_file_as_alternative() completed");
     return true;
     }
 
@@ -5649,7 +5649,7 @@ function replace_resource_file($ref, $file_location, $no_exif=false, $autorotate
     if($replace_resource_preserve_option && $keep_original)
         {
         $savedasalt = save_original_file_as_alternative($ref); 
-        if($savedasalt) 
+        if(!$savedasalt) 
             {
             return false;
             }
