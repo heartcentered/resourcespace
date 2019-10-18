@@ -5649,6 +5649,12 @@ return true;
 * Return all sizes available for a specific resource. Multi page resources should have each page size included as well 
 * in the output.
 * 
+* @uses get_resource_access()
+* @uses get_resource_data()
+* @uses get_image_sizes()
+* @uses get_page_count()
+* @uses get_resource_path()
+* 
 * @param integer $ref Resource ID
 * 
 * @return array
