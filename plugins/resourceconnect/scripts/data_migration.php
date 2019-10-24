@@ -60,13 +60,12 @@ foreach($options as $option_name => $option_value)
             }
 
         $file_h = fopen($option_value, "a+b");
+        if($file_h === false)
+            {
+            logScript("ERROR: Unable to open output file '{$option_value}'!");
+            exit(1);
+            }
         }
-    }
-
-if(!isset($file_h) || $file_h === false)
-    {
-    logScript("ERROR: Unable to open file!");
-    exit(1);
     }
 
 /*
@@ -78,7 +77,7 @@ EXPORT
    needed to access the resources from the server
  - Generate an output file that can be used on the server
  */
-if($export_collections && isset($input_fh))
+if($export_collections && isset($input_fh) && isset($file_h))
     {
     logScript("Exporting collections for list of users...");
     $input_lines = array();
@@ -91,7 +90,7 @@ if($export_collections && isset($input_fh))
             }
     fclose($input_fh);
 
-    $found_crs = array();
+    $exported_data = array();
 
     foreach($input_lines as $username)
         {
@@ -102,7 +101,6 @@ if($export_collections && isset($input_fh))
             continue;
             }
         $username = escape_check($username);
-
         $user_select_sql = "AND u.username = '{$username}' AND usergroup IN (SELECT ref FROM usergroup)";
         $user_data = validate_user($user_select_sql, true);
         if(!is_array($user_data) || count($user_data) == 0)
@@ -111,21 +109,56 @@ if($export_collections && isset($input_fh))
             continue;
             }
         setup_user($user_data[0]);
-        logScript("Set user ID #{$userref}");
+        logScript("Set up user '{$username}' (ID #{$userref})");
 
-        // @todo: consider filtering user collections more - my collections should not be migrated as the user will have one
-        foreach(get_user_collections($userref) as $collection_data)
-            {
-            logScript("Checking user collection (ID #{$collection_data["ref"]}) - found {$collection_data["count"]} resources");
-            $collection_data["resources"] = array();
-            $collection_resources = get_collection_resources($collection_data["ref"]);
+        $user_collections = get_user_collections($userref);
 
-            if(is_array($collection_resources) && !empty($collection_resources))
+        // Switch over to the ResourceConnect user (to ensure permissions are honoured) before continuing
+        if(!is_numeric($resourceconnect_user) || $resourceconnect_user <= 0)
                 {
-                $collection_data["resources"] = $collection_resources;
+                logScript("ERROR - Invalid ResourceConnect user ID #{$resourceconnect_user}!");
+                exit(1);
+                }
+        $resourceconnect_user_escaped = escape_check($resourceconnect_user);
+        $user_data = validate_user("AND u.ref = '{$resourceconnect_user_escaped}'", true);
+        if(!is_array($user_data) || count($user_data) == 0)
+            {
+            logScript("ERROR - Unable to validate ResourceConnect user ID #{$resourceconnect_user}!");
+            exit(1);
+            }
+        setup_user($user_data[0]);
+        logScript("Set up ResourceConnect user '{$username}' (ID #{$userref})");
+
+        foreach($user_collections as $collection_data)
+            {
+            logScript("Checking user collection '{$collection_data["name"]}' (ID #{$collection_data["ref"]}) - with {$collection_data["count"]} resources");
+            if($collection_data["count"] == 0)
+                {
+                logScript("Skipping");
+                continue;
                 }
 
-            $found_crs[] = $collection_data;
+            if(!collection_readable($collection_data["ref"]))
+                {
+                logScript("Warning - no read access by ResourceConnect user!");
+                continue;
+                }
+
+            $collection_resources = get_collection_resources($collection_data["ref"]);
+            foreach($collection_resources as $resource_ref)
+                {
+                if(get_resource_access($resource_ref) !== 0)
+                    {
+                    logScript("Warning - no full access by ResourceConnect user! Skipping");
+                    continue;
+                    }
+
+                // @todo: work in progress - build an array that will later be saved in the log file
+                $exported_data[] = array(
+                    "collection" => $collection_data["ref"],
+                    // 
+                );
+                }
             }
 
         /*
@@ -135,28 +168,10 @@ if($export_collections && isset($input_fh))
         */
         }
 
-    # Authenticate as 'resourceconnect' user.
-    // @todo: put this logic into a function as we now need to do this multiple times during this script
-    // global $resourceconnect_user; # Which user to use for remote access?
-    // $userdata=validate_user("u.ref='$resourceconnect_user'");
-    // setup_user($userdata[0]);
-
-    foreach($found_crs as $found_cr)
-        {
-        // @todo: Will use this data along with the permissions of the ResourceConnect user to check access and generate the link data 
-        // needed to access the resources from the server
-        }
-
+    // @todo: Generate an output file that can be used on the server
 
     fclose($file_h);
     }
-
-
-
-
-
-
-
 
  /*
 IMPORT
