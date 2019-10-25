@@ -16,6 +16,7 @@ if('cli' != PHP_SAPI)
 $webroot = dirname(dirname(dirname(__DIR__)));
 include_once "{$webroot}/include/db.php";
 include_once "{$webroot}/include/general.php";
+include_once "{$webroot}/plugins/resourceconnect/include/resourceconnect_functions.php";
 include_once "{$webroot}/include/log_functions.php";
 include_once "{$webroot}/include/resource_functions.php";
 include_once "{$webroot}/include/collections_functions.php";
@@ -31,7 +32,6 @@ $options = getopt($cli_short_options, $cli_long_options);
 
 $export_collections = false;
 $import_collections = false;
-// echo "<pre>";print_r($options);echo "</pre>";echo PHP_EOL;
 
 foreach($options as $option_name => $option_value)
     {
@@ -73,10 +73,10 @@ EXPORT
 ======
  DONE - Will be passed a file containing list of usernames
  DONE - Will retrieve all the information for collections that belong to these users, with associated resource information
- - Will use this data along with the permissions of the ResourceConnect user to check access and generate the link data 
+ DONE - Will use this data along with the permissions of the ResourceConnect user to check access and generate the link data 
    needed to access the resources from the server
- - Generate an output file that can be used on the server
- */
+ DONE - Generate an output file that can be used on the server
+*/
 if($export_collections && isset($input_fh) && isset($file_h))
     {
     logScript("Exporting collections for list of users...");
@@ -100,6 +100,7 @@ if($export_collections && isset($input_fh) && isset($file_h))
             {
             continue;
             }
+        $original_username = $username;
         $username = escape_check($username);
         $user_select_sql = "AND u.username = '{$username}' AND usergroup IN (SELECT ref FROM usergroup)";
         $user_data = validate_user($user_select_sql, true);
@@ -153,23 +154,42 @@ if($export_collections && isset($input_fh) && isset($file_h))
                     continue;
                     }
 
-                // @todo: work in progress - build an array that will later be saved in the log file
+                $resource_data = get_resource_data($resource_ref);
+                $thumb = "{$baseurl}/gfx/" . get_nopreview_icon($resource_data["resource_type"], $resource_data["file_extension"], true);
+                $large_thumb = "{$baseurl}/gfx/" . get_nopreview_icon($resource_data["resource_type"], $resource_data["file_extension"], false);
+                $xl_thumb = "{$baseurl}/gfx/" . get_nopreview_icon($resource_data["resource_type"], $resource_data["file_extension"], false);
+                if((bool) $resource_data["has_image"])
+                    {
+                    $thumb = get_resource_path($resource_ref, false, "col", false, "jpg");
+                    $large_thumb = get_resource_path($resource_ref, false, "thm", false, "jpg");
+                    $xl_thumb = get_resource_path($resource_ref, false, "pre", false, "jpg");
+                    }
+                $url = generateURL(
+                    "{$baseurl}/pages/view.php",
+                    array(
+                        "ref"   => $resource_ref,
+                        "k"     => ResourceConnect\generate_k_value($original_username, $resource_ref, $scramble_key),
+                        "modal" => "true",
+                    ));
+
                 $exported_data[] = array(
-                    "collection" => $collection_data["ref"],
-                    // 
-                );
+                    "username"    => $original_username,
+                    "collection"  => $collection_data["ref"],
+                    "thumb"       => $thumb,
+                    "large_thumb" => $large_thumb,
+                    "xl_thumb"    => $xl_thumb,
+                    "url"         => $url,
+                    "title"       => get_data_by_field($resource_ref, $view_title_field));
                 }
             }
-
-        /*
-        get_user_collections($user,$find="",$order_by="name",$sort="ASC",$fetchrows=-1,$auto_create=true);
-        get_collection($ref);
-        get_collection_resources($collection);
-        */
         }
 
-    // @todo: Generate an output file that can be used on the server
-
+    if(!empty($exported_data))
+        {
+        fwrite($file_h, json_encode($exported_data, JSON_NUMERIC_CHECK));
+        $meta_data = stream_get_meta_data($file_h);
+        logScript("Successfully exported data to '{$meta_data["uri"]}'");
+        }
     fclose($file_h);
     }
 
