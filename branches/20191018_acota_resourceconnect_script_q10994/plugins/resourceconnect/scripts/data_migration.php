@@ -109,6 +109,7 @@ if($export_collections && isset($input_fh) && isset($file_h))
             logScript("Warning - Unable to validate user '{$username}'");
             continue;
             }
+        $original_user_email = $user_data[0]["email"];
         setup_user($user_data[0]);
         logScript("Set up user '{$username}' (ID #{$userref})");
 
@@ -173,13 +174,15 @@ if($export_collections && isset($input_fh) && isset($file_h))
                     ));
 
                 $exported_data[] = array(
-                    "username"    => $original_username,
-                    "collection"  => $collection_data["ref"],
-                    "thumb"       => $thumb,
-                    "large_thumb" => $large_thumb,
-                    "xl_thumb"    => $xl_thumb,
-                    "url"         => $url,
-                    "title"       => get_data_by_field($resource_ref, $view_title_field));
+                    "username"        => $original_username,
+                    "user_email"      => $original_user_email,
+                    "collection"      => $collection_data["ref"],
+                    "collection_name" => $collection_data["name"],
+                    "thumb"           => $thumb,
+                    "large_thumb"     => $large_thumb,
+                    "xl_thumb"        => $xl_thumb,
+                    "url"             => $url,
+                    "title"           => get_data_by_field($resource_ref, $view_title_field));
                 }
             }
         }
@@ -198,17 +201,60 @@ IMPORT
 ======
  - Can be fed the path to the file created by the first script
  - Will locate the target users and create the collections with associated ResourceConnect links on the server
-
-Notes and caveats
-
-1. Provide a list of usernames that need to have collections copied
-2. Any resources in a user's collections that are not accessible by the ResourceConnect user will not be copied
-3. ResourceConnect pseudo-resources are not affected by actions on the remote system. If a resource is deleted any 
-   ResourceConnect collection links will remain but will generate errors upon access
 */
 if($import_collections && isset($input_fh))
     {
-    // sql_query("INSERT INTO resourceconnect_collection_resources (collection,thumb,large_thumb,xl_thumb,url,title) VALUES ('$usercollection','$thumb','$large_thumb','$xl_thumb','$url','$title')");
-
+    logScript("Importing collections...");
+    $input_lines = array();
+    while(($line = fgets($input_fh)) !== false)
+        {
+        if(trim($line) != "" &&  mb_check_encoding($line, 'UTF-8'))
+            {
+            $input_lines[] = trim($line);
+            }
+        }
     fclose($input_fh);
+
+    if(empty($input_lines))
+        {
+        logScript("ERROR - no data to import!");
+        exit(1);
+        }
+
+    $import_data = json_decode($input_lines[0], true);
+
+    /**
+    * @var array $collection_mapping Holds the mapping between the two systems' collections. This allows the script to 
+    *                                add the resources to the correct collection on the new system
+    */
+    $collection_mapping = array();
+
+    foreach($import_data as $collection_resource)
+        {
+        logScript("Validating username '{$collection_resource["username"]}'");
+        $username = escape_check($collection_resource["username"]);
+        $user_select_sql = "AND u.username = '{$username}' AND usergroup IN (SELECT ref FROM usergroup)";
+        $user_data = validate_user($user_select_sql, true);
+        if(is_array($user_data) && count($user_data) > 0)
+            {
+            logScript("User found on current system!");
+            }
+        else
+            {
+            logScript("Warning - User not found! Creating one now...");
+            
+            $email = $collection_resource["user_email"];
+            $username = $collection_resource["username"];
+            $password = make_password();
+            $password_hash = hash('sha256', md5('RS' . $username . $password));
+
+            # Create the user
+            // sql_query("insert into user (username,password,fullname,email,usergroup,approved) values ('" . $username . "','" . $password_hash . "','" . $username . "','','" . $anonymous_autouser_group . "',1)");
+            // $new = sql_insert_id();
+            }
+
+        // 
+        }
+
+    // sql_query("INSERT INTO resourceconnect_collection_resources (collection,thumb,large_thumb,xl_thumb,url,title) VALUES ('$usercollection','$thumb','$large_thumb','$xl_thumb','$url','$title')");
     }
