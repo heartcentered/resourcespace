@@ -22,16 +22,18 @@ include_once "{$webroot}/include/resource_functions.php";
 include_once "{$webroot}/include/collections_functions.php";
 
 // Script options
-$cli_short_options = 'i:';
+$cli_short_options = "i:";
 $cli_long_options  = array(
-    'export-collections',
-    'import-collections',
-    'file:',
+    "export-collections",
+    "import-collections",
+    "file:",
+    "override-newuser-usergroup:"
 );
 $options = getopt($cli_short_options, $cli_long_options);
 
 $export_collections = false;
 $import_collections = false;
+$override_newuser_usergroup = 2; # Default to "General users"
 
 foreach($options as $option_name => $option_value)
     {
@@ -49,6 +51,11 @@ foreach($options as $option_name => $option_value)
         {
         $option_name = str_replace("-", "_", $option_name);
         $$option_name = true;
+        }
+    else if(in_array($option_name, array("override-newuser-usergroup")))
+        {
+        $option_name = str_replace("-", "_", $option_name);
+        $$option_name = $option_value;
         }
 
     if($option_name == "file")
@@ -199,7 +206,7 @@ if($export_collections && isset($input_fh) && isset($file_h))
  /*
 IMPORT
 ======
- - Can be fed the path to the file created by the first script
+ DONE - Can be fed the path to the file created by the first script
  - Will locate the target users and create the collections with associated ResourceConnect links on the server
 */
 if($import_collections && isset($input_fh))
@@ -232,8 +239,10 @@ if($import_collections && isset($input_fh))
     foreach($import_data as $collection_resource)
         {
         logScript("Validating username '{$collection_resource["username"]}'");
-        $username = escape_check($collection_resource["username"]);
-        $user_select_sql = "AND u.username = '{$username}' AND usergroup IN (SELECT ref FROM usergroup)";
+        $username_escaped = escape_check($collection_resource["username"]);
+        $email_escaped = escape_check($collection_resource["user_email"]);
+        $usergroup_escaped = escape_check($override_newuser_usergroup);
+        $user_select_sql = "AND u.username = '{$username_escaped}' AND u.email = '{$email_escaped}'";
         $user_data = validate_user($user_select_sql, true);
         if(is_array($user_data) && count($user_data) > 0)
             {
@@ -242,15 +251,19 @@ if($import_collections && isset($input_fh))
         else
             {
             logScript("Warning - User not found! Creating one now...");
-            
-            $email = $collection_resource["user_email"];
-            $username = $collection_resource["username"];
             $password = make_password();
-            $password_hash = hash('sha256', md5('RS' . $username . $password));
+            $password_hash = hash('sha256', md5("RS{$collection_resource["username"]}{$password}"));
 
-            # Create the user
-            // sql_query("insert into user (username,password,fullname,email,usergroup,approved) values ('" . $username . "','" . $password_hash . "','" . $username . "','','" . $anonymous_autouser_group . "',1)");
-            // $new = sql_insert_id();
+            logScript("
+                 INSERT INTO user(username, password, fullname, email, usergroup, approved)
+                      VALUES ('{$username_escaped}', '{$password_hash}', '{$username_escaped}', '{$email_escaped}', '{$usergroup_escaped}', 1)");
+
+            // sql_query("
+            //     INSERT INTO user(username, password, fullname, email, usergroup, approved)
+            //          VALUES ('{$username_escaped}', '{$password_hash}', '{$username_escaped}', '{$email_escaped}', '{$usergroup_escaped}', 1)");
+            // $new_user_id = sql_insert_id();
+
+            // @todo: work in progress...start checking collections (check if they exist as well) and add new entries in RSC
             }
 
         // 
