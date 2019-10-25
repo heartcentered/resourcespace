@@ -115,7 +115,7 @@ function HookResourceConnectSearchReplacesearchresults()
 function HookResourceConnectSearchThumblistextras()
     {
         
-    global $baseurl, $result, $n, $lang;
+    global $baseurl_short, $baseurl, $result, $n, $lang, $url;
 
     $resource = $result[$n]; // record for resource
 
@@ -127,18 +127,22 @@ function HookResourceConnectSearchThumblistextras()
     $ref = $resource["ref_tab"]; // resource id in resourceconnect_collection_resources table
     $pre_url = $resource["pre_url"]; // preview image url - stored locally
     $title = $resource["field8"]; // image title
-        
+    ?>
+    <!-- Full screen preview -->
+ <!-- Share resource -->
+ <a aria-hidden="true" class="fa fa-share-alt"
+                                href="<?php echo $baseurl_short?>plugins/resourceconnect/pages/resource_share.php?url=<?php echo urlencode($url) ?>"  
+                                onClick="return CentralSpaceLoad(this,true);"  
+                                title="<?php echo $lang["share-resource"]?>"
+                        ></a>
     
-    print <<<html
+    <!-- Remove from collection -->
+    <a class="removeFromCollection fa fa-minus-circle" href="<?php echo "$baseurl/pages/collections.php?resourceconnect_remove=$ref&nc=" . time() ?>" onClick="return CollectionDivLoad(this,false);"> </a></div>    
 
-    <a aria-hidden="true" class="fa fa-expand" id="previewlinkcollection$ref" href="$pre_url" title="Full screen preview" data-title="{$lang["fullscreenpreview"]}" data-lightbox="lightboxcollection" onmouseup="closeModalOnLightBoxEnable();"></a>
+ <?php
+    }
+
     
-    <a class="removeFromCollection fa fa-minus-circle" href="$baseurl/pages/collections.php?resourceconnect_remove=$ref&nc=<?php echo time() ?>" onClick="return CollectionDivLoad(this,false);"> </a></div>    
-html;
-
-    } 
-
-
 function HookResourceConnectSearchProcess_search_results($result,$search)
     {
     global $baseurl,$k;
