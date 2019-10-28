@@ -25,7 +25,8 @@ $collectionname                         = getvalescaped('entercolname', '');
 $search                                 = getvalescaped('search', '');
 $offset                                 = getvalescaped('offset', '', true);
 $order_by                               = getvalescaped('order_by', '');
-$no_exif                                = getval('no_exif', $metadata_read_default ? '' : 'yes') == "yes";
+$no_exif_raw                            = getval('no_exif', $metadata_read_default ? '' : 'yes');
+$no_exif                                = $no_exif_raw == "yes" || $no_exif_raw =="1" ? true : false;
 // This is the archive state for searching, NOT the archive state to be set from the form POST
 $archive                                = getvalescaped('archive', '', true);
 
@@ -169,14 +170,14 @@ $uploadparams= array(
     'status'                                 => $setarchivestate
 );
 
-global $merge_filename_with_title;
+global $merge_filename_with_title, $merge_filename_with_title_default;
 if($merge_filename_with_title) {
 
-    $merge_filename_with_title_option = urlencode(getval('merge_filename_with_title_option', ''));
+    $merge_filename_with_title_option = urlencode(getval('merge_filename_with_title_option', $merge_filename_with_title_default));
     $merge_filename_with_title_include_extensions = urlencode(getval('merge_filename_with_title_include_extensions', ''));
     $merge_filename_with_title_spacer = urlencode(getval('merge_filename_with_title_spacer', ''));
     
-    if($merge_filename_with_title_option != '') {
+    if(strtolower($merge_filename_with_title_option) != '') {
         $uploadparams['merge_filename_with_title_option'] =  $merge_filename_with_title_option;
     }
     
