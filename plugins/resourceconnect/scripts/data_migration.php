@@ -24,13 +24,15 @@ include_once "{$webroot}/include/collections_functions.php";
 // Script options
 $cli_short_options = "i:";
 $cli_long_options  = array(
+    "dry-run",
     "export-collections",
     "import-collections",
     "file:",
-    "override-newuser-usergroup:"
+    "override-newuser-usergroup:",
 );
 $options = getopt($cli_short_options, $cli_long_options);
 
+$dry_run = false;
 $export_collections = false;
 $import_collections = false;
 $override_newuser_usergroup = 2; # Default to "General users"
@@ -47,7 +49,12 @@ foreach($options as $option_name => $option_value)
             }
         }
 
-    if(in_array($option_name, array("export-collections", "import-collections")))
+    if(in_array(
+        $option_name,
+        array(
+            "dry-run",
+            "export-collections",
+            "import-collections")))
         {
         $option_name = str_replace("-", "_", $option_name);
         $$option_name = true;
@@ -75,15 +82,12 @@ foreach($options as $option_name => $option_value)
         }
     }
 
-/*
-EXPORT
-======
- DONE - Will be passed a file containing list of usernames
- DONE - Will retrieve all the information for collections that belong to these users, with associated resource information
- DONE - Will use this data along with the permissions of the ResourceConnect user to check access and generate the link data 
-   needed to access the resources from the server
- DONE - Generate an output file that can be used on the server
-*/
+if($dry_run)
+    {
+    logScript("WARNING - Script running with DRY-RUN option enabled!");
+    }
+
+
 if($export_collections && isset($input_fh) && isset($file_h))
     {
     logScript("Exporting collections for list of users...");
@@ -203,15 +207,10 @@ if($export_collections && isset($input_fh) && isset($file_h))
     fclose($file_h);
     }
 
- /*
-IMPORT
-======
- DONE - Can be fed the path to the file created by the first script
- - Will locate the target users and create the collections with associated ResourceConnect links on the server
-*/
+
 if($import_collections && isset($input_fh))
     {
-    logScript("Importing collections...");
+    logScript("Importing collections and their resources...");
     $input_lines = array();
     while(($line = fgets($input_fh)) !== false)
         {
@@ -230,44 +229,107 @@ if($import_collections && isset($input_fh))
 
     $import_data = json_decode($input_lines[0], true);
 
+    if(db_begin_transaction())
+        {
+        logScript("MySQL - begin transaction...");
+        }
+
+    $valid_usernames = array();
     /**
     * @var array $collection_mapping Holds the mapping between the two systems' collections. This allows the script to 
     *                                add the resources to the correct collection on the new system
     */
     $collection_mapping = array();
+    $last_user_setup = 0;
+    $rollback_transaction = false;
 
     foreach($import_data as $collection_resource)
         {
-        logScript("Validating username '{$collection_resource["username"]}'");
-        $username_escaped = escape_check($collection_resource["username"]);
-        $email_escaped = escape_check($collection_resource["user_email"]);
-        $usergroup_escaped = escape_check($override_newuser_usergroup);
-        $user_select_sql = "AND u.username = '{$username_escaped}' AND u.email = '{$email_escaped}'";
-        $user_data = validate_user($user_select_sql, true);
-        if(is_array($user_data) && count($user_data) > 0)
+        if(!array_key_exists($collection_resource["username"], $valid_usernames))
             {
-            logScript("User found on current system!");
+            logScript("Validating username '{$collection_resource["username"]}'");
+            $username_escaped = escape_check($collection_resource["username"]);
+            $email_escaped = escape_check($collection_resource["user_email"]);
+            $usergroup_escaped = escape_check($override_newuser_usergroup);
+            $user_select_sql = "AND u.username = '{$username_escaped}' AND u.email = '{$email_escaped}'";
+            $user_data = validate_user($user_select_sql, true);
+            if(is_array($user_data) && count($user_data) > 0)
+                {
+                $user_data = $user_data[0];
+                $valid_usernames[$collection_resource["username"]] = $user_data;
+                }
+            else
+                {
+                logScript("Warning - User not found! Creating one now...");
+                $password = make_password();
+                $password_hash = hash('sha256', md5("RS{$collection_resource["username"]}{$password}"));
+
+                sql_query("
+                    INSERT INTO user(username, password, fullname, email, usergroup, approved)
+                    VALUES ('{$username_escaped}', '{$password_hash}', '{$username_escaped}', '{$email_escaped}', '{$usergroup_escaped}', 1)");
+                $new_user_id = sql_insert_id();
+
+                $user_data = validate_user($user_select_sql, true);
+                if(is_array($user_data) && count($user_data) > 0 && $new_user_id == $user_data[0]["ref"])
+                    {
+                    $user_data = $user_data[0];
+                    $valid_usernames[$collection_resource["username"]] = $user_data;
+                    }
+                else
+                    {
+                    logScript("Warning - Unable to create user '{$collection_resource["username"]}'. Skipping...");
+                    $rollback_transaction = true;
+                    continue;
+                    }
+                }
             }
         else
             {
-            logScript("Warning - User not found! Creating one now...");
-            $password = make_password();
-            $password_hash = hash('sha256', md5("RS{$collection_resource["username"]}{$password}"));
-
-            logScript("
-                 INSERT INTO user(username, password, fullname, email, usergroup, approved)
-                      VALUES ('{$username_escaped}', '{$password_hash}', '{$username_escaped}', '{$email_escaped}', '{$usergroup_escaped}', 1)");
-
-            // sql_query("
-            //     INSERT INTO user(username, password, fullname, email, usergroup, approved)
-            //          VALUES ('{$username_escaped}', '{$password_hash}', '{$username_escaped}', '{$email_escaped}', '{$usergroup_escaped}', 1)");
-            // $new_user_id = sql_insert_id();
-
-            // @todo: work in progress...start checking collections (check if they exist as well) and add new entries in RSC
+            $user_data = $valid_usernames[$collection_resource["username"]];
             }
 
-        // 
+        if($last_user_setup != $user_data["ref"])
+            {
+            setup_user($user_data);
+            $last_user_setup = $userref;
+            logScript("Set up user '{$username}' (ID #{$userref})");
+            }
+
+        if(!array_key_exists($collection_resource["collection"], $collection_mapping))
+            {
+            logScript("Looking for collection '{$collection_resource["collection_name"]}'");
+            $found_user_collection = get_user_collections($userref, $collection_resource["collection_name"]);
+            if(empty($found_user_collection))
+                {
+                $copy_suffix = ($collection_resource["collection_name"] == "New uploads" ? " - {$lang["copy"]}" : "");
+                $new_collection_id = create_collection($userref, "{$collection_resource["collection_name"]}{$copy_suffix}");
+                logScript("Created collection '{$collection_resource["collection_name"]}{$copy_suffix}'");
+                $found_user_collection = array(array("ref" => $new_collection_id));
+                }
+            $collection_mapping[$collection_resource["collection"]] = $found_user_collection[0]["ref"];
+            }
+
+        logScript("Adding remote resource '{$collection_resource["url"]}' to collection");
+        $rcr_insert_sql = sprintf("
+            INSERT INTO resourceconnect_collection_resources(collection, thumb, large_thumb, xl_thumb, url, title)
+                 VALUES ('%s', '%s', '%s', '%s', '%s', '%s')",
+            escape_check($collection_mapping[$collection_resource["collection"]]),
+            escape_check($collection_resource["thumb"]),
+            escape_check($collection_resource["large_thumb"]),
+            escape_check($collection_resource["xl_thumb"]),
+            escape_check($collection_resource["url"]),
+            escape_check($collection_resource["title"]));
+        sql_query($rcr_insert_sql);
         }
 
-    // sql_query("INSERT INTO resourceconnect_collection_resources (collection,thumb,large_thumb,xl_thumb,url,title) VALUES ('$usercollection','$thumb','$large_thumb','$xl_thumb','$url','$title')");
+    if(!($dry_run || $rollback_transaction) && db_end_transaction())
+        {
+        logScript("MySQL - Commit transaction");
+        }
+    else if(db_rollback_transaction())
+        {
+        logScript("MySQL - Rollback Successful");
+        }
+
+    logScript("Successfully imported collection resources");
     }
