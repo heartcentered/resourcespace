@@ -458,9 +458,39 @@ $metadata_read=true;
 # If metadata_read is true, set whether the default setting on the edit/upload page is to extract metadata (true means the metadata will be extracted)
 $metadata_read_default=true;
 
-# If Exiftool path is set, do NOT send files with the following extensions to exiftool for processing
+# If Exiftool path is set, do NOT send files with the following extensions to exiftool for processing. Updated to include common video formats as this can cause slowdowns when multiple downloads are in progress
 # For example: $exiftool_no_process=array("eps","png");
-$exiftool_no_process=array();
+$exiftool_no_process=array('aaf',
+    '3gp',
+    'asf',
+    'avchd',
+    'avi',
+    'cam',
+    'dat',
+    'dsh',
+    'flv',
+    'm1v',
+    'm2v',
+    'mkv',
+    'wrap',
+    'mov',
+    'mpeg',
+    'mpg',
+    'mpe',
+    'mp4',
+    'mxf',
+    'nsv',
+    'ogm',
+    'ogv',
+    'rm',
+    'ram',
+    'svi',
+    'smi',
+    'webm',
+    'wmv',
+    'divx',
+    'xvid',
+    'm4v');
 
 /*
 ExifTool global options - these get applied to any exiftool command run. For more information on options please see
@@ -1589,7 +1619,7 @@ $show_status_and_access_on_upload_perm = "return !checkperm('F*');"; # Stack per
 # Show Status and Access = true && Show Access = false - Only Status Shown
 # Show Status and Access = false && Show Access = false - Neither Shown
 # DEFAULT VALUE: = $show_status_and_access_on_upload;
-$show_access_on_upload = $show_status_and_access_on_upload;
+$show_access_on_upload = &$show_status_and_access_on_upload;
 
 # Permission required to show "access" field on upload, this evaluates PHP code so must be preceded with 'return'. True = No permission required. 
 # Example below ensures they have permissions to edit active resources.
