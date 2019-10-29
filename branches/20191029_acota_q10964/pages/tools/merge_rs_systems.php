@@ -35,8 +35,8 @@ OPTIONS SUMMARY
     -h, --help          display this help and exit
     --dry-run           perform a trial run with no changes made
     --spec-file=FILE    read specification from FILE
-    --export            export information from ResourceSpace based on the specification file (Dependent on spec-file option)
-    --import            import information to ResourceSpace based on the specification file (Dependent on spec-file option)
+    --export            export information from ResourceSpace based on the specification file (Requires spec-file option)
+    --import            import information to ResourceSpace based on the specification file (Requires spec-file option)
     " . PHP_EOL;
 
 
@@ -47,6 +47,7 @@ $cli_long_options  = array(
     "spec-file:",
     "export",
     "import",
+    "generate-spec-file", # @todo: implement this - might be helpful!
 );
 $options = getopt($cli_short_options, $cli_long_options);
 
@@ -76,12 +77,13 @@ foreach($options as $option_name => $option_value)
 
     if($option_name == "spec-file" && !is_array($option_value))
         {
-        $spec_fh = fopen($option_value, "r+b");
-        if($spec_fh === false)
+        if(!file_exists($option_value))
             {
             fwrite(STDERR, "ERROR: Unable to open input file '{$option_value}'!");
             exit(1);
             }
+
+        $spec_file_path = $option_value;
         }
     }
 
@@ -98,24 +100,57 @@ if($dry_run)
     logScript("##### WARNING - Script running with DRY-RUN option enabled! #####");
     }
 
-// Ensure DEST/SRC folder has been provided when exporting or importing data
-if($export && $argc > 1)
+/*
+For the following usage:
+ - php path/tools/merge_rs_systems.php [OPTION...] DEST
+ - php path/tools/merge_rs_systems.php [OPTION...] SRC
+Ensure DEST/SRC folder has been provided when exporting or importing data
+*/
+if($export || $import)
     {
     $folder_path = end($argv);
-    }
-else if($import && $argc > 1)
-    {
-    $folder_path = end($argv);
-    }
-else
-    {
-    logScript("ERROR: Export/Import modes require a DEST/SRC folder path");
-    exit(1);
-    }
-if(!file_exists($folder_path) || !is_dir($folder_path))
-    {
-    logScript("ERROR: DEST/SRC MUST be folder. Value provided: '{$folder_path}'");
-    exit(1);
+    if(!file_exists($folder_path) || !is_dir($folder_path))
+        {
+        $folder_type = $export ? "DEST" : ($import ? "SRC" : "");
+        logScript("ERROR: {$folder_type} MUST be folder. Value provided: '{$folder_path}'");
+        exit(1);
+        }
+
+    if(!isset($spec_file_path) || trim($spec_file_path) == "")
+        {
+        logScript("ERROR: Specification file not provided!");
+        exit(1);
+        }
+    include_once $spec_file_path;
     }
 
-// 
+if($export)
+    {
+    // - Users groups will be created based on a given mapping (see point 3 of the specification requirements).
+    if(!isset($usergroups_spec) || empty($usergroups_spec))
+        {
+        logScript("ERROR: Spec missing 'usergroups_spec'");
+        exit(1);
+        }
+
+    foreach(get_usergroups() as $usergroup)
+        {
+        if(!array_key_exists($usergroup["ref"], $usergroups_spec["mappings"]))
+            {
+            logScript("Warning: No mapping found for user group '{$usergroup["name"]}'");
+            continue;
+            }
+
+        // Spec provides us with a map for this user group... We will use this info when we'll create new users
+        if($usergroups_spec["mappings"][$usergroup["ref"]] > 0)
+            {
+            continue;
+            }
+
+        // New user group required
+        // save this info to DEST
+        echo "<pre>";print_r($usergroup);echo "</pre>";
+        }
+
+
+    }
