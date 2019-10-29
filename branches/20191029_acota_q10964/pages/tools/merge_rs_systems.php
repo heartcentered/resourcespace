@@ -39,6 +39,7 @@ OPTIONS SUMMARY
     --import            import information to ResourceSpace based on the specification file (Dependent on spec-file option)
     " . PHP_EOL;
 
+
 $cli_short_options = "h";
 $cli_long_options  = array(
     "help",
@@ -58,8 +59,8 @@ foreach($options as $option_name => $option_value)
     {
     if(in_array($option_name, array("h", "help")))
         {
-        $help = true;
-        break;
+        echo $help_text;
+        exit(0);
         }
 
     if(in_array(
@@ -82,12 +83,6 @@ foreach($options as $option_name => $option_value)
             exit(1);
             }
         }
-    }
-
-if($help)
-    {
-    echo $help_text;
-    exit(0);
     }
 
 $webroot = dirname(dirname(__DIR__));
