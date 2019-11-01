@@ -124,12 +124,24 @@ if($export || $import)
     include_once $spec_file_path;
     }
 
-if($export)
+if($export && isset($folder_path))
     {
-    // - Users groups will be created based on a given mapping (see point 3 of the specification requirements).
+    # USER GROUPS
+    #############
     if(!isset($usergroups_spec) || empty($usergroups_spec))
         {
         logScript("ERROR: Spec missing 'usergroups_spec'");
+        exit(1);
+        }
+
+    logScript("");
+    logScript("Exporting user groups...");
+
+    $usergroup_export_path = $folder_path . DIRECTORY_SEPARATOR . "usergroups_export.txt";
+    $usergroups_export_fh = fopen($usergroup_export_path, "w+b");
+    if($usergroups_export_fh === false)
+        {
+        logScript("ERROR: Unable to open output file '{$usergroup_export_path}'!");
         exit(1);
         }
 
@@ -147,10 +159,133 @@ if($export)
             continue;
             }
 
-        // New user group required
-        // save this info to DEST
-        echo "<pre>";print_r($usergroup);echo "</pre>";
+        logScript("Exporting new user group '{$usergroup["name"]}' (ID #{$usergroup["ref"]})");
+        if($dry_run)
+            {
+            continue;
+            }
+
+        fwrite($usergroups_export_fh, json_encode($usergroup, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($usergroups_export_fh);
+
+
+    # USERS & USER PREFERENCES
+    ##########################
+    $users_export_path = $folder_path . DIRECTORY_SEPARATOR . "users_export.txt";
+    $users_export_fh = fopen($users_export_path, "w+b");
+    if($users_export_fh === false)
+        {
+        logScript("ERROR: Unable to open output file '{$users_export_path}'!");
+        exit(1);
         }
 
+    logScript("");
+    logScript("Exporting users and their preferences...");
 
+    foreach(get_users(0, "", "u.ref ASC", false, -1, 1, false, "") as $user)
+        {
+        logScript("Exporting user: {$user["fullname"]} (ID #{$user["ref"]} | Username: {$user["username"]} | E-mail: {$user["email"]})");
+
+        // Check user preferences and save for processing it later
+        $user_preferences = array();
+        if(get_config_options($user["ref"], $user_preferences))
+            {
+            logScript("Found user preferences");
+            $user["user_preferences"] = $user_preferences;
+            }
+
+        if($dry_run)
+            {
+            continue;
+            }
+
+        fwrite($users_export_fh, json_encode($user, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($users_export_fh);
+
+
+    # ARCHIVE STATES
+    ################
+    if(!isset($archive_states_spec) || empty($archive_states_spec))
+        {
+        logScript("ERROR: Spec missing 'archive_states_spec'");
+        exit(1);
+        }
+
+    logScript("");
+    logScript("Exporting new archive states...");
+
+    $archive_states_export_path = $folder_path . DIRECTORY_SEPARATOR . "archive_states_export.txt";
+    $archive_states_export_fh = fopen($archive_states_export_path, "w+b");
+    if($archive_states_export_fh === false)
+        {
+        logScript("ERROR: Unable to open output file '{$archive_states_export_path}'!");
+        exit(1);
+        }
+
+    foreach(get_workflow_states() as $archive_state)
+        {
+        if(!isset($lang["status{$archive_state}"]))
+            {
+            logScript("Warning: language not set for archive state #{$archive_state}");
+            continue;
+            }
+        $archive_state_text = $lang["status{$archive_state}"];
+
+        if(!array_key_exists($archive_state, $archive_states_spec))
+            {
+            logScript("Warning: '{$archive_state_text}' (ID #{$archive_state}) not found in current specification!");
+            continue;
+            }
+
+        // We have a mapping for this archive state. Move to next one as this information will be used at import
+        if(!is_null($archive_states_spec[$archive_state]))
+            {
+            continue;
+            }
+
+        logScript("New archive state #{$archive_state} - {$archive_state_text}");
+
+        if($dry_run)
+            {
+            continue;
+            }
+
+        $exported_archive_state = array(
+            "ref"  => $archive_state,
+            "lang" => $archive_state_text);
+
+        fwrite($archive_states_export_fh, json_encode($exported_archive_state, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($archive_states_export_fh);
+
+
+    # RESOURCE TYPES
+    ################
+    // Import resource types. We will assume the newly identified resource types (that don't exist on the master system) 
+    // will be created.
+    $resource_types_export_path = $folder_path . DIRECTORY_SEPARATOR . "resource_types_export.txt";
+    $resource_types_export_fh = fopen($resource_types_export_path, "w+b");
+    if($resource_types_export_fh === false)
+        {
+        logScript("ERROR: Unable to open output file '{$resource_types_export_path}'!");
+        exit(1);
+        }
+
+    logScript("");
+    logScript("Exporting resource_types...");
+
+    $resource_types = get_resource_types("", false);
+    if(empty($resource_types))
+        {
+        logScript("ERROR: unable to retrieve resource types from the system.");
+        exit(1);
+        }
+    fwrite($resource_types_export_fh, json_encode($resource_types, JSON_NUMERIC_CHECK) . PHP_EOL);
+    fclose($resource_types_export_fh);
     }
+
+/*
+@TODO: create a local anonymous function for setting an export path and its w+b file handler (this has started to repeat a few times now)
+*/
