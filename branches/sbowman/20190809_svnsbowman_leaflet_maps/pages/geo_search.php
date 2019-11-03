@@ -111,6 +111,7 @@ if ($default_display == "map" || $display == "map")
 
 <script type="text/javascript">
     var Leaflet = L.noConflict();
+    
 
     // Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js.
     var map1 = new L.map('search_map', {
@@ -284,6 +285,9 @@ if ($default_display == "map" || $display == "map")
         { ?>
         omnivore.kml('<?php echo $baseurl?>/filestore/system/<?php echo $map_kml_file?>').addTo(map1); <?php
         } ?>
+
+    <!--Fix for Microsoft Edge and Internet Explorer 6 browsers-->
+    map1.invalidateSize(true);
 
     <!--Add an Area of Interest (AOI) selection box to the Leaflet map using leaflet-shades.js-->
     var shades = new L.LeafletShades().addTo(map1);
