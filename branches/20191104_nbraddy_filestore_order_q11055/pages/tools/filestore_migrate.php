@@ -28,7 +28,7 @@ $redistribute_mode = $filestore_migrate;
 
 function migrate_files($ref, $alternative, $extension, $sizes, $redistribute_mode)
     {
-    global $scramble_key, $scramble_key_old, $migratedfiles, $filestore_evenspread;
+    global $scramble_key, $scramble_key_old, $migratedfiles, $filestore_evenspread, $syncdir;
     echo "Checking Resource ID: " . $ref . ", alternative: " . $alternative . PHP_EOL;
 	$resource_data=get_resource_data($ref);
     $pagecount=get_page_count($resource_data,$alternative);
@@ -53,8 +53,8 @@ function migrate_files($ref, $alternative, $extension, $sizes, $redistribute_mod
             $path = get_resource_path($ref,true,$sizes[$m]["id"],false,$sizes[$m]["extension"],true,$page,false,'',$alternative);
             echo " - Size: " . $sizes[$m]["id"] . ", extension: " . $sizes[$m]["extension"] . " Snew path: " . $newpath . PHP_EOL;
             echo " - Checking old path: " . $path . PHP_EOL;
-            if (file_exists($path))
-                {		
+            if (file_exists($path) && !($sizes[$m]["id"] == "" && strpos($path, $syncdir)!==false))
+                {
                 echo " - Found file at old path : " . $path . PHP_EOL;	
                 if(!file_exists($newpath))
                     {
@@ -85,10 +85,20 @@ function migrate_files($ref, $alternative, $extension, $sizes, $redistribute_mod
                 }
             }
         }
+
+    // Clear old directory if empty
+    $delfolder = dirname($path);
+    $newfolder = dirname($newpath);
+    if(file_exists($delfolder) && $delfolder != $newfolder && count(scandir($delfolder))==2 && is_writable($delfolder))
+        {       
+        echo "Deleting folder $delfolder \n";
+        rmdir($delfolder);
+        }
+
     }
-    
+
 set_time_limit(0);
-    
+
 $resources=sql_query("SELECT ref,file_extension FROM resource WHERE ref>0 ORDER BY ref DESC");
 $migratedfiles = 0;
 $totalresources = count($resources);
