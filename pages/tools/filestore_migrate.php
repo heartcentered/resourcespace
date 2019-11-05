@@ -42,12 +42,12 @@ function migrate_files($ref, $alternative, $extension, $sizes, $redistribute_mod
             // Use old settings to get old path before migration and migrate if found. Save the current key/option first
             if($redistribute_mode)
                 {
-                $filestore_evenspread = !$filestore_evenspread;
+                $filestore_evenspread = false;
                 }
             else
                 {
                 $scramble_key_saved = $scramble_key;
-                $scramble_key = isset($scramble_key_old)?$scramble_key_old:"";
+                $scramble_key = isset($scramble_key_old) ? $scramble_key_old : "";
                 }        
                 
             $path = get_resource_path($ref,true,$sizes[$m]["id"],false,$sizes[$m]["extension"],true,$page,false,'',$alternative);
@@ -75,7 +75,7 @@ function migrate_files($ref, $alternative, $extension, $sizes, $redistribute_mod
             // Reset key/evenspread value before next 
             if($redistribute_mode)
                 {
-                $filestore_evenspread = !$filestore_evenspread;
+                $filestore_evenspread = true;
                 $filestore_migrate = true;
                 }
             else
