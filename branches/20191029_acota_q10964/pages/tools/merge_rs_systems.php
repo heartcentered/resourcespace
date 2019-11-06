@@ -94,6 +94,18 @@ include_once "{$webroot}/include/log_functions.php";
 // include_once "{$webroot}/include/resource_functions.php";
 // include_once "{$webroot}/include/collections_functions.php";
 
+$get_file_handler = function($file_path)
+    {
+    $file_handler = fopen($file_path, "w+b");
+    if($file_handler === false)
+        {
+        logScript("ERROR: Unable to open output file '{$file_path}'!");
+        exit(1);
+        }
+
+    return $file_handler;
+    };
+
 if($dry_run)
     {
     logScript("#################################################################");
@@ -102,8 +114,8 @@ if($dry_run)
 
 /*
 For the following usage:
- - php path/tools/merge_rs_systems.php [OPTION...] DEST
- - php path/tools/merge_rs_systems.php [OPTION...] SRC
+ - php path/tools/merge_rs_systems.php [OPTION...] --export DEST
+ - php path/tools/merge_rs_systems.php [OPTION...] --import SRC
 Ensure DEST/SRC folder has been provided when exporting or importing data
 */
 if($export || $import)
@@ -137,13 +149,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting user groups...");
 
-    $usergroup_export_path = $folder_path . DIRECTORY_SEPARATOR . "usergroups_export.txt";
-    $usergroups_export_fh = fopen($usergroup_export_path, "w+b");
-    if($usergroups_export_fh === false)
-        {
-        logScript("ERROR: Unable to open output file '{$usergroup_export_path}'!");
-        exit(1);
-        }
+    $usergroups_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.txt");
 
     foreach(get_usergroups() as $usergroup)
         {
@@ -172,16 +178,10 @@ if($export && isset($folder_path))
 
     # USERS & USER PREFERENCES
     ##########################
-    $users_export_path = $folder_path . DIRECTORY_SEPARATOR . "users_export.txt";
-    $users_export_fh = fopen($users_export_path, "w+b");
-    if($users_export_fh === false)
-        {
-        logScript("ERROR: Unable to open output file '{$users_export_path}'!");
-        exit(1);
-        }
-
     logScript("");
     logScript("Exporting users and their preferences...");
+
+    $users_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.txt");
 
     foreach(get_users(0, "", "u.ref ASC", false, -1, 1, false, "") as $user)
         {
@@ -216,13 +216,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting new archive states...");
 
-    $archive_states_export_path = $folder_path . DIRECTORY_SEPARATOR . "archive_states_export.txt";
-    $archive_states_export_fh = fopen($archive_states_export_path, "w+b");
-    if($archive_states_export_fh === false)
-        {
-        logScript("ERROR: Unable to open output file '{$archive_states_export_path}'!");
-        exit(1);
-        }
+    $archive_states_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "archive_states_export.txt");
 
     foreach(get_workflow_states() as $archive_state)
         {
@@ -263,18 +257,10 @@ if($export && isset($folder_path))
 
     # RESOURCE TYPES
     ################
-    // Import resource types. We will assume the newly identified resource types (that don't exist on the master system) 
-    // will be created.
-    $resource_types_export_path = $folder_path . DIRECTORY_SEPARATOR . "resource_types_export.txt";
-    $resource_types_export_fh = fopen($resource_types_export_path, "w+b");
-    if($resource_types_export_fh === false)
-        {
-        logScript("ERROR: Unable to open output file '{$resource_types_export_path}'!");
-        exit(1);
-        }
-
     logScript("");
     logScript("Exporting resource_types...");
+
+    $resource_types_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_types_export.txt");
 
     $resource_types = get_resource_types("", false);
     if(empty($resource_types))
@@ -282,10 +268,10 @@ if($export && isset($folder_path))
         logScript("ERROR: unable to retrieve resource types from the system.");
         exit(1);
         }
-    fwrite($resource_types_export_fh, json_encode($resource_types, JSON_NUMERIC_CHECK) . PHP_EOL);
+
+    if(!$dry_run)
+        {
+        fwrite($resource_types_export_fh, json_encode($resource_types, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
     fclose($resource_types_export_fh);
     }
-
-/*
-@TODO: create a local anonymous function for setting an export path and its w+b file handler (this has started to repeat a few times now)
-*/
