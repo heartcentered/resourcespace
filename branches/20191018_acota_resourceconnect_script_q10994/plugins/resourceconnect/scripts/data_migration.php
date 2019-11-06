@@ -222,6 +222,11 @@ if($import_collections && isset($input_fh))
         }
 
     $import_data = json_decode($input_lines[0], true);
+    if(json_last_error() !== JSON_ERROR_NONE)
+        {
+        logScript("ERROR - Unable to decode JSON because of the following error: " . json_last_error_msg());
+        exit(1);
+        }
 
     if(db_begin_transaction())
         {
