@@ -151,12 +151,6 @@ if($export_collections && isset($input_fh) && isset($file_h))
                 continue;
                 }
 
-            if(!collection_readable($collection_data["ref"]))
-                {
-                logScript("Warning - no read access by ResourceConnect user!");
-                continue;
-                }
-
             $collection_resources = get_collection_resources($collection_data["ref"]);
             foreach($collection_resources as $resource_ref)
                 {
