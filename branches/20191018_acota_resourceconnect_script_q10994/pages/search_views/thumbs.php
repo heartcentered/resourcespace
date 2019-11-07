@@ -21,7 +21,7 @@ if (!hook("renderresultthumb"))
 
     $thumbs_displayed_fields_height = ($display == "xlthumbs" ? 350 : 202) + (28 * count($thumbs_display_fields));
 
-    if($annotate_enabled)
+    if($annotate_enabled || (isset($annotate_enabled_adjust_size_all) && $annotate_enabled_adjust_size_all == true))
         {
         $thumbs_displayed_fields_height += 28;
         }
@@ -364,16 +364,16 @@ if (!hook("renderresultthumb"))
             if ($display_resource_id_in_thumbnail && $ref>0) 
                 { echo "<span class='ResourcePanelResourceID'>" . htmlspecialchars($ref) . "</span>$br"; } 
             else 
-                { ?>&nbsp;<?php }
+                { ?><?php }
             } # end hook("replacethumbsidinthumbnail")
 
         if (!hook("replaceresourcetools"))
             { 
             include "resource_tools.php";
             } // end hook replaceresourcetools ?>
-        </div>  
-    </div>
 
+    </div>
+</div>
     <?php 
     } # end hook renderresultthumb
 
