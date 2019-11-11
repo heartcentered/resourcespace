@@ -594,3 +594,9 @@ function api_resource_log_last_rows($minref = 0, $days = 7, $maxrecords = 0)
     return resource_log_last_rows($minref, $days, $maxrecords);
     }    
 
+function api_get_node_id($value, $resource_type_field)
+    {
+    if(!metadata_field_view_access($resource_type_field)) {return false;} # Need at least view access to the field.
+
+    return get_node_id($value,$resource_type_field);
+    }
