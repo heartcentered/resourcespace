@@ -322,7 +322,7 @@ function check_view_display_condition($fields,$n)
 		}
 	return $displaycondition;
 	}
-	
+
 function display_field_data($field,$valueonly=false,$fixedwidth=452)
 	{
 		
@@ -336,6 +336,7 @@ function display_field_data($field,$valueonly=false,$fixedwidth=452)
 		{    
 		# Get all nodes attached to this resource and this field    
 		$nodes_in_sequence = get_resource_nodes($ref,$field['ref'],true);
+		
 		if((bool) $field['automatic_nodes_ordering'])
 			{
 			uasort($nodes_in_sequence,"node_name_comparator");    
@@ -344,10 +345,14 @@ function display_field_data($field,$valueonly=false,$fixedwidth=452)
 			{
 			uasort($nodes_in_sequence,"node_orderby_comparator");    
 			}
+	
+		$node_tree = get_node_tree("", $nodes_in_sequence); // get nodes as a tree in correct hierarchical order
+		$node_names = get_node_elements(array(), $node_tree, "name"); // retrieve values for a selected field in the tree 
+
 		$keyword_array=array();
-		foreach($nodes_in_sequence as $node)
+		foreach($node_names as $name)
 			{
-			$keyword_array[] = i18n_get_translated($node['name']);
+			$keyword_array[] = i18n_get_translated($name);
 			}
 		$value = implode(',',$keyword_array);
 		}
@@ -1010,15 +1015,8 @@ else if(1 == $resource['has_image'])
                     ?>
 
                         rs_tagging_plugin_added = true;
-
-                        // We have to wait for initialisation process to finish as this does ajax calls
-                        // in order to set itself up
-                        setTimeout(function ()
-                            {
-                            toggleAnnotationsOption(element);
-                            }, 
-                            3000);
-
+						
+						jQuery('#previewimage').on("load", function(){toggleAnnotationsOption(element);});
                         return false;
                         }
 
