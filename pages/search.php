@@ -669,8 +669,8 @@ if(!$collectionsearch)
             scroll: false,
             drag: function (event, ui)
                 {
-                jQuery(ui.helper).width(174);
-                jQuery(ui.helper).height(174);
+                jQuery(ui.helper).width(175);
+                jQuery(ui.helper).height(175);
                 jQuery(ui.helper).css('opacity','0.5');
                 jQuery(ui.helper).css('transform','scale(0.8)');
                 jQuery(ui.helper).children('.ResourcePanelIcons').hide();
@@ -1316,15 +1316,7 @@ if($responsive_ui)
 
     if ((!is_array($result) || count($result)<1) && empty($collections))
         {
-            // No matches found? Log this in
-            $key_id = resolve_keyword($search);
-
-            if($key_id === FALSE) {
-                $key_id = resolve_keyword($search, TRUE);
-                daily_stat('Keyword usage', $key_id);
-            }
-
-            daily_stat("Keyword usage - no results found", $key_id);
+        // No matches found? Log this in
         ?>
         <div class="BasicsBox"> 
           <div class="NoFind">
@@ -1426,10 +1418,17 @@ if($responsive_ui)
         $showkeycollect = false;
         $showkeycollectout = false;
         $showkeyemail = false;
-    $showkeyedit = false;
+        $showkeyedit = false;
         $showkeystar = false;
         $showkeycomment = false;
 
+        /**
+         * If global var $annotate_enabled global == true, then ResourcePanel height is adjusted in thumbs.php.
+         * If there is a mix of resource_types in results, and there is a config option for a particular resource_type that overrides $annotate_enabled, then display of ResourcePanels in search.php is affected.
+         * This line detects if $annotate_enabled == true in config, and ensures that all ResourcePanels have same height value 
+         */
+        if ($annotate_enabled == true) $annotate_enabled_adjust_size_all = true;
+     
         # loop and display the results
         for ($n=$offset;(($n<count($result)) && ($n<($offset+$per_page)));$n++)
             {

@@ -50,6 +50,9 @@ function get_advanced_search_fields($archive=false, $hiddenfields="")
     # Returns a list of fields suitable for advanced searching. 
     $return=array();
 
+    $date_field_already_present=false; # Date field not present in searchable fields array
+    $date_field_data=null; # If set then this is the date field to be added to searchable fields array
+
     $hiddenfields=explode(",",$hiddenfields);
 
     $fields=sql_query("SELECT *, ref, name, title, type ,order_by, keywords_index, partial_index, resource_type, resource_column, display_field, use_for_similar, iptc_equiv, display_template, tab_name, required, smart_theme_name, exiftool_field, advanced_search, simple_search, help_text, tooltip_text, display_as_dropdown, display_condition, field_constraint FROM resource_type_field WHERE advanced_search=1 AND ((keywords_index=1 AND length(name)>0) OR type IN (" . implode(",",$FIXED_LIST_FIELD_TYPES) . ")) " . (($archive)?"":"and resource_type<>999") . " ORDER BY resource_type,order_by");
@@ -57,15 +60,46 @@ function get_advanced_search_fields($archive=false, $hiddenfields="")
     for ($n=0;$n<count($fields);$n++)
         {
         if (metadata_field_view_access($fields[$n]["ref"]) && !checkperm("T" . $fields[$n]["resource_type"]) && !in_array($fields[$n]["ref"], $hiddenfields))
-            {$return[]=$fields[$n];}
+            {
+            $return[]=$fields[$n];
+            if($fields[$n]["ref"]==$date_field)
+                {
+                $date_field_already_present=true;
+                }
+            }
         }
 
-    if(!in_array($date_field,$return) && $daterange_search && metadata_field_view_access($date_field) && !in_array($date_field, $hiddenfields))
+    # If not already in the list of advanced search metadata fields, insert the field which is the designated searchable date ($date_field)
+    if(!$date_field_already_present 
+        && $daterange_search 
+        && metadata_field_view_access($date_field) 
+        && !in_array($date_field, $hiddenfields))
         {
         $date_field_data = get_resource_type_field($date_field);
-        array_unshift($return,$date_field_data);
+        # Insert searchable date field so that it appears as the first array entry for a given resource type
+        $return1=array();
+        for ($n=0;$n<count($return);$n++)
+            {
+            if (isset($date_field_data))
+                {
+                if ($return[$n]["resource_type"] == $date_field_data['resource_type']) 
+                    {
+                    $return1[]=$date_field_data;
+                    $date_field_data=null; # Only insert it once
+                    }
+                }
+            $return1[]=$return[$n];
+            }
+        # If not yet added because it's resource type differs from everything in the list then add it to the end of the list
+        if (isset($date_field_data))
+            {
+            $return1[]=$date_field_data;
+            $date_field_data=null; # Keep things tidy
         }
-
+        return $return1;
+        }
+ 
+    # Designated searchable date_field is already present in the lost of advanced search metadata fields        }
     return $return;
     }
 }
@@ -720,7 +754,7 @@ function compile_search_actions($top_actions)
         {
         $options[$o]['value']            = 'csv_export_results_metadata';
         $options[$o]['label']            = $lang['csvExportResultsMetadata'];
-        $options[$o]['data_attr']['url'] = sprintf('%spages/csv_export_results_metadata.php?search=%s&restype=%s&order_by=%s&archive=%s&sort=%s&starsearch=%s',
+        $options[$o]['data_attr']['url'] = sprintf('%spages/csv_export_results_metadata.php?search=%s&restypes=%s&order_by=%s&archive=%s&sort=%s&starsearch=%s',
             $baseurl_short,
             urlencode($search),
             urlencode($restypes),
