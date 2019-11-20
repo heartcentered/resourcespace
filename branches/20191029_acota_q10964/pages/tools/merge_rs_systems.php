@@ -276,6 +276,23 @@ if($export && isset($folder_path))
     fclose($resource_type_fields_export_fh);
 
 
+    # NODES
+    #######
+    logScript("");
+    logScript("Exporting nodes...");
+    $nodes_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "nodes_export.json");
+    $nodes = sql_query("SELECT * FROM node");
+    if(empty($nodes))
+        {
+        logScript("WARNING: unable to retrieve any nodes from the system!");
+        }
+    if(!$dry_run)
+        {
+        fwrite($nodes_export_fh, json_encode($nodes, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($nodes_export_fh);
+
+
     # RESOURCES
     ###########
     logScript("");
@@ -293,6 +310,40 @@ if($export && isset($folder_path))
     fclose($resources_export_fh);
 
 
+    # RESOURCE DATA
+    ###############
+    logScript("");
+    logScript("Exporting resource data...");
+    $resource_data_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_data_export.json");
+    $resource_data = sql_query("SELECT * FROM resource_data WHERE resource > 0");
+    if(empty($resource_data))
+        {
+        logScript("WARNING: unable to retrieve any resource data from the system!");
+        }
+    if(!$dry_run)
+        {
+        fwrite($resource_data_export_fh, json_encode($resource_data, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($resource_data_export_fh);
+
+
+    # RESOURCE NODES
+    ################
+    logScript("");
+    logScript("Exporting resource nodes...");
+    $resource_nodes_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_nodes_export.json");
+    $resource_nodes = sql_query("SELECT * FROM resource_node WHERE resource > 0");
+    if(empty($resource_nodes))
+        {
+        logScript("WARNING: unable to retrieve any resource nodes from the system!");
+        }
+    if(!$dry_run)
+        {
+        fwrite($resource_nodes_export_fh, json_encode($resource_nodes, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($resource_nodes_export_fh);
+
+
     # RESOURCE DIMENSIONS
     #####################
     logScript("");
@@ -301,7 +352,7 @@ if($export && isset($folder_path))
     $resource_dimensions = sql_query("SELECT * FROM resource_dimensions");
     if(empty($resource_dimensions))
         {
-        logScript("WARNING: unable to retrieve any resource_dimensions from the system!");
+        logScript("WARNING: unable to retrieve any resource dimensions from the system!");
         }
     if(!$dry_run)
         {
