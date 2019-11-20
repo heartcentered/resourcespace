@@ -34,6 +34,7 @@ OPTIONS SUMMARY
 
     -h, --help          display this help and exit
     -f                  @todo: optional field ID where we can store the resource ID from the old system at import
+    -u, --user          run script as a ResourceSpace user. Use the ID of the user
     --dry-run           perform a trial run with no changes made
     --spec-file=FILE    read specification from FILE
     --export            export information from ResourceSpace based on the specification file (Requires spec-file option)
@@ -41,10 +42,11 @@ OPTIONS SUMMARY
     " . PHP_EOL;
 
 
-$cli_short_options = "h";
+$cli_short_options = "hu:";
 $cli_long_options  = array(
     "help",
     "dry-run",
+    "user:",
     "spec-file:",
     "export",
     "import",
@@ -80,11 +82,22 @@ foreach($options as $option_name => $option_value)
         {
         if(!file_exists($option_value))
             {
-            fwrite(STDERR, "ERROR: Unable to open input file '{$option_value}'!");
+            fwrite(STDERR, "ERROR: Unable to open input file '{$option_value}'!" . PHP_EOL);
             exit(1);
             }
 
         $spec_file_path = $option_value;
+        }
+
+    if(in_array($option_name, array("u", "user")) && !is_array($option_value))
+        {
+        if(!is_numeric($option_value) || (int) $option_value <= 0)
+            {
+            fwrite(STDERR, "ERROR: Invalid 'user' value provided: '{$user}' of type " . gettype($user) . PHP_EOL);
+            exit(1);
+            }
+
+        $user = $option_value;
         }
     }
 
@@ -113,6 +126,18 @@ if($dry_run)
     logScript("##### WARNING - Script running with DRY-RUN option enabled! #####");
     }
 
+if(isset($user))
+    {
+    $user_data = validate_user("AND u.ref = '" . escape_check($user) . "'", true);
+    if(!is_array($user_data) || count($user_data) == 0)
+        {
+        logScript("ERROR: Unable to validate user ID #{$user}!");
+        exit(1);
+        }
+    setup_user($user_data[0]);
+    logScript("Running script as user '{$username}' (ID #{$userref})");
+    }
+
 /*
 For the following usage:
  - php path/tools/merge_rs_systems.php [OPTION...] --export DEST
@@ -128,13 +153,6 @@ if($export || $import)
         logScript("ERROR: {$folder_type} MUST be folder. Value provided: '{$folder_path}'");
         exit(1);
         }
-
-    if(!isset($spec_file_path) || trim($spec_file_path) == "")
-        {
-        logScript("ERROR: Specification file not provided!");
-        exit(1);
-        }
-    include_once $spec_file_path;
     }
 
 if($export && isset($folder_path))
@@ -144,7 +162,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting user groups...");
 
-    $usergroups_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.txt");
+    $usergroups_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.json");
     foreach(get_usergroups() as $usergroup)
         {
         logScript("User group '{$usergroup["name"]}' (ID #{$usergroup["ref"]})");
@@ -164,7 +182,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting users and their preferences...");
 
-    $users_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.txt");
+    $users_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.json");
     foreach(get_users(0, "", "u.ref ASC", false, -1, 1, false, "") as $user)
         {
         logScript("User: {$user["fullname"]} (ID #{$user["ref"]} | Username: {$user["username"]} | E-mail: {$user["email"]})");
@@ -192,7 +210,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting archive states...");
 
-    $archive_states_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "archive_states_export.txt");
+    $archive_states_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "archive_states_export.json");
     foreach(get_workflow_states() as $archive_state)
         {
         if(!isset($lang["status{$archive_state}"]))
@@ -223,7 +241,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting resource_types...");
 
-    $resource_types_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_types_export.txt");
+    $resource_types_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_types_export.json");
     foreach(get_resource_types("", false) as $resource_type)
         {
         logScript("Resource type '{$resource_type["name"]}' (ID #{$resource_type["ref"]})");
@@ -243,7 +261,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting resource_type fields...");
 
-    $resource_type_fields_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_type_fields_export.txt");
+    $resource_type_fields_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_type_fields_export.json");
     foreach(get_resource_type_fields("", "ref", "ASC", "", array()) as $resource_type_field)
         {
         logScript("Resource type field '{$resource_type_field["title"]}' (ID #{$resource_type_field["ref"]} | shortname: '{$resource_type_field["name"]}')");
@@ -256,10 +274,68 @@ if($export && isset($folder_path))
         fwrite($resource_type_fields_export_fh, json_encode($resource_type_field, JSON_NUMERIC_CHECK) . PHP_EOL);
         }
     fclose($resource_type_fields_export_fh);
+
+
+    # RESOURCES
+    ###########
+    logScript("");
+    logScript("Exporting resources...");
+    $resources_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json");
+    $resources = sql_query("SELECT * FROM resource WHERE ref > 0");
+    if(empty($resources))
+        {
+        logScript("WARNING: unable to retrieve any resources from the system!");
+        }
+    if(!$dry_run)
+        {
+        fwrite($resources_export_fh, json_encode($resources, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($resources_export_fh);
+
+
+    # RESOURCE DIMENSIONS
+    #####################
+    logScript("");
+    logScript("Exporting resource dimensions...");
+    $resource_dimensions_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_dimensions_export.json");
+    $resource_dimensions = sql_query("SELECT * FROM resource_dimensions");
+    if(empty($resource_dimensions))
+        {
+        logScript("WARNING: unable to retrieve any resource_dimensions from the system!");
+        }
+    if(!$dry_run)
+        {
+        fwrite($resource_dimensions_export_fh, json_encode($resource_dimensions, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($resource_dimensions_export_fh);
+
+
+    # RESOURCE RELATED
+    ##################
+    logScript("");
+    logScript("Exporting resource related...");
+    $resource_related_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_related_export.json");
+    $resource_related = sql_query("SELECT * FROM resource_related");
+    if(empty($resource_related))
+        {
+        logScript("WARNING: unable to retrieve any related resources from the system!");
+        }
+    if(!$dry_run)
+        {
+        fwrite($resource_related_export_fh, json_encode($resource_related, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($resource_related_export_fh);
     }
 
 if($import)
     {
+    if(!isset($spec_file_path) || trim($spec_file_path) == "")
+        {
+        logScript("ERROR: Specification file not provided or empty!");
+        exit(1);
+        }
+    include_once $spec_file_path;
+
     /*
     // @todo: create local anon function for checking specs or just a simple loop if needed
     if(!isset($usergroups_spec) || empty($usergroups_spec))
