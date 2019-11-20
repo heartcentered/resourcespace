@@ -33,6 +33,7 @@ OPTIONS SUMMARY
     for a complete description.
 
     -h, --help          display this help and exit
+    -f                  @todo: optional field ID where we can store the resource ID from the old system at import
     --dry-run           perform a trial run with no changes made
     --spec-file=FILE    read specification from FILE
     --export            export information from ResourceSpace based on the specification file (Requires spec-file option)
@@ -140,32 +141,14 @@ if($export && isset($folder_path))
     {
     # USER GROUPS
     #############
-    if(!isset($usergroups_spec) || empty($usergroups_spec))
-        {
-        logScript("ERROR: Spec missing 'usergroups_spec'");
-        exit(1);
-        }
-
     logScript("");
     logScript("Exporting user groups...");
 
     $usergroups_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.txt");
-
     foreach(get_usergroups() as $usergroup)
         {
-        if(!array_key_exists($usergroup["ref"], $usergroups_spec["mappings"]))
-            {
-            logScript("Warning: No mapping found for user group '{$usergroup["name"]}'");
-            continue;
-            }
+        logScript("User group '{$usergroup["name"]}' (ID #{$usergroup["ref"]})");
 
-        // Spec provides us with a map for this user group... We will use this info when we'll create new users
-        if($usergroups_spec["mappings"][$usergroup["ref"]] > 0)
-            {
-            continue;
-            }
-
-        logScript("Exporting new user group '{$usergroup["name"]}' (ID #{$usergroup["ref"]})");
         if($dry_run)
             {
             continue;
@@ -182,10 +165,9 @@ if($export && isset($folder_path))
     logScript("Exporting users and their preferences...");
 
     $users_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.txt");
-
     foreach(get_users(0, "", "u.ref ASC", false, -1, 1, false, "") as $user)
         {
-        logScript("Exporting user: {$user["fullname"]} (ID #{$user["ref"]} | Username: {$user["username"]} | E-mail: {$user["email"]})");
+        logScript("User: {$user["fullname"]} (ID #{$user["ref"]} | Username: {$user["username"]} | E-mail: {$user["email"]})");
 
         // Check user preferences and save for processing it later
         $user_preferences = array();
@@ -207,17 +189,10 @@ if($export && isset($folder_path))
 
     # ARCHIVE STATES
     ################
-    if(!isset($archive_states_spec) || empty($archive_states_spec))
-        {
-        logScript("ERROR: Spec missing 'archive_states_spec'");
-        exit(1);
-        }
-
     logScript("");
-    logScript("Exporting new archive states...");
+    logScript("Exporting archive states...");
 
     $archive_states_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "archive_states_export.txt");
-
     foreach(get_workflow_states() as $archive_state)
         {
         if(!isset($lang["status{$archive_state}"]))
@@ -227,19 +202,7 @@ if($export && isset($folder_path))
             }
         $archive_state_text = $lang["status{$archive_state}"];
 
-        if(!array_key_exists($archive_state, $archive_states_spec))
-            {
-            logScript("Warning: '{$archive_state_text}' (ID #{$archive_state}) not found in current specification!");
-            continue;
-            }
-
-        // We have a mapping for this archive state. Move to next one as this information will be used at import
-        if(!is_null($archive_states_spec[$archive_state]))
-            {
-            continue;
-            }
-
-        logScript("New archive state #{$archive_state} - {$archive_state_text}");
+        logScript("Archive state '{$archive_state_text}' (ID #{$archive_state})");
 
         if($dry_run)
             {
@@ -261,17 +224,48 @@ if($export && isset($folder_path))
     logScript("Exporting resource_types...");
 
     $resource_types_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_types_export.txt");
-
-    $resource_types = get_resource_types("", false);
-    if(empty($resource_types))
+    foreach(get_resource_types("", false) as $resource_type)
         {
-        logScript("ERROR: unable to retrieve resource types from the system.");
-        exit(1);
-        }
+        logScript("Resource type '{$resource_type["name"]}' (ID #{$resource_type["ref"]})");
 
-    if(!$dry_run)
-        {
-        fwrite($resource_types_export_fh, json_encode($resource_types, JSON_NUMERIC_CHECK) . PHP_EOL);
+        if($dry_run)
+            {
+            continue;
+            }
+
+        fwrite($resource_types_export_fh, json_encode($resource_type, JSON_NUMERIC_CHECK) . PHP_EOL);
         }
     fclose($resource_types_export_fh);
+
+
+    # RESOURCE TYPE FIELDS
+    ######################
+    logScript("");
+    logScript("Exporting resource_type fields...");
+
+    $resource_type_fields_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_type_fields_export.txt");
+    foreach(get_resource_type_fields("", "ref", "ASC", "", array()) as $resource_type_field)
+        {
+        logScript("Resource type field '{$resource_type_field["title"]}' (ID #{$resource_type_field["ref"]} | shortname: '{$resource_type_field["name"]}')");
+
+        if($dry_run)
+            {
+            continue;
+            }
+
+        fwrite($resource_type_fields_export_fh, json_encode($resource_type_field, JSON_NUMERIC_CHECK) . PHP_EOL);
+        }
+    fclose($resource_type_fields_export_fh);
+    }
+
+if($import)
+    {
+    /*
+    // @todo: create local anon function for checking specs or just a simple loop if needed
+    if(!isset($usergroups_spec) || empty($usergroups_spec))
+        {
+        logScript("ERROR: Spec missing 'usergroups_spec'");
+        exit(1);
+        }
+    */
     }
