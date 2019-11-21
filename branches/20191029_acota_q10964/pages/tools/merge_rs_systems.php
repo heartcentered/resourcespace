@@ -108,9 +108,9 @@ include_once "{$webroot}/include/log_functions.php";
 // include_once "{$webroot}/include/resource_functions.php";
 // include_once "{$webroot}/include/collections_functions.php";
 
-$get_file_handler = function($file_path)
+$get_file_handler = function($file_path, $mode)
     {
-    $file_handler = fopen($file_path, "w+b");
+    $file_handler = fopen($file_path, $mode);
     if($file_handler === false)
         {
         logScript("ERROR: Unable to open output file '{$file_path}'!");
@@ -120,10 +120,44 @@ $get_file_handler = function($file_path)
     return $file_handler;
     };
 
+$json_decode_file_data = function($fh)
+    {
+    $input_lines = array();
+    while(($line = fgets($fh)) !== false)
+        {
+        if(trim($line) != "" &&  mb_check_encoding($line, "UTF-8"))
+            {
+            $input_lines[] = trim($line);
+            }
+        }
+    fclose($fh);
+
+    if(empty($input_lines))
+        {
+        logScript("WARNING: No data to import! To be safe, double check on the source side whether this is true.");
+        return array();
+        }
+
+    $json_decoded_data = array();
+    foreach($input_lines as $input_line)
+        {
+        $value = json_decode($input_line, true);
+        if(json_last_error() !== JSON_ERROR_NONE)
+            {
+            logScript("ERROR: Unable to decode JSON because of the following error: " . json_last_error_msg());
+            exit(100);
+            }
+        $json_decoded_data[] = $value;
+        }
+
+    return $json_decoded_data;
+    };
+
 if($dry_run)
     {
     logScript("#################################################################");
     logScript("##### WARNING - Script running with DRY-RUN option enabled! #####");
+    logScript("#################################################################");
     }
 
 if(isset($user))
@@ -157,12 +191,15 @@ if($export || $import)
 
 if($export && isset($folder_path))
     {
+    // @todo: consider having a list of tables required to be fully exported and run the same "block" of code for each one of them
+    // We have a bit of repetition going on and a pattern emerged now
+
     # USER GROUPS
     #############
     logScript("");
     logScript("Exporting user groups...");
 
-    $usergroups_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.json");
+    $usergroups_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.json", "w+b");
     foreach(get_usergroups() as $usergroup)
         {
         logScript("User group '{$usergroup["name"]}' (ID #{$usergroup["ref"]})");
@@ -182,7 +219,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting users and their preferences...");
 
-    $users_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.json");
+    $users_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.json", "w+b");
     foreach(get_users(0, "", "u.ref ASC", false, -1, 1, false, "") as $user)
         {
         logScript("User: {$user["fullname"]} (ID #{$user["ref"]} | Username: {$user["username"]} | E-mail: {$user["email"]})");
@@ -210,7 +247,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting archive states...");
 
-    $archive_states_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "archive_states_export.json");
+    $archive_states_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "archive_states_export.json", "w+b");
     foreach(get_workflow_states() as $archive_state)
         {
         if(!isset($lang["status{$archive_state}"]))
@@ -241,7 +278,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting resource_types...");
 
-    $resource_types_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_types_export.json");
+    $resource_types_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_types_export.json", "w+b");
     foreach(get_resource_types("", false) as $resource_type)
         {
         logScript("Resource type '{$resource_type["name"]}' (ID #{$resource_type["ref"]})");
@@ -261,7 +298,7 @@ if($export && isset($folder_path))
     logScript("");
     logScript("Exporting resource_type fields...");
 
-    $resource_type_fields_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_type_fields_export.json");
+    $resource_type_fields_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_type_fields_export.json", "w+b");
     foreach(get_resource_type_fields("", "ref", "ASC", "", array()) as $resource_type_field)
         {
         logScript("Resource type field '{$resource_type_field["title"]}' (ID #{$resource_type_field["ref"]} | shortname: '{$resource_type_field["name"]}')");
@@ -280,7 +317,7 @@ if($export && isset($folder_path))
     #######
     logScript("");
     logScript("Exporting nodes...");
-    $nodes_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "nodes_export.json");
+    $nodes_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "nodes_export.json", "w+b");
     $nodes = sql_query("SELECT * FROM node");
     if(empty($nodes))
         {
@@ -297,7 +334,7 @@ if($export && isset($folder_path))
     ###########
     logScript("");
     logScript("Exporting resources...");
-    $resources_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json");
+    $resources_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json", "w+b");
     $resources = sql_query("SELECT * FROM resource WHERE ref > 0");
     if(empty($resources))
         {
@@ -314,7 +351,7 @@ if($export && isset($folder_path))
     ###############
     logScript("");
     logScript("Exporting resource data...");
-    $resource_data_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_data_export.json");
+    $resource_data_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_data_export.json", "w+b");
     $resource_data = sql_query("SELECT * FROM resource_data WHERE resource > 0");
     if(empty($resource_data))
         {
@@ -331,7 +368,7 @@ if($export && isset($folder_path))
     ################
     logScript("");
     logScript("Exporting resource nodes...");
-    $resource_nodes_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_nodes_export.json");
+    $resource_nodes_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_nodes_export.json", "w+b");
     $resource_nodes = sql_query("SELECT * FROM resource_node WHERE resource > 0");
     if(empty($resource_nodes))
         {
@@ -348,7 +385,7 @@ if($export && isset($folder_path))
     #####################
     logScript("");
     logScript("Exporting resource dimensions...");
-    $resource_dimensions_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_dimensions_export.json");
+    $resource_dimensions_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_dimensions_export.json", "w+b");
     $resource_dimensions = sql_query("SELECT * FROM resource_dimensions");
     if(empty($resource_dimensions))
         {
@@ -365,7 +402,7 @@ if($export && isset($folder_path))
     ##################
     logScript("");
     logScript("Exporting resource related...");
-    $resource_related_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_related_export.json");
+    $resource_related_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_related_export.json", "w+b");
     $resource_related = sql_query("SELECT * FROM resource_related");
     if(empty($resource_related))
         {
@@ -387,12 +424,100 @@ if($import)
         }
     include_once $spec_file_path;
 
-    /*
-    // @todo: create local anon function for checking specs or just a simple loop if needed
+    // @todo: add a --progress flag for this
+    $spec_override_fp = $folder_path . DIRECTORY_SEPARATOR . "spec_override.php";
+    if(file_exists($spec_override_fp))
+        {
+        include_once $spec_override_fp;
+        }
+    $spec_override_fh = $get_file_handler($spec_override_fp, "a+b");
+
+    if(db_begin_transaction())
+        {
+        logScript("MySQL: Begin transaction!");
+        }
+    $rollback_transaction = false;
+
+    # USER GROUPS
+    #############
+    logScript("");
+    logScript("Importing user groups...");
     if(!isset($usergroups_spec) || empty($usergroups_spec))
         {
         logScript("ERROR: Spec missing 'usergroups_spec'");
         exit(1);
         }
-    */
+    $src_usergroups = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.json", "r+b"));
+    $dest_usergroups = get_usergroups(false, "", true);
+
+    foreach($src_usergroups as $src_ug)
+        {
+        logScript("Processing {$src_ug["name"]} (ID #{$src_ug["ref"]})...");
+        if(!array_key_exists($src_ug["ref"], $usergroups_spec))
+            {
+            logScript("WARNING: Specification for usergroups does not contain a mapping for this group! Skipping");
+            continue;
+            }
+
+        $spec_cfg_value = $usergroups_spec[$src_ug["ref"]];
+        if(is_numeric($spec_cfg_value) && $spec_cfg_value > 0 && array_key_exists($spec_cfg_value, $dest_usergroups))
+            {
+            logScript("Found direct 1:1 mapping to '{$dest_usergroups[$spec_cfg_value]}' (ID #{$spec_cfg_value})... Skipping");
+            continue;
+            }
+        else if(is_array($spec_cfg_value))
+            {
+            if(!isset($spec_cfg_value["create"]))
+                {
+                logScript("ERROR: usergroup specification config value is invalid. Required keys: create - true/false");
+                continue;
+                }
+
+            if((bool) $spec_cfg_value["create"] == false)
+                {
+                logScript("Skipping usergroup as per the specification record");
+                continue;
+                }
+
+            // create user group and save mapping in cache
+            sql_query("INSERT INTO usergroup(name, request_mode) VALUES ('" . escape_check($src_ug["name"]) . "', '1')");
+            $new_ug_ref = sql_insert_id();
+            log_activity(null, LOG_CODE_CREATED, null, 'usergroup', null, $new_ug_ref);
+            log_activity(null, LOG_CODE_CREATED, $src_ug["name"], 'usergroup', 'name', $new_ug_ref, null, '');
+            log_activity(null, LOG_CODE_CREATED, '1', 'usergroup', 'request_mode', $new_ug_ref, null, '');
+
+            logScript("Created new usergroup '{$src_ug["name"]}' (ID #{$new_ug_ref})");
+
+            $usergroups_spec[$src_ug["ref"]] = $new_ug_ref;
+            // @todo: save mapping 
+            // fwrite($spec_override_fh, data . PHP_EOL);
+            }
+        else
+            {
+            logScript("ERROR: Invalid usergroup specification record for key #{$src_ug["ref"]}");
+            }
+
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+    fclose($spec_override_fh);
+
+    if(!($dry_run || $rollback_transaction) && db_end_transaction())
+        {
+        logScript("MySQL: Commit transaction!");
+        }
+    else if(db_rollback_transaction())
+        {
+        logScript("MySQL: Rollback Successful!");
+        }
     }
