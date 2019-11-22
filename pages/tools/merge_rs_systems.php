@@ -106,7 +106,7 @@ include_once "{$webroot}/include/db.php";
 include_once "{$webroot}/include/general.php";
 include_once "{$webroot}/include/log_functions.php";
 // include_once "{$webroot}/include/resource_functions.php";
-// include_once "{$webroot}/include/collections_functions.php";
+include_once "{$webroot}/include/collections_functions.php";
 
 $get_file_handler = function($file_path, $mode)
     {
@@ -424,13 +424,26 @@ if($import)
         }
     include_once $spec_file_path;
 
-    // @todo: add a --progress flag for this
+    /*
+    spec_override.php is used as the name suggests to override the specification file that was provided as original input
+    by keeping track of new mappings created and saving them in the override.
+    */
     $spec_override_fp = $folder_path . DIRECTORY_SEPARATOR . "spec_override.php";
-    if(file_exists($spec_override_fp))
-        {
-        include_once $spec_override_fp;
-        }
     $spec_override_fh = $get_file_handler($spec_override_fp, "a+b");
+    $php_tag_found = false;
+    while(($line = fgets($spec_override_fh)) !== false)
+        {
+        if(trim($line) != "" &&  mb_check_encoding($line, "UTF-8") && mb_strpos($line, "<?php") !== false)
+            {
+            $php_tag_found = true;
+            }
+        }
+    if(!$php_tag_found || $dry_run)
+        {
+        ftruncate($spec_override_fh, 0);
+        fwrite($spec_override_fh, "<?php" . PHP_EOL);
+        }
+    include_once $spec_override_fp;
 
     if(db_begin_transaction())
         {
@@ -449,7 +462,7 @@ if($import)
         }
     $src_usergroups = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.json", "r+b"));
     $dest_usergroups = get_usergroups(false, "", true);
-
+    $usergroups_not_created = (isset($usergroups_not_created) ? $usergroups_not_created : array());
     foreach($src_usergroups as $src_ug)
         {
         logScript("Processing {$src_ug["name"]} (ID #{$src_ug["ref"]})...");
@@ -476,6 +489,8 @@ if($import)
             if((bool) $spec_cfg_value["create"] == false)
                 {
                 logScript("Skipping usergroup as per the specification record");
+                $usergroups_not_created[] = $src_ug["ref"];
+                fwrite($spec_override_fh, "\$usergroups_not_created[] = {$src_ug["ref"]};" . PHP_EOL);
                 continue;
                 }
 
@@ -486,11 +501,9 @@ if($import)
             log_activity(null, LOG_CODE_CREATED, $src_ug["name"], 'usergroup', 'name', $new_ug_ref, null, '');
             log_activity(null, LOG_CODE_CREATED, '1', 'usergroup', 'request_mode', $new_ug_ref, null, '');
 
-            logScript("Created new usergroup '{$src_ug["name"]}' (ID #{$new_ug_ref})");
-
+            logScript("Created new user group '{$src_ug["name"]}' (ID #{$new_ug_ref})");
             $usergroups_spec[$src_ug["ref"]] = $new_ug_ref;
-            // @todo: save mapping 
-            // fwrite($spec_override_fh, data . PHP_EOL);
+            fwrite($spec_override_fh, "\$usergroups_spec[{$src_ug["ref"]}] = {$new_ug_ref};" . PHP_EOL);
             }
         else
             {
@@ -500,24 +513,95 @@ if($import)
         }
 
 
+    # USERS & USER PREFERENCES
+    ##########################
+    logScript("");
+    logScript("Importing users and their preferences...");
+    $src_users = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.json", "r+b"));
+    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    $usernames_mapping = (isset($usernames_mapping) ? $usernames_mapping : array());
+    $users_not_created = (isset($users_not_created) ? $users_not_created : array());
+    foreach($src_users as $user)
+        {
+        if(array_key_exists($user["ref"], $usernames_mapping))
+            {
+            continue;
+            }
+
+        $found_uref = get_user_by_username($user["username"]);
+        if($found_uref !== false)
+            {
+            $found_udata = get_user($found_uref);
+            logScript("Username '{$user["username"]}' found in current system as '{$found_udata["username"]}', full name '{$found_udata["fullname"]}'");
+
+            $usernames_mapping[$user["ref"]] = $found_udata["ref"];
+            fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$found_udata["ref"]};" . PHP_EOL);
+            continue;
+            }
+
+        if(in_array($user["usergroup"], $usergroups_not_created))
+            {
+            logScript("WARNING: User '{$user["username"]}' belongs to a user group that was not created as per the specification file. Skipping");
+            $users_not_created[] = $user["ref"];
+            fwrite($spec_override_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
+            continue;
+            }
+
+        $new_uref = new_user($user["username"], $usergroups_spec[$user["usergroup"]]);
+        logScript("Created new user '{$user["username"]}' (ID #{$new_uref} | User group ID: {$usergroups_spec[$user["usergroup"]]})");
+        $usernames_mapping[$user["ref"]] = $new_uref;
+        fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$new_uref};" . PHP_EOL);
+
+        $_GET["username"] = $user["username"];
+        $_GET["password"] = $user["password"];
+        $_GET["fullname"] = $user["fullname"];
+        $_GET["email"] = $user["email"];
+        $_GET["expires"] = $user["account_expires"];
+        $_GET["usergroup"] = $usergroups_spec[$user["usergroup"]];
+        $_GET["ip_restrict"] = $user["ip_restrict"];
+        $_GET["search_filter_override"] = $user["search_filter_override"];
+        $_GET["search_filter_o_id"] = $user["search_filter_o_id"];
+        $_GET["comments"] = $user["comments"];
+        $_GET["suggest"] = "";
+        $_GET["emailresetlink"] = $user["password_reset_hash"];
+        $_GET["approved"] = $user["approved"];
+        $save_user_status = save_user($new_uref);
+        if($save_user_status === false)
+            {
+            logScript("WARNING: failed to save user '{$user["username"]}' - Username or e-mail address already exist?");
+            }
+        else if(is_string($save_user_status))
+            {
+            logScript("WARNING: failed to save user '{$user["username"]}'. Reason: '{$save_user_status}'");
+            }
+        else
+            {
+            logScript("Saved user details");
+            }
+
+        // @todo: add user preferences
+        }
 
 
 
 
 
 
+    // Useful snippet
+    // $usernames_mapping[$user["ref"]] = $new_uref;
+    // fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$new_uref};" . PHP_EOL);
 
-
-
-
+    // fwrite($spec_override_fh, "" . PHP_EOL);
     fclose($spec_override_fh);
 
     if(!($dry_run || $rollback_transaction) && db_end_transaction())
         {
+        logScript("");
         logScript("MySQL: Commit transaction!");
         }
     else if(db_rollback_transaction())
         {
+        logScript("");
         logScript("MySQL: Rollback Successful!");
         }
     }
