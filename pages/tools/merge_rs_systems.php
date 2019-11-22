@@ -521,6 +521,20 @@ if($import)
     fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
     $usernames_mapping = (isset($usernames_mapping) ? $usernames_mapping : array());
     $users_not_created = (isset($users_not_created) ? $users_not_created : array());
+    $process_user_preferences = function($user_ref, $user_data)
+        {
+        if(isset($user_data["user_preferences"]) && is_array($user_data["user_preferences"]) && !empty($user_data["user_preferences"]))
+            {
+            logScript("Processing user preferences (if no warning are showing, this is ok)");
+            foreach($user_data["user_preferences"] as $user_p)
+                {
+                if(!set_config_option($user_ref, $user_p["parameter"], $user_p["value"]))
+                    {
+                    logScript("WARNING: uanble to save user preference: {$user_p["parameter"]} = '{$user_p["value"]}'");
+                    }
+                }
+            }
+        };
     foreach($src_users as $user)
         {
         if(array_key_exists($user["ref"], $usernames_mapping))
@@ -534,8 +548,11 @@ if($import)
             $found_udata = get_user($found_uref);
             logScript("Username '{$user["username"]}' found in current system as '{$found_udata["username"]}', full name '{$found_udata["fullname"]}'");
 
-            $usernames_mapping[$user["ref"]] = $found_udata["ref"];
-            fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$found_udata["ref"]};" . PHP_EOL);
+            $usernames_mapping[$user["ref"]] = $found_uref;
+            fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$found_uref};" . PHP_EOL);
+
+            $process_user_preferences($found_uref, $user);
+
             continue;
             }
 
@@ -579,7 +596,7 @@ if($import)
             logScript("Saved user details");
             }
 
-        // @todo: add user preferences
+        $process_user_preferences($new_uref, $user);
         }
 
 
