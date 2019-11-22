@@ -600,6 +600,41 @@ if($import)
         }
 
 
+    # ARCHIVE STATES
+    ################
+    logScript("");
+    logScript("Importing archive states...");
+    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    if(!isset($archive_states_spec) || empty($archive_states_spec))
+        {
+        logScript("ERROR: Spec missing 'archive_states_spec'");
+        exit(1);
+        }
+    $src_archive_states = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "archive_states_export.json", "r+b"));
+    $dest_archive_states = get_workflow_states();
+    foreach($src_archive_states as $archive_state)
+        {
+        logScript("Processing '{$archive_state["lang"]}' (ID #{$archive_state["ref"]})");
+        if(array_key_exists($archive_state["ref"], $archive_states_spec) && in_array($archive_states_spec[$archive_state["ref"]], $dest_archive_states))
+            {
+            $lang_text = $lang["status{$archive_states_spec[$archive_state["ref"]]}"];
+            logScript("Found direct 1:1 mapping to #{$archive_states_spec[$archive_state["ref"]]} - {$lang_text}");
+            continue;
+            }
+
+        if(in_array($archive_state["ref"], $dest_archive_states))
+            {
+            logScript("WARNING: workflow state already exists in the system but is not mapped in the specification file! Skipping");
+            continue;
+            }
+
+        if(array_key_exists($archive_state["ref"], $archive_states_spec) && is_null($archive_states_spec[$archive_state["ref"]]))
+            {
+            // @todo: create new archive state and output back to the user config required to be added to config.php if unable to add it by script
+            }
+        }
+
+    
 
 
 
