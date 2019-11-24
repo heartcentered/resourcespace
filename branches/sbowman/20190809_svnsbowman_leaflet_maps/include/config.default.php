@@ -2377,39 +2377,9 @@ $use_plugins_manager = true;
 # Allow Plugin Upload
 $enable_plugin_upload = true;
 
-// GEOCODING AND GEOLOCATION -------------
-// Disable geocoding features?
-$disable_geocoding = false;
-
-// Enable Google Maps? If true, also set $google_maps_api_key.
-$use_google_maps = false;
-# $google_maps_api_key = '';
-
-// Enable geolocating multiple resources on a map that are part of a collection?
-$geo_locate_collection = true;
-
-// OpenLayers: The default center and zoom for the map view when selecting a new location, as a world view.
-// For example, to specify the USA use: #$geolocation_default_bounds = "-10494743.596017,4508852.6025659,4"; or to specify Utah, use $geolocation_default_bounds = "-12328577.96607,4828961.5663655,6";
-$geolocation_default_bounds = "-3.058839178216e-9,2690583.3951564,2";
-
-// The OpenLayers layers to make available, the first is the default.
-$geo_layers = "osm"; // To enable Google layers, use: $geo_layers = "osm, gmap, gsat, gphy";
-
-// Cache OpenLayers OpenStreetMap tiles on your server? This is slower when loading, but eliminates non-SSL content warnings if your site uses SSL (requires curl).
-$geo_tile_caching = false;
-
-// Optional path to OpenLayers tile cache directory.
-# $geo_tile_cache_directory = "";
-
-// Add OpenLayers configuration options to this variable to overwrite all other options.
-$geo_override_options = "";
-
 // GEOLOCATION MAP CONFIGURATION------------
-    // Disable geocoding features?
+    // Disable maps and geocoding features?
     $disable_geocoding = false;
-
-    // Enable geolocating multiple resources on a map that are part of a collection?
-    $geo_locate_collection = true;
 
     // Hide map location panel by default (a link to show it will be displayed instead)?
     $hide_geolocation_panel = false;
@@ -2417,15 +2387,21 @@ $geo_override_options = "";
     // Show map search results in a modal?
     $geo_search_modal_results = false;
 
+    // Enable geolocating multiple resources on a map that are part of a collection?
+    $geo_locate_collection = true;
+
+    // Geolocate collection preview image size.
+    $geolocate_image_size = "pre"; // Use "thm" or "pre" for thumbnail and preview image size, respectively.
+
     // OpenLayers default center and zoom for the map view when selecting a new location, as a world view.
     // For example, to specify the USA, use $geolocation_default_bounds = "-10494743.596017,4508852.6025659,4"; or for Utah, use $geolocation_default_bounds = "-12328577.96607,4828961.5663655,6";
     $geolocation_default_bounds = "-3.058839178216e-9,2690583.3951564,2";
 
-    // Enable Google Maps for OpenLayers maps? If true, also set $google_maps_api_key.
+    // Enable Google Maps for OpenLayers basemaps? If true, must also set $google_maps_api_key.
     $use_google_maps = false;
     # $google_maps_api_key = '';
 
-    // OpenLayers map layers to make available, the first is the default.
+    // OpenLayers basemap layers to make available, the first is the default.
     $geo_layers = "osm"; // To enable Google layers, use: $geo_layers = "osm, gmap, gsat, gphy";
 
     // Cache OpenLayers OpenStreetMap tiles on the server? This is slower when loading, but eliminates non-SSL content warnings if your site uses SSL (requires curl).
@@ -2437,14 +2413,14 @@ $geo_override_options = "";
     // Add OpenLayers configuration options to this variable to overwrite all other options.
     $geo_override_options = "";
 
-    // Leaflet default EPSG:3857 Web Mercator latitude and longitude in decimal degrees and zoom level to center map.
+    // Leaflet default map center EPSG:3857 Web Mercator (WGS84) latitude and longitude in decimal degrees and zoom level.
     $map_centerview = '[40.66, -111.44], 12';
 
-    // Array of southwest (SW) and northeast (NE) latitude/longitude bounds, defining areas that will be excluded from map search results, and defined in sequence: SW latitude, SW longitude, NE latitude, NE longitude.
+    // Array of southwest (SW) and northeast (NE) latitude/longitude bounds, defining spatial areas that will be excluded from map search results and that are defined by: SW latitude, SW longitude, NE latitude, NE longitude.
     $geo_search_restrict = array(
-        # array(50,-3,54,3)      # Example omission zone 1.
-        # ,array(-10,-20,-8,-18) # Example omission zone 2.
-        # ,array(1,1,2,2)        # Example omission zone 3.
+        # array(50,-3,54,3)      // Example omission zone 1.
+        # ,array(-10,-20,-8,-18) // Example omission zone 2.
+        # ,array(1,1,2,2)        // Example omission zone 3.
     );
 
     // Map height in pixels on the Resource View page.
@@ -2452,6 +2428,9 @@ $geo_override_options = "";
 
     // Map height in pixels on the Geographic/Map Search page.
     $mapsearch_mapheight = 625;
+
+    // Map height in pixels on the Resource Edit page.
+    $mapedit_mapheight = 625;
 
     // Leaflet: Use zoom slidebar instead of standard +/- buttons?
     $map_zoomslider = true;
@@ -2473,7 +2452,7 @@ $geo_override_options = "";
     // Leaflet default basemap.
     $map_default = "OpenStreetMap.Mapnik"; # Options: 'OpenStreetMap.Mapnik', 'OpenStreetMap.DE', 'OpenTopoMap', 'HikeBike.HikeBike', 'OpenStreetMap.HOT', 'MtbMap', 'OpenStreetMap.France', 'OpenStreetMap.BZH', 'OpenStreetMap.CH', and 'OpenMapSurfer.Roads'.
 
-    // Leaflet show resource thumbnail marker popup, instead of resource ID tooltip?
+    // Leaflet: show resource thumbnail marker popup, instead of resource ID tooltip?
     $marker_resource_preview = true;
 
     // Leaflet available marker colors.
@@ -2569,27 +2548,23 @@ $geo_override_options = "";
         $map_mapboxtoken = '';
         $map_mapboxattribution = '';
 
-# QuickLook previews (Mac Only)
-# If configured, attempt to produce a preview for files using Mac OS-X's built in QuickLook preview system which support multiple files.
-# This requires AT LEAST VERSION 0.2 of 'qlpreview', available from http://www.hamsoftengineering.com/codeSharing/qlpreview/qlpreview.html
-#
+// QuickLook previews (macOS only), attempt to produce a preview for files using macOS built in QuickLook preview system which supports multiple files.  This requires >= v0.2 of 'qlpreview' from http://www.hamsoftengineering.com/codeSharing/qlpreview/qlpreview.html.
 # $qlpreview_path="/usr/bin";
-#
-# A list of extensions that QLPreview should NOT be used for.
-$qlpreview_exclude_extensions=array("tif","tiff");
 
-# Log developer debug information to the debug log (filestore/tmp/debug.txt)?
-# As the default location is world-readable it is recommended for live systems to change the location to somewhere outside of the web directory by setting $debug_log_location below
+// A list of extensions that QuickLook previews should NOT be used for.
+$qlpreview_exclude_extensions = array("tif","tiff");
+
+// Log developer debug information to the debug log (filestore/tmp/debug.txt)?  As the default location is world-readable it is recommended for production systems to change the location to somewhere outside of the web directory by also setting $debug_log_location.
 $debug_log=false;
 
-# Optional extended debugging information from backtrace (records pagename and calling functions)
-# debug_extended_info = true;
+// Optional extended debugging information from backtrace (records pagename and calling functions).
+$debug_extended_info = false;
 
-# Debug log location. Optional. Used to specify a full path to debug file. Ensure folder permissions allow write access to both the file and the containing folder by web service account
-#$debug_log_location="d:/logs/resourcespace.log";
-#$debug_log_location="/var/log/resourcespace/resourcespace.log";
+// Optional debug log location. Used to specify a full path to debug file and ensure folder permissions allow write access to both the file and the containing folder by web service account.
+# $debug_log_location = "d:/logs/resourcespace.log";
+# $debug_log_location = "/var/log/resourcespace/resourcespace.log";
 
-# Suppress SQL information in the debug log?
+// Suppress SQL information in the debug log?
 $suppress_sql_log = false;
 
 # Enable Metadata Templates. This should be set to the ID of the resource type that you intend to use for metadata templates.

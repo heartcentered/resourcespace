@@ -1815,17 +1815,16 @@ $resourcedata=$resource;?>
 <?php hook("custompanels");//For custom panels immediately below resource display area 
 $resource=$resourcedata;?>
 
-
-
-
-<?php 
-if (!$disable_geocoding) { 
-  // only show this section if the resource is geocoded OR they have permission to do it themselves
-  if ($edit_access||($resource["geo_lat"]!="" && $resource["geo_long"]!=""))
-  		{
-		include "../include/geocoding_view.php";
-	  	} 
- 	} 
+<?php
+// Show resource geolocation map.
+if (!$disable_geocoding) 
+    {
+    // Only show the map if the resource is geocoded or they have the permission to geocode it.
+    if ($edit_access || ($resource["geo_lat"] != "" && $resource["geo_long"] != ""))
+        {
+        include "../include/geocoding_view.php";
+        }
+    }
 ?>
 
 <?php 
