@@ -157,16 +157,16 @@ else
     </div>
 
     <script type="text/javascript">
-        var Leaflet = L.noConflict();
+        var LeafletView = L.noConflict();
 
         <!--Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js-->
         var geo_lat = <?php echo $resource["geo_lat"]; ?>;
         var geo_long = <?php echo $resource["geo_long"]; ?>;
         var zoom = <?php echo $zoom; ?>;
 
-        var map = new L.map(<?php echo $map_container; ?>, {
+        var map = new LeafletView.map(<?php echo $map_container; ?>, {
             preferCanvas: true,
-            renderer: L.canvas(),
+            renderer: LeafletView.canvas(),
             zoomsliderControl: <?php echo $zoomslider?>,
             zoomControl: <?php echo $zoomcontrol?>
         }).setView([geo_lat, geo_long], zoom);
@@ -205,7 +205,7 @@ else
             } ?>
             
         <!--Define default Leaflet basemap layer using leaflet.js, leaflet.providers.js, and L.TileLayer.PouchDBCached.js-->
-        var defaultLayer = new L.tileLayer.provider('<?php echo $map_default;?>', {
+        var defaultLayer = new LeafletView.tileLayer.provider('<?php echo $map_default;?>', {
             useCache: '<?php echo $map_default_cache;?>', <!--Use browser caching of tiles (recommended)?-->
             detectRetina: '<?php echo $map_retina;?>', <!--Use retina high resolution map tiles?-->
             attribution: default_attribute
@@ -304,22 +304,22 @@ else
             exclusive: false
         };
 
-        var control = L.Control.styledLayerControl(baseMaps,options);
+        var control = LeafletView.Control.styledLayerControl(baseMaps,options);
         map.addControl(control);
         
         <!--Show zoom history navigation bar and add to Leaflet map using Leaflet.NavBar.min.js-->
         <?php if ($map_zoomnavbar && $view_mapheight >= 400)
             { ?>
-            L.control.navbar().addTo(map); <?php
+            LeafletView.control.navbar().addTo(map); <?php
             } ?>
 
         <!--Add a scale bar to the Leaflet map using leaflet.min.js-->
-        new L.control.scale().addTo(map);
+        new LeafletView.control.scale().addTo(map);
         
         <!--Add download map button to the Leaflet map using bundle.min.js-->
         <?php if ($map1_height >= 335)
             { ?>
-            L.easyPrint({
+            LeafletView.easyPrint({
                 title: "<?php echo $lang['leaflet_mapdownload']; ?>",
                 position: 'bottomleft',
                 sizeModes: ['Current', 'A4Landscape', 'A4Portrait'],
@@ -336,16 +336,13 @@ else
             omnivore.kml('<?php echo $baseurl?>/filestore/system/<?php echo $map_kml_file?>').addTo(map); <?php
             } ?>
 
-        <!--Fix for Microsoft Edge and Internet Explorer browsers-->
-        map.invalidateSize(true);
-
         <!--Limit geocoordinate values to six decimal places for display on marker hover-->
         function georound(num) {
             return +(Math.round(num + "e+6") + "e-6");
         }
 
         <!--Add a marker for the resource-->
-        L.marker([geo_lat, geo_long], {
+        LeafletView.marker([geo_lat, geo_long], {
             title: georound(geo_lat) + ", " + georound(geo_long) + " (WGS84)"
         }).addTo(map);
 
@@ -353,9 +350,9 @@ else
         <?php if (is_numeric($map_polygon_field))
             {
             $polygon = leaflet_polygon_parsing($fields, false);
-            if (!is_null($polygon['values']) && $polygon['values'] != "")
+            if (!is_null($polygon['values']) && $polygon['values'] != "" && $polygon['values'] != "[]")
                 { ?>
-                var refPolygon = L.polygon([<?php echo $polygon['values']; ?>]).addTo(map);
+                var refPolygon = LeafletView.polygon([<?php echo $polygon['values']; ?>]).addTo(map);
                 map.fitBounds(refPolygon.getBounds(), {
                     padding: [25, 25]
                 }); <?php
@@ -365,7 +362,10 @@ else
             { ?>
             map.setView([geo_lat, geo_long], zoom); <?php
             }
+
         ?>
+        <!--Fix for Microsoft Edge and Internet Explorer browsers-->
+        map.invalidateSize(true);
 
     </script> 
 

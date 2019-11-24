@@ -1434,13 +1434,13 @@ if($responsive_ui)
             // Check for resources without geolocation or invalid coordinates and skip those.
             if ($geomark["geo_lat"] >= -90 && $geomark["geo_lat"] <= 90 && $geomark["geo_long"] >= -180 && $geomark["geo_long"] <= 180)
                 {
-                // Create arrays of geolocation parameters.
+                // Create array of geolocation parameters.
                 $geomarker[] = "[{$geomark["geo_long"]}, {$geomark["geo_lat"]}, {$geomark["ref"]}, {$geomark["resource_type"]}, {$geomark2[0]["value"]}]";
                 $preview_paths[] = $geomark["preview_path"];
                 }
             }
         }
-
+debug("SEARCH Geomark: " . print_r($geomarker, true));
     # work out common keywords among the results
     if (is_array($result) && (count($result)>$suggest_threshold) && (strpos($search,"!")===false) && ($suggest_threshold!=-1))
         {

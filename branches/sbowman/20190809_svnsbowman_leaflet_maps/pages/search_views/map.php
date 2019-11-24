@@ -1,6 +1,6 @@
 <?php
 // Map Search View Using Leaflet.js and Various Leaflet Plugins
-// Last Edit 11/22/2019, Steve D. Bowman
+// Last Edit 11/24/2019, Steve D. Bowman
 
 // Check if geolocation/maps have been disabled.
 global $disable_geocoding, $lang;
@@ -18,7 +18,7 @@ $marker_color_def = array($marker_color1, $marker_color2, $marker_color3, $marke
 $display_selector_dropdowns = false;
 $zoomslider = 'false';
 $zoomcontrol = 'true';
-
+debug("MAP Geomarker: " . print_r($geomarker, true));
 // Set Leaflet map search view height and layer control container height based on $mapsearch_height.
 if (isset($mapsearch_height))
     {
@@ -80,7 +80,7 @@ if ($map_zoomslider)
     } ?>
 
 <!--Leaflet EasyPrint v2.1.9 plugin file-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.min.js"></script>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.js"></script>
 
 <!--Leaflet StyledLayerControl v5/16/2019 plugin files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/css/styledLayerControl.css"/>
@@ -98,11 +98,11 @@ if ($map_zoomslider)
 </div>
 
 <script type="text/javascript">
-    var Leaflet = L.noConflict();
+    var LeafletMap = L.noConflict();
     
     <!--Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js-->
-    var map1 = new L.map('map_results', {
-        renderer: L.canvas(),
+    var map1 = new LeafletMap.map('map_results', {
+        renderer: LeafletMap.canvas(),
         zoomsliderControl: <?php echo $zoomslider?>,
         zoomControl: <?php echo $zoomcontrol?>
     }).setView(<?php echo $map_centerview;?>);
@@ -141,7 +141,7 @@ if ($map_zoomslider)
         } ?>
 
     <!--Define default Leaflet basemap layer using leaflet.js, leaflet.providers.js, and L.TileLayer.PouchDBCached.js-->
-    var defaultLayer = new L.tileLayer.provider('<?php echo $map_default;?>', {
+    var defaultLayer = new LeafletMap.tileLayer.provider('<?php echo $map_default;?>', {
         useCache: '<?php echo $map_default_cache;?>', <!--Use browser caching of tiles (recommended)?-->
         detectRetina: '<?php echo $map_retina;?>', <!--Use retina high resolution map tiles?-->
         attribution: default_attribute
@@ -239,20 +239,20 @@ if ($map_zoomslider)
         exclusive: false
     };
 
-    var control = L.Control.styledLayerControl(baseMaps,options);
+    var control = LeafletMap.Control.styledLayerControl(baseMaps,options);
     map1.addControl(control);
 
     <!--Show zoom history navigation bar and add to Leaflet map using Leaflet.NavBar.min.js-->
     <?php if ($map_zoomnavbar)
         { ?>
-        L.control.navbar().addTo(map1); <?php
+        LeafletMap.control.navbar().addTo(map1); <?php
         } ?>
 
     <!--Add a scale bar to the Leaflet map using leaflet.min.js-->
-    new L.control.scale().addTo(map1);
+    new LeafletMap.control.scale().addTo(map1);
 
     <!--Add download map button to the Leaflet map using bundle.min.js-->
-    L.easyPrint({
+    LeafletMap.easyPrint({
         title: '<?php echo $lang['map_download'];?>',
         position: 'bottomleft',
         sizeModes: ['Current', 'A4Landscape', 'A4Portrait'],
@@ -285,7 +285,7 @@ if ($map_zoomslider)
         var win_url;
 
         <!--Setup marker clustering using leaflet.markercluster.js for many overlapping markers common in low zoom levels-->
-        var markers = L.markerClusterGroup({
+        var markers = LeafletMap.markerClusterGroup({
             maxClusterRadius: 75,
             disableClusteringAtZoom: 14,
             chunkedLoading: true, <!--Load markers in chunks to avoid slow browser response-->
@@ -293,7 +293,7 @@ if ($map_zoomslider)
         });
 
         <!--Cycle through the resources to create markers as needed and colored by resource type-->
-        for (var i=0; i<geomarker.length; i++)
+        for (var i = 0; i < geomarker.length; i++)
             {
             var lon = geomarker[i][0]; <!--Resource longitude value-->
             var lat = geomarker[i][1]; <!--Resource latitude value-->
@@ -306,7 +306,7 @@ if ($map_zoomslider)
             if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
                 { <?php
                 // Check if using a custom metadata field for coloring the markers and redefine rtype.
-                if (isset($marker_metadata_field))
+                if (isset($marker_metadata_field) && is_numeric($marker_metadata_field))
                     {
                     for ($i = 0; $i < 8; $i++)
                         { ?>
@@ -349,14 +349,14 @@ if ($map_zoomslider)
 
                 <!--Define the marker arrays for the markers, zoom to the markers, and marker click function using leaflet.js and leaflet-color-markers.js-->
                 <!--Create a marker for each resource for map zoom to the markers-->
-                markerArray.push(new L.marker([lat, lon], {
+                markerArray.push(new LeafletMap.marker([lat, lon], {
                     opacity: 0
                 }).addTo(map1));
 
                 <!--Create a marker for each resource-->
                 <?php if ($marker_resource_preview)
                     { ?>
-                    var marker = new L.marker([lat, lon], {
+                    var marker = new LeafletMap.marker([lat, lon], {
                         icon: iconColor,
                         riseOnHover: true,
                         win_url: geomarker[i][2],
@@ -376,7 +376,7 @@ if ($map_zoomslider)
                     } 
                 else // Show resource ID in marker tooltip.
                     { ?> 
-                    var marker = new L.marker([lat, lon], {
+                    var marker = new LeafletMap.marker([lat, lon], {
                         icon: iconColor,
                         title: 'ID# ' + rf,
                         riseOnHover: true,
@@ -393,8 +393,8 @@ if ($map_zoomslider)
         map1.addLayer(markers);
 
         <!--Zoom to the markers on the map regardless of the initial view-->
-        var group = L.featureGroup(markerArray);
-        map1.fitBounds(group.getBounds().pad(0.3));
+        var group = LeafletMap.featureGroup(markerArray);
+        map1.fitBounds(group.getBounds().pad(0.25));
 
         <!--On marker click, open a modal corresponding to the specific resource-->
         function showModal(e)
