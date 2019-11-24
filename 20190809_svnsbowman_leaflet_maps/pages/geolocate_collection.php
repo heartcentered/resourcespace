@@ -213,9 +213,9 @@ if (count($geomarker) == 0)
     var Leaflet = L.noConflict();
 
     <!--Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js-->
-    var map3 = new L.map('collection_map', {
+    var map3 = new Leaflet.map('collection_map', {
         preferCanvas: true,
-        renderer: L.canvas(),
+        renderer: Leaflet.canvas(),
         zoomsliderControl: <?php echo $zoomslider?>,
         zoomControl: <?php echo $zoomcontrol?>
     }).setView(<?php echo $map_centerview; ?>);
@@ -254,7 +254,7 @@ if (count($geomarker) == 0)
         } ?>
         
     <!--Define default Leaflet basemap layer using leaflet.js, leaflet.providers.js, and L.TileLayer.PouchDBCached.js-->
-    var defaultLayer = new L.tileLayer.provider('<?php echo $map_default;?>', {
+    var defaultLayer = new Leaflet.tileLayer.provider('<?php echo $map_default;?>', {
         useCache: '<?php echo $map_default_cache;?>', <!--Use browser caching of tiles (recommended)?-->
         detectRetina: '<?php echo $map_retina;?>', <!--Use retina high resolution map tiles?-->
         attribution: default_attribute
@@ -353,22 +353,22 @@ if (count($geomarker) == 0)
         exclusive: false
     };
 
-    var control = L.Control.styledLayerControl(baseMaps,options);
+    var control = Leaflet.Control.styledLayerControl(baseMaps,options);
     map3.addControl(control);
     
     <!--Show zoom history navigation bar and add to Leaflet map using Leaflet.NavBar.min.js-->
     <?php if ($map_zoomnavbar && $map1_height >= 400)
         { ?>
-        L.control.navbar().addTo(map3); <?php
+        Leaflet.control.navbar().addTo(map3); <?php
         } ?>
 
     <!--Add a scale bar to the Leaflet map using leaflet.min.js-->
-    new L.control.scale().addTo(map3);
+    new Leaflet.control.scale().addTo(map3);
     
     <!--Add download map button to the Leaflet map using bundle.min.js-->
     <?php if ($map1_height >= 335)
         { ?>
-        L.easyPrint({
+        Leaflet.easyPrint({
             title: "<?php echo $lang['leaflet_mapdownload']; ?>",
             position: 'bottomleft',
             sizeModes: ['Current', 'A4Landscape', 'A4Portrait'],
@@ -403,7 +403,7 @@ if (count($geomarker) == 0)
         var win_url;
 
         <!--Setup marker clustering using leaflet.markercluster.js for many overlapping markers common in low zoom levels-->
-        var markers = L.markerClusterGroup({
+        var markers = Leaflet.markerClusterGroup({
             maxClusterRadius: 75,
             disableClusteringAtZoom: 14,
             chunkedLoading: true, <!--Load markers in chunks to avoid slow browser response-->
@@ -474,7 +474,7 @@ if (count($geomarker) == 0)
                 <!--Create a marker for each resource-->
                 <?php if ($marker_resource_preview)
                     { ?>
-                    var marker = new L.marker([lat, lon], {
+                    var marker = new Leaflet.marker([lat, lon], {
                         icon: iconColor,
                         riseOnHover: true,
                         win_url: geomarker[i][2],
@@ -494,7 +494,7 @@ if (count($geomarker) == 0)
                     } 
                 else // Show resource ID in marker tooltip.
                     { ?> 
-                    var marker = new L.marker([lat, lon], {
+                    var marker = new Leaflet.marker([lat, lon], {
                         icon: iconColor,
                         title: 'ID# ' + rf,
                         riseOnHover: true,
@@ -511,8 +511,8 @@ if (count($geomarker) == 0)
         map3.addLayer(markers);
 
         <!--Zoom to the markers on the map regardless of the initial view-->
-        var group = L.featureGroup(markerArray);
-        map3.fitBounds(group.getBounds().pad(0.3));
+        var group = Leaflet.featureGroup(markerArray);
+        map3.fitBounds(group.getBounds().pad(0.25));
 
         <!--On marker click, open a modal corresponding to the specific resource-->
         function showModal(e)

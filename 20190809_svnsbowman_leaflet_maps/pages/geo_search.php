@@ -113,10 +113,10 @@ if ($default_display == "map" || $display == "map")
     var Leaflet = L.noConflict();
 
     // Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js.
-    var map1 = new L.map('search_map', {
+    var map1 = new Leaflet.map('search_map', {
         editable: true,
         preferCanvas: true,
-        renderer: L.canvas(),
+        renderer: Leaflet.canvas(),
         zoomsliderControl: <?php echo $zoomslider?>,
         zoomControl: <?php echo $zoomcontrol?>
     }).setView(<?php echo $map_centerview;?>);
@@ -156,7 +156,7 @@ if ($default_display == "map" || $display == "map")
         } ?>
 
     <!--Define default Leaflet basemap layer using leaflet.js, leaflet.providers.js, and L.TileLayer.PouchDBCached.js-->
-    var defaultLayer = new L.tileLayer.provider('<?php echo $map_default;?>', {
+    var defaultLayer = new Leaflet.tileLayer.provider('<?php echo $map_default;?>', {
         useCache: '<?php echo $map_default_cache;?>', <!--Use browser caching of tiles (recommended)?-->
         detectRetina: '<?php echo $map_retina;?>', <!--Use retina high resolution map tiles?-->
         attribution: default_attribute
@@ -254,23 +254,23 @@ if ($default_display == "map" || $display == "map")
         exclusive: false
     };
 
-    var control = L.Control.styledLayerControl(baseMaps,options);
+    var control = Leaflet.Control.styledLayerControl(baseMaps,options);
     map1.addControl(control);
 
     <!--Add geocoder search bar using control.geocoder.min.js-->
-    L.Control.geocoder().addTo(map1);
+    Leaflet.Control.geocoder().addTo(map1);
 
     <!--Show zoom history navigation bar and add to Leaflet map using Leaflet.NavBar.min.js-->
     <?php if ($map_zoomnavbar)
         { ?>
-        L.control.navbar().addTo(map1); <?php
+        Leaflet.control.navbar().addTo(map1); <?php
         } ?>
 
     <!--Add a scale bar to the Leaflet map using leaflet.min.js-->
-    new L.control.scale().addTo(map1);
+    new Leaflet.control.scale().addTo(map1);
 
     <!--Add download map button to the Leaflet map using bundle.min.js-->
-    L.easyPrint({
+    Leaflet.easyPrint({
         title: '<?php echo $lang['map_download'];?>',
         position: 'bottomleft',
         sizeModes: ['Current', 'A4Landscape', 'A4Portrait'],
@@ -289,7 +289,7 @@ if ($default_display == "map" || $display == "map")
     map1.invalidateSize(true);
 
     <!--Add an Area of Interest (AOI) selection box to the Leaflet map using leaflet-shades.js-->
-    var shades = new L.LeafletShades().addTo(map1);
+    var shades = new Leaflet.LeafletShades().addTo(map1);
 
     <!--Get AOI coordinates-->
     shades.on('shades:bounds-changed', function(e) {

@@ -2485,7 +2485,7 @@ $enable_plugin_upload = true;
     ];
 
     // Resource metadata field integer ID containing polygon footprint location string, blank '' if not used.  String in (latitude, longitude) coordinate pairs separated by a comma: (40.75,-111.51), (40.75,-111.49), (40.73,-111.49), (40.73,-111.51) or using braces [].  String can also contain a fifth pair that closes the polygon and equal to the first pair.
-    //$map_polygon_field = 84;
+    # $map_polygon_field = 84;
 
     // LEAFLET PROVIDERS AVAILABLE FREE WORLDWIDE BASEMAPS
         // Enabled OpenStreetMap (OSM) basemap layers.
