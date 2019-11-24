@@ -1,6 +1,6 @@
 <?php
 // Map Search View Using Leaflet.js and Various Leaflet Plugins
-// Last Edit 8/24/2019, Steve D. Bowman
+// Last Edit 11/22/2019, Steve D. Bowman
 
 // Check if geolocation/maps have been disabled.
 global $disable_geocoding, $lang;
@@ -44,12 +44,12 @@ if ($map_zoomslider)
     <p> <?php echo $lang["map_introtext1"];?> </p>
 </div>
 
-<!--Leaflet.js v1.5.1 files-->
-<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.css"/>
-<script src="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.min.js"></script>
+<!--Leaflet.js v1.6.0 files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.min.js"></script>
 
-<!--Leaflet Providers v1.8.0 plugin files-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.babel.min.js"></script>
+<!--Leaflet Providers v1.9.0 plugin files-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.9.0/leaflet-providers.babel.min.js"></script>
 
 <!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
 <?php if ($map_default_cache || $map_layer_cache)
@@ -267,6 +267,14 @@ if ($map_zoomslider)
         omnivore.kml('<?php echo $baseurl?>/filestore/system/<?php echo $map_kml_file?>').addTo(map1); <?php
         } ?>
 
+    <!--Fix for Microsoft Edge and Internet Explorer browsers-->
+    map1.invalidateSize(true);
+
+    <!--Limit geocoordinate values to six decimal places for display on marker hover-->
+    function georound(num) {
+        return +(Math.round(num + "e+6") + "e-6");
+    }
+
     <!--If no data (markers), only show the empty Leaflet map-->
     <?php if (!empty($geomarker))
         { ?>
@@ -351,14 +359,15 @@ if ($map_zoomslider)
                     var marker = new L.marker([lat, lon], {
                         icon: iconColor,
                         riseOnHover: true,
-                        win_url: geomarker[i][2]
+                        win_url: geomarker[i][2],
+                        title: georound(lat) + ", " + georound(lon) + " (WGS84)"
                     }); 
                     
                     <!--Show the resource preview image-->
                     var imagePath = "<img src='" + preview + "'/>";
                     var text1 = "<?php echo $lang["resourceid"]; ?>";
                     var imageLink = '<a href=' + baseurl + '/pages/view.php?ref=' + rf + " target='_blank'" + '>' + '<img src=' + preview + '>' + '</a>';
-                    marker.bindPopup(imageLink + text1 + " " + rf, {
+                    marker.bindPopup(imageLink + text1 + " " + rf + "<br>" + georound(lat) + ", " + georound(lon), {
                         minWidth: 155,
                         autoPan: true,
                         autoPanPaddingTopLeft: 5,
@@ -385,7 +394,7 @@ if ($map_zoomslider)
 
         <!--Zoom to the markers on the map regardless of the initial view-->
         var group = L.featureGroup(markerArray);
-        map1.fitBounds(group.getBounds().pad(0.1));
+        map1.fitBounds(group.getBounds().pad(0.3));
 
         <!--On marker click, open a modal corresponding to the specific resource-->
         function showModal(e)

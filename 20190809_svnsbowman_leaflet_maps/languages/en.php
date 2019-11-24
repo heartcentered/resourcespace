@@ -769,6 +769,7 @@ $lang["name"]="Name";
 $lang["action"]="Action";
 $lang["treeobjecttype-field"]=$lang["field"]="Field";
 $lang["save"]="Save";
+$lang["save-return"] = "Save & Return";
 $lang["revert"]="Revert";
 $lang['continue'] = 'Continue';
 $lang["cancel"]="Cancel";
@@ -1431,11 +1432,11 @@ $lang['plugins-search-plugin-placeholder'] = 'Search plugins';
 $lang['plugins-disabled-plugin-message'] = 'Disabled in configuration';
 
 // Location Data
-$lang['location-title'] = 'Location data';
+$lang['location-title'] = 'Location Data';
 $lang['location-add'] = 'Add location';
 $lang['location-edit'] = 'Edit location';
 $lang['location-details'] = 'Use "Drag mode" to switch between pin positioning and panning. Use zoom controls to zoom in and out. Click Save to save pin position and zoom level.';
-$lang['location-missing'] = 'The following resources lack geolocation data and are not displayed:';
+$lang['location-missing'] = "The following resources lack geolocation data and are not displayed on the map below.  Click on 'Add location' to edit the geolocation data for each resource listed in this table.";
 $lang['maps-disabled'] = "Maps disabled.";
 $lang['mapadd-introtext'] = "Pan and zoom to the map view of interest for this resource, then click the Add Marker button below the zoom control on the map left and click the map location where the resource is located.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
 $lang['mapadd2-introtext'] = "The blue marker indicates the location for the resource which can be moved by dragging.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
@@ -1447,15 +1448,18 @@ $lang['openstreetmap'] = "OpenStreetMap";
 $lang['google_terrain'] = "Google terrain";
 $lang['google_default_map'] = "Google default map";
 $lang['google_satellite'] = "Google satellite";
+$lang['marker'] = "Marker";
 $lang["markers"] = "Markers";
 $lang['map_configuration'] = "Search Results Map";
-$lang['map_introtext1'] = "The map below shows resources from the search result that have a latitude and longitude coordinate location associated with them. The marker color is set to the resource type or a custom metadata field (key below the map). When markers would overprint other markers, green-colored clustering is used with a number indicating the number of clustered markers, zoom-in or double click a cluster.  Click on an individual marker to load a window for that resource.  Hover over an individual marker for the Resource ID.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
-$lang['search_map_introtext'] = "Pan and zoom to the map view of interest or search for a location using the upper right search button, then draw a blue box on the map by dragging to select a search area for resources with a geolocation that lie within the box.  Change the basemap using the upper right map layers button.  Save the map to a PNG file using the lower left map button.";
+$lang['map_introtext1'] = "The map below shows resources from the search result that have a geolocation associated with them. The marker color is set to the resource type or a custom metadata field (key below the map). When markers would overprint other markers, green-colored clustering is used with a number indicating the number of clustered markers, zoom-in or double click a cluster.  Click on an individual marker to load a popup for that resource showing a preview image.  Click the preview image to load a window for that resource.  Hover over an individual marker for the geocoordinates.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
+$lang['search_map_introtext'] = "Pan and zoom to the map view of interest or search for a location using the upper right search button, then draw a blue box on the map by dragging to select a search area for resources with a geolocation that lie within the box.  To search for a specific location or geographic feature name, use the upper right search button.  Change the basemap using the upper right map layers button.  Save the map to a PNG file using the lower left map button.";
+$lang['edit_map_introtext'] = "Pan and zoom to the map view of interest, then click on the map to locate the resource location marker.  Save the most recent geolocation using the Save button and then click 'Back to resource edit or geolocate collection' to return.  To search for a specific location or geographic feature name, use the upper right search button.  Change the basemap using the upper right map layers button.  Save the map to a PNG file using the lower left map button.";
 $lang['mapview'] = "Map";
 $lang['maptitle'] = "Map view";
 $lang['mapemptysearch'] = "No search results.";
 $lang['map_print_title'] = "Search Results Map";
 $lang['leaflet_mapdownload'] = "Map Download";
+$lang['geolocate_collection_map_text'] = "The map below shows resources from this collection that have a geolocation associated with them. The marker color is set to the resource type or a custom metadata field (key below the map). When markers would overprint other markers, green-colored clustering is used with a number indicating the number of clustered markers, zoom-in or double click a cluster.  Click on an individual marker to load a popup for that resource showing a preview image.  Click the preview image to load a window for that resource.  Hover over an individual marker for the geocoordinates.  Change the basemap using the upper right map button.  Save the map to a PNG file using the lower left map button.";
 
 // Search map options.
 $lang['map_options'] = "Search Map Options";
@@ -1854,7 +1858,7 @@ $lang["purgeusersnousers"]="There are no users to purge.";
 $lang["editallresourcetypewarning"]="Warning: changing the resource type will delete any resource type specific metadata currently stored for the selected resources.";
 $lang["editresourcetypewarning"]="Warning: changing the resource type will delete any resource type specific metadata currently stored for this resource.";
 
-$lang["geodragmode"]="Drag mode";
+$lang["geodragmode"]="Map mode";
 $lang["geodragmodearea"]="position pin";
 $lang["geodragmodeareaselect"]="select search area";
 $lang["geodragmodepan"]="pan";

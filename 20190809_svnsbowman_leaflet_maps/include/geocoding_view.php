@@ -1,14 +1,15 @@
 <?php
 // Resource View Leaflet Map Using Leaflet.js and Various Leaflet Plugins
-// Last Edit 8/25/2019, Steve D. Bowman
+// Last Edit 11/23/2019, Steve D. Bowman
 
 include "map_functions.php";
 
-// Setup initial map variables.
-global $lang, $geo_search_restrict, $baseurl, $baseurl_short, $view_mapheight, $map_default, $map_zoomslider, $map_zoomnavbar, $map_kml, $map, $map_kml_file, $map_retina, $map_polygon_field, $modal;
+// Setup initial Leaflet map variables.
+global $lang, $geo_search_restrict, $baseurl, $baseurl_short, $view_mapheight, $map_default, $map_zoomslider, $map_zoomnavbar, $map_kml, $map, $map_kml_file, $map_retina, $map_polygon_field, $modal, $fields;
 $zoomslider = 'false';
 $zoomcontrol = 'true';
 $polygon = "";
+$modal = (getval("modal", "") == "true");
 
 // Set Leaflet map search view height and layer control container height based on $mapheight.
 if (isset($view_mapheight))
@@ -29,25 +30,24 @@ if ($map_zoomslider)
     $zoomcontrol = 'false';
     }
 
+// If inside spatial restricted zone, do not show location data.
 if (count($geo_search_restrict) > 0)
     {
     foreach ($geo_search_restrict as $zone)
         {
-        # Inside zone? Do not show location data.
-        if ($resource["geo_lat"] >= $zone[0] && $resource["geo_lat"] <= $zone[2] &&
-        $resource["geo_long"] >= $zone[1] && $resource["geo_long"] <= $zone[3]) 
+        if ($resource["geo_lat"] >= $zone[0] && $resource["geo_lat"] <= $zone[2] && $resource["geo_long"] >= $zone[1] && $resource["geo_long"] <= $zone[3]) 
             {
             return false; 
             }
         }
     }
 ?>
-<!--Leaflet.js v1.5.1 files-->
-<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.css"/>
-<script src="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.min.js"></script>
+<!--Leaflet.js v1.6.0 files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.min.js"></script>
 
-<!--Leaflet Providers v1.8.0 plugin file-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.babel.min.js"></script>
+<!--Leaflet Providers v1.9.0 plugin file-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.9.0/leaflet-providers.babel.min.js"></script>
 
 <!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
 <?php if ($map_default_cache || $map_layer_cache)
@@ -72,7 +72,7 @@ if (count($geo_search_restrict) > 0)
 <!--Leaflet EasyPrint v2.1.9 plugin file-->
 <?php if ($map1_height >= 335)
     { ?>
-    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.min.js"></script> <?php
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.js"></script> <?php
     } ?>
 
 <!--Leaflet StyledLayerControl v5/16/2019 plugin files-->
@@ -115,9 +115,9 @@ if($hide_geolocation_panel && !isset($geolocation_panel_only))
     </script> <?php
     }
 
+// Begin geolocation section.
 if (!isset($geolocation_panel_only))
     { ?>
-    <!-- Begin Geolocation Section -->
     <div class="RecordBox">
     <div class="RecordPanel"> <?php
 
@@ -139,22 +139,32 @@ if(!$hide_geolocation_panel || isset($geolocation_panel_only))
         <?php if ($edit_access) 
             { ?>
             <p><?php echo LINK_CARET ?><a href="<?php echo $baseurl_short?>pages/geo_edit.php?ref=<?php echo urlencode($ref); ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang['location-edit']; ?></a></p><?php } 
-    $zoom = leaflet_map_zoom($resource);
-    ?>
+    $zoom = leaflet_map_zoom($resource["mapzoom"]);
 
+// Check for modal view.
+if (!$modal)
+    {
+    $map_container = "map_id";
+    }
+else
+    {
+    $map_container = "map_id_modal";
+    }
+
+    ?>
     <!--Setup Leaflet map container with sizing-->
-    <div id=map_id style="width: 99%; margin-top:0px; margin-bottom:0px; height: <?php echo $map1_height;?>px; display:block; border:1px solid black; float:none; overflow: hidden;">
+    <div id=<?php echo $map_container; ?> style="width: 99%; margin-top:0px; margin-bottom:0px; height: <?php echo $map1_height;?>px; display:block; border:1px solid black; float:none; overflow: hidden;">
     </div>
 
     <script type="text/javascript">
         var Leaflet = L.noConflict();
-        
+
         <!--Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js-->
         var geo_lat = <?php echo $resource["geo_lat"]; ?>;
         var geo_long = <?php echo $resource["geo_long"]; ?>;
         var zoom = <?php echo $zoom; ?>;
 
-        var map = new L.map(map_id, {
+        var map = new L.map(<?php echo $map_container; ?>, {
             preferCanvas: true,
             renderer: L.canvas(),
             zoomsliderControl: <?php echo $zoomslider?>,
@@ -200,6 +210,7 @@ if(!$hide_geolocation_panel || isset($geolocation_panel_only))
             detectRetina: '<?php echo $map_retina;?>', <!--Use retina high resolution map tiles?-->
             attribution: default_attribute
         }).addTo(map);
+        map.invalidateSize(true);
         
         <!--Determine basemaps and map groups for user selection-->
         var baseMaps = [
@@ -318,25 +329,51 @@ if(!$hide_geolocation_panel || isset($geolocation_panel_only))
             }).addTo(map);
             <?php
             } ?>
-        
+
         <!--Add a KML overlay to the Leaflet map using leaflet-omnivore.min.js-->
         <?php if ($map_kml)
             { ?>
             omnivore.kml('<?php echo $baseurl?>/filestore/system/<?php echo $map_kml_file?>').addTo(map); <?php
             } ?>
 
+        <!--Fix for Microsoft Edge and Internet Explorer browsers-->
+        map.invalidateSize(true);
+
         <!--Limit geocoordinate values to six decimal places for display on marker hover-->
         function georound(num) {
             return +(Math.round(num + "e+6") + "e-6");
         }
 
-        <!--Pan to marker location and add a marker for the resource-->
-        map.panTo([geo_lat, geo_long]);
+        <!--Add a marker for the resource-->
         L.marker([geo_lat, geo_long], {
             title: georound(geo_lat) + ", " + georound(geo_long) + " (WGS84)"
         }).addTo(map);
 
-    </script> <?php
+        <!--Add the resource footprint polygon to the map and pan/zoom to the polygon-->
+        <?php if (is_numeric($map_polygon_field))
+            {
+            $polygon = leaflet_polygon_parsing($fields, false);
+            if (!is_null($polygon['values']) && $polygon['values'] != "")
+                { ?>
+                var refPolygon = L.polygon([<?php echo $polygon['values']; ?>]).addTo(map);
+                map.fitBounds(refPolygon.getBounds(), {
+                    padding: [25, 25]
+                }); <?php
+                }
+            }
+        else // Pan to the marker location.
+            { ?>
+            map.setView([geo_lat, geo_long], zoom); <?php
+            }
+        ?>
+
+    </script> 
+
+    <!--Show resource geolocation value-->
+    <div id="resource_coordinate" style="margin-top:0px; margin-bottom:0px; width: 99%;">
+        <p> <?php echo $lang['marker'] . " " . strtolower($lang['latlong']) . ": "; echo round($resource["geo_lat"], 6) . ", "; echo round($resource["geo_long"], 6) . " (WGS84)"; ?> </p>
+    </div>
+    <?php
     }
 else
     { ?>
@@ -353,25 +390,23 @@ if($view_panels)
         jQuery("#GeolocationData").appendTo("#Panel1").addClass("TabPanel").hide();
         removePanel.remove();
 
-        // Function to switch tab panels.
+        <!--Function to switch tab panels-->
         jQuery('.ViewPanelTitles').children('.Title').click(function()
             {
             jQuery(this).parent().parent().children('.TabPanel').hide();
             jQuery(this).parent().children('.Title').removeClass('Selected');
             jQuery(this).addClass('Selected');
             jQuery('#' + jQuery(this).attr('panel')).show();
-            map.updateSize();
+            map.invalidateSize(true);
             });
         });
     </script> <?php
     } ?>
-    </div>
-    <?php
+    </div> <?php
     }
 
 if (!isset($geolocation_panel_only))
     { ?>
-    </div> <!-- End of RecordPanel  -->
-    </div> <!-- End of RecordBox -->
-    <!-- End Geolocation Section -->
-    <?php }
+    </div> <!--End of RecordPanel-->
+    </div> <!--End of RecordBox--> <?php 
+    }

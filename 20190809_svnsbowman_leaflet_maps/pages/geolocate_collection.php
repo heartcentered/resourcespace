@@ -1,31 +1,59 @@
 <?php
+// Collection Geolocation Edit Using Leaflet.js and Various Leaflet Plugins
+// Last Edit 11/24/2019, Steve D. Bowman
+
 include "../include/db.php";
 include_once "../include/general.php";
 include "../include/authenticate.php";
 include_once "../include/resource_functions.php";
 include_once "../include/collections_functions.php";
 include_once "../include/search_functions.php";
+include "../include/map_functions.php";
 
-//The two variables below act like "pemissions" to display or not the page
+global $baseurl, $geolocate_image_size, $lang, $geo_search_restrict, $baseurl, $baseurl_short, $mapedit_mapheight, $map_default, $map_zoomslider, $map_zoomnavbar, $map_kml, $map_kml_file, $map_retina, $map_polygon_field, $map_centerview, $marker_metadata_field, $marker_colors, $marker_resource_preview, $marker_color1, $marker_color2, $marker_color3, $marker_color4, $marker_color5, $marker_color6, $marker_color7, $marker_color8;
+
+$marker_color_def = array($marker_color1, $marker_color2, $marker_color3, $marker_color4, $marker_color5, $marker_color6, $marker_color7, $marker_color8);
+$zoomslider = 'false';
+$zoomcontrol = 'true';
+$polygon = "";
+
+// The two variables below act like pemissions to display or not the page.
 if($disable_geocoding || (!$disable_geocoding && !$geo_locate_collection))
     {
     header('HTTP/1.1 403 Forbidden');
     exit($lang['error-permissiondenied']);
     }
 
-global $baseurl;
-
 $ref = getvalescaped('ref', '', true);
 if(!is_numeric($ref))
     {
     header('HTTP/1.1 400 Bad Request');
-    exit('Ref is required to be numeric!');
+    exit($lang['error_resource_id_non_numeric']);
     }
 
 if(!collection_readable($ref))
     {
     header('HTTP/1.1 401 Unauthorized');
-    die('Permission denied!');
+    die($lang['error-permissiondenied']);
+    }
+
+// Set Leaflet map search view height and layer control container height based on $mapheight.
+if (isset($mapedit_mapheight))
+    {
+    $map1_height = $mapedit_mapheight;
+    $layer_controlheight = $mapedit_mapheight - 40;
+    }
+else // Default values.
+    {
+    $map1_height = 300;
+    $layer_controlheight = 250;
+    }
+
+// Show zoom slider instead of default Leaflet zoom control?
+if ($map_zoomslider)
+    {
+    $zoomslider = 'true';
+    $zoomcontrol = 'false';
     }
 
 $all_resources = get_collection_resources($ref);
@@ -37,154 +65,498 @@ $check = false;
 include '../include/header.php';
 ?>
 <h1><?php echo $lang["geolocatecollection"] ?></h1>
-<h3><?php echo $lang["collectionname"] . ": " . $collectionname  ?></h3>
+<h3><?php echo $lang["collectionname"] . ": " . $collectionname ?></h3>
 <?php
 
-//If the collection is empty stop here and provide a message
-if ( count($all_resources) == 0 ) {  exit( $lang["geoemptycollection"]);  }
-
-//Start looping through the data fetched earlier
-foreach ($all_resources as $value) 
-	{
-    $resource = get_resource_data($value,$cache=true);
-    
-    //hide the resource if it is confidential
-	if ( get_resource_access($resource['ref'])==2 ) {continue;}
-    
-    //If the resource is not confidential keep going
-    else
+// If the collection is empty, stop here and provide a message.
+if (count($all_resources) == 0)
     {
-	$forthumb = get_resource_data($resource['ref']);
-	$url = get_resource_path($resource['ref'],false,"thm",$generate=true,$extension="jpg",$scramble=-1,$page=1,$watermarked=false,$file_modified="",$alternative=-1,$includemodified=true);
-	$new = str_replace($baseurl,"", $url);
-	$parts =  explode('?',$new);
-	
-	if (  $resource['geo_long'] == '' || $resource['geo_lat'] == '' )
-		{
-		if (!$check)
-			{
-			echo $lang['location-missing'] ;
-			//Set check to true so the text above and the table below 
-			//are only rendered if geolocation data are missing
-			$check = true;
-			?>
-			<table class="InfoTable">
-			<tr>
-			<td><?php echo $lang["resourceid"]?></td>
-			<td><?php echo $lang["action-preview"]?></td>
-			<td><?php echo $lang['location-title']?></td>
-			</td>
-			</tr>
-			<?php
-			}
-			?>
+    exit($lang["geoemptycollection"]);
+    }
 
-		<tr>
-		<td><?php echo $resource['ref']?></td>
-		<td><a href=<?php echo $baseurl . "/pages/view.php?ref=" . $resource['ref'] ?> onclick="return <?php echo ($resource_view_modal?"Modal":"CentralSpace") ?>Load(this, true);"> <img  src=<?php echo '..' . $parts[0]?> </img></a></td>
-		<?php if (get_edit_access($resource['ref'])){?><td><a href=<?php echo $baseurl . "/pages/geo_edit.php?ref=" . $resource['ref'] . "&geocol=" . $ref ?> > <?php echo $lang['location-add']?></a></td><?php } else { ?><td> <?php echo $lang['location-noneselected'];?> </td><?php } ?>
-		</tr>
-		
-		<?php
-		}
-	else
-		{
-		//These arrays are going to be passed to Javascript below to plot
-		//echo $resource['field8'];
-		$markers[] = "[{$resource['geo_long']}, {$resource['geo_lat']}, {$resource['ref']}, {$forthumb['thumb_width']}, {$forthumb['thumb_height']}]";
-		$paths[]   = $parts[0];
-		
-		}
-	}
+// Start looping through the data fetched earlier.
+foreach ($all_resources as $value)
+    {
+    $resource = get_resource_data($value, $cache = true);
+
+    // Hide the resource if it is confidential.
+    if (get_resource_access($resource['ref']) == 2)
+        {
+        continue;
+        }
+
+    else // If the resource is not confidential, keep going.
+        {
+        // Get resource data for resources returned by the current search.
+        $url = get_resource_path($resource['ref'], false, $geolocate_image_size, $generate = true, $extension = "jpg", $scramble = -1, $page = 1, $watermarked = false, $file_modified = "", $alternative = -1, $includemodified = true);
+        $parts = explode('?', str_replace($baseurl, "", $url));
+        $geomark = get_resource_data($resource['ref'], $cache = false);
+        $geomark["preview_path"] = strstr(get_resource_path($resource['ref'], false, 'thm', false, $extension = "jpg", true, 1, $watermarked = false, $file_modified = ""), "?", true);
+
+        // Get custom metadata field value.
+        if (isset($marker_metadata_field))
+            {
+            $ref1 = $resource['ref'];
+            $geomark2 = sql_query("SELECT value FROM resource_data WHERE resource = '$ref1' AND resource_type_field = '$marker_metadata_field'");
+            }
+        else
+            {
+            $geomark2[0]["value"] = '';
+            }
+
+    if ($resource['geo_long'] == '' || $resource['geo_lat'] == '')
+        {
+        if (!$check)
+            {
+            echo $lang['location-missing'];
+            // Set check to true so the text above and the table below are only rendered if geolocation data are missing.
+            $check = true;
+            ?>
+            <table class="InfoTable">
+            <tr>
+                <td><b><?php echo $lang["resourceid"]?> </b></td>
+                <td><b><?php echo $lang["action-preview"]?> </b></td>
+                <td><b><?php echo $lang["location-title"]?> </b></td>
+                </td>
+            </tr>
+            <?php
+            } ?>
+
+        <tr>
+            <td><?php echo $resource['ref']; ?></td>
+            <td><a href=<?php echo $baseurl . "/pages/view.php?ref=" . $resource['ref'] ?> onclick="return <?php echo ($resource_view_modal ? "Modal" : "CentralSpace") ?>Load(this, true);"> <img src=<?php echo '..' . $parts[0]?> </img></a></td>
+            <?php if (get_edit_access($resource['ref'])) { ?><td><a href=<?php echo $baseurl . "/pages/geo_edit.php?ref=" . $resource['ref'] . "&geocol=" . $ref ?> > <?php echo $lang['location-add']; ?></a></td><?php } else { ?><td> <?php echo $lang['location-noneselected']; ?> </td><?php } ?>
+        </tr>
+        <?php
+        }
+    else
+        {
+        // Create array of geolocation parameters.
+        $geomarker[] = "[{$geomark["geo_long"]}, {$geomark["geo_lat"]}, {$geomark["ref"]}, {$geomark["resource_type"]}, {$geomark2[0]["value"]}]";
+        $preview_paths[] = $geomark["preview_path"];
+        }
+    }
 }
 
 ?>
-<?php if ($check){?></table><?php echo "<br />";}
+<?php if ($check)
+    { ?>
+    </table><?php echo "<br/>";
+    }
 
-//exit if there are no assets to put on the map
-if (count($markers)==0) {exit;}?>
+// Exit if there are no assets to put on the map.
+if (count($geomarker) == 0)
+    {
+    exit;
+    }
 
-<div class="BasicsBox"> 
-<div id="map_canvas_col" style="width: 100%; height: <?php echo isset($mapheight)?$mapheight:"500" ?>px; display:block; float:none;overflow: hidden;" class="Picture" ></div>
-<script src="../lib/OpenLayers/OpenLayers.js"></script>
-<script>
+?>
+<!--Leaflet.js v1.6.0 files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.min.js"></script>
 
-    map = new OpenLayers.Map("map_canvas_col");
-    
-    map.addControl(new OpenLayers.Control.LayerSwitcher({'ascending':false}));
-    map.addLayer(new OpenLayers.Layer.OSM('OSM'));
-    epsg4326 =  new OpenLayers.Projection("EPSG:4326"); //WGS 1984 projection
-    projectTo = map.getProjectionObject(); //The map projection (Spherical Mercator)
-         
-    var vectorLayer = new OpenLayers.Layer.Vector("Thumbnails");
-    var vectorLayer2 = new OpenLayers.Layer.Vector("Markers");
-    
-    //Unloading values to Javascript, some cases require stripping
-    //of backslashes because Javascript was complaining
-    var markers = <?php echo str_replace(array('"','\\'),'',json_encode($markers)) ?>;
-    var paths = <?php echo str_replace('\\','',json_encode($paths)) ?>;
-    
-    var baseurl = <?php echo str_replace('\\','',json_encode($baseurl) )?>;
+<!--Leaflet Providers v1.9.0 plugin file-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.9.0/leaflet-providers.babel.min.js"></script>
 
-    for (var i=0; i<markers.length; i++)
-		{
-        var lon = markers[i][0];
-        var lat = markers[i][1];
-        var rf = markers[i][2];
-        var width = markers[i][3];
-        var height = markers[i][4];
-        var reslink = paths[i];
-        
-        
-        var feature = new OpenLayers.Feature.Vector(
-			new OpenLayers.Geometry.Point( lon, lat ).transform(epsg4326, projectTo),
-			{description: baseurl +  '/pages/view.php?ref=' + rf},
-			
-			{externalGraphic: '..' + reslink, graphicHeight: height*0.45, graphicWidth: width*0.45 }
-		);
-		
-		var feature2 = new OpenLayers.Feature.Vector(
-			new OpenLayers.Geometry.Point( lon, lat ).transform(epsg4326, projectTo),
-			{description: baseurl +  '/pages/view.php?ref=' + rf},
-			
-			{externalGraphic: '../lib/OpenLayers/img/marker.png', graphicHeight: 25, graphicWidth: 21 }
-		);  
-		
-		vectorLayer.addFeatures(feature);
-		vectorLayer2.addFeatures(feature2);
-	}
-		
-		
-	//Hide by default the thumbnails and display markers
-	vectorLayer.setVisibility(false)		
+<!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
+<?php if ($map_default_cache || $map_layer_cache)
+    { ?>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/pouchdb-7.1.1/pouchdb-7.1.1.min.js"></script>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-PouchDBCached-1.0.0/L.TileLayer.PouchDBCached.min.js"></script> <?php
+    } ?>
 
-	vectorLayer.events.register("featureselected", null, function(event){
-        ModalLoad(event.feature.attributes.description)
-        selectControl.unselectAll();
-		});
+<!--Leaflet MarkerCluster v1.4.1 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/MarkerCluster.Default.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/leaflet.markercluster.min.js"></script>
 
-	vectorLayer2.events.register("featureselected", null, function(event){
-        ModalLoad(event.feature.attributes.description)
-        selectControl.unselectAll();
-		});
-    	
-	// Add select feature control required to trigger events on the vector layer.
-    var selectControl = new OpenLayers.Control.SelectFeature(vectorLayer);
-    map.addControl(selectControl);
-    selectControl.activate(); 
-    
-    var selectControl2 = new OpenLayers.Control.SelectFeature(vectorLayer2);
-    map.addControl(selectControl2);
-    selectControl2.activate();  
-    
-	map.addLayer(vectorLayer);
-    map.addLayer(vectorLayer2);
-	
-    map.zoomToExtent(vectorLayer2.getDataExtent());
-    
-</script>
+<!--Leaflet ColorMarkers v1.0.0 plugin file-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-colormarkers-1.0.0/js/leaflet-color-markers.min.js"></script>
+
+<!--Leaflet NavBar v1.0.1 plugin files-->
+<?php if ($map_zoomnavbar)
+    { ?>
+    <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-NavBar-1.0.1/src/Leaflet.NavBar.css"/>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-NavBar-1.0.1/src/Leaflet.NavBar.min.js"></script> <?php
+    } ?>
+
+<!--Leaflet Omnivore v0.3.1 plugin file-->
+<?php if ($map_kml)
+    { ?>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-omnivore-0.3.1/leaflet-omnivore.min.js"></script> <?php
+    } ?>
+
+<!--Leaflet EasyPrint v2.1.9 plugin file-->
+<?php if ($map1_height >= 335)
+    { ?>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.js"></script> <?php
+    } ?>
+
+<!--Leaflet StyledLayerControl v5/16/2019 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/css/styledLayerControl.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/src/styledLayerControl.min.js"></script>
+
+<!--Leaflet Zoomslider v0.7.1 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.min.js"></script>
+
+<!--Polyfill for Internet Explorer and Edge browser compatibility-->
+<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces5%2Ces6%2Ces2017%2Cdefault%2Ces2018%2Ces7"></script>
+
+<?php echo $lang['geolocate_collection_map_text']; ?>
+
+<!--Setup Leaflet map container with sizing-->
+<div id="collection_map" style="width: 99%; margin-top:0px; margin-bottom:0px; height: <?php echo $map1_height;?>px; display:block; border:1px solid black; float:none; overflow: hidden;">
 </div>
 
+<script type="text/javascript">
+    var Leaflet = L.noConflict();
+
+    <!--Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js-->
+    var map3 = new L.map('collection_map', {
+        preferCanvas: true,
+        renderer: L.canvas(),
+        zoomsliderControl: <?php echo $zoomslider?>,
+        zoomControl: <?php echo $zoomcontrol?>
+    }).setView(<?php echo $map_centerview; ?>);
+    
+    // Define available Leaflet basemaps groups and layers using leaflet.providers.js, L.TileLayer.PouchDBCached.js, and styledLayerControl.js based on ../include/map_functions.php.
+    <?php      
+    echo leaflet_osm_basemaps();
+    echo leaflet_esri_basemaps();
+    echo leaflet_stamen_basemaps();
+    echo leaflet_hydda_basemaps();
+    echo leaflet_nasa_basemaps();
+    echo leaflet_thunderforest_basemaps();
+    echo leaflet_mapbox_basemaps(); 
+
+    // Define Leaflet default basemap attribution.
+    switch ($map_default)
+        {
+        case ('OpenStreetMap.Mapnik' || 'OpenStreetMap.DE' || 'OpenStreetMap.BZH' || 'OpenStreetMap.HOT' || 'MtbMap' || 'HikeBike.HikeBike'):
+            ?> var default_attribute = osm_attribute; <?php
+            break;
+
+        case ('OpenStreetMap.France'):
+            ?> var default_attribute = osm_fr_attribute; <?php
+            break;
+
+        case ('OpenTopoMap'):
+            ?> var default_attribute = osm_otm_attribute; <?php
+            break;
+
+        case ('OpenMapSurfer.Roads'):
+            ?> var default_attribute = oms_attribute; <?php
+            break;
+
+        default:
+            ?> var default_attribute = ''; <?php
+        } ?>
+        
+    <!--Define default Leaflet basemap layer using leaflet.js, leaflet.providers.js, and L.TileLayer.PouchDBCached.js-->
+    var defaultLayer = new L.tileLayer.provider('<?php echo $map_default;?>', {
+        useCache: '<?php echo $map_default_cache;?>', <!--Use browser caching of tiles (recommended)?-->
+        detectRetina: '<?php echo $map_retina;?>', <!--Use retina high resolution map tiles?-->
+        attribution: default_attribute
+    }).addTo(map3);
+
+
+    <!--Determine basemaps and map groups for user selection-->
+    var baseMaps = [
+        { groupName: "<?php echo $lang["map_osm_group"];?>", <!--OSM group-->
+            expanded: true,
+            layers: {
+                <?php if ($map_osm) { ?> "<?php echo $lang["map_osm"];?>" : osm_mapnik, <?php } ?>
+                <?php if ($map_osmde) { ?> "<?php echo $lang["map_osmde"];?>" : osm_de, <?php } ?>
+                <?php if ($map_osmfr) { ?> "<?php echo $lang["map_osmfr"];?>" : osm_fr, <?php } ?>
+                <?php if ($map_osmbzh) { ?> "<?php echo $lang["map_osmbzh"];?>" : osm_bzh, <?php } ?>
+                <?php if ($map_osmhot) { ?> "<?php echo $lang["map_osmhot"];?>" : osm_hot, <?php } ?>
+                <?php if ($map_osmmtb) { ?> "<?php echo $lang["map_osmmtb"];?>" : osm_mtb, <?php } ?>
+                <?php if ($map_osmhikebike) { ?> "<?php echo $lang["map_osmhikebike"];?>" : osm_hikebike, <?php } ?>
+                <?php if ($map_otm) { ?> "<?php echo $lang["map_otm"];?>" : osm_otm, <?php } ?>
+                <?php if ($map_omsroads) { ?> "<?php echo $lang["map_omsroads"];?>" : oms_roads <?php } ?>
+            }
+        },
+
+        { groupName: "<?php echo $lang["map_esri_group"];?>", <!--ESRI group-->
+            expanded: true,
+            layers: {
+                <?php if ($map_esristreet) { ?> "<?php echo $lang["map_esristreet"];?>" : esri_street, <?php } ?>
+                <?php if ($map_esridelorme) { ?> "<?php echo $lang["map_esridelorme"];?>" : esri_delorme, <?php } ?>
+                <?php if ($map_esritopo) { ?> "<?php echo $lang["map_esritopo"];?>" : esri_topo, <?php } ?>
+                <?php if ($map_esriimagery) { ?> "<?php echo $lang["map_esriimagery"];?>" : esri_imagery, <?php } ?>
+                <?php if ($map_esriterrain) { ?> "<?php echo $lang["map_esriterrain"];?>" : esri_terrain, <?php } ?>
+                <?php if ($map_esrirelief) { ?> "<?php echo $lang["map_esrirelief"];?>" : esri_relief, <?php } ?>
+                <?php if ($map_esriphysical) { ?> "<?php echo $lang["map_esriphysical"];?>" : esri_physical, <?php } ?>
+                <?php if ($map_esriocean) { ?> "<?php echo $lang["map_esriocean"];?>" : esri_ocean, <?php } ?>
+                <?php if ($map_esrinatgeo) { ?> "<?php echo $lang["map_esrinatgeo"];?>" : esri_natgeo, <?php } ?>
+                <?php if ($map_esrigray) { ?> "<?php echo $lang["map_esrigray"];?>" : esri_gray <?php } ?>
+            }
+        },
+
+        { groupName: "<?php echo $lang["map_stamen_group"];?>", <!--Stamen group-->
+            expanded: true,
+            layers: {
+                <?php if ($map_stamentoner) { ?> "<?php echo $lang["map_stamentoner"];?>" : stamen_toner, <?php } ?>
+                <?php if ($map_stamentonerlt) { ?> "<?php echo $lang["map_stamentonerlt"];?>" : stamen_tonerlt, <?php } ?>
+                <?php if ($map_stamentonerback) { ?> "<?php echo $lang["map_stamentonerback"];?>" : stamen_tonerback, <?php } ?>
+                <?php if ($map_stamenterrain) { ?> "<?php echo $lang["map_stamenterrain"];?>" : stamen_terrain, <?php } ?>
+                <?php if ($map_stamenterrainback) { ?> "<?php echo $lang["map_stamenterrainback"];?>" : stamen_terrainback, <?php } ?>
+                <?php if ($map_stamenrelief) { ?> "<?php echo $lang["map_stamenrelief"];?>" : stamen_relief, <?php } ?>
+                <?php if ($map_stamenwatercolor) { ?> "<?php echo $lang["map_stamenwatercolor"];?>" : stamen_watercolor <?php } ?>
+            }
+        },
+
+        { groupName: "<?php echo $lang["map_hydda_group"];?>", <!--Hydda group-->
+            expanded: true,
+            layers: {
+                <?php if ($map_hyddafull) { ?> "<?php echo $lang["map_hyddafull"];?>" : hydda_full, <?php } ?>
+                <?php if ($map_hyddabase) { ?> "<?php echo $lang["map_hyddabase"];?>" : hydda_base <?php } ?>
+            }
+        },
+
+        { groupName: "<?php echo $lang["map_nasagibs_group"];?>", <!--NASA GIBS group-->
+            expanded: true,
+            layers: {
+                <?php if ($map_nasagibscolor) { ?> "<?php echo $lang["map_nasagibscolor"];?>" : nasa_gibscolor, <?php } ?>
+                <?php if ($map_nasagibsfalsecolor) { ?> "<?php echo $lang["map_nasagibsfalsecolor"];?>" : nasa_gibsfalsecolor, <?php } ?>
+                <?php if ($map_nasagibsnight) { ?> "<?php echo $lang["map_nasagibsnight"];?>" : nasa_gibsnight <?php } ?>
+            }
+        },
+
+        { groupName: "<?php echo $lang["map_tf_group"];?>", <!--Thunderforest group-->
+            expanded: true,
+            layers: {
+                <?php if ($map_tfocm) { ?> "<?php echo $lang["map_tfocm"];?>" : tf_ocm, <?php } ?>
+                <?php if ($map_tftransport) { ?> "<?php echo $lang["map_tftransport"];?>" : tf_transport, <?php } ?>
+                <?php if ($map_tftransportdark) { ?> "<?php echo $lang["map_tftransportdark"];?>" : tf_transportdark, <?php } ?>
+                <?php if ($map_tflandscape) { ?> "<?php echo $lang["map_tflandscape"];?>" : tf_landscape, <?php } ?>
+                <?php if ($map_tfoutdoors) { ?> "<?php echo $lang["map_tfoutdoors"];?>" : tf_outdoors, <?php } ?>
+                <?php if ($map_tfpioneer) { ?> "<?php echo $lang["map_tfpioneer"];?>" : tf_pioneer, <?php } ?>
+                <?php if ($map_tfmobileatlas) { ?> "<?php echo $lang["map_tfmobileatlas"];?>" : tf_mobileatlas, <?php } ?>
+                <?php if ($map_tfneighbourhood) { ?> "<?php echo $lang["map_tfneighbourhood"];?>" : tf_neighbourhood <?php } ?>
+            }
+        },
+
+        { groupName: "<?php echo $lang["map_mapbox_group"];?>", <!--Mapbox group-->
+            expanded: true,
+            layers: {
+                <?php if ($map_mapbox) { ?> "<?php echo $lang["map_mapbox"];?>" : mapbox <?php } ?>
+            }
+        }
+    ];
+
+    <!--Set styled layer control options for basemaps and add to the Leaflet map using styledLayerControl.js-->
+    var options = {
+        container_maxHeight: "<?php echo $layer_controlheight?>px",
+        group_maxHeight: "180px",
+        exclusive: false
+    };
+
+    var control = L.Control.styledLayerControl(baseMaps,options);
+    map3.addControl(control);
+    
+    <!--Show zoom history navigation bar and add to Leaflet map using Leaflet.NavBar.min.js-->
+    <?php if ($map_zoomnavbar && $map1_height >= 400)
+        { ?>
+        L.control.navbar().addTo(map3); <?php
+        } ?>
+
+    <!--Add a scale bar to the Leaflet map using leaflet.min.js-->
+    new L.control.scale().addTo(map3);
+    
+    <!--Add download map button to the Leaflet map using bundle.min.js-->
+    <?php if ($map1_height >= 335)
+        { ?>
+        L.easyPrint({
+            title: "<?php echo $lang['leaflet_mapdownload']; ?>",
+            position: 'bottomleft',
+            sizeModes: ['Current', 'A4Landscape', 'A4Portrait'],
+            exportOnly: true,
+            filename: 'search_results_map',
+            customWindowTitle: "<?php echo $lang['map_print_title']; ?>"
+        }).addTo(map3);
+        <?php
+        } ?>
+
+    <!--Add a KML overlay to the Leaflet map using leaflet-omnivore.min.js-->
+    <?php if ($map_kml)
+        { ?>
+        omnivore.kml('<?php echo $baseurl?>/filestore/system/<?php echo $map_kml_file?>').addTo(map3); <?php
+        } ?>
+
+    <!--Fix for Microsoft Edge and Internet Explorer browsers-->
+    map3.invalidateSize(true);
+
+    <!--Limit geocoordinate values to six decimal places for display on marker hover-->
+    function georound(num) {
+        return +(Math.round(num + "e+6") + "e-6");
+    }
+
+    <!--If no data (markers), only show the empty Leaflet map-->
+    <?php if (!empty($geomarker))
+        { ?>
+        <!--Setup and configure initial marker info from resource data-->
+        var geomarker = <?php echo str_replace(array('"', '\\'), '', json_encode($geomarker))?>;
+        var previewPaths = <?php echo json_encode($preview_paths); ?>;
+        var markerArray = [];
+        var win_url;
+
+        <!--Setup marker clustering using leaflet.markercluster.js for many overlapping markers common in low zoom levels-->
+        var markers = L.markerClusterGroup({
+            maxClusterRadius: 75,
+            disableClusteringAtZoom: 14,
+            chunkedLoading: true, <!--Load markers in chunks to avoid slow browser response-->
+            elementsPlacementStrategy: 'original-locations' <!--Cluster items placement strategy-->
+        });
+
+        <!--Cycle through the resources to create markers as needed and colored by resource type-->
+        for (var i=0; i<geomarker.length; i++)
+            {
+            var lon = geomarker[i][0]; <!--Resource longitude value-->
+            var lat = geomarker[i][1]; <!--Resource latitude value-->
+            var rf = geomarker[i][2]; <!--Resource reference value-->
+            var rtype = geomarker[i][3]; <!--Resource type-->
+            var cmfm = geomarker[i][4]; <!--Custom metadata field marker coloring-->
+            var preview = previewPaths[i]; <!--Resource preview image path-->
+
+            <!--Check for resources without geolocation or invalid coordinates and skip those-->
+            if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180)
+                { <?php
+                // Check if using a custom metadata field for coloring the markers and redefine rtype.
+                if (isset($marker_metadata_field))
+                    {
+                    for ($i = 0; $i < 8; $i++)
+                        { ?>
+                        if (cmfm >= <?php echo $marker_metadata_array[$i]['min']?> && cmfm <= <?php echo $marker_metadata_array[$i]['max']?>)
+                            {
+                            rtype = <?php echo ($i + 1);?>;
+                            } <?php
+                        }
+                    } ?>
+
+                <!--Set each resource marker color based on resource type or metadata field to marker color mapping up to eight-->
+                switch(rtype) {
+                    case 1:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[0]]);?>Icon;
+                        break;
+                    case 2:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[1]]);?>Icon;
+                        break;
+                    case 3:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[2]]);?>Icon;
+                        break;
+                    case 4:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[3]]);?>Icon;
+                        break;
+                    case 5:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[4]]);?>Icon;
+                        break;
+                    case 6:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[5]]);?>Icon;
+                        break;
+                    case 7:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[6]]);?>Icon;
+                        break;
+                    case 8:
+                        iconColor = <?php echo strtolower($marker_colors[$marker_color_def[7]]);?>Icon;
+                        break;
+                    default:
+                        iconColor = blackIcon;
+                    }
+
+                <!--Define the marker arrays for the markers, zoom to the markers, and marker click function using leaflet.js and leaflet-color-markers.js-->
+                <!--Create a marker for each resource for map zoom to the markers-->
+                markerArray.push(new L.marker([lat, lon], {
+                    opacity: 0
+                }).addTo(map3));
+
+                <!--Create a marker for each resource-->
+                <?php if ($marker_resource_preview)
+                    { ?>
+                    var marker = new L.marker([lat, lon], {
+                        icon: iconColor,
+                        riseOnHover: true,
+                        win_url: geomarker[i][2],
+                        title: georound(lat) + ", " + georound(lon) + " (WGS84)"
+                    }); 
+                    
+                    <!--Show the resource preview image-->
+                    var imagePath = "<img src='" + preview + "'/>";
+                    var text1 = "<?php echo $lang["resourceid"]; ?>";
+                    var imageLink = '<a href=' + baseurl + '/pages/view.php?ref=' + rf + " target='_blank'" + '>' + '<img src=' + preview + '>' + '</a>';
+                    marker.bindPopup(imageLink + text1 + " " + rf + "<br>" + georound(lat) + ", " + georound(lon), {
+                        minWidth: 155,
+                        autoPan: true,
+                        autoPanPaddingTopLeft: 5,
+                        autoPanPaddingBottomRight: 5
+                    }); <?php
+                    } 
+                else // Show resource ID in marker tooltip.
+                    { ?> 
+                    var marker = new L.marker([lat, lon], {
+                        icon: iconColor,
+                        title: 'ID# ' + rf,
+                        riseOnHover: true,
+                        win_url: geomarker[i][2]
+                    }).on('click', showModal); <?php
+                    } ?>
+
+                <!--Add markers to the layer array-->
+                markers.addLayer(marker);
+                }
+            }
+
+        <!--Add the markers layer to the map-->
+        map3.addLayer(markers);
+
+        <!--Zoom to the markers on the map regardless of the initial view-->
+        var group = L.featureGroup(markerArray);
+        map3.fitBounds(group.getBounds().pad(0.3));
+
+        <!--On marker click, open a modal corresponding to the specific resource-->
+        function showModal(e)
+            {
+            ModalLoad(baseurl + '/pages/view.php?ref=' + this.options.win_url);
+            }
+
+  <?php } ?>
+</script>
+
+<!--Create a map marker legend below the map and only show for defined types up to eight-->
+<p style="margin-top:4px;margin-bottom:0px;"> <?php
+
+    // Resource type color markers legend.
+    if (!isset($marker_metadata_field) || $lang['custom_metadata_markers'] == "")
+        { ?>
+        <b> <?php echo $lang["legend_text"]?>&nbsp;</b> <?php
+
+        for ($i = 1; $i < 9; $i++) // Start at 1, since we are not using the Global resource type.
+            {
+            if (!empty(get_resource_type_name($i)))
+                {
+                $ic = $i - 1; // Start at 0 for $marker_color_def array.
+
+                ?> <img src="../lib/leaflet_plugins/leaflet-colormarkers-1.0.0/img/marker-icon-<?php echo strtolower($marker_colors[$marker_color_def[$ic]])?>.png" alt="<?php echo $marker_colors[$marker_color_def[$ic]]?> Icon" style="width:19px;height:31px;"> <?php echo get_resource_type_name($i); ?> &nbsp; <?php
+                }
+            }
+        }
+    else // Custom metadata field color markers legend.
+        { ?>
+        <b> <?php echo $lang['custom_metadata_markers']?>&nbsp;</b> <?php
+
+        // Loop through and create the custom color marker legend text.
+        for ($i = 0; $i < 8; $i++)
+            {
+            $ltext[$i] = $marker_metadata_array[$i]['min'] . "-" . $marker_metadata_array[$i]['max'];
+            }
+
+        for ($i = 0; $i < 8; $i++)
+            {
+            ?> <img src="../lib/leaflet_plugins/leaflet-colormarkers-1.0.0/img/marker-icon-<?php echo strtolower($marker_colors[$marker_color_def[$i]])?>.png" alt="<?php echo $marker_colors[$marker_color_def[$i]]?> Icon" style="width:19px;height:31px;"> <?php echo $ltext[$i]; ?> &nbsp; <?php
+            }
+        } ?>
+</p>
 
 <?php
 include "../include/footer.php";

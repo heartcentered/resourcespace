@@ -1,6 +1,6 @@
 <?php
 // Geographic Map Search for Resources Using Leaflet.js and Various Leaflet Plugins
-// Last Update: 9/7/2019, Steve D. Bowman
+// Last Update: 11/22/2019, Steve D. Bowman
 
 include "../include/db.php";
 include_once "../include/general.php";
@@ -40,12 +40,12 @@ if ($default_display == "map" || $display == "map")
     }
 
 ?>
-<!--Leaflet.js v1.5.1 files-->
-<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.css"/>
-<script src="<?php echo $baseurl?>/lib/leaflet_1.5.1/leaflet.min.js"></script>
+<!--Leaflet.js v1.6.0 files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.min.js"></script>
 
-<!--Leaflet Providers v1.8.0 plugin files-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.8.0/leaflet-providers.babel.min.js"></script>
+<!--Leaflet Providers v1.9.0 plugin files-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.9.0/leaflet-providers.babel.min.js"></script>
 
 <!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
 <?php if ($map_default_cache || $map_layer_cache)
@@ -68,7 +68,7 @@ if ($default_display == "map" || $display == "map")
     } ?>
 
 <!--Leaflet EasyPrint v2.1.9 plugin file-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.min.js"></script>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.js"></script>
 
 <!--Leaflet StyledLayerControl v5/16/2019 plugin files-->
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/css/styledLayerControl.css"/>
@@ -82,9 +82,9 @@ if ($default_display == "map" || $display == "map")
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/src/css/leaflet-shades.css"/>
 <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/leaflet-shades.min.js"></script>
 
-<!--Leaflet Control Geocoder 1.9.0 plugin files-->
-<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-control-geocoder-1.9.0/dist/Control.Geocoder.css"/>
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-control-geocoder-1.9.0/dist/Control.Geocoder.min.js"></script>
+<!--Leaflet Control Geocoder 1.10.0 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-control-geocoder-1.10.0/dist/Control.Geocoder.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-control-geocoder-1.10.0/dist/Control.Geocoder.min.js"></script>
 
 <!--Polyfill for Internet Explorer and Edge browser compatibility-->
 <script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces5%2Ces6%2Ces2017%2Cdefault%2Ces2018%2Ces7"></script>
@@ -111,7 +111,6 @@ if ($default_display == "map" || $display == "map")
 
 <script type="text/javascript">
     var Leaflet = L.noConflict();
-    
 
     // Setup and define the Leaflet map with the initial view using leaflet.js and L.Control.Zoomslider.js.
     var map1 = new L.map('search_map', {
@@ -286,7 +285,7 @@ if ($default_display == "map" || $display == "map")
         omnivore.kml('<?php echo $baseurl?>/filestore/system/<?php echo $map_kml_file?>').addTo(map1); <?php
         } ?>
 
-    <!--Fix for Microsoft Edge and Internet Explorer 6 browsers-->
+    <!--Fix for Microsoft Edge and Internet Explorer browsers-->
     map1.invalidateSize(true);
 
     <!--Add an Area of Interest (AOI) selection box to the Leaflet map using leaflet-shades.js-->

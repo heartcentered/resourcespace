@@ -1434,7 +1434,7 @@ if($responsive_ui)
             // Check for resources without geolocation or invalid coordinates and skip those.
             if ($geomark["geo_lat"] >= -90 && $geomark["geo_lat"] <= 90 && $geomark["geo_long"] >= -180 && $geomark["geo_long"] <= 180)
                 {
-                // Create array of geolocation parameters.
+                // Create arrays of geolocation parameters.
                 $geomarker[] = "[{$geomark["geo_long"]}, {$geomark["geo_lat"]}, {$geomark["ref"]}, {$geomark["resource_type"]}, {$geomark2[0]["value"]}]";
                 $preview_paths[] = $geomark["preview_path"];
                 }

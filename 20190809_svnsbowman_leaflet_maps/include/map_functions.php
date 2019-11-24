@@ -1,6 +1,6 @@
 <?php
 // Leaflet.js Map Functions
-// Last Update: 8/16/2019, Steve D. Bowman
+// Last Update: 11/23/2019, Steve D. Bowman
 
 // To add additional basemap sources, see http://leaflet-extras.github.io/leaflet-providers/preview/index.html for the provider names, attribution, maximum zoom level, and any other required provider parameters, and add to the appropriate basemap group below or create a new basemap group.  Will also need to add additional code into the <!--Determine basemaps and map groups for user selection--> section on each PHP page using Leaflet maps (../pages/geo_search.php), the Leaflet Providers section in ../include/config.default.php, and the appropriate providers group section in ../languages/en.php.
 
@@ -397,13 +397,21 @@ function leaflet_mapbox_basemaps() // Mapbox basemaps.
     echo $mapbox;
     }
 
-// Determine the map zoom from the coordinates numeric precision.
-function leaflet_map_zoom($resource)
+// Determine the map zoom from the geolocation coordinates numeric precision.
+function leaflet_map_zoom($map_zoom)
     {
-    $zoom = $resource["mapzoom"];
-    if (!($zoom >= 2 && $zoom <= 21))
+    global $resource;
+
+    // If no zoom level is set or is non-numeric, define as 0 to enable automatic zoom assignment below.
+    $zoom = trim($map_zoom);
+    if (is_null($zoom) || $zoom == "" || !is_numeric($zoom))
         {
-        $zoom = 18;
+        $zoom = 0;
+        }
+
+    if (!($zoom >= 2 && $zoom <= 21) && is_numeric($zoom))
+        {
+        $zoom = 16;
         $siglon = round(100000 * abs($resource["geo_long"]))%100000;
         $siglat = round(100000 * abs($resource["geo_lat"]))%100000;
         if ($siglon%100000 == 0 && $siglat%100000 == 0)
@@ -428,34 +436,55 @@ function leaflet_map_zoom($resource)
     }
 
 // Parse the resource polygon string for latitude and longitude minimum and maximum and format polygon string.
-function leaflet_polygon_parsing($fields)
+function leaflet_polygon_parsing($fields, $minmax = true)
     {
     global $map_polygon_field;
 
-    foreach ($fields as $field)
+    // Search resource $fields array for the $map_polygon_field.
+    $key1 = array_search($map_polygon_field, array_column($fields, 'ref'));
+
+    if ($minmax)
         {
-        if ($field['resource_type_field'] == $map_polygon_field)
-            {
-            // Strip coordinate pair parathenses from polygon array.
-            $values = str_replace(")", "", str_replace("(", "", explode(",", $field['value'])));
+        // Strip coordinate pair parathenses from polygon array.
+        $values = str_replace(")", "", str_replace("(", "", explode(",", $fields[$key1]['value'])));
 
-            // Determine minimum and maximum latitude values.
-            $lat_values = array($values[0], $values[2], $values[4], $values[6]);
-            $polygon['lat_min'] = min($lat_values);
-            $polygon['lat_max'] = max($lat_values);
+        // Determine minimum and maximum latitude values.
+        $lat_values = array($values[0], $values[2], $values[4], $values[6]);
+        $polygon['lat_min'] = min($lat_values);
+        $polygon['lat_max'] = max($lat_values);
 
-            // Determine minimum and maximum longitude values.
-            $long_values = array($values[1], $values[3], $values[5], $values[7]);
-            $polygon['long_min'] = min($long_values);
-            $polygon['long_max'] = max($long_values);
-
-            // Format polygon string for Leaflet footprint display below.
-            $polygon1 = str_replace("(", "[", $field['value']);
-            $polygon1 = str_replace(")", "]", $polygon1);
-            $polygon['values'] = "[" . $polygon1 . "]";
-
-            break;
-            }
+        // Determine minimum and maximum longitude values.
+        $long_values = array($values[1], $values[3], $values[5], $values[7]);
+        $polygon['long_min'] = min($long_values);
+        $polygon['long_max'] = max($long_values);
         }
+
+    // Format polygon string for Leaflet footprint display below.
+    $polygon1 = str_replace("(", "[", $fields[$key1]['value']);
+    $polygon1 = str_replace(")", "]", $polygon1);
+    $polygon['values'] = "[" . $polygon1 . "]";
+
     return $polygon;
+    }
+
+// Check geolocation coordinates for valid numeric values.
+function leaflet_coordinate_check($coordinate, $type)
+    {
+    $check = false;
+    if (!is_numeric($coordinate))
+        {
+        return false;
+        }
+
+    if ($type == "latitude" && $coordinate >= -90 && $coordinate <= 90)
+        {
+        $check = true;
+        }
+
+    if ($type == "longitude" && $coordinate >= -180 && $coordinate <= 180)
+        {
+        $check = true;
+        }
+
+    return $check;
     }
