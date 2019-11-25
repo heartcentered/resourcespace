@@ -1,6 +1,6 @@
 <?php
 // Resource View Leaflet Map Using Leaflet.js and Various Leaflet Plugins
-// Last Edit 11/23/2019, Steve D. Bowman
+// Last Edit 11/25/2019, Steve D. Bowman
 
 include "map_functions.php";
 
@@ -148,6 +148,7 @@ if (!$modal)
     }
 else
     {
+    $map_container = "map_id";
     $map_container = "map_id_modal";
     }
 
@@ -170,6 +171,28 @@ else
             zoomsliderControl: <?php echo $zoomslider?>,
             zoomControl: <?php echo $zoomcontrol?>
         }).setView([geo_lat, geo_long], zoom);
+
+        <?php if ($modal)
+            { ?>
+            map.remove(); 
+            var map = new LeafletView.map(<?php echo $map_container; ?>, {
+                preferCanvas: true,
+                renderer: LeafletView.canvas(),
+                zoomsliderControl: <?php echo $zoomslider?>,
+                zoomControl: <?php echo $zoomcontrol?>
+            }).setView([geo_lat, geo_long], zoom); 
+            map.invalidateSize(); <?php
+            }
+        ?>
+
+        jQuery.noConflict();
+        jQuery(function($) {
+            $(document).ready(function(){
+                $('#map_id').on('shown.bs.modal', function(){
+                    map.invalidateSize();
+                });
+            });
+        });
         
         // Define available Leaflet basemaps groups and layers using leaflet.providers.js, L.TileLayer.PouchDBCached.js, and styledLayerControl.js based on ../include/map_functions.php.
         <?php      
@@ -380,6 +403,12 @@ else
     <a href="<?php echo $baseurl_short?>pages/geo_edit.php?ref=<?php echo urlencode($ref); ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_PLUS ?><?php echo $lang['location-add'];?></a> <?php
     }
 
+?>
+<script>
+    
+</script>
+
+<?php
 if($view_panels)
     { ?>
     <script>

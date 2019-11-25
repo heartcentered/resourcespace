@@ -1,6 +1,6 @@
 <?php
 // Resource Map Geolocation Edit Using Leaflet.js and Various Leaflet Plugins
-// Last Edit 11/24/2019, Steve D. Bowman
+// Last Edit 11/25/2019, Steve D. Bowman
 
 // Check if geolocation/maps have been disabled.
 global $disable_geocoding, $lang;

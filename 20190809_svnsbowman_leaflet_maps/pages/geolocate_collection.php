@@ -1,6 +1,6 @@
 <?php
 // Collection Geolocation Edit Using Leaflet.js and Various Leaflet Plugins
-// Last Edit 11/24/2019, Steve D. Bowman
+// Last Edit 11/25/2019, Steve D. Bowman
 
 include "../include/db.php";
 include_once "../include/general.php";
@@ -385,9 +385,6 @@ if (count($geomarker) == 0)
         omnivore.kml('<?php echo $baseurl?>/filestore/system/<?php echo $map_kml_file?>').addTo(map3); <?php
         } ?>
 
-    <!--Fix for Microsoft Edge and Internet Explorer browsers-->
-    map3.invalidateSize(true);
-
     <!--Limit geocoordinate values to six decimal places for display on marker hover-->
     function georound(num) {
         return +(Math.round(num + "e+6") + "e-6");
@@ -520,42 +517,14 @@ if (count($geomarker) == 0)
             ModalLoad(baseurl + '/pages/view.php?ref=' + this.options.win_url);
             }
 
+        <!--Fix for Microsoft Edge and Internet Explorer browsers-->
+        map3.invalidateSize(true);
   <?php } ?>
 </script>
 
 <!--Create a map marker legend below the map and only show for defined types up to eight-->
 <p style="margin-top:4px;margin-bottom:0px;"> <?php
-
-    // Resource type color markers legend.
-    if (!isset($marker_metadata_field) || $lang['custom_metadata_markers'] == "")
-        { ?>
-        <b> <?php echo $lang["legend_text"]?>&nbsp;</b> <?php
-
-        for ($i = 1; $i < 9; $i++) // Start at 1, since we are not using the Global resource type.
-            {
-            if (!empty(get_resource_type_name($i)))
-                {
-                $ic = $i - 1; // Start at 0 for $marker_color_def array.
-
-                ?> <img src="../lib/leaflet_plugins/leaflet-colormarkers-1.0.0/img/marker-icon-<?php echo strtolower($marker_colors[$marker_color_def[$ic]])?>.png" alt="<?php echo $marker_colors[$marker_color_def[$ic]]?> Icon" style="width:19px;height:31px;"> <?php echo get_resource_type_name($i); ?> &nbsp; <?php
-                }
-            }
-        }
-    else // Custom metadata field color markers legend.
-        { ?>
-        <b> <?php echo $lang['custom_metadata_markers']?>&nbsp;</b> <?php
-
-        // Loop through and create the custom color marker legend text.
-        for ($i = 0; $i < 8; $i++)
-            {
-            $ltext[$i] = $marker_metadata_array[$i]['min'] . "-" . $marker_metadata_array[$i]['max'];
-            }
-
-        for ($i = 0; $i < 8; $i++)
-            {
-            ?> <img src="../lib/leaflet_plugins/leaflet-colormarkers-1.0.0/img/marker-icon-<?php echo strtolower($marker_colors[$marker_color_def[$i]])?>.png" alt="<?php echo $marker_colors[$marker_color_def[$i]]?> Icon" style="width:19px;height:31px;"> <?php echo $ltext[$i]; ?> &nbsp; <?php
-            }
-        } ?>
+    leaflet_markers_legend(); ?>
 </p>
 
 <?php
