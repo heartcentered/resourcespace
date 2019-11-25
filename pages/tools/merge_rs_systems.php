@@ -604,7 +604,6 @@ if($import)
     ################
     logScript("");
     logScript("Importing archive states...");
-    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
     if(!isset($archive_states_spec) || empty($archive_states_spec))
         {
         logScript("ERROR: Spec missing 'archive_states_spec'");
@@ -663,7 +662,80 @@ if($import)
             }
         }
 
-    
+
+    # RESOURCE TYPES
+    ################
+    logScript("");
+    logScript("Importing resource types...");
+    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    if(!isset($resource_types_spec) || empty($resource_types_spec))
+        {
+        logScript("ERROR: Spec missing 'resource_types_spec'");
+        exit(1);
+        }
+    $src_resource_types = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_types_export.json", "r+b"));
+    $dest_resource_types = get_resource_types("", false);
+    foreach($src_resource_types as $resource_type)
+        {
+        logScript("Processing #{$resource_type["ref"]} '{$resource_type["name"]}'");
+
+        if(!array_key_exists($resource_type["ref"], $resource_types_spec))
+            {
+            logScript("WARNING: resource_types_spec does not have a record for this resource type");
+            continue;
+            }
+
+        if(!is_null($resource_types_spec[$resource_type["ref"]]))
+            {
+            if(!is_numeric($resource_types_spec[$resource_type["ref"]]))
+                {
+                logScript("ERROR: Invalid mapped value!");
+                exit(1);
+                }
+
+            $found_rt_index = array_search($resource_types_spec[$resource_type["ref"]], array_column($dest_resource_types, "ref"));
+            if($found_rt_index === false)
+                {
+                logScript("WARNING: Unable to find destination resource type!");
+                continue;
+                }
+
+            $found_rt = $dest_resource_types[$found_rt_index];
+            logScript("Found direct 1:1 mapping to #{$found_rt["ref"]} '{$found_rt["name"]}'");
+            continue;
+            }
+
+        // New record
+        sql_query(
+            sprintf("INSERT INTO resource_type(`name`, config_options, allowed_extensions, tab_name, push_metadata, inherit_global_fields)
+                          VALUES (%s, %s, %s, %s, %s, %s);",
+            (trim($resource_type["name"]) == "" ? "'" . escape_check($resource_type["name"]) . "'" : "NULL"),
+            (trim($resource_type["config_options"]) == "" ? "'" . escape_check($resource_type["config_options"]) . "'" : "NULL"),
+            (trim($resource_type["allowed_extensions"]) == "" ? "'" . escape_check($resource_type["allowed_extensions"]) . "'" : "NULL"),
+            (trim($resource_type["tab_name"]) == "" ? "'" . escape_check($resource_type["tab_name"]) . "'" : "NULL"),
+            (trim($resource_type["push_metadata"]) == "" ? "'" . escape_check($resource_type["push_metadata"]) . "'" : "NULL"),
+            (trim($resource_type["inherit_global_fields"]) == "" ? "'" . escape_check($resource_type["inherit_global_fields"]) . "'" : "NULL")
+        ));
+        $new_rt_ref = sql_insert_id();
+
+        log_activity(null, LOG_CODE_EDITED, $resource_type["name"], 'resource_type', 'name', $new_rt_ref);
+        log_activity(null, LOG_CODE_EDITED, $resource_type["config_options"], 'resource_type', 'config_options', $new_rt_ref);
+        log_activity(null, LOG_CODE_EDITED, $resource_type["allowed_extensions"], 'resource_type', 'allowed_extensions', $new_rt_ref);
+        log_activity(null, LOG_CODE_EDITED, $resource_type["tab_name"], 'resource_type', 'tab_name', $new_rt_ref);
+        log_activity(null, LOG_CODE_EDITED, $resource_type["push_metadata"], 'resource_type', 'push_metadata', $new_rt_ref);
+        log_activity(null, LOG_CODE_EDITED, $resource_type["inherit_global_fields"], 'resource_type', 'inherit_global_fields', $new_rt_ref);
+
+        logScript("Created new record #{$new_rt_ref} '{$resource_type["name"]}'");
+        $resource_types_spec[$resource_type["ref"]] = $new_rt_ref;
+        fwrite($spec_override_fh, "\$resource_types_spec[{$resource_type["ref"]}] = {$new_rt_ref};" . PHP_EOL);
+        }
+
+
+
+
+
+
+
 
 
 
