@@ -615,22 +615,51 @@ if($import)
     foreach($src_archive_states as $archive_state)
         {
         logScript("Processing '{$archive_state["lang"]}' (ID #{$archive_state["ref"]})");
-        if(array_key_exists($archive_state["ref"], $archive_states_spec) && in_array($archive_states_spec[$archive_state["ref"]], $dest_archive_states))
+        if(
+            array_key_exists($archive_state["ref"], $archive_states_spec)
+            && in_array($archive_states_spec[$archive_state["ref"]], $dest_archive_states)
+            && !is_null($archive_states_spec[$archive_state["ref"]]))
             {
             $lang_text = $lang["status{$archive_states_spec[$archive_state["ref"]]}"];
             logScript("Found direct 1:1 mapping to #{$archive_states_spec[$archive_state["ref"]]} - {$lang_text}");
             continue;
             }
-
-        if(in_array($archive_state["ref"], $dest_archive_states))
+        else if(
+            array_key_exists($archive_state["ref"], $archive_states_spec)
+            && !in_array($archive_states_spec[$archive_state["ref"]], $dest_archive_states))
             {
-            logScript("WARNING: workflow state already exists in the system but is not mapped in the specification file! Skipping");
+            logScript("WARNING: Incorrect mapping? Attempted to map to workflow state #{$archive_states_spec[$archive_state["ref"]]}! Skipping");
             continue;
             }
 
         if(array_key_exists($archive_state["ref"], $archive_states_spec) && is_null($archive_states_spec[$archive_state["ref"]]))
             {
-            // @todo: create new archive state and output back to the user config required to be added to config.php if unable to add it by script
+            logScript("Updating config.php with extra workflow state:");
+
+            $new_archive_state = end($dest_archive_states) + 1;
+            $additional_archive_states[] = $new_archive_state;
+            $lang["status{$new_archive_state}"] = $archive_state["lang"];
+            $dest_archive_states[] = $new_archive_state;
+
+            if($dry_run)
+                {
+                logScript("CONFIG.PHP: \$additional_archive_states[] = {$new_archive_state};");
+                logScript("CONFIG.PHP: \$lang['status{$new_archive_state}'] = '{$archive_state["lang"]}';");
+
+                continue;
+                }
+
+            $config_fh = fopen("{$webroot}/include/config.php", "a+b");
+            if($config_fh === false)
+                {
+                logScript("ERROR: Unable to open output file '{$file_path}'! Please add manually to the file the following:");
+                logScript("CONFIG.PHP: \$additional_archive_states[] = {$new_archive_state};");
+                logScript("CONFIG.PHP: \$lang['status{$new_archive_state}'] = '{$archive_state["lang"]}';");
+                }
+
+            fwrite($config_fh, "\$additional_archive_states[] = {$new_archive_state};" . PHP_EOL);
+            fwrite($config_fh, "\$lang['status{$new_archive_state}'] = '{$archive_state["lang"]}';" . PHP_EOL);
+            fclose($config_fh);
             }
         }
 
