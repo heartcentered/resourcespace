@@ -2078,55 +2078,52 @@ else
 <?php
 }
 
+// Multiple method of changing geolocation.
 if ($multiple && !$disable_geocoding)
-{
-    # Multiple method of changing location.
- ?>
-</div><h2 <?php echo ($collapsible_sections)?" class=\"CollapsibleSectionHead\"":""?> id="location_title"><?php echo $lang["location-title"] ?></h2><div <?php echo ($collapsible_sections)?"class=\"CollapsibleSection\"":""?> id="LocationSection<?php if ($ref=="new") echo "Upload"; ?>">
-<div class="Question"><input name="editlocation" id="editlocation" type="checkbox" value="yes" onClick="var q=document.getElementById('editlocation_question');if (this.checked) {q.style.display='block';} else {q.style.display='none';}">&nbsp;<label for="editlocation"><?php echo $lang["location"] ?></label></div>
-<div class="Question" style="display:none;" id="editlocation_question">
-  <label for="location"><?php echo $lang["latlong"]?></label>
-  <input type="text" name="location" id="location" class="stdwidth">
-  <div class="clearerleft"> </div>
-</div>
-<div class="Question"><input name="editmapzoom" id="editmapzoom" type="checkbox" value="yes" onClick="var q=document.getElementById('editmapzoom_question');if (this.checked) {q.style.display='block';} else {q.style.display='none';}">&nbsp;<label for="editmapzoom"><?php echo $lang["mapzoom"] ?></label></div>
-<div class="Question" style="display:none;" id="editmapzoom_question">
-  <label for="mapzoom"><?php echo $lang["mapzoom"]?></label>
-  <select name="mapzoom" id="mapzoom">
-    <option value=""><?php echo $lang["select"]?></option>
-    <option value="2">2</option>
-    <option value="3">3</option>
-    <option value="4">4</option>
-    <option value="5">5</option>
-    <option value="6">6</option>
-    <option value="7">7</option>
-    <option value="8">8</option>
-    <option value="9">9</option>
-    <option value="10">10</option>
-    <option value="11">11</option>
-    <option value="12">12</option>
-    <option value="13">13</option>
-    <option value="14">14</option>
-    <option value="15">15</option>
-    <option value="16">16</option>
-    <option value="17">17</option>
-    <option value="18">18</option>
- </select>
-</div>
-<div class="clearerleft"> </div>
+    { ?>
+    </div><h2 <?php echo ($collapsible_sections)?" class=\"CollapsibleSectionHead\"":""?> id="location_title"><?php echo $lang["location-title"] ?></h2><div <?php echo ($collapsible_sections)?"class=\"CollapsibleSection\"":""?> id="LocationSection<?php if ($ref == "new") echo "Upload"; ?>">
+    <div class="Question"><input name="editlocation" id="editlocation" type="checkbox" value="yes" onClick="var q=document.getElementById('editlocation_question');if (this.checked) {q.style.display='block';} else {q.style.display='none';}">&nbsp;<label for="editlocation"><?php echo $lang["location"] ?></label></div>
+    <div class="Question" style="display:none;" id="editlocation_question">
+        <label for="location"><?php echo $lang["latlong"]?></label>
+        <input type="text" name="location" id="location" class="stdwidth">
+        <div class="clearerleft"> </div>
+    </div>
 
+    <div class="Question"><input name="editmapzoom" id="editmapzoom" type="checkbox" value="yes" onClick="var q=document.getElementById('editmapzoom_question');if (this.checked) {q.style.display='block';} else {q.style.display='none';}">&nbsp;<label for="editmapzoom"><?php echo $lang["mapzoom"] ?></label></div>
 
-<?php
-hook("locationextras");
-}
+    <div class="Question" style="display:none;" id="editmapzoom_question">
+        <label for="mapzoom"><?php echo $lang["mapzoom"]?></label>
+        <select name="mapzoom" id="mapzoom">
+            <option value=""><?php echo $lang["select"]?></option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+        </select>
+    </div>
+    <div class="clearerleft"> </div> <?php
+
+    hook("locationextras");
+    }
 
 if($disablenavlinks)
-        {
-        ?>
-        <input type=hidden name="disablenav" value="true">
-        <?php
-        }
-        
+    { ?>
+    <input type=hidden name="disablenav" value="true"> <?php
+    }
+
 if (!$edit_upload_options_at_top && display_upload_options()){include '../include/edit_upload_options.php';}
 ?>
 </div>

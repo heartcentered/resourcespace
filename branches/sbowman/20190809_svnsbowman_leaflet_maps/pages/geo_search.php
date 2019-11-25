@@ -1,6 +1,6 @@
 <?php
 // Geographic Map Search for Resources Using Leaflet.js and Various Leaflet Plugins
-// Last Update: 11/22/2019, Steve D. Bowman
+// Last Update: 11/25/2019, Steve D. Bowman
 
 include "../include/db.php";
 include_once "../include/general.php";

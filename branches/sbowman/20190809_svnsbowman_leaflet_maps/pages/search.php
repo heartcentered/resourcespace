@@ -1440,7 +1440,7 @@ if($responsive_ui)
                 }
             }
         }
-debug("SEARCH Geomark: " . print_r($geomarker, true));
+
     # work out common keywords among the results
     if (is_array($result) && (count($result)>$suggest_threshold) && (strpos($search,"!")===false) && ($suggest_threshold!=-1))
         {
@@ -1588,11 +1588,11 @@ if ($display != "map" || !$modal)
         <div class="BottomInpageNav">
             <?php hook('add_bottom_in_page_nav_left'); ?>
             <div class="BottomInpageNavRight"> <?php 
-            if (isset($draw_pager)) 
-                {
-                pager(false);
-                } 
-            ?>
+                if (isset($draw_pager)) 
+                    {
+                    pager(false);
+                    } 
+                ?>
             </div>
             <div class="clearerleft"></div>
         </div> <?php
@@ -1603,8 +1603,7 @@ if ($display != "map" || !$modal)
 hook("endofsearchpage");
 
 if($search_anchors && $display != "map")
-    {
-    ?>
+    { ?>
     <script>
     place = '<?php echo getvalescaped("place", ""); ?>';
     display = '<?php echo $display; ?>';

@@ -2455,7 +2455,7 @@ $enable_plugin_upload = true;
     // Leaflet: show resource thumbnail marker popup, instead of resource ID tooltip?
     $marker_resource_preview = true;
 
-    // Leaflet available marker colors.
+    // Leaflet: available marker colors and the order they will be used.
     $marker_colors = array('Blue', 'Red', 'Green', 'Orange', 'Yellow', 'Black', 'Grey', 'Violet');
 
     // Default Leaflet marker color options based on resource type (0 = Blue, 1 = Red, 2 = Green, 3 = Orange, 4 = Yellow, 5 = Black, 6 = Gray, and 7 = Violet).
@@ -3234,8 +3234,8 @@ $purge_temp_folder_age=0;
 # If it is set to 1 the link will also be valid all the next day
 $password_reset_link_expiry =1;
 
-# Show the resource view in a modal when accessed from search results.
-$resource_view_modal=true;
+# Show the resource view in a modal when accessed from search results?
+$resource_view_modal = false;
 
 # Option to show other standard pages e.g. resource requests in a modal
 $modal_default=false;
