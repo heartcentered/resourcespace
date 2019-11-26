@@ -3090,6 +3090,8 @@ function delete_alternative_file($resource,$ref)
 	
 function get_alternative_file($resource,$ref)
 	{
+    $resource = escape_check($resource);
+    $ref = escape_check($ref);
 	# Returns the row for the requested alternative file
 	$return=sql_query("select ref,name,description,file_name,file_extension,file_size,creation_date,alt_type from resource_alt_files where resource='$resource' and ref='$ref'");
 	if (count($return)==0) {return false;} else {return $return[0];}
@@ -3350,11 +3352,17 @@ function notify_user_contributed_unsubmitted($refs,$collection=0)
 		}
 	}		
 	
+
+/**
+*  A standard field title is translated using $lang.  A custom field title is i18n translated.
+* 
+* @param integer $field Resource type field ID
+* 
+* @return boolean|array Returns FALSE or record data (array)
+*/
 function get_field($field)
     {
-    # A standard field title is translated using $lang.  A custom field title is i18n translated.
-
-    # Executes query.
+    $field_escaped = escape_check($field);
     $r = sql_query("
         SELECT ref,
                name,
@@ -3379,7 +3387,7 @@ function get_field($field)
                display_as_dropdown,
                automatic_nodes_ordering
           FROM resource_type_field
-         WHERE ref = '{$field}'
+         WHERE ref = '{$field_escaped}'
      ");
 
     # Translates the field title if the searched field is found.
@@ -4597,14 +4605,14 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 	if($ref=="" || $path==""){return false;}
 	global $imagemagick_path, $imagemagick_calculate_sizes;
 	$file=$path;
-	
-	$o_size=sql_query("select * from resource_dimensions where resource={$ref}");
+    $ref_escaped = escape_check($ref);
+	$o_size=sql_query("select * from resource_dimensions where resource='{$ref_escaped}'");
 	if(!empty($o_size))
 		{
 		if(count($o_size)>1)
 			{
 			# delete all the records and start fresh. This is a band-aid should there be multiple records as a result of using api_search
-			sql_query("delete from resource_dimensions where resource={$ref}");
+			sql_query("delete from resource_dimensions where resource='{$ref_escaped}'");
 			$o_size=false;
 			$forcefromfile=true;
 			}
@@ -4649,11 +4657,11 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			{
 			if(!$o_size)
 				{
-				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('". $ref ."', '". $sw ."', '". $sh ."', '" . $filesize . "')");
+				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
 				}
 			else
 				{
-				sql_query("update resource_dimensions set width='". $sw ."', height='". $sh ."', file_size='" . $filesize . "' where resource={$ref}");
+				sql_query("update resource_dimensions set width='". escape_check($sw) ."', height='". escape_check($sh) ."', file_size='" . escape_check($filesize) . "' where resource='{$ref_escaped}'");
 				}
 			}
 		}	
@@ -4668,11 +4676,11 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			{
 			if(!$o_size)
 				{	
-				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('". $ref ."', '". $sw ."', '". $sh ."', '" . $filesize . "')");
+				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
 				}
 			else
 				{
-				sql_query("update resource_dimensions set width='". $sw ."', height='". $sh ."', file_size='" . $filesize . "' where resource={$ref}");
+				sql_query("update resource_dimensions set width='". escape_check($sw) ."', height='". escape_check($sh) ."', file_size='" . escape_check($filesize) . "' where resource='{$ref_escaped}'");
 				}
 			}
 		else
@@ -4709,11 +4717,11 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			    # Size could be calculated after all
 			    if(!$o_size)
 					{
-					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('". $ref ."', '". $sw ."', '". $sh ."', '" . $filesize . "')");
+					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
 					}
 				else
 					{
-					sql_query("update resource_dimensions set width='". $sw ."', height='". $sh ."', file_size='" . $filesize . "' where resource={$ref}");
+					sql_query("update resource_dimensions set width='". escape_check($sw) ."', height='". escape_check($sh) ."', file_size='" . escape_check($filesize) . "' where resource='{$ref_escaped}'");
 					}
 			    }
 			else
@@ -4724,11 +4732,11 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 				if(!$o_size)
 					{
 					# Insert a dummy row to prevent recalculation on every view.
-					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('". $ref ."','0', '0', '" . $filesize . "')");
+					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}','0', '0', '" . escape_check($filesize) . "')");
 					}
 				else
 					{
-					sql_query("update resource_dimensions set width='0', height='0', file_size='" . $filesize . "' where resource={$ref}");
+					sql_query("update resource_dimensions set width='0', height='0', file_size='" . escape_check($filesize) . "' where resource='{$ref_escaped}'");
 					}
 				}
 			}
