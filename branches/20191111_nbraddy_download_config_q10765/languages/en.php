@@ -1102,7 +1102,7 @@ $lang["newkeywordrelationship"]="Create new relationship for keyword...";
 $lang["searchkeyword"]="Search keyword";
 $lang["keywordfailedregexfilter"]="Keyword failed expression validation";
 
-$lang["exportdata"]="Export data";
+$lang["exportdata"]="Export system data";
 $lang["exporttype"]="Export type";
 
 $lang["managealternativefiles"]="Manage alternative files";
@@ -2835,3 +2835,6 @@ $lang["collection_actiontype_4"]        = "Share";
 $lang["collection_actiontype_5"]        = "Research";
 $lang["collection_actiontype_6"]        = "Advanced";
 $lang["collection_actiontype_999"]      = "Other";
+
+
+$lang["error_server_missing_module"]          = "The server is missing the required software: %%MODULE%%. Please contact your system administrator";
