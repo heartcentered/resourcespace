@@ -145,6 +145,9 @@ function replace_nulls($value)
     return trim($value)=="" ? "NULL" : "'" . escape_check($value) . "'";
     }
 
+
+$exportcollection = getval("exportcollection",0,true);
+
 // Dump MySQL tables
 $exporttables = array();
 $exporttables["sysvars"] = array();
@@ -167,32 +170,35 @@ $exporttables["filter_rule_node"] = array();
 $exporttables["archive_states"] = array();
 $exporttables["workflow_actions"] = array();
 
-// Optional fields
-//  - Resources and resource metadata
-$exporttables["resource"] = array();
-$exporttables["resource"]["jumble"]=array("field8"=>"mix_text","creation_date"=>"random_date");
-//$exporttables["resource"]["exportcondition"] = " WHERE ref>0";
+// Optional tables
+if($exportcollection!=0)
+    {    
+    // Collections 
+    $exporttables["collection"] = array();
+    $exporttables["exportcondition"] = "WHERE ref = '$exportcollection'";
+    
+    $exporttables["collection"]["jumble"]=array("name"=>"mix_text","description"=>"mix_text","keywords"=>"mix_text","theme"=>"mix_text","theme2"=>"mix_text","theme3"=>"mix_text","theme4"=>"mix_text","theme5"=>"mix_text","created"=>"random_date");
+    $exporttables["user_collection"] = array();
+    $exporttables["usergroup_collection"] = array();
+    $exporttables["collection_resource"] = array(); 
+    //  Resources and resource metadata
+    $exporttables["resource"] = array();
+    $exporttables["resource"]["jumble"]=array("field8"=>"mix_text","creation_date"=>"random_date");
+    $exporttables["resource"]["exportcondition"] = " LEFT JOIN collection_resource on resource.ref=collection_resource.resource WHERE collection_resource.collection='$exportcollection'";
+    $exporttables["resource_data"] = array();
+    $exporttables["resource_data"]["jumble"]=array("value");
+    $exporttables["resource_data"]["exportcondition"] = " LEFT JOIN collection_resource on resource_data.resource=collection_resource.resource WHERE collection_resource.collection='$exportcollection'";
+    
+    $exporttables["resource_node"] = array();
+    $exporttables["resource_custom_access"] = array();
+    $exporttables["resource_dimensions"] = array();
+    $exporttables["resource_related"] = array();
+    $exporttables["resource_alt_files"] = array();
+    $exporttables["resource_alt_files"]["jumble"]=array("name","description","file_name");
+    $exporttables["annotation"] = array();
+    $exporttables["annotation_node"] = array();
+    }
 
-$exporttables["resource_data"] = array();
-$exporttables["resource_data"]["jumble"]=array("value");
-
-$exporttables["resource_custom_access"] = array();
-$exporttables["resource_node"] = array();
-$exporttables["resource_dimensions"] = array();
-$exporttables["resource_related"] = array();
-$exporttables["resource_alt_files"] = array();
-$exporttables["resource_alt_files"]["jumble"]=array("name","description","file_name");
-$exporttables["annotation"] = array();
-$exporttables["annotation_node"] = array();
-
-
-//  - Collections
-$exporttables["collection"] = array();
-$exporttables["user_collection"] = array();
-$exporttables["usergroup_collection"] = array();
-$exporttables["collection_resource"] = array();
-$exporttables["collection_savedsearch"] = array();
-$exporttables["external_access_keys"] = array();
 
 
 $path=$mysql_bin_path . "/mysqldump";
@@ -203,7 +209,7 @@ $dumppath = get_temp_dir(false,md5($username . $randstring . $scramble_key)) . "
 mkdir($dumppath);
 
 $export = getval("export","") != "";
-if (TRUE || $export!="" && enforcePostRequest(false))
+if ($export!="" && enforcePostRequest(false))
 	{   
     // Create  job data
 
@@ -252,9 +258,9 @@ if (TRUE || $export!="" && enforcePostRequest(false))
         $zip->addFile($dumpfile, "mysql/" . $exporttable . ".sql");
         }
     echo $zipfile . "<br/>";
+    exit();
     }
 
-exit();
 
 // This page will create an offline job that creates a zip file containing sytem configuration nformation and data
 /*
@@ -281,6 +287,49 @@ exit();
 
 
 include '../../include/header.php';
+
+
+// Include resource data?
+
+
+// Include collection?
+// Include featured collections?
+
+?>
+<div class="BasicsBox">
+    <p>
+        <a href="<?php echo $baseurl_short; ?>pages/admin/admin_home.php" onClick="return CentralSpaceLoad(this, true);"><?php echo LINK_CARET_BACK ?><?php echo $lang['back']; ?></a>
+    </p>
+    <h1><?php echo $lang['exportdata']; ?></h1>
+    <p><?php echo $lang['exportdata-instructions']; render_help_link("admin/download-config");?></p>
+    
+    <form method="post" action="<?php echo $baseurl_short?>pages/admin/admin_download_config.php" onSubmit="return CentralSpacePost(this,true);">
+        <input type="hidden" name="export" value="true" />
+        <div class="Question">
+            <label><?php echo $lang['exportobfuscate']; ?></label>
+            <input type="checkbox" name="obfuscate" value="1" checked />
+            <div class="clearerleft"> </div>
+        </div>
+
+        <div class="Question">
+            <label><?php echo $lang['exportcollection']; ?></label>
+            <input type="number" name="collectionexport"></input>
+            <div class="clearerleft"> </div>
+        </div>
+
+
+        <div class="Question">
+            <label for="export"></label>
+            <input type="button" name="export" value="<?php echo $lang["export"]; ?>" onClick="jQuery(this.form).submit();">
+            <div class="clearerleft"> </div>
+        </div>
+
+
+
+    </form>
+    
+</div>
+<?php
 
 
 include '../../include/footer.php';
