@@ -415,6 +415,8 @@ if($export && isset($folder_path))
     fclose($resource_related_export_fh);
     }
 
+
+// @todo: consider improving memory usage by cleaning up after each import
 if($import)
     {
     if(!isset($spec_file_path) || trim($spec_file_path) == "")
@@ -469,6 +471,8 @@ if($import)
         if(!array_key_exists($src_ug["ref"], $usergroups_spec))
             {
             logScript("WARNING: Specification for usergroups does not contain a mapping for this group! Skipping");
+            $usergroups_not_created[] = $src_ug["ref"];
+            fwrite($spec_override_fh, "\$usergroups_not_created[] = {$src_ug["ref"]};" . PHP_EOL);
             continue;
             }
 
@@ -696,8 +700,8 @@ if($import)
             $found_rt_index = array_search($resource_types_spec[$resource_type["ref"]], array_column($dest_resource_types, "ref"));
             if($found_rt_index === false)
                 {
-                logScript("WARNING: Unable to find destination resource type!");
-                continue;
+                logScript("ERROR: Unable to find destination resource type!");
+                exit(1);
                 }
 
             $found_rt = $dest_resource_types[$found_rt_index];
@@ -731,9 +735,185 @@ if($import)
         }
 
 
+    # RESOURCE TYPE FIELDS
+    ######################
+    logScript("");
+    logScript("Importing resource_type fields...");
+    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    if(!isset($resource_type_fields_spec) || empty($resource_type_fields_spec))
+        {
+        logScript("ERROR: Spec missing 'resource_type_fields_spec'");
+        exit(1);
+        }
+    $src_resource_type_fields = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_type_fields_export.json", "r+b"));
+    $dest_resource_type_fields = get_resource_type_fields("", "ref", "ASC", "", array());
+    $resource_type_fields_not_created = (isset($resource_type_fields_not_created) ? $resource_type_fields_not_created : array());
+    foreach($src_resource_type_fields as $src_rtf)
+        {
+        logScript("Processing #{$src_rtf["ref"]} '{$src_rtf["title"]}'");
+
+        if(!array_key_exists($src_rtf["ref"], $resource_type_fields_spec))
+            {
+            logScript("WARNING: Specification missing mapping for this resource type field! Skipping");
+            $resource_type_fields_not_created[] = $src_rtf["ref"];
+            fwrite($spec_override_fh, "\$resource_type_fields_not_created[] = {$src_rtf["ref"]};" . PHP_EOL);
+            continue;
+            }
+
+        // Check if we need to create this field
+        if(!(isset($resource_type_fields_spec[$src_rtf["ref"]]["create"]) && is_bool($resource_type_fields_spec[$src_rtf["ref"]]["create"])))
+            {
+            logScript("ERROR: invalid mapping configuration for mapped value. Expecting array type with index 'create' of type boolean.");
+            exit(1);
+            }
+        if(!$resource_type_fields_spec[$src_rtf["ref"]]["create"])
+            {
+            logScript("Mapping set to not be created. Skipping");
+            $resource_type_fields_not_created[] = $src_rtf["ref"];
+            fwrite($spec_override_fh, "\$resource_type_fields_not_created[] = {$src_rtf["ref"]};" . PHP_EOL);
+            continue;
+            }
+
+        /* 
+        Check if we have a field mapped. Expected values:
+            - integer when we have a direct mapping
+            - null when a new field should be created
+        */
+        if(
+            !(
+                (
+                    isset($resource_type_fields_spec[$src_rtf["ref"]]["ref"])
+                    && (
+                            is_int($resource_type_fields_spec[$src_rtf["ref"]]["ref"])
+                            && $resource_type_fields_spec[$src_rtf["ref"]]["ref"] > 0
+                        )
+                )
+                || is_null($resource_type_fields_spec[$src_rtf["ref"]]["ref"])
+            )
+        )
+            {
+            logScript("ERROR: invalid mapping configuration for mapped value. Expecting array type with index 'ref' of type integer OR use 'null' to create new field.");
+            exit(1);
+            }
+        $mapped_rtf_ref = $resource_type_fields_spec[$src_rtf["ref"]]["ref"];
+
+        // This is merged as a new field
+        if(is_null($mapped_rtf_ref))
+            {
+            $new_rtf_ref = create_resource_type_field(
+                $src_rtf["title"],
+                $resource_types_spec[$src_rtf["resource_type"]],
+                $src_rtf["type"],
+                $src_rtf["name"],
+                $src_rtf["keywords_index"]);
+
+            if($new_rt_ref === false)
+                {
+                logScript("ERROR: unable to create new resource type field!");
+                exit(1);
+                }
+
+            // IMPORTANT: we explicitly don't escape SQL values in this case as this should be the exact value stored in the SRC DB
+            $sql = "";
+            foreach($src_rtf as $column => $value)
+                {
+                // Ignore columns that have been used for creating this field
+                if(in_array($column, array("ref", "name", "title", "type", "keywords_index", "resource_type")))
+                    {
+                    continue;
+                    }
+
+                if(trim($sql) != "")
+                    {
+                    $sql .= ", ";
+                    }
+
+                $col_val = (trim($value) == "" ? "NULL" : "'{$value}'");
+                $sql .= "`{$column}` = {$col_val}";
+                log_activity(null, LOG_CODE_EDITED, $col_val, 'resource_type_field', $column, $new_rtf_ref);
+                }
+            sql_query("UPDATE resource_type_field SET {$sql} WHERE ref = '{$new_rtf_ref}'");
+
+            logScript("Created new record #{$new_rtf_ref} '{$src_rtf["title"]}'");
+            $resource_type_fields_spec[$src_rtf["ref"]] = array("create" => true, "ref" => $new_rtf_ref);
+            fwrite($spec_override_fh, "\$resource_type_fields_spec[{$src_rtf["ref"]}] = array(\"create\" => true, \"ref\" => {$new_rtf_ref});" . PHP_EOL);
+
+            $new_rtf_data = $src_rtf;
+            $new_rtf_data["ref"] = $new_rtf_ref;
+            $new_rtf_data["resource_type"] = $resource_types_spec[$src_rtf["resource_type"]];
+            $dest_resource_type_fields[] = $new_rtf_data;
+
+            unset($new_rtf_ref);
+            unset($new_rtf_data);
+            continue;
+            }
+
+        /*
+        Check if specification file allows incompatible types to be migrated from one to the other.
+        Default value: FALSE
+            - TRUE  - Show warning to the user AND keep processing. NOTICE: this will flatten category trees after merge!
+            - FALSE - Show warning to the user about incompatible types
+        */
+        if(!(
+            isset($resource_type_fields_spec[$src_rtf["ref"]]["allow_incompatible_types"])
+            && is_bool($resource_type_fields_spec[$src_rtf["ref"]]["allow_incompatible_types"])))
+            {
+            $resource_type_fields_spec[$src_rtf["ref"]]["allow_incompatible_types"] = false;
+            }
+        $mapped_rtf_allow_incompatible_types = $resource_type_fields_spec[$src_rtf["ref"]]["allow_incompatible_types"];
+
+        // direct mapping? is mapped value valid dest rtf?
+        $found_rtf_index = array_search($mapped_rtf_ref, array_column($dest_resource_type_fields, "ref"));
+        if($found_rtf_index === false)
+            {
+            logScript("ERROR: Unable to find destination resource type field!");
+            exit(1);
+            }
+        $found_rtf = $dest_resource_type_fields[$found_rtf_index];
+        logScript("Found direct 1:1 mapping to #{$found_rtf["ref"]} '{$found_rtf["title"]}'");
+
+        /*
+        Compatible changes between types:
+         - Text to Text
+         - Text to Fixed Lists
+         - Fixed Lists to Fixed Lists
+         - - Category Tree to other Fixed Lists (if allow incompatible types => CT will flatten)
+         */
+        // check page/tools/migrate_data_to_fixed.php and reuse code from there (try and create functions)
+
+        // Check compatiblity between types
+        $src_text_field = in_array($src_rtf["type"], $TEXT_FIELD_TYPES);
+        $src_fixed_list_field = in_array($src_rtf["type"], $FIXED_LIST_FIELD_TYPES);
+        $src_cat_tree_field = ($src_rtf["type"] == FIELD_TYPE_CATEGORY_TREE);
+        $dest_text_field = in_array($found_rtf["type"], $TEXT_FIELD_TYPES);
+        $dest_fixed_list_field = in_array($found_rtf["type"], $FIXED_LIST_FIELD_TYPES);
+        $dest_cat_tree_field = ($found_rtf["type"] == FIELD_TYPE_CATEGORY_TREE);
+        if(!(
+                ($src_text_field && $dest_text_field)
+                || ($src_text_field && $dest_fixed_list_field)
+                || ($src_fixed_list_field && $dest_fixed_list_field)
+            ))
+            {
+            logScript("WARNING: incompatible!");
+            if(!$mapped_rtf_allow_incompatible_types)
+                {
+                exit(1);
+                }
+            }
 
 
 
+
+
+
+
+
+
+
+
+
+        }
+    unset($src_resource_type_fields);
 
 
 
@@ -743,6 +923,7 @@ if($import)
     // Useful snippet
     // $usernames_mapping[$user["ref"]] = $new_uref;
     // fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$new_uref};" . PHP_EOL);
+    // fwrite($spec_override_fh, "" . PHP_EOL);
 
     // fwrite($spec_override_fh, "" . PHP_EOL);
     fclose($spec_override_fh);
