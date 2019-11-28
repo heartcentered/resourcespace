@@ -191,27 +191,111 @@ if($export || $import)
 
 if($export && isset($folder_path))
     {
-    // @todo: consider having a list of tables required to be fully exported and run the same "block" of code for each one of them
-    // We have a bit of repetition going on and a pattern emerged now
+    $tables = array(
+        array(
+            "name" => "usergroup",
+            "formatted_name" => "user groups",
+            "filename" => "usergroups",
+            "record_feedback" => array(
+                "text" => "User group #%ref '%name'",
+                "placeholders" => array("ref", "name")
+            )
+        ),
+        array(
+            "name" => "resource_type",
+            "formatted_name" => "resource types",
+            "filename" => "resource_types",
+            "record_feedback" => array(
+                "text" => "Resource type #%ref '%name'",
+                "placeholders" => array("ref", "name")
+            )
+        ),
+        array(
+            "name" => "resource_type_field",
+            "formatted_name" => "resource type fields",
+            "filename" => "resource_type_fields",
+            "record_feedback" => array(
+                "text" => "Resource type field #%ref '%title' (shortname: '%name')",
+                "placeholders" => array("ref", "title", "name")
+            )
+        ),
+        array(
+            "name" => "node",
+            "formatted_name" => "nodes",
+            "filename" => "nodes",
+            "record_feedback" => array(),
+        ),
+        array(
+            "name" => "resource",
+            "formatted_name" => "resources",
+            "filename" => "resources",
+            "record_feedback" => array(),
+        ),
+        array(
+            "name" => "resource_data",
+            "formatted_name" => "resource data",
+            "filename" => "resource_data",
+            "record_feedback" => array(),
+        ),
+        array(
+            "name" => "resource_node",
+            "formatted_name" => "resource nodes",
+            "filename" => "resource_nodes",
+            "record_feedback" => array(),
+        ),
+        array(
+            "name" => "resource_dimensions",
+            "formatted_name" => "resource dimensions",
+            "filename" => "resource_dimensions",
+            "record_feedback" => array(),
+        ),
+        array(
+            "name" => "resource_related",
+            "formatted_name" => "resource related",
+            "filename" => "resource_related",
+            "record_feedback" => array(),
+        ),
+    );
 
-    # USER GROUPS
-    #############
-    logScript("");
-    logScript("Exporting user groups...");
-
-    $usergroups_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.json", "w+b");
-    foreach(get_usergroups() as $usergroup)
+    foreach($tables as $table)
         {
-        logScript("User group '{$usergroup["name"]}' (ID #{$usergroup["ref"]})");
+        logScript("");
+        logScript("Exporting {$table["formatted_name"]}...");
 
-        if($dry_run)
+        $export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "{$table["filename"]}_export.json", "w+b");
+
+        // @todo: consider limiting the results and keep paging until all data is retrieved to avoid running out of memory
+        // @todo: consider adding the ability to add more custom sql (e.g be able to include where clause)
+        $records = sql_query("SELECT * FROM {$table["name"]}");
+
+        if(empty($records))
             {
-            continue;
+            logScript("WARNING: no data found!");
             }
 
-        fwrite($usergroups_export_fh, json_encode($usergroup, JSON_NUMERIC_CHECK) . PHP_EOL);
+        foreach($records as $record)
+            {
+            // Sometimes you want to provide feedback to the user to let him/ her know a particular record is being processed
+            if(isset($table["record_feedback"]) && !empty($table["record_feedback"]))
+                {
+                $log_msg = $table["record_feedback"]["text"];
+                foreach($table["record_feedback"]["placeholders"] as $placeholder)
+                    {
+                    $log_msg = str_replace("%{$placeholder}", $record["{$placeholder}"], $log_msg);
+                    }
+                logScript($log_msg);
+                }
+
+            if($dry_run)
+                {
+                continue;
+                }
+
+            fwrite($export_fh, json_encode($record, JSON_NUMERIC_CHECK) . PHP_EOL);
+            }
+
+        fclose($export_fh);
         }
-    fclose($usergroups_export_fh);
 
 
     # USERS & USER PREFERENCES
@@ -222,7 +306,7 @@ if($export && isset($folder_path))
     $users_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.json", "w+b");
     foreach(get_users(0, "", "u.ref ASC", false, -1, 1, false, "") as $user)
         {
-        logScript("User: {$user["fullname"]} (ID #{$user["ref"]} | Username: {$user["username"]} | E-mail: {$user["email"]})");
+        logScript("User #{$user["ref"]} '{$user["fullname"]}' (Username: {$user["username"]} | E-mail: {$user["email"]})");
 
         // Check user preferences and save for processing it later
         $user_preferences = array();
@@ -271,148 +355,6 @@ if($export && isset($folder_path))
         fwrite($archive_states_export_fh, json_encode($exported_archive_state, JSON_NUMERIC_CHECK) . PHP_EOL);
         }
     fclose($archive_states_export_fh);
-
-
-    # RESOURCE TYPES
-    ################
-    logScript("");
-    logScript("Exporting resource_types...");
-
-    $resource_types_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_types_export.json", "w+b");
-    foreach(get_resource_types("", false) as $resource_type)
-        {
-        logScript("Resource type '{$resource_type["name"]}' (ID #{$resource_type["ref"]})");
-
-        if($dry_run)
-            {
-            continue;
-            }
-
-        fwrite($resource_types_export_fh, json_encode($resource_type, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($resource_types_export_fh);
-
-
-    # RESOURCE TYPE FIELDS
-    ######################
-    logScript("");
-    logScript("Exporting resource_type fields...");
-
-    $resource_type_fields_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_type_fields_export.json", "w+b");
-    foreach(get_resource_type_fields("", "ref", "ASC", "", array()) as $resource_type_field)
-        {
-        logScript("Resource type field '{$resource_type_field["title"]}' (ID #{$resource_type_field["ref"]} | shortname: '{$resource_type_field["name"]}')");
-
-        if($dry_run)
-            {
-            continue;
-            }
-
-        fwrite($resource_type_fields_export_fh, json_encode($resource_type_field, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($resource_type_fields_export_fh);
-
-
-    # NODES
-    #######
-    logScript("");
-    logScript("Exporting nodes...");
-    $nodes_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "nodes_export.json", "w+b");
-    $nodes = sql_query("SELECT * FROM node");
-    if(empty($nodes))
-        {
-        logScript("WARNING: unable to retrieve any nodes from the system!");
-        }
-    if(!$dry_run)
-        {
-        fwrite($nodes_export_fh, json_encode($nodes, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($nodes_export_fh);
-
-
-    # RESOURCES
-    ###########
-    logScript("");
-    logScript("Exporting resources...");
-    $resources_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json", "w+b");
-    $resources = sql_query("SELECT * FROM resource WHERE ref > 0");
-    if(empty($resources))
-        {
-        logScript("WARNING: unable to retrieve any resources from the system!");
-        }
-    if(!$dry_run)
-        {
-        fwrite($resources_export_fh, json_encode($resources, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($resources_export_fh);
-
-
-    # RESOURCE DATA
-    ###############
-    logScript("");
-    logScript("Exporting resource data...");
-    $resource_data_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_data_export.json", "w+b");
-    $resource_data = sql_query("SELECT * FROM resource_data WHERE resource > 0");
-    if(empty($resource_data))
-        {
-        logScript("WARNING: unable to retrieve any resource data from the system!");
-        }
-    if(!$dry_run)
-        {
-        fwrite($resource_data_export_fh, json_encode($resource_data, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($resource_data_export_fh);
-
-
-    # RESOURCE NODES
-    ################
-    logScript("");
-    logScript("Exporting resource nodes...");
-    $resource_nodes_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_nodes_export.json", "w+b");
-    $resource_nodes = sql_query("SELECT * FROM resource_node WHERE resource > 0");
-    if(empty($resource_nodes))
-        {
-        logScript("WARNING: unable to retrieve any resource nodes from the system!");
-        }
-    if(!$dry_run)
-        {
-        fwrite($resource_nodes_export_fh, json_encode($resource_nodes, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($resource_nodes_export_fh);
-
-
-    # RESOURCE DIMENSIONS
-    #####################
-    logScript("");
-    logScript("Exporting resource dimensions...");
-    $resource_dimensions_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_dimensions_export.json", "w+b");
-    $resource_dimensions = sql_query("SELECT * FROM resource_dimensions");
-    if(empty($resource_dimensions))
-        {
-        logScript("WARNING: unable to retrieve any resource dimensions from the system!");
-        }
-    if(!$dry_run)
-        {
-        fwrite($resource_dimensions_export_fh, json_encode($resource_dimensions, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($resource_dimensions_export_fh);
-
-
-    # RESOURCE RELATED
-    ##################
-    logScript("");
-    logScript("Exporting resource related...");
-    $resource_related_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_related_export.json", "w+b");
-    $resource_related = sql_query("SELECT * FROM resource_related");
-    if(empty($resource_related))
-        {
-        logScript("WARNING: unable to retrieve any related resources from the system!");
-        }
-    if(!$dry_run)
-        {
-        fwrite($resource_related_export_fh, json_encode($resource_related, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($resource_related_export_fh);
     }
 
 
@@ -886,6 +828,31 @@ if($import)
             }
         }
     unset($src_resource_type_fields);
+
+
+    # RESOURCES
+    ###########
+    //   - Import resources. These will be in the same archive state as on the original system. A mapping for old and new 
+    // resource ID pair will be saved for later use by the script.
+    logScript("");
+    logScript("Importing resources...");
+    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    $src_resources = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json", "r+b"));
+    $dest_resources = sql_array("SELECT ref AS `value` FROM resource WHERE ref > 0 ORDER BY ref ASC");
+    $resources_mapping = (isset($resources_mapping) ? $resources_mapping : array());
+    echo "<pre>";print_r($src_resources);echo "</pre>";die("You died in file " . __FILE__ . " at line " . __LINE__);
+    foreach($src_resources as $src_resource)
+        {
+        logScript("Processing #{$src_resource["ref"]}");
+        }
+    unset($src_resources);
+
+
+
+
+
+
+
 
 
 
