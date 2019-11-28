@@ -830,22 +830,91 @@ if($import)
     unset($src_resource_type_fields);
 
 
+    # NODES
+    #######
+    logScript("");
+    logScript("Importing nodes...");
+    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    $src_nodes = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "nodes_export.json", "r+b"));
+    $nodes_mapping = (isset($nodes_mapping) ? $nodes_mapping : array());
+    $nodes_not_created = (isset($nodes_not_created) ? $nodes_not_created : array());
+    foreach($src_nodes as $src_node)
+        {
+        logScript("Processing #{$src_node["ref"]} '{$src_node["name"]}'");
+
+        if(in_array($src_node["resource_type_field"], $resource_type_fields_not_created))
+            {
+            logScript("Skipping as resource type field was not created!");
+            $nodes_not_created[] = $src_node["ref"];
+            fwrite($spec_override_fh, "\$nodes_not_created[] = {$src_node["ref"]};" . PHP_EOL);
+            continue;
+            }
+
+        $mapped_rtf_ref = $resource_type_fields_spec[$src_node["resource_type_field"]]["ref"];
+        $found_rtf_index = array_search($mapped_rtf_ref, array_column($dest_resource_type_fields, "ref"));
+        if($found_rtf_index === false)
+            {
+            logScript("ERROR: Unable to find destination resource type field!");
+            exit(1);
+            }
+        $found_rtf = $dest_resource_type_fields[$found_rtf_index];
+
+        // Determine parent node
+        if(
+            $found_rtf["type"] == FIELD_TYPE_CATEGORY_TREE
+            && (!is_null($src_node["parent"]) || trim($src_node["parent"]) != "")
+            && in_array($src_node["parent"], $nodes_not_created)
+        )
+            {
+            logScript("WARNING: unable to create new node because its parent was not created!");
+            $nodes_not_created[] = $src_node["ref"];
+            fwrite($spec_override_fh, "\$nodes_not_created[] = {$src_node["ref"]};" . PHP_EOL);
+            continue;
+            }
+        else if(
+            $found_rtf["type"] == FIELD_TYPE_CATEGORY_TREE
+            && (!is_null($src_node["parent"]) || trim($src_node["parent"]) != "")
+            && !in_array($src_node["parent"], $nodes_not_created)
+            && isset($nodes_mapping[$src_node["parent"]])
+        )
+            {
+            $node_parent = $nodes_mapping[$src_node["parent"]];
+            }
+        else
+            {
+            $node_parent = null;
+            }
+
+        $new_node_ref = set_node(null, $mapped_rtf_ref, $src_node["name"], $node_parent, "", true);
+        if($new_node_ref === false)
+            {
+            logScript("ERROR: unable to create new node!");
+            exit(1);
+            }
+
+        logScript("Created new record #{$new_node_ref} '{$src_node["name"]}'");
+        $nodes_mapping[$src_node["ref"]] = $new_node_ref;
+        fwrite($spec_override_fh, "\$nodes_mapping[{$src_node["ref"]}] = {$new_node_ref};" . PHP_EOL);
+        }
+    unset($src_nodes);
+
+
     # RESOURCES
     ###########
     //   - Import resources. These will be in the same archive state as on the original system. A mapping for old and new 
     // resource ID pair will be saved for later use by the script.
-    logScript("");
-    logScript("Importing resources...");
-    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
-    $src_resources = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json", "r+b"));
-    $dest_resources = sql_array("SELECT ref AS `value` FROM resource WHERE ref > 0 ORDER BY ref ASC");
-    $resources_mapping = (isset($resources_mapping) ? $resources_mapping : array());
-    echo "<pre>";print_r($src_resources);echo "</pre>";die("You died in file " . __FILE__ . " at line " . __LINE__);
-    foreach($src_resources as $src_resource)
-        {
-        logScript("Processing #{$src_resource["ref"]}");
-        }
-    unset($src_resources);
+    // logScript("");
+    // logScript("Importing resources...");
+    // fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    // $src_resources = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json", "r+b"));
+    // $dest_resources = sql_array("SELECT ref AS `value` FROM resource WHERE ref > 0 ORDER BY ref ASC");
+    // $resources_mapping = (isset($resources_mapping) ? $resources_mapping : array());
+    // echo "<pre>";print_r($src_resources);echo "</pre>";die("You died in file " . __FILE__ . " at line " . __LINE__);
+    // foreach($src_resources as $src_resource)
+    //     {
+    //     logScript("Processing #{$src_resource["ref"]}");
+    //     }
+    // unset($src_resources);
 
 
 
