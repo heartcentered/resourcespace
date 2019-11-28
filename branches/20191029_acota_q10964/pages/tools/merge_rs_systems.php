@@ -848,21 +848,6 @@ if($import)
             continue;
             }
 
-        /*
-        Check if specification file allows incompatible types to be migrated from one to the other.
-        Default value: FALSE
-            - TRUE  - Show warning to the user AND keep processing. NOTICE: this will flatten category trees after merge!
-            - FALSE - Show warning to the user about incompatible types
-        */
-        if(!(
-            isset($resource_type_fields_spec[$src_rtf["ref"]]["allow_incompatible_types"])
-            && is_bool($resource_type_fields_spec[$src_rtf["ref"]]["allow_incompatible_types"])))
-            {
-            $resource_type_fields_spec[$src_rtf["ref"]]["allow_incompatible_types"] = false;
-            }
-        $mapped_rtf_allow_incompatible_types = $resource_type_fields_spec[$src_rtf["ref"]]["allow_incompatible_types"];
-
-        // direct mapping? is mapped value valid dest rtf?
         $found_rtf_index = array_search($mapped_rtf_ref, array_column($dest_resource_type_fields, "ref"));
         if($found_rtf_index === false)
             {
@@ -872,53 +857,40 @@ if($import)
         $found_rtf = $dest_resource_type_fields[$found_rtf_index];
         logScript("Found direct 1:1 mapping to #{$found_rtf["ref"]} '{$found_rtf["title"]}'");
 
-        /*
-        Compatible changes between types:
-         - Text to Text
-         - Text to Fixed Lists
-         - Fixed Lists to Fixed Lists
-         - - Category Tree to other Fixed Lists (if allow incompatible types => CT will flatten)
-         */
-        // check page/tools/migrate_data_to_fixed.php and reuse code from there (try and create functions)
+        $compatible_types = array(
+            FIELD_TYPE_TEXT_BOX_SINGLE_LINE => array_merge($TEXT_FIELD_TYPES, $FIXED_LIST_FIELD_TYPES),
+            FIELD_TYPE_TEXT_BOX_MULTI_LINE => array_merge($TEXT_FIELD_TYPES, array(FIELD_TYPE_DYNAMIC_KEYWORDS_LIST)),
+            FIELD_TYPE_CHECK_BOX_LIST => $FIXED_LIST_FIELD_TYPES,
+            FIELD_TYPE_DROP_DOWN_LIST => $FIXED_LIST_FIELD_TYPES,
+            FIELD_TYPE_DATE_AND_OPTIONAL_TIME => $DATE_FIELD_TYPES,
+            FIELD_TYPE_TEXT_BOX_LARGE_MULTI_LINE => array_merge($TEXT_FIELD_TYPES, array(FIELD_TYPE_DYNAMIC_KEYWORDS_LIST)),
+            FIELD_TYPE_EXPIRY_DATE => array(FIELD_TYPE_EXPIRY_DATE),
+            FIELD_TYPE_CATEGORY_TREE => $FIXED_LIST_FIELD_TYPES,
+            FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR => array(FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR),
+            FIELD_TYPE_DYNAMIC_KEYWORDS_LIST => $FIXED_LIST_FIELD_TYPES,
+            FIELD_TYPE_DATE => $DATE_FIELD_TYPES,
+            FIELD_TYPE_RADIO_BUTTONS => $FIXED_LIST_FIELD_TYPES,
+            FIELD_TYPE_WARNING_MESSAGE => $TEXT_FIELD_TYPES,
+            FIELD_TYPE_DATE_RANGE => array(FIELD_TYPE_DATE_RANGE)
+        );
 
-        // Check compatiblity between types
-        $src_text_field = in_array($src_rtf["type"], $TEXT_FIELD_TYPES);
-        $src_fixed_list_field = in_array($src_rtf["type"], $FIXED_LIST_FIELD_TYPES);
-        $src_cat_tree_field = ($src_rtf["type"] == FIELD_TYPE_CATEGORY_TREE);
-        $dest_text_field = in_array($found_rtf["type"], $TEXT_FIELD_TYPES);
-        $dest_fixed_list_field = in_array($found_rtf["type"], $FIXED_LIST_FIELD_TYPES);
-        $dest_cat_tree_field = ($found_rtf["type"] == FIELD_TYPE_CATEGORY_TREE);
-        if(!(
-                ($src_text_field && $dest_text_field)
-                || ($src_text_field && $dest_fixed_list_field)
-                || ($src_fixed_list_field && $dest_fixed_list_field)
-            ))
+        if(!in_array($found_rtf["type"], $compatible_types[$src_rtf["type"]]))
             {
-            logScript("WARNING: incompatible!");
-            if(!$mapped_rtf_allow_incompatible_types)
-                {
-                exit(1);
-                }
+            logScript("ERROR: incompatible types! Consider mapping to a field with one of these types: " . implode(", ", $compatible_types[$found_rtf["type"]]));
+            exit(1);
             }
 
-
-
-
-
-
-
-
-
-
-
-
+        if($src_rtf["type"] == FIELD_TYPE_CATEGORY_TREE && $found_rtf["type"] != FIELD_TYPE_CATEGORY_TREE)
+            {
+            logScript("WARNING: SRC field is a category type and DEST field is a different fixed list type. THIS WILL FLATTEN THE CATEGORY TREE!");
+            }
         }
     unset($src_resource_type_fields);
 
 
 
 
-
+    // check page/tools/migrate_data_to_fixed.php and reuse code from there (try and create functions)
 
     // Useful snippet
     // $usernames_mapping[$user["ref"]] = $new_uref;
