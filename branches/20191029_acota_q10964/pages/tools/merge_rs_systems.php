@@ -37,8 +37,17 @@ OPTIONS SUMMARY
     -u, --user          run script as a ResourceSpace user. Use the ID of the user
     --dry-run           perform a trial run with no changes made
     --spec-file=FILE    read specification from FILE
-    --export            export information from ResourceSpace based on the specification file (Requires spec-file option)
+    --export            export information from ResourceSpace
     --import            import information to ResourceSpace based on the specification file (Requires spec-file option)
+
+EXAMPLES
+    Export
+    ======
+    php /path/to/pages/tools/merge_rs_systems.php --dry-run --export /path/to/export_folder/
+
+    Import
+    ======
+    php /path/to/pages/tools/merge_rs_systems.php --dry-run --spec-file=\"/path/to/spec.php\" --import /path/to/export_folder_from_src/
     " . PHP_EOL;
 
 
