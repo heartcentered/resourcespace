@@ -14,10 +14,10 @@ $help_text = "NAME
     merge_rs_systems - a script to help administrators merge two ResourceSpace systems.
 
 SYNOPSIS
-    On the system that is going to merge with the master system:
+    On the system (also known as SRC system) that is going to merge with the master system:
         php path/tools/merge_rs_systems.php [OPTION...] DEST
 
-    On the master system, merging in data from the slave system:
+    On the master system (also known as DEST system), merging in data from the slave system:
         php path/tools/merge_rs_systems.php [OPTION...] SRC
 
 DESCRIPTION
@@ -234,7 +234,9 @@ if($export && isset($folder_path))
             "filename" => "resources",
             "record_feedback" => array(),
             "sql" => array(
-                "where" => "ref > 0",
+                "where" => "ref > 0
+                    AND resource_type IN (SELECT ref FROM resource_type)
+                    AND archive IN (SELECT ref FROM archive_states)",
             ),
         ),
         array(
@@ -252,8 +254,13 @@ if($export && isset($folder_path))
             "filename" => "resource_nodes",
             "record_feedback" => array(),
             "sql" => array(
-                "joins" => "RIGHT JOIN node AS n ON resource_node.node = n.ref",
-                "where" => "resource > 0 AND n.resource_type_field IN (SELECT ref FROM resource_type_field)",
+                "select" => "resource_node.resource, resource_node.node, resource_node.hit_count, resource_node.new_hit_count",
+                "joins" => "RIGHT JOIN resource AS r ON resource_node.resource = r.ref
+                    RIGHT JOIN node AS n ON resource_node.node = n.ref",
+                "where" => "resource > 0
+                    AND r.resource_type IN (SELECT ref FROM resource_type)
+                    AND r.archive IN (SELECT ref FROM archive_states)
+                    AND n.resource_type_field IN (SELECT ref FROM resource_type_field)",
             ),
         ),
         array(
@@ -285,11 +292,12 @@ if($export && isset($folder_path))
 
         $export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "{$table["filename"]}_export.json", "w+b");
 
+        $select = isset($table["sql"]["select"]) && trim($table["sql"]["select"]) != "" ? "{$table["sql"]["select"]}" : "*";
         $joins = isset($table["sql"]["joins"]) && trim($table["sql"]["joins"]) != "" ? "{$table["sql"]["joins"]}" : "";
-        $where_clause = isset($table["sql"]["where"]) && trim($table["sql"]["where"]) != "" ? "WHERE {$table["sql"]["where"]}" : "";
+        $where = isset($table["sql"]["where"]) && trim($table["sql"]["where"]) != "" ? "WHERE {$table["sql"]["where"]}" : "";
 
         // @todo: consider limiting the results and keep paging until all data is retrieved to avoid running out of memory
-        $records = sql_query("SELECT * FROM {$table["name"]} {$joins} {$where_clause}");
+        $records = sql_query("SELECT {$select} FROM {$table["name"]} {$joins} {$where}");
 
         if(empty($records))
             {
@@ -494,7 +502,7 @@ if($import)
         {
         if(isset($user_data["user_preferences"]) && is_array($user_data["user_preferences"]) && !empty($user_data["user_preferences"]))
             {
-            logScript("Processing user preferences (if no warning are showing, this is ok)");
+            logScript("Processing user preferences (if no warning is showing, this is ok)");
             foreach($user_data["user_preferences"] as $user_p)
                 {
                 if(!set_config_option($user_ref, $user_p["parameter"], $user_p["value"]))
@@ -713,6 +721,22 @@ if($import)
     $src_resource_type_fields = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_type_fields_export.json", "r+b"));
     $dest_resource_type_fields = get_resource_type_fields("", "ref", "ASC", "", array());
     $resource_type_fields_not_created = (isset($resource_type_fields_not_created) ? $resource_type_fields_not_created : array());
+    $compatible_rtf_types = array(
+        FIELD_TYPE_TEXT_BOX_SINGLE_LINE => $TEXT_FIELD_TYPES,
+        FIELD_TYPE_TEXT_BOX_MULTI_LINE => $TEXT_FIELD_TYPES,
+        FIELD_TYPE_CHECK_BOX_LIST => $FIXED_LIST_FIELD_TYPES,
+        FIELD_TYPE_DROP_DOWN_LIST => $FIXED_LIST_FIELD_TYPES,
+        FIELD_TYPE_DATE_AND_OPTIONAL_TIME => $DATE_FIELD_TYPES,
+        FIELD_TYPE_TEXT_BOX_LARGE_MULTI_LINE => $TEXT_FIELD_TYPES,
+        FIELD_TYPE_EXPIRY_DATE => array(FIELD_TYPE_EXPIRY_DATE),
+        FIELD_TYPE_CATEGORY_TREE => $FIXED_LIST_FIELD_TYPES,
+        FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR => array(FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR),
+        FIELD_TYPE_DYNAMIC_KEYWORDS_LIST => $FIXED_LIST_FIELD_TYPES,
+        FIELD_TYPE_DATE => $DATE_FIELD_TYPES,
+        FIELD_TYPE_RADIO_BUTTONS => $FIXED_LIST_FIELD_TYPES,
+        FIELD_TYPE_WARNING_MESSAGE => array(FIELD_TYPE_WARNING_MESSAGE),
+        FIELD_TYPE_DATE_RANGE => array(FIELD_TYPE_DATE_RANGE)
+    );
     foreach($src_resource_type_fields as $src_rtf)
         {
         logScript("Processing #{$src_rtf["ref"]} '{$src_rtf["title"]}'");
@@ -822,26 +846,9 @@ if($import)
         $found_rtf = $dest_resource_type_fields[$found_rtf_index];
         logScript("Found direct 1:1 mapping to #{$found_rtf["ref"]} '{$found_rtf["title"]}'");
 
-        $compatible_types = array(
-            FIELD_TYPE_TEXT_BOX_SINGLE_LINE => array_merge($TEXT_FIELD_TYPES, $FIXED_LIST_FIELD_TYPES),
-            FIELD_TYPE_TEXT_BOX_MULTI_LINE => array_merge($TEXT_FIELD_TYPES, array(FIELD_TYPE_DYNAMIC_KEYWORDS_LIST)),
-            FIELD_TYPE_CHECK_BOX_LIST => $FIXED_LIST_FIELD_TYPES,
-            FIELD_TYPE_DROP_DOWN_LIST => $FIXED_LIST_FIELD_TYPES,
-            FIELD_TYPE_DATE_AND_OPTIONAL_TIME => $DATE_FIELD_TYPES,
-            FIELD_TYPE_TEXT_BOX_LARGE_MULTI_LINE => array_merge($TEXT_FIELD_TYPES, array(FIELD_TYPE_DYNAMIC_KEYWORDS_LIST)),
-            FIELD_TYPE_EXPIRY_DATE => array(FIELD_TYPE_EXPIRY_DATE),
-            FIELD_TYPE_CATEGORY_TREE => $FIXED_LIST_FIELD_TYPES,
-            FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR => array(FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR),
-            FIELD_TYPE_DYNAMIC_KEYWORDS_LIST => $FIXED_LIST_FIELD_TYPES,
-            FIELD_TYPE_DATE => $DATE_FIELD_TYPES,
-            FIELD_TYPE_RADIO_BUTTONS => $FIXED_LIST_FIELD_TYPES,
-            FIELD_TYPE_WARNING_MESSAGE => $TEXT_FIELD_TYPES,
-            FIELD_TYPE_DATE_RANGE => array(FIELD_TYPE_DATE_RANGE)
-        );
-
-        if(!in_array($found_rtf["type"], $compatible_types[$src_rtf["type"]]))
+        if(!in_array($found_rtf["type"], $compatible_rtf_types[$src_rtf["type"]]))
             {
-            logScript("ERROR: incompatible types! Consider mapping to a field with one of these types: " . implode(", ", $compatible_types[$found_rtf["type"]]));
+            logScript("ERROR: incompatible types! Consider mapping to a field with one of these types: " . implode(", ", $compatible_rtf_types[$found_rtf["type"]]));
             exit(1);
             }
 
@@ -867,7 +874,7 @@ if($import)
 
         if(in_array($src_node["resource_type_field"], $resource_type_fields_not_created))
             {
-            logScript("Skipping as resource type field was not created!");
+            logScript("Skipping as resource type field was not created on the destination system!");
             $nodes_not_created[] = $src_node["ref"];
             fwrite($spec_override_fh, "\$nodes_not_created[] = {$src_node["ref"]};" . PHP_EOL);
             continue;
@@ -924,37 +931,80 @@ if($import)
 
     # RESOURCES
     ###########
-    //   - Import resources. These will be in the same archive state as on the original system. A mapping for old and new 
-    // resource ID pair will be saved for later use by the script.
-    // logScript("");
-    // logScript("Importing resources...");
-    // fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
-    // $src_resources = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json", "r+b"));
-    // $dest_resources = sql_array("SELECT ref AS `value` FROM resource WHERE ref > 0 ORDER BY ref ASC");
-    // $resources_mapping = (isset($resources_mapping) ? $resources_mapping : array());
-    // echo "<pre>";print_r($src_resources);echo "</pre>";die("You died in file " . __FILE__ . " at line " . __LINE__);
-    // foreach($src_resources as $src_resource)
-    //     {
-    //     logScript("Processing #{$src_resource["ref"]}");
-    //     }
-    // unset($src_resources);
+    logScript("");
+    logScript("Importing resources...");
+    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    $src_resources = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json", "r+b"));
+    $resources_mapping = (isset($resources_mapping) ? $resources_mapping : array());
+    foreach($src_resources as $src_resource)
+        {
+        logScript("Processing #{$src_resource["ref"]}");
+
+        $created_by = isset($user) && isset($userref) ? $userref : -1;
+        if(!in_array($src_resource["created_by"], $users_not_created) && isset($usernames_mapping[$src_resource["created_by"]]))
+            {
+            $created_by = $usernames_mapping[$src_resource["created_by"]];
+            }
+
+        $new_resource_ref = create_resource(
+            $resource_types_spec[$src_resource["resource_type"]],
+            $archive_states_spec[$src_resource["archive"]],
+            $created_by);
+
+        if($new_resource_ref === false)
+            {
+            logScript("ERROR: unable to create new resource!");
+            exit(1);
+            }
+
+        logScript("Created new record #{$new_resource_ref}");
+        $resources_mapping[$src_resource["ref"]] = $new_resource_ref;
+        fwrite($spec_override_fh, "\$resources_mapping[{$src_resource["ref"]}] = {$new_resource_ref};" . PHP_EOL);
+        }
+    unset($src_resources);
 
 
+    # RESOURCE NODES
+    ################
+    logScript("");
+    logScript("Importing resource nodes...");
+    $src_resource_nodes = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_nodes_export.json", "r+b"));
+    foreach($src_resource_nodes as $src_rn)
+        {
+        logScript("Processing resource #{$src_rn["resource"]} and node #{$src_rn["node"]}");
+
+        if(in_array($src_rn["node"], $nodes_not_created))
+            {
+            logScript("Skipping as the node was not created on the destination system!");
+            continue;
+            }
+
+        if(!isset($nodes_mapping[$src_rn["node"]]))
+            {
+            logScript("WARNING: unable to find a node mapping!");
+            continue;
+            }
+
+        sql_query("INSERT INTO resource_node (resource, node, hit_count, new_hit_count)
+                        VALUES ('{$resources_mapping[$src_rn["resource"]]}', '{$nodes_mapping[$src_rn["node"]]}', '{$src_rn["hit_count"]}', '{$src_rn["new_hit_count"]}')");
+        }
+    unset($src_resource_nodes);
 
 
-
-
-
-
-
-
-
+    # RESOURCE DATA
+    ###############
     // check page/tools/migrate_data_to_fixed.php and reuse code from there (try and create functions)
 
-    // Useful snippet
-    // $usernames_mapping[$user["ref"]] = $new_uref;
-    // fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$new_uref};" . PHP_EOL);
-    // fwrite($spec_override_fh, "" . PHP_EOL);
+
+
+
+
+
+
+
+
+
+
 
     // fwrite($spec_override_fh, "" . PHP_EOL);
     fclose($spec_override_fh);
