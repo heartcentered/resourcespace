@@ -224,36 +224,57 @@ if($export && isset($folder_path))
             "formatted_name" => "nodes",
             "filename" => "nodes",
             "record_feedback" => array(),
+            "sql" => array(
+                "where" => "resource_type_field IN (SELECT ref FROM resource_type_field)",
+            ),
         ),
         array(
             "name" => "resource",
             "formatted_name" => "resources",
             "filename" => "resources",
             "record_feedback" => array(),
+            "sql" => array(
+                "where" => "ref > 0",
+            ),
         ),
         array(
             "name" => "resource_data",
             "formatted_name" => "resource data",
             "filename" => "resource_data",
             "record_feedback" => array(),
+            "sql" => array(
+                "where" => "resource > 0 AND resource_type_field IN (SELECT ref FROM resource_type_field)",
+            ),
         ),
         array(
             "name" => "resource_node",
             "formatted_name" => "resource nodes",
             "filename" => "resource_nodes",
             "record_feedback" => array(),
+            "sql" => array(
+                "joins" => "RIGHT JOIN node AS n ON resource_node.node = n.ref",
+                "where" => "resource > 0 AND n.resource_type_field IN (SELECT ref FROM resource_type_field)",
+            ),
         ),
         array(
             "name" => "resource_dimensions",
             "formatted_name" => "resource dimensions",
             "filename" => "resource_dimensions",
             "record_feedback" => array(),
+            "sql" => array(
+                "where" => "resource > 0 AND EXISTS(SELECT ref FROM resource WHERE ref = resource_dimensions.resource)",
+            ),
         ),
         array(
             "name" => "resource_related",
             "formatted_name" => "resource related",
             "filename" => "resource_related",
             "record_feedback" => array(),
+            "sql" => array(
+                "where" => "resource > 0
+                    AND EXISTS(SELECT ref FROM resource WHERE ref = resource_related.resource)
+                    AND EXISTS(SELECT ref FROM resource WHERE ref = resource_related.related)",
+            ),
         ),
     );
 
@@ -264,9 +285,11 @@ if($export && isset($folder_path))
 
         $export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "{$table["filename"]}_export.json", "w+b");
 
+        $joins = isset($table["sql"]["joins"]) && trim($table["sql"]["joins"]) != "" ? "{$table["sql"]["joins"]}" : "";
+        $where_clause = isset($table["sql"]["where"]) && trim($table["sql"]["where"]) != "" ? "WHERE {$table["sql"]["where"]}" : "";
+
         // @todo: consider limiting the results and keep paging until all data is retrieved to avoid running out of memory
-        // @todo: consider adding the ability to add more custom sql (e.g be able to include where clause)
-        $records = sql_query("SELECT * FROM {$table["name"]}");
+        $records = sql_query("SELECT * FROM {$table["name"]} {$joins} {$where_clause}");
 
         if(empty($records))
             {
