@@ -398,7 +398,6 @@ if($export && isset($folder_path))
     }
 
 
-// @todo: consider improving memory usage by cleaning up after each import
 if($import)
     {
     if(!isset($spec_file_path) || trim($spec_file_path) == "")
@@ -497,6 +496,8 @@ if($import)
             }
 
         }
+    unset($src_usergroups);
+    unset($src_usergroups);
 
 
     # USERS & USER PREFERENCES
@@ -572,10 +573,14 @@ if($import)
         if($save_user_status === false)
             {
             logScript("WARNING: failed to save user '{$user["username"]}' - Username or e-mail address already exist?");
+            $users_not_created[] = $user["ref"];
+            fwrite($spec_override_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
             }
         else if(is_string($save_user_status))
             {
             logScript("WARNING: failed to save user '{$user["username"]}'. Reason: '{$save_user_status}'");
+            $users_not_created[] = $user["ref"];
+            fwrite($spec_override_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
             }
         else
             {
@@ -584,6 +589,7 @@ if($import)
 
         $process_user_preferences($new_uref, $user);
         }
+    unset($src_users);
 
 
     # ARCHIVE STATES
@@ -637,9 +643,10 @@ if($import)
             $config_fh = fopen("{$webroot}/include/config.php", "a+b");
             if($config_fh === false)
                 {
-                logScript("ERROR: Unable to open output file '{$file_path}'! Please add manually to the file the following:");
+                logScript("WARNING: Unable to open output file '{$file_path}'! Please add manually to the file the following:");
                 logScript("CONFIG.PHP: \$additional_archive_states[] = {$new_archive_state};");
                 logScript("CONFIG.PHP: \$lang['status{$new_archive_state}'] = '{$archive_state["lang"]}';");
+                continue;
                 }
 
             fwrite($config_fh, "\$additional_archive_states[] = {$new_archive_state};" . PHP_EOL);
@@ -647,6 +654,7 @@ if($import)
             fclose($config_fh);
             }
         }
+    unset($src_archive_states);
 
 
     # RESOURCE TYPES
@@ -715,6 +723,8 @@ if($import)
         $resource_types_spec[$resource_type["ref"]] = $new_rt_ref;
         fwrite($spec_override_fh, "\$resource_types_spec[{$resource_type["ref"]}] = {$new_rt_ref};" . PHP_EOL);
         }
+    unset($src_resource_types);
+    unset($dest_resource_types);
 
 
     # RESOURCE TYPE FIELDS
@@ -947,7 +957,15 @@ if($import)
     $resources_mapping = (isset($resources_mapping) ? $resources_mapping : array());
     foreach($src_resources as $src_resource)
         {
-        logScript("Processing #{$src_resource["ref"]}");
+        logScript("Processing #{$src_resource["ref"]} | resource_type: {$src_resource["resource_type"]} | archive: {$src_resource["archive"]} | created_by: {$src_resource["created_by"]}");
+
+        if(
+            !array_key_exists($src_resource["archive"], $archive_states_spec)
+            || !in_array($archive_states_spec[$src_resource["archive"]], $dest_archive_states))
+            {
+            logScript("ERROR: Invalid resource archive state! Please check archive_states_spec or dest_archive_states.");
+            exit(1);
+            }
 
         $created_by = isset($user) && isset($userref) ? $userref : -1;
         if(!in_array($src_resource["created_by"], $users_not_created) && isset($usernames_mapping[$src_resource["created_by"]]))
