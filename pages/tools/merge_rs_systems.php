@@ -32,13 +32,13 @@ OPTIONS SUMMARY
     Here is a short summary of the options available in merge_rs_systems. Please refer to the detailed description below 
     for a complete description.
 
-    -h, --help          display this help and exit
-    -f                  @todo: optional field ID where we can store the resource ID from the old system at import
-    -u, --user          run script as a ResourceSpace user. Use the ID of the user
-    --dry-run           perform a trial run with no changes made
-    --spec-file=FILE    read specification from FILE
-    --export            export information from ResourceSpace
-    --import            import information to ResourceSpace based on the specification file (Requires spec-file option)
+    -h, --help              display this help and exit
+    -u, --user              run script as a ResourceSpace user. Use the ID of the user
+    --dry-run               perform a trial run with no changes made
+    --generate-spec-file    Generate an example specification file
+    --spec-file=FILE        read specification from FILE
+    --export                export information from ResourceSpace
+    --import                import information to ResourceSpace based on the specification file (Requires spec-file option)
 
 EXAMPLES
     Export
