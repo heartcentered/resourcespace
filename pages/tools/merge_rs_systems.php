@@ -501,7 +501,7 @@ if($import)
 
         }
     unset($src_usergroups);
-    unset($src_usergroups);
+    unset($dest_usergroups);
 
 
     # USERS & USER PREFERENCES
@@ -1060,8 +1060,32 @@ if($import)
     unset($src_resource_data);
 
 
+    # RESOURCE DIMENSIONS
+    #####################
+    logScript("");
+    logScript("Importing resource dimensions...");
+    $src_resource_dimensions = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_dimensions_export.json", "r+b"));
+    foreach($src_resource_dimensions as $src_rdms)
+        {
+        logScript("Processing dimensions for resource #{$src_rdms["resource"]} | file_size: {$src_rdms["file_size"]} | page_count: #{$src_rdms["page_count"]}");
 
+        if(!array_key_exists($src_rdms["resource"], $resources_mapping))
+            {
+            logScript("WARNING: Unable to find a resource mapping. Skipping");
+            continue;
+            }
 
+        $page_count = is_numeric($src_rdms["page_count"]) ? $src_rdms["page_count"] : "NULL";
+
+        sql_query("INSERT INTO resource_dimensions (resource, width, height, file_size, resolution, unit, page_count)
+                        VALUES ('{$resources_mapping[$src_rdms["resource"]]}',
+                                '{$src_rdms["width"]}',
+                                '{$src_rdms["height"]}',
+                                '{$src_rdms["file_size"]}',
+                                '{$src_rdms["resolution"]}',
+                                '{$src_rdms["unit"]}',
+                                {$page_count})");
+        }
 
 
 
