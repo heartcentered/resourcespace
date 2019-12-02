@@ -254,6 +254,9 @@ if($export && isset($folder_path))
             "filename" => "resource_data",
             "record_feedback" => array(),
             "sql" => array(
+                "select"  => "rd.resource, rd.resource_type_field, rd. value",
+                "from"  => "resource_data AS rd
+                    RIGHT JOIN resource AS r ON rd.resource = r.ref",
                 "where" => "resource > 0 AND resource_type_field IN (SELECT ref FROM resource_type_field)",
             ),
         ),
@@ -263,9 +266,10 @@ if($export && isset($folder_path))
             "filename" => "resource_nodes",
             "record_feedback" => array(),
             "sql" => array(
-                "select" => "resource_node.resource, resource_node.node, resource_node.hit_count, resource_node.new_hit_count",
-                "joins" => "RIGHT JOIN resource AS r ON resource_node.resource = r.ref
-                    RIGHT JOIN node AS n ON resource_node.node = n.ref",
+                "select" => "rn.resource, rn.node, rn.hit_count, rn.new_hit_count",
+                "from" => "resource_node AS rn
+                    RIGHT JOIN resource AS r ON rn.resource = r.ref
+                    RIGHT JOIN node AS n ON rn.node = n.ref",
                 "where" => "resource > 0
                     AND r.resource_type IN (SELECT ref FROM resource_type)
                     AND r.archive IN (SELECT ref FROM archive_states)
@@ -301,12 +305,12 @@ if($export && isset($folder_path))
 
         $export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "{$table["filename"]}_export.json", "w+b");
 
-        $select = isset($table["sql"]["select"]) && trim($table["sql"]["select"]) != "" ? "{$table["sql"]["select"]}" : "*";
-        $joins = isset($table["sql"]["joins"]) && trim($table["sql"]["joins"]) != "" ? "{$table["sql"]["joins"]}" : "";
+        $select = isset($table["sql"]["select"]) && trim($table["sql"]["select"]) != "" ? $table["sql"]["select"] : "*";
+        $from = isset($table["sql"]["from"]) && trim($table["sql"]["from"]) != "" ? $table["sql"]["from"] : $table["name"];
         $where = isset($table["sql"]["where"]) && trim($table["sql"]["where"]) != "" ? "WHERE {$table["sql"]["where"]}" : "";
 
         // @todo: consider limiting the results and keep paging until all data is retrieved to avoid running out of memory
-        $records = sql_query("SELECT {$select} FROM {$table["name"]} {$joins} {$where}");
+        $records = sql_query("SELECT {$select} FROM {$from} {$where}");
 
         if(empty($records))
             {
@@ -881,7 +885,7 @@ if($import)
 
     # NODES
     #######
-    logScript("");
+    /*logScript("");
     logScript("Importing nodes...");
     fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
     $src_nodes = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "nodes_export.json", "r+b"));
@@ -945,7 +949,7 @@ if($import)
         $nodes_mapping[$src_node["ref"]] = $new_node_ref;
         fwrite($spec_override_fh, "\$nodes_mapping[{$src_node["ref"]}] = {$new_node_ref};" . PHP_EOL);
         }
-    unset($src_nodes);
+    unset($src_nodes);*/
 
 
     # RESOURCES
@@ -993,7 +997,7 @@ if($import)
 
     # RESOURCE NODES
     ################
-    logScript("");
+    /*logScript("");
     logScript("Importing resource nodes...");
     $src_resource_nodes = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_nodes_export.json", "r+b"));
     foreach($src_resource_nodes as $src_rn)
@@ -1015,14 +1019,45 @@ if($import)
         sql_query("INSERT INTO resource_node (resource, node, hit_count, new_hit_count)
                         VALUES ('{$resources_mapping[$src_rn["resource"]]}', '{$nodes_mapping[$src_rn["node"]]}', '{$src_rn["hit_count"]}', '{$src_rn["new_hit_count"]}')");
         }
-    unset($src_resource_nodes);
+    unset($src_resource_nodes);*/
 
 
     # RESOURCE DATA
     ###############
-    // check page/tools/migrate_data_to_fixed.php and reuse code from there (try and create functions)
+    logScript("");
+    logScript("Importing resource data...");
+    $src_resource_data = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_data_export.json", "r+b"));
+    foreach($src_resource_data as $src_rd)
+        {
+        logScript("Processing data for resource #{$src_rd["resource"]} | resource_type_field: #{$src_rd["resource_type_field"]}");
 
+        if(!array_key_exists($src_rd["resource"], $resources_mapping))
+            {
+            logScript("WARNING: Unable to find a resource mapping. Skipping");
+            continue;
+            }
 
+        if(in_array($src_rd["resource_type_field"], $resource_type_fields_not_created))
+            {
+            logScript("WARNING: Resource type field was not created. Skipping");
+            continue;
+            }
+
+        $rd_import_errors = array();
+        $update_field = update_field(
+            $resources_mapping[$src_rd["resource"]],
+            $resource_type_fields_spec[$src_rd["resource_type_field"]]["ref"],
+            $src_rd["value"],
+            $rd_import_errors,
+            true);
+
+        if($update_field === false)
+            {
+            logScript("ERROR: unable to update field data! Found errors: " . implode(", " . PHP_EOL, $rd_import_errors));
+            exit(1);
+            }
+        }
+    unset($src_resource_data);
 
 
 
