@@ -168,8 +168,8 @@ function get_collection_resources($collection)
         {
         collection_cleanup_inaccessible_resources($collection);
         }
-
-    $plugin_collection_resources=hook('replace_get_collection_resources');
+	
+    $plugin_collection_resources=hook('replace_get_collection_resources', "", array($collection));
     if(is_array($plugin_collection_resources))
         {
         return $plugin_collection_resources;
@@ -3034,6 +3034,7 @@ function collection_download_use_original_filenames_when_downloading(&$filename,
     if(!($collection_download_tar || $use_zip_extension))
         {
         // the copy or rename to the filename is not necessary using the zip extension since the archived filename can be specified.
+        $id = getval('id','');
         $newpath = get_temp_dir(false,$id) . '/' . $filename;
 
         if(!$copy && $exiftool_write_option)

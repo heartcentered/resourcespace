@@ -11,14 +11,26 @@ if(!extension_loaded("zip"))
     }
 
 function random_char()
-    {        
+    {
     $hex_code = dechex(mt_rand(195, 202));    
     $hex_code .= dechex(mt_rand(128, 175));
     return pack('H*', $hex_code);
     }
 
-function random_date($fromdate)
+function validateDatetime($datestring, $format = 'Y-m-d H:i:s')
     {
+    $date = DateTime::createFromFormat($format, $datestring);
+    return $date && $date->format($format) == $datestring;
+    }
+
+function mix_date($fromdate)
+    {
+    global $mixcache;
+    if(isset($mixcache[md5($fromdate)]))
+        {
+        return $mixcache[md5($fromdate)];
+        }
+
     if(trim($fromdate==""))
         {
         $tstamp = time();
@@ -32,20 +44,48 @@ function random_date($fromdate)
     $dateshift = 60*60*24*30; // How much should dates be moved
     $newstamp = $tstamp + (mt_rand(-$dateshift,$dateshift));
     $newdate = date('Y-m-d H:i:s',$newstamp);
-    //echo "converting date " . $fromdate . " to " . $newdate  ."<br/>\n";
+    echo "Converted date " . $fromdate . " to " . $newdate  ."<br/>\n";
+
+    // Update cache
+    $mixcache[md5($fromdate)] = $newdate;
+
     return $newdate;
     }
  
-function mix_text($string)
-    {    
+function mix_text($string, $recurse=true)
+    {
+    global $mixcache;
+    if(isset($mixcache[md5($string)]))
+        {
+        return $mixcache[md5($string)];
+        }
+    
+    echo "Converting string<br/>" . $string . ", recurse=" . ($recurse ? "TRUE" : "FALSE") . "<br/>";
+
+    // Check if another function is better
+    if(validateDatetime($string) && $recurse)
+        {
+        echo "this is a date - calling mix_date()<br/>";
+        return mix_date($string);
+        }
+    elseif(strpos($string,"http") === 0 && $recurse)
+        {
+        echo "this is a URL - calling mix_url()<br/>";
+        return mix_url($string);
+        }
+    elseif(strpos($string," ") === false && strpos($string,".") != false && $recurse)
+        {
+        echo "this is a filename - calling mix_filename()<br/>";
+        return mix_filename($string);
+        }
+    
     $numbers = '0123456789';
     $uppercons = 'BCDFGHJKLMNPQRSTVWXZ';
     $uppervowels = 'AEIOUY';
     $lowercons = 'bcdfghjklmnpqrstvwxz';
     $lowervowels = 'aeiouy';
-    $noreplace = "'\".,<>#-_&\$£^?!+()*% \n";
+    $noreplace = "'\".,<>#-_&\$£:;^?!@+()*% \n";
 
-   // echo "Converting string<br/>" . $string . "<br/><br/>";
     $newstring = "";
     $bytelength = strlen($string);
     $mbytelength = mb_strlen($string);
@@ -63,7 +103,10 @@ function mix_text($string)
         // Process each character
         for($i=0;$i<$mbytelength;$i++)
             {
-            if($i > 3)
+            $oldchar = mb_substr($string,$i,1);
+            echo "Converting character #$i '" . $oldchar . "'.."; 
+
+            if($i > 3 && strpos($noreplace,$oldchar) === false)
                 {
                 // Randomly add or remove character after first
                 $randaction = mt_rand(0,10);
@@ -79,8 +122,6 @@ function mix_text($string)
                     }
                 }
           
-            $oldchar = mb_substr($string,$i,1);
-            //echo "</br/>..Converting character #$i '" . $oldchar . "'<br/>"; 
             if($i >= $mbytelength || $oldchar == "")
                 {
                 $newstring .=  substr(str_shuffle($lowervowels . $lowercons), 0,1);                    
@@ -123,13 +164,18 @@ function mix_text($string)
             else
                 {
                 $newchar = random_char();
-                $newstring .= $newchar;        
+                $newstring .= $newchar;   
+                echo "New random character: $newchar<br/>"     ;
                 } // End of multibyte conversion
             }
         }
 
-   return $newstring;
-   }
+    // Update cache
+    $mixcache[md5($string)] = $newstring;
+    echo "<br/>New string: " . $newstring . "<br/>";
+    return $newstring;
+    }
+
 function alter_data(&$row,$key,$jumblecolumns)
     {
     global $datetime_fields;
@@ -138,6 +184,54 @@ function alter_data(&$row,$key,$jumblecolumns)
         $row[$jumblecolumn] = call_user_func($jumbletype , $row[$jumblecolumn]);
         // $row[$jumblecolumn] = mix_text($row[$jumblecolumn]);
         }
+    }
+
+function mix_url($string)
+    {
+    $urlparts = explode("://", $string);
+    return $urlparts[0] . "://" . mix_text($urlparts[1], false);    
+    }
+
+function mix_filename($string)
+    {
+    if(trim($string) == "")
+        {
+        return "";
+        }
+
+    echo "filename: " . $string . "<br/>";
+    if(strpos($string,".") === false)
+        {
+        return mix_text($string, false);
+        }
+
+    $fileparts = pathinfo($string);
+    $newfilename = mix_text($fileparts["filename"], false) . "." . $fileparts["extension"];
+
+    echo "New filename: " . $newfilename . "<br/>";
+    return $newfilename;
+    }
+
+function mix_email($string)
+    {
+    global $mixcache;
+    if(isset($mixcache[md5($string)]))
+        {
+        return $mixcache[md5($string)];
+        }
+
+    $emailparts = explode("@",$string);
+    if(count($emailparts) < 2)
+        {
+        return mix_text($string);
+        }
+
+    $newemail = implode("@",array_map("mix_text",$emailparts));
+
+    // Update cache
+    $mixcache[md5($string)] = $newemail;
+
+    return $newemail;    
     }
 
 function replace_nulls($value)
@@ -154,9 +248,11 @@ $exporttables["sysvars"] = array();
 $exporttables["preview_size"] = array();
 
 $exporttables["user"] = array();
-$exporttables["user"]["jumble"]=array("username","email","fullname","comments");
+$exporttables["user"]["jumble"]=array("username"=>"mix_text","email"=>"mix_email","fullname"=>"mix_text","comments"=>"mix_text","created"=>"mix_date");
 
 $exporttables["usergroup"] = array();
+$exporttables["usergroup"]["jumble"]=array("name"=>"mix_text","welcome_message"=>"mix_text");
+
 $exporttables["user_preferences"] = array();
 
 $exporttables["resource_type"] = array();
@@ -164,6 +260,7 @@ $exporttables["resource_type_field"] = array();
 $exporttables["node"] = array();
 
 $exporttables["filter"] = array();
+$exporttables["filter"]["jumble"]=array("name"=>"mix_text");
 $exporttables["filter_rule"] = array();
 $exporttables["filter_rule_node"] = array();
 
@@ -175,26 +272,27 @@ if($exportcollection!=0)
     {    
     // Collections 
     $exporttables["collection"] = array();
-    $exporttables["exportcondition"] = "WHERE ref = '$exportcollection'";
+    $exporttables["collection"]["exportcondition"] = "WHERE ref = '$exportcollection'";
     
-    $exporttables["collection"]["jumble"]=array("name"=>"mix_text","description"=>"mix_text","keywords"=>"mix_text","theme"=>"mix_text","theme2"=>"mix_text","theme3"=>"mix_text","theme4"=>"mix_text","theme5"=>"mix_text","created"=>"random_date");
+    $exporttables["collection"]["jumble"]=array("name"=>"mix_text","description"=>"mix_text","keywords"=>"mix_text","theme"=>"mix_text","theme2"=>"mix_text","theme3"=>"mix_text","theme4"=>"mix_text","theme5"=>"mix_text","created"=>"mix_date");
     $exporttables["user_collection"] = array();
     $exporttables["usergroup_collection"] = array();
     $exporttables["collection_resource"] = array(); 
     //  Resources and resource metadata
     $exporttables["resource"] = array();
-    $exporttables["resource"]["jumble"]=array("field8"=>"mix_text","creation_date"=>"random_date");
+    $exporttables["resource"]["jumble"]=array("field8"=>"mix_text","creation_date"=>"mix_date");
     $exporttables["resource"]["exportcondition"] = " LEFT JOIN collection_resource on resource.ref=collection_resource.resource WHERE collection_resource.collection='$exportcollection'";
     $exporttables["resource_data"] = array();
     $exporttables["resource_data"]["jumble"]=array("value");
     $exporttables["resource_data"]["exportcondition"] = " LEFT JOIN collection_resource on resource_data.resource=collection_resource.resource WHERE collection_resource.collection='$exportcollection'";
-    
+    $exporttables["resource_data"]["jumble"]=array("value"=>"mix_text");
+
     $exporttables["resource_node"] = array();
     $exporttables["resource_custom_access"] = array();
     $exporttables["resource_dimensions"] = array();
     $exporttables["resource_related"] = array();
     $exporttables["resource_alt_files"] = array();
-    $exporttables["resource_alt_files"]["jumble"]=array("name","description","file_name");
+    $exporttables["resource_alt_files"]["jumble"]=array("name"=>"mix_text","description"=>"mix_text","file_name"=>"mix_filename");
     $exporttables["annotation"] = array();
     $exporttables["annotation_node"] = array();
     }
@@ -219,44 +317,50 @@ if ($export!="" && enforcePostRequest(false))
     $zip->open($zipfile, ZIPARCHIVE::CREATE);
 
     $zip->addFile("../../include/config.php", "config.php");
+ 
 
+    $dumpfile = $dumppath . "/resourcespace.sql";
     
     foreach($exporttables as $exporttable=>$exportoptions)
         {
+        echo "Exporting table " . $exporttable . "<br/>";
         // TODO: remove testing code
-        if($exporttable != "resource"){continue;}
+        //if($exporttable != "resource_alt_files"){continue;}
+
+        //$dumpfile = $dumppath . "/" . $exporttable . ".sql";
 
         /// TODO - only export resources in a collection or range
 
-        $dumpfile = $dumppath . "/" . $exporttable . ".sql";
        
         // Add the 'CREATE TABLE' command
         $dumpcmd = $path . " -h " . $mysql_server . " -u " . $mysql_username . ($mysql_password == "" ? "" : " -p" . $mysql_password) . " " . $mysql_db . " --no-data " . $exporttable . " >> " . $dumpfile;
         run_command($dumpcmd);
-        
         // Get data 
         $exportcondition = isset($exportoptions["exportcondition"]) ? $exportoptions["exportcondition"] : "";
-        $datarows = sql_query("SELECT * FROM " . $exporttable . $exportcondition); 
+        $datarows = sql_query("SELECT * FROM " . $exporttable . " " . $exportcondition); 
         
-        // Call function to scramble the data based on per table configuration
-        array_walk($datarows, 'alter_data',isset($exportoptions["jumble"]) ? $exportoptions["jumble"] : array());
-        
-        // Get columns to insert
-        $columns = array_map("escape_check",array_keys($datarows[0]));
-
-        $sql = "";
-        foreach($datarows as $datarow)
+        if(count($datarows) > 0)
             {
-            $datarow = array_map("replace_nulls",$datarow);
-            $sql .= "INSERT INTO " . $exporttable . " (" . implode(",",$columns) . ") VALUES (" . implode(",",$datarow) . ");\n";
-            }
+            // Call function to scramble the data based on per table configuration
+            array_walk($datarows, 'alter_data',isset($exportoptions["jumble"]) ? $exportoptions["jumble"] : array());
+            
+            // Get columns to insert
+            $columns = array_map("escape_check",array_keys($datarows[0]));
 
-        $output = fopen($dumpfile,'a');
-        fwrite($output,$sql);
-        fclose($output);
-        
-        $zip->addFile($dumpfile, "mysql/" . $exporttable . ".sql");
+            $sql = "";
+            foreach($datarows as $datarow)
+                {
+                $datarow = array_map("replace_nulls",$datarow);
+                $sql .= "INSERT INTO " . $exporttable . " (" . implode(",",$columns) . ") VALUES (" . implode(",",$datarow) . ");\n";
+                }
+
+            $output = fopen($dumpfile,'a');
+            fwrite($output,$sql);
+            fclose($output);
+            $zip->addFile($dumpfile, "mysql/" . $exporttable . ".sql");
+            }
         }
+    echo "Created " . $dumpfile . "<br/>";
     echo $zipfile . "<br/>";
     exit();
     }
@@ -313,7 +417,7 @@ include '../../include/header.php';
 
         <div class="Question">
             <label><?php echo $lang['exportcollection']; ?></label>
-            <input type="number" name="collectionexport"></input>
+            <input type="number" name="exportcollection"></input>
             <div class="clearerleft"> </div>
         </div>
 

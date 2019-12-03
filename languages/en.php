@@ -609,6 +609,7 @@ $lang["log-missinglang"]="[type] (missing lang)"; # [type] will be replaced.
 $lang['log-adminpermissionsrequired'] = 'Full admin permission required!';
 $lang['log-removedcustomuseraccess'] = 'Removed custom access for user: ';
 $lang['log-deleted_all'] = 'All resources of this collection deleted (moved to state %ARCHIVE)';
+$lang['log-f']="Replaced file";
 
 /* Universal log codes (generic - not for example, resource specific) */
 $lang["log_code_a"]="Access changed";
@@ -1042,7 +1043,7 @@ $lang["expiredantispam"]="The anti-spam code has expired, please try again";
 $lang["viewduplicates"]="View duplicate resources";
 $lang["duplicateresources"]="Duplicate resources";
 $lang["duplicateresourcesfor"]="Duplicate resources for ";
-$lang["duplicateresourceupload"]="Upload failed. This file matches existing resources:";
+$lang["duplicateresourcefound"]="Duplicates have been found within this upload, please consult the log below";
 $lang["noresourcesfound"]="No resources found";
 $lang["userlog"]="User log";
 $lang["ipaddressrestriction"]="IP address restriction (optional)";
@@ -1811,7 +1812,7 @@ $lang["list-recipients"] = "This message was sent to the following e-mail addres
 
 $lang["sort"] = "Sort";
 $lang["sortcollection"] = "Sort collection";
-$lang["emptycollection"] = "Remove resources";
+$lang["emptycollection"] = "Remove all resources";
 $lang["deleteresources"] = "Delete resources";
 $lang["emptycollectionareyousure"]="Are you sure you want to remove all resources from this collection?";
 
@@ -2556,7 +2557,7 @@ $lang["system_performance"]="System performance";
 $lang["mysql_throughput"]="MySQL throughput";
 $lang["cpu_benchmark"]="CPU benchmark";
 $lang["disk_write_speed"]="Disk write speed";
-$lang["metadata_option_change_warning"]="Please note that at present, updating these options will not automatically alter stored parameters. Batch editing must be used to migrate existing stored values.";
+$lang["manage_metadata_text"]="Use this page to modify the field options available. This will automatically update any existing selected resource options";
 $lang['metadata_first_option_is_default']='The first option will be used as the default option for this field. To set the default option on all resources currently missing a value for this field use the link below.';
 $lang['metadata_populate_default_node_for_empty_values']='Populate default option';
 
@@ -2805,12 +2806,12 @@ $lang['browse_by_tag']                  = "Browse by tag";
 $lang['browse_by_workflow_state']       = "Workflow";
 
 # Updates to workflow
-$lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+$lang["userresources_status_change"]    = "Resources that you have contributed have been moved to the state: ";
 
-$lang["collection_description"] = "Description";
+$lang["collection_description"]         = "Description";
 
 # Updates to workflow
-$lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+$lang["userresources_status_change"]    = "Resources that you have contributed have been moved to the state: ";
 
 # Batch replace updates
 $lang["replacebatchlocalfolder"]        = "Retrieve files from local folder on server? (this will create an offline job)";
