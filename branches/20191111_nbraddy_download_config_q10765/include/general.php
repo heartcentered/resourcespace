@@ -71,7 +71,8 @@ function get_resource_path(
         }
 
     global $storagedir, $originals_separate_storage, $fstemplate_alt_threshold, $fstemplate_alt_storagedir,
-           $fstemplate_alt_storageurl, $fstemplate_alt_scramblekey, $scramble_key, $hide_real_filepath,$migrating_scrambled, $scramble_key_old;
+           $fstemplate_alt_storageurl, $fstemplate_alt_scramblekey, $scramble_key, $hide_real_filepath,
+           $migrating_scrambled, $scramble_key_old, $filestore_evenspread, $filestore_migrate;
 
     // Return URL pointing to download.php. download.php will call again get_resource_path() to ask for the physical path
     if(!$getfilepath && $hide_real_filepath)
@@ -208,11 +209,21 @@ function get_resource_path(
 
     for ($n=0;$n<strlen($ref);$n++)
         {
-        $folder.=substr($ref,$n,1);
-        if ($scramble && isset($scramblepath) && ($n==(strlen($ref)-1))) {$folder.="_" . $scramblepath;}
+        // If using $filestore_evenspread then the path is generated using the least significant figure first instead of the greatest significant figure
+        $refpos = $filestore_evenspread ? -($n+1) : $n;
+        $folder .= substr($ref,$refpos,1);
+
+        if ($scramble && isset($scramblepath) && ($n==(strlen($ref)-1)))
+            {
+            $folder.="_" . $scramblepath;
+            }  
+
         $folder.="/";
-        #echo "<li>" . $folder;
-        if ((!(file_exists($storagedir . $path_suffix . $folder))) && $generate) {@mkdir($storagedir . $path_suffix . $folder,0777,true);chmod($storagedir . $path_suffix . $folder,0777);}
+        if ((!(file_exists($storagedir . $path_suffix . $folder))) && $generate)
+            {
+            @mkdir($storagedir . $path_suffix . $folder,0777,true);
+            chmod($storagedir . $path_suffix . $folder,0777);
+            }
         }
         
     # Add the page to the filename for everything except page 1.
@@ -295,40 +306,52 @@ function get_resource_path(
             }
         }
 
-    if ($scramble && isset($migrating_scrambled) && $migrating_scrambled)
+    if (($scramble && isset($migrating_scrambled) && $migrating_scrambled) || ($filestore_migrate && $filestore_evenspread))
+        {
+        // Check if there is a file at the path using no/previous scramble key or with $filestore_evenspread=false;
+        // Most will normally have been moved using pages/tools/xfer_scrambled.php or pages/tools/filestore_migrate.php
+        
+        // Flag to set whether we are migrating to even out filestore distibution or because of scramble key change
+        $redistribute_mode = $filestore_migrate;
+
+        // Get the new paths without migrating to prevent infinite recursion
+        $migrating_scrambled = false;
+        $filestore_migrate = false;
+        $newpath = $getfilepath ? $file : get_resource_path($ref,true,$size,true,$extension,true,$page,false,'',$alternative);
+        
+        // Use old settings to get old path before migration and migrate if found
+        if($redistribute_mode)
             {
-            // Check if there is a scrambled version using no/previous key, most will normally be moved using pages/tools/xfer_scrambled.php
-            $migrating_scrambled = false;
-            $newpath = $getfilepath ? $file : get_resource_path($ref,true,$size,true,$extension,true,$page,false,'',$alternative);
-            
+            $filestore_evenspread = false;
+            }
+        else
+            {
             $scramble_key_saved = $scramble_key;
-            $scramble_key = isset($scramble_key_old)?$scramble_key_old:"";
-            
-            $oldfilepath=get_resource_path($ref,true,$size,false,$extension,true,$page,false,'',$alternative);
-            if (file_exists($oldfilepath))
+            $scramble_key = isset($scramble_key_old) ? $scramble_key_old : "";
+            }        
+        $oldfilepath=get_resource_path($ref,true,$size,false,$extension,true,$page,false,'',$alternative);
+        if (file_exists($oldfilepath))
+            {
+            if(!file_exists(dirname($newpath)))
                 {
-                if(!file_exists(dirname($newpath)))
-                    {
-                    mkdir(dirname($newpath),0777,true);
-                    }
-                rename ($oldfilepath,$newpath);
+                mkdir(dirname($newpath),0777,true);
                 }
-            
-            // Reset key
+            rename ($oldfilepath,$newpath);
+            }
+        
+        // Reset key/evenspread value
+        if($redistribute_mode)
+            {
+            $filestore_evenspread = true;
+            $filestore_migrate = true;
+            }
+        else
+            {
             $scramble_key = $scramble_key_saved;
             $migrating_scrambled = true;
             }
-
-    if(isset($originals_separate_storage) && $originals_separate_storage === true) 
-        {  
-        if (strpos($file, '/filestore/') !== false) 
-            { 
-            $storagedir_explode = explode('/', $storagedir);
-            $storagedir_end = end($storagedir_explode);
-            $file = str_replace('filestore', "$storagedir_end", $file);
-            }
-        } 
-
+        }
+    
     return $file;
     }
 
@@ -491,7 +514,7 @@ function get_resource_field_data($ref,$multi=false,$use_permissions=true,$origin
 
     $fieldsSQL = "
              SELECT d.value,
-                    d.resource_type_field,
+                    f1.ref resource_type_field,
                     f1.*,
                     f1.required AS frequired,
                     f1.ref AS fref,
@@ -510,7 +533,7 @@ function get_resource_field_data($ref,$multi=false,$use_permissions=true,$origin
               UNION
 
              SELECT group_concat(if(rn.resource = '" . escape_check($ref) . "', n.name, NULL)) AS `value`,
-                    n.resource_type_field,
+                    f2.ref resource_type_field,
                     f2.*,
                     f2.required AS frequired,
                     f2.ref AS fref,
@@ -533,7 +556,7 @@ function get_resource_field_data($ref,$multi=false,$use_permissions=true,$origin
         {
         debug('GENERAL/GET_RESOURCE_FIELD_DATA: use perms: ' . !$use_permissions);
         }
-        
+
     $fields = sql_query($fieldsSQL);
 
     # Build an array of valid types and only return fields of this type. Translate field titles. 
@@ -692,9 +715,12 @@ function get_resource_top_keywords($resource,$count)
             {  
             if (substr($r,0,1)==","){$r=substr($r,1);}
             $s=split_keywords($r);
+            # Splitting keywords can result in break words being included in these results
+            # These should be removed here otherwise they will show as keywords themselves which is incorrect
+            global $noadd; 
             foreach ($s as $a)
                 {
-                if(!empty($a))
+                if(!empty($a) && !in_array($a,$noadd))
                     {
                     $return[]=$a;
                     }
@@ -1588,7 +1614,7 @@ function save_user($ref)
         $username               = trim(getvalescaped('username', ''));
         $password               = trim(getvalescaped('password', ''));
         $fullname               = trim(getvalescaped('fullname', ''));
-        $email                  = trim(getvalescaped('email', ''));
+        $email                  = trim(getval('email', '')); //To be escaped on usage in DB
         $expires                = "'" . getvalescaped('account_expires', '') . "'";
         $usergroup              = trim(getvalescaped('usergroup', ''));
         $ip_restrict            = trim(getvalescaped('ip_restrict', ''));
@@ -1600,7 +1626,7 @@ function save_user($ref)
         $approved               = getval('approved', 0, true);
 
         # Username or e-mail address already exists?
-        $c = sql_value("SELECT count(*) value FROM user WHERE ref <> '$ref' AND (username = '" . $username . "' OR email = '" . $email . "')", 0);
+        $c = sql_value("SELECT count(*) value FROM user WHERE ref <> '$ref' AND (username = '" . $username . "' OR email = '" . escape_check($email) . "')", 0);
         if($c > 0 && $email != '')
             {
             return false;
@@ -1671,7 +1697,7 @@ function save_user($ref)
         sql_query("update user set
         username='" . $username . "'" . $passsql . ",
         fullname='" . $fullname . "',
-        email='" . $email . "',
+        email='" . escape_check($email) . "',
         usergroup='" . $usergroup . "',
         account_expires=$expires,
         ip_restrict='" . $ip_restrict . "',
@@ -3025,12 +3051,12 @@ function send_mail_phpmailer($email,$subject,$message="",$from="",$reply_to="",$
 
     if (!isset($body)){$body=$message;}
 
-    global $use_smtp,$smtp_secure,$smtp_host,$smtp_port,$smtp_auth,$smtp_username,$smtp_password;
+    global $use_smtp,$smtp_secure,$smtp_host,$smtp_port,$smtp_auth,$smtp_username,$smtp_password,$debug_log;
     $mail = new PHPMailer\PHPMailer\PHPMailer();
     // use an external SMTP server? (e.g. Gmail)
     if ($use_smtp) {
         $mail->IsSMTP(); // enable SMTP
-        $mail->SMTPDebug = 0;  // debugging: 1 = errors and messages, 2 = messages only
+        $mail->SMTPDebug = $debug_log ? 1 : 0;  // debugging: 1 = errors and messages, 2 = messages only
         $mail->SMTPAuth = $smtp_auth;  // authentication enabled/disabled
         $mail->SMTPSecure = $smtp_secure; // '', 'tls' or 'ssl'
         $mail->Host = $smtp_host; // hostname
@@ -4437,26 +4463,43 @@ function check_access_key_collection($collection, $key)
 
     $resources = get_collection_resources($collection);
 
+   
     if(0 == count($resources))
         {
         return false;
         }
 
-    $invalid_resources = array();
-    foreach($resources as $resource_id)
+    /* if resourceconnect is enabled there may be
+        1/ a collection with just remote resources 
+        2/ a collection containing a mix of local and remote resources 
+        access key check only relevant for local resources therefore retrieve local resources only
+    */   
+    // is resourceconnect plugin enabled?
+    $active_plugin_names = array_column($GLOBALS["active_plugins"], "name");
+    if( array_search('resourceconnect', $active_plugin_names) !== false)
         {
-        // Verify a supplied external access key for all resources in a collection
-        if(!check_access_key($resource_id, $key))
+        # retrieve only local resources from collection for access key validation
+        $resources = sql_array('SELECT resource AS value FROM collection_resource WHERE collection = ' . escape_check($collection) . ';');    
+        } 
+
+    // only check access key when there are resources to check
+    if (count($resources) > 0)
+        {    
+        $invalid_resources = array();
+        foreach($resources as $resource_id)
+            {    
+            // Verify a supplied external access key for all local resources in the collection
+            if(!check_access_key($resource_id, $key))
+                {
+                $invalid_resources[] = $resource_id;
+                }
+            }
+    
+        if(count($resources) === count($invalid_resources))
             {
-            $invalid_resources[] = $resource_id;
+            return false;
             }
         }
-
-    if(count($resources) === count($invalid_resources))
-        {
-        return false;
-        }
-
     // Set the 'last used' date for this key
     sql_query("UPDATE external_access_keys SET lastused = now() WHERE collection = '{$collection}' AND access_key = '{$key}'");
 
@@ -6266,7 +6309,7 @@ function notify_resource_change($resource)
     debug("notify_resource_change - checking for users that have downloaded this resource " . $resource);
     $download_users=sql_query("select distinct u.ref, u.email from resource_log rl left join user u on rl.user=u.ref where rl.type='d' and rl.resource=$resource and datediff(now(),date)<'$notify_on_resource_change_days'","");
     $message_users=array();
-    if(count($download_users>0))
+    if(count($download_users)>0)
         {
         global $applicationname, $lang, $baseurl;
         foreach ($download_users as $download_user)
@@ -7416,11 +7459,15 @@ function is_resourcespace_upgrade_available()
 
     if($centralised_version_number === false)
         {
+        $default_socket_timeout_cache = ini_get('default_socket_timeout');
+        ini_set('default_socket_timeout',5); //Set timeout to 5 seconds incase server cannot access resourcespace.com
         $centralised_version_number = @file_get_contents('https://www.resourcespace.com/current_release.txt');
+        ini_set('default_socket_timeout',$default_socket_timeout_cache);
         debug("RS_UPGRADE_AVAILABLE: centralised_version_number = $centralised_version_number");
         if($centralised_version_number === false)
             {
             debug("RS_UPGRADE_AVAILABLE: unable to get centralised_version_number from https://www.resourcespace.com/current_release.txt");
+            set_sysvar('last_cvn_update', date('Y-m-d H:i:s'));
             return false; 
             }
 

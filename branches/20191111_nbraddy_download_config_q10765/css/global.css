@@ -356,13 +356,13 @@ div#CentralSpaceContainer.SlimHeaderFixedPosition { margin-top: 100px; }
 #SearchBox .PopupCategoryTree {display: none; text-align: left; z-index: 999; padding: 5px; background: none;}
 
 /*Resource Panel layout*/
-.ResourcePanel {padding:0;margin:0 14px 14px 0;width: 174px;float:left;height:230px;position:relative; overflow: hidden;}
+.ResourcePanel {padding:0;margin:0 14px 14px 0;width: 175px;float:left;height:230px;position:relative; overflow: hidden;}
 .ResourcePanelPreview {height: 156px;width: 156px;margin: 3px;}
 .ResourcePanelInfo {margin: 5px;overflow:hidden;white-space:nowrap;padding:0;text-align:justify;text-overflow: ellipsis;}   
 .ResourcePanelCountry {margin-right: 5px;margin-left: 5px;margin-bottom: 0px;float: left;clear: left;display:inline;}   
 .ResourcePanelIcons {padding: 5px;text-align:right;position:absolute;bottom:0;right:0;width:166px;} 
 .ResourcePanelSmallIcons {padding-left: 5px;}   
-.ImageWrapper {height:174px;display:block;padding:0;vertical-align: middle;text-align: center;clear: right;}
+.ImageWrapper {height:175px;display:block;padding:0;vertical-align: middle;text-align: center;clear: right;}
 .ImageWrapperSmall {height:75px;display:block;padding:0;;vertical-align: middle;text-align: center;clear: right;}
 .ImageWrapperLarge {height:320px; display:block; padding:0; vertical-align: middle; text-align:center; clear:right;}
 
@@ -1442,10 +1442,12 @@ UL.jqueryFileTree A:hover {font-weight:bold;}
 }
 
 .keywordselected {
-    display:inline;
-    margin-right:5px;
-    float:none; border-radius:4px;
-    padding:3px 6px;
+    display: inline-block;
+    margin: 0 5px 5px 0;
+    float: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    line-height: 20px;
 }
 .customFieldset input[type=checkbox] {margin:0 2px 0 0;}
 .keywordselected a {padding-left:8px;}
@@ -1591,7 +1593,8 @@ a.Enabled, a:visited.Enabled {
 }
 
 #preview {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2)
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    max-height: 250px;
 }
 
 /* Configuration options */
