@@ -264,4 +264,287 @@ function migrate_search_filter($filtertext)
     return $filterid;
     }
     
+
+/**
+* Utility function to generate a random UTF8 character
+*
+* @return string
+*/
+function random_char()
+    {
+    $hex_code = dechex(mt_rand(195, 202));    
+    $hex_code .= dechex(mt_rand(128, 175));
+    return pack('H*', $hex_code);
+    }
+
+/**
+* Utility function to check string is a valid date/time
+*
+* @param string $datestring       - date string
+* @param string $format           - DateTime format to compare
+* @return boolean
+*/
+function validateDatetime($datestring, $format = 'Y-m-d H:i:s')
+    {
+    $date = DateTime::createFromFormat($format, $datestring);
+    return $date && $date->format($format) == $datestring;
+    }
+
+/**
+* Utility function to randomly alter date by offset
+*
+* @param string $fromdate       - date string
+* @param int $maxoffset         - Maximum number of days to offset
+* @return string
+*/
+function mix_date($fromdate, $maxoffset=30)
+    {
+    global $mixcache;
+    if(isset($mixcache[md5($fromdate)]))
+        {
+        return $mixcache[md5($fromdate)];
+        }
+
+    if(trim($fromdate==""))
+        {
+        $tstamp = time();
+        }
+    else
+        {
+        $date = new DateTime($fromdate);
+        $tstamp = strtotime($fromdate);
+        }
+
+    $dateshift = 60*60*24*$maxoffset; // How much should dates be moved
+    $newstamp = $tstamp + (mt_rand(-$dateshift,$dateshift));
+    $newdate = date('Y-m-d H:i:s',$newstamp);
+    debug("Converted date " . $fromdate . " to " . $newdate);
+
+    // Update cache
+    $mixcache[md5($fromdate)] = $newdate;
+
+    return $newdate;
+    }
+
+/**
+* Utility function to randomly scramble string
+*
+* @param string $string       - Text string to scramble
+* @param boolean $recurse     - Optionally prevent recursion (maybe called by another mix unction)
+* @return string
+*/
+function mix_text($string, $recurse=true)
+    {
+    global $mixcache;
+    if(isset($mixcache[md5($string)]))
+        {
+        return $mixcache[md5($string)];
+        }
     
+    debug( "Converting string<br/>" . $string . ", recurse=" . ($recurse ? "TRUE" : "FALSE"));
+
+    // Check if another function is better
+    if(validateDatetime($string) && $recurse)
+        {
+        debug("This is a date - calling mix_date()");
+        return mix_date($string);
+        }
+    elseif(strpos($string,"http") === 0 && $recurse)
+        {
+        debug("This is a URL - calling mix_url()");
+        return mix_url($string);
+        }
+    elseif(strpos($string," ") === false && strpos($string,".") != false && $recurse)
+        {
+        debug("This is a filename - calling mix_filename()");
+        return mix_filename($string);
+        }
+    
+    $numbers = '0123456789';
+    $uppercons = 'BCDFGHJKLMNPQRSTVWXZ';
+    $uppervowels = 'AEIOUY';
+    $lowercons = 'bcdfghjklmnpqrstvwxz';
+    $lowervowels = 'aeiouy';
+    $noreplace = "'\".,<>#-_&\$£:;^?!@+()*% \n";
+
+    $newstring = "";
+    $bytelength = strlen($string);
+    $mbytelength = mb_strlen($string);
+
+    // Simple conversion if numbers
+    if($bytelength == $mbytelength && (string)(int)$string == $string)
+        {
+        $newstring =  mt_rand(0,(int)$string);
+        }
+    else
+        {
+        // Process each character
+        for($i=0;$i<$mbytelength;$i++)
+            {
+            $oldchar = mb_substr($string,$i,1);
+            debug( "Converting character #$i '" . $oldchar . "'"); 
+
+            if($i > 3 && strpos($noreplace,$oldchar) === false)
+                {
+                // Randomly add or remove character after first
+                $randaction = mt_rand(0,10);
+                if($randaction == 0)
+                    {
+                    // Skip a character
+                    $i++;
+                    }
+                elseif($randaction == 1)
+                    {
+                    // Add a character
+                    $i--;
+                    }
+                }
+          
+            if($i >= $mbytelength || $oldchar == "")
+                {
+                $newstring .=  substr(str_shuffle($lowervowels . $lowercons), 0,1);   
+                }
+            elseif(strpos($noreplace,$oldchar) !== false)
+                {
+                $newstring .= $oldchar;
+                }
+            elseif(strlen($oldchar)==1)
+                {
+                // Non- multibyte
+                if(strpos($lowercons,$oldchar) !== false)
+                    {
+                    $newchar = substr(str_shuffle($lowercons), 0,1);
+                    }
+                elseif(strpos($uppercons,$oldchar) !== false)
+                    {
+                    $newchar = substr(str_shuffle($uppercons), 0,1);
+                    }
+                elseif(strpos($lowervowels,$oldchar) !== false)
+                    {
+                    $newchar = substr(str_shuffle($lowervowels), 0,1);
+                    }
+                elseif(strpos($uppervowels,$oldchar) !== false)
+                    {
+                    $newchar = substr(str_shuffle($uppervowels), 0,1);
+                    }                    
+                elseif(strpos($numbers,$oldchar) !== false)
+                    {
+                    $newchar = substr(str_shuffle($numbers), 0,1);
+                    }
+                else
+                    {
+                    $newchar = substr(str_shuffle($noreplace), 0,1);
+                    }
+                debug("New random character: $newchar");
+                $newstring .= $newchar;        
+                }                         
+            else
+                {
+                $newchar = random_char();
+                $newstring .= $newchar;   
+                debug("New random character: " . $newchar);
+                } // End of multibyte conversion
+            }
+        }
+
+    // Update cache
+    $mixcache[md5($string)] = $newstring;
+    return $newstring;
+    }
+
+/**
+* Utility function to randomly scramble data array for exporting 
+*
+* @param array $row             - Array of data passed by reference
+* @param boolean $scramblecolumns - Optional array of columns to scramble
+* @return void
+*/
+function alter_data(&$row,$key,$scramblecolumns=array())
+    {
+    global $datetime_fields;
+    foreach($scramblecolumns as $scramblecolumn=>$scrambletype)
+        {
+        $row[$scramblecolumn] = call_user_func($scrambletype , $row[$scramblecolumn]);
+        }
+    }
+
+/**
+* Utility function to scramble a URL
+*
+* @param string $string           - URL to scramble
+* 
+* @return string
+*/
+function mix_url($string)
+    {
+    $urlparts = explode("://", $string);
+    return $urlparts[0] . "://" . mix_text($urlparts[1], false);    
+    }
+
+/**
+* Utility function to scramble a filename
+*
+* @param string $string           - filename to scramble
+* 
+* @return string
+*/
+function mix_filename($string)
+    {
+    if(trim($string) == "")
+        {
+        return "";
+        }
+
+    debug("filename: " . $string);
+    if(strpos($string,".") === false)
+        {
+        return mix_text($string, false);
+        }
+
+    $fileparts = pathinfo($string);
+    $newfilename = mix_text($fileparts["filename"], false) . "." . $fileparts["extension"];
+
+    debug("New filename: " . $newfilename);
+    return $newfilename;
+    }
+
+/**
+* Utility function to scramble an email address
+*
+* @param string $string           - email to scramble
+* 
+* @return string
+*/
+function mix_email($string)
+    {
+    global $mixcache;
+    if(isset($mixcache[md5($string)]))
+        {
+        return $mixcache[md5($string)];
+        }
+
+    $emailparts = explode("@",$string);
+    if(count($emailparts) < 2)
+        {
+        return mix_text($string);
+        }
+
+    $newemail = implode("@",array_map("mix_text",$emailparts));
+
+    // Update cache
+    $mixcache[md5($string)] = $newemail;
+
+    return $newemail;    
+    }
+
+/**
+* Utility function to escape and replace any empty strings with NULLS for exported SQL scripts 
+*
+* @param string $value           - value to check
+* 
+* @return string
+*/
+function safe_export($value)
+    {
+    return trim($value)=="" ? "NULL" : "'" . escape_check($value) . "'";
+    }
