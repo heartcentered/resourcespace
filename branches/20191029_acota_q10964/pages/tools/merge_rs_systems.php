@@ -87,7 +87,7 @@ foreach($options as $option_name => $option_value)
             "export",
             "import",)))
         {
-        logScript("Script running with '{$option_name}' option enabled!");
+        fwrite(STDOUT, "Script running with '{$option_name}' option enabled!");
 
         $option_name = str_replace("-", "_", $option_name);
         $$option_name = true;
@@ -1053,6 +1053,11 @@ if($import)
     $resources_mapping = (isset($resources_mapping) ? $resources_mapping : array());
     foreach($src_resources as $src_resource)
         {
+        if(array_key_exists($src_resource["ref"], $resources_mapping))
+            {
+            continue;
+            }
+
         logScript("Processing #{$src_resource["ref"]} | resource_type: {$src_resource["resource_type"]} | archive: {$src_resource["archive"]} | created_by: {$src_resource["created_by"]}");
 
         if(
@@ -1223,7 +1228,49 @@ if($import)
         }
 
 
+    # RESOURCE RELATED
+    ##################
+    logScript("");
+    logScript("Importing resource related...");
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - resource related - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
+    fwrite($progress_fh, PHP_EOL . PHP_EOL);
+    fwrite($progress_fh, "// Resource IDs mentioned in the following mapping are from SRC system" . PHP_EOL);
+    $related_resources_mapping = (isset($related_resources_mapping) ? $related_resources_mapping : array());
+    $src_resource_related = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_related_export.json", "r+b"));
+    foreach($src_resource_related as $src_rr)
+        {
+        if(in_array("{$src_rr["resource"]}_{$src_rr["related"]}", $related_resources_mapping))
+            {
+            continue;
+            }
 
+        logScript("Processing resource related - resource: #{$src_rr["resource"]} | related: #{$src_rr["related"]}");
+
+        if(
+            !array_key_exists($src_rr["resource"], $resources_mapping)
+            || !array_key_exists($src_rr["related"], $resources_mapping))
+            {
+            logScript("WARNING: Unable to find a resource mapping for either resource or related. Skipping");
+            continue;
+            }
+
+        sql_query("INSERT INTO resource_related (resource, related) VALUES ('{$src_rr["resource"]}', '{$src_rr["related"]}')");
+
+        $related_resources_mapping[] = "{$src_rr["resource"]}_{$src_rr["related"]}";
+        fwrite($progress_fh, "\$related_resources_mapping[] = \"{$src_rr["resource"]}_{$src_rr["related"]}\";" . PHP_EOL);
+        }
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
+        }
 
 
 
