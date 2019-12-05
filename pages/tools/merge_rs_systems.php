@@ -35,7 +35,8 @@ OPTIONS SUMMARY
     -h, --help              display this help and exit
     -u, --user              run script as a ResourceSpace user. Use the ID of the user
     --dry-run               perform a trial run with no changes made
-    --generate-spec-file    Generate an example specification file
+    --clear-progress        clear the progress file which is automatically generated at import
+    --generate-spec-file    generate an example specification file
     --spec-file=FILE        read specification from FILE
     --export                export information from ResourceSpace
     --import                import information to ResourceSpace based on the specification file (Requires spec-file option)
@@ -55,6 +56,7 @@ $cli_short_options = "hu:";
 $cli_long_options  = array(
     "help",
     "dry-run",
+    "clear-progress",
     "user:",
     "spec-file:",
     "export",
@@ -67,6 +69,7 @@ $help = false;
 $dry_run = false;
 $export = false;
 $import = false;
+$clear_progress = false;
 
 foreach($options as $option_name => $option_value)
     {
@@ -80,9 +83,12 @@ foreach($options as $option_name => $option_value)
         $option_name,
         array(
             "dry-run",
+            "clear-progress",
             "export",
             "import",)))
         {
+        logScript("Script running with '{$option_name}' option enabled!");
+
         $option_name = str_replace("-", "_", $option_name);
         $$option_name = true;
         }
@@ -114,7 +120,7 @@ $webroot = dirname(dirname(__DIR__));
 include_once "{$webroot}/include/db.php";
 include_once "{$webroot}/include/general.php";
 include_once "{$webroot}/include/log_functions.php";
-// include_once "{$webroot}/include/resource_functions.php";
+include_once "{$webroot}/include/resource_functions.php";
 include_once "{$webroot}/include/collections_functions.php";
 
 $get_file_handler = function($file_path, $mode)
@@ -161,13 +167,6 @@ $json_decode_file_data = function($fh)
 
     return $json_decoded_data;
     };
-
-if($dry_run)
-    {
-    logScript("#################################################################");
-    logScript("##### WARNING - Script running with DRY-RUN option enabled! #####");
-    logScript("#################################################################");
-    }
 
 if(isset($user))
     {
@@ -412,36 +411,51 @@ if($import)
     include_once $spec_file_path;
 
     /*
-    spec_override.php is used as the name suggests to override the specification file that was provided as original input
-    by keeping track of new mappings created and saving them in the override.
+    progress.php is used to override the specification file that was provided as original input by keeping track of new 
+    mappings created and saving them in the progress file.
     */
-    $spec_override_fp = $folder_path . DIRECTORY_SEPARATOR . "spec_override.php";
-    $spec_override_fh = $get_file_handler($spec_override_fp, "a+b");
+    $progress_fp = $folder_path . DIRECTORY_SEPARATOR . "progress.php";
+    $progress_fh = $get_file_handler($progress_fp, "a+b");
     $php_tag_found = false;
-    while(($line = fgets($spec_override_fh)) !== false)
+    while(($line = fgets($progress_fh)) !== false)
         {
         if(trim($line) != "" &&  mb_check_encoding($line, "UTF-8") && mb_strpos($line, "<?php") !== false)
             {
             $php_tag_found = true;
             }
         }
-    if(!$php_tag_found || $dry_run)
+    if(!$php_tag_found || $clear_progress)
         {
-        ftruncate($spec_override_fh, 0);
-        fwrite($spec_override_fh, "<?php" . PHP_EOL);
+        ftruncate($progress_fh, 0);
+        fwrite($progress_fh, "<?php" . PHP_EOL);
         }
-    include_once $spec_override_fp;
+    include_once $progress_fp;
 
-    if(db_begin_transaction())
+    define("TX_SAVEPOINT", "merge_rs_systems_import");
+    if(mysqli_autocommit($db, false))
         {
-        logScript("MySQL: Begin transaction!");
+        logScript("MySQL: autocommit = false");
         }
-    $rollback_transaction = false;
+    else
+        {
+        logScript("ERROR: unable to disable autocommit!");
+        exit(1);
+        }
+
 
     # USER GROUPS
     #############
     logScript("");
     logScript("Importing user groups...");
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - usergroup - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
     if(!isset($usergroups_spec) || empty($usergroups_spec))
         {
         logScript("ERROR: Spec missing 'usergroups_spec'");
@@ -457,7 +471,7 @@ if($import)
             {
             logScript("WARNING: Specification for usergroups does not contain a mapping for this group! Skipping");
             $usergroups_not_created[] = $src_ug["ref"];
-            fwrite($spec_override_fh, "\$usergroups_not_created[] = {$src_ug["ref"]};" . PHP_EOL);
+            fwrite($progress_fh, "\$usergroups_not_created[] = {$src_ug["ref"]};" . PHP_EOL);
             continue;
             }
 
@@ -479,7 +493,7 @@ if($import)
                 {
                 logScript("Skipping usergroup as per the specification record");
                 $usergroups_not_created[] = $src_ug["ref"];
-                fwrite($spec_override_fh, "\$usergroups_not_created[] = {$src_ug["ref"]};" . PHP_EOL);
+                fwrite($progress_fh, "\$usergroups_not_created[] = {$src_ug["ref"]};" . PHP_EOL);
                 continue;
                 }
 
@@ -492,13 +506,17 @@ if($import)
 
             logScript("Created new user group '{$src_ug["name"]}' (ID #{$new_ug_ref})");
             $usergroups_spec[$src_ug["ref"]] = $new_ug_ref;
-            fwrite($spec_override_fh, "\$usergroups_spec[{$src_ug["ref"]}] = {$new_ug_ref};" . PHP_EOL);
+            fwrite($progress_fh, "\$usergroups_spec[{$src_ug["ref"]}] = {$new_ug_ref};" . PHP_EOL);
             }
         else
             {
             logScript("ERROR: Invalid usergroup specification record for key #{$src_ug["ref"]}");
             }
 
+        }
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
         }
     unset($src_usergroups);
     unset($dest_usergroups);
@@ -508,8 +526,17 @@ if($import)
     ##########################
     logScript("");
     logScript("Importing users and their preferences...");
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - user & user preferences - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
     $src_users = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.json", "r+b"));
-    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    fwrite($progress_fh, PHP_EOL . PHP_EOL);
     $usernames_mapping = (isset($usernames_mapping) ? $usernames_mapping : array());
     $users_not_created = (isset($users_not_created) ? $users_not_created : array());
     $process_user_preferences = function($user_ref, $user_data)
@@ -540,7 +567,7 @@ if($import)
             logScript("Username '{$user["username"]}' found in current system as '{$found_udata["username"]}', full name '{$found_udata["fullname"]}'");
 
             $usernames_mapping[$user["ref"]] = $found_uref;
-            fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$found_uref};" . PHP_EOL);
+            fwrite($progress_fh, "\$usernames_mapping[{$user["ref"]}] = {$found_uref};" . PHP_EOL);
 
             $process_user_preferences($found_uref, $user);
 
@@ -551,14 +578,14 @@ if($import)
             {
             logScript("WARNING: User '{$user["username"]}' belongs to a user group that was not created as per the specification file. Skipping");
             $users_not_created[] = $user["ref"];
-            fwrite($spec_override_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
+            fwrite($progress_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
             continue;
             }
 
         $new_uref = new_user($user["username"], $usergroups_spec[$user["usergroup"]]);
         logScript("Created new user '{$user["username"]}' (ID #{$new_uref} | User group ID: {$usergroups_spec[$user["usergroup"]]})");
         $usernames_mapping[$user["ref"]] = $new_uref;
-        fwrite($spec_override_fh, "\$usernames_mapping[{$user["ref"]}] = {$new_uref};" . PHP_EOL);
+        fwrite($progress_fh, "\$usernames_mapping[{$user["ref"]}] = {$new_uref};" . PHP_EOL);
 
         $_GET["username"] = $user["username"];
         $_GET["password"] = $user["password"];
@@ -578,13 +605,13 @@ if($import)
             {
             logScript("WARNING: failed to save user '{$user["username"]}' - Username or e-mail address already exist?");
             $users_not_created[] = $user["ref"];
-            fwrite($spec_override_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
+            fwrite($progress_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
             }
         else if(is_string($save_user_status))
             {
             logScript("WARNING: failed to save user '{$user["username"]}'. Reason: '{$save_user_status}'");
             $users_not_created[] = $user["ref"];
-            fwrite($spec_override_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
+            fwrite($progress_fh, "\$users_not_created[] = {$user["ref"]};" . PHP_EOL);
             }
         else
             {
@@ -593,6 +620,10 @@ if($import)
 
         $process_user_preferences($new_uref, $user);
         }
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
+        }
     unset($src_users);
 
 
@@ -600,6 +631,15 @@ if($import)
     ################
     logScript("");
     logScript("Importing archive states...");
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - archive states - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
     if(!isset($archive_states_spec) || empty($archive_states_spec))
         {
         logScript("ERROR: Spec missing 'archive_states_spec'");
@@ -658,6 +698,10 @@ if($import)
             fclose($config_fh);
             }
         }
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
+        }
     unset($src_archive_states);
 
 
@@ -665,7 +709,16 @@ if($import)
     ################
     logScript("");
     logScript("Importing resource types...");
-    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - resource types - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
+    fwrite($progress_fh, PHP_EOL . PHP_EOL);
     if(!isset($resource_types_spec) || empty($resource_types_spec))
         {
         logScript("ERROR: Spec missing 'resource_types_spec'");
@@ -707,12 +760,12 @@ if($import)
         sql_query(
             sprintf("INSERT INTO resource_type(`name`, config_options, allowed_extensions, tab_name, push_metadata, inherit_global_fields)
                           VALUES (%s, %s, %s, %s, %s, %s);",
-            (trim($resource_type["name"]) == "" ? "'" . escape_check($resource_type["name"]) . "'" : "NULL"),
-            (trim($resource_type["config_options"]) == "" ? "'" . escape_check($resource_type["config_options"]) . "'" : "NULL"),
-            (trim($resource_type["allowed_extensions"]) == "" ? "'" . escape_check($resource_type["allowed_extensions"]) . "'" : "NULL"),
-            (trim($resource_type["tab_name"]) == "" ? "'" . escape_check($resource_type["tab_name"]) . "'" : "NULL"),
-            (trim($resource_type["push_metadata"]) == "" ? "'" . escape_check($resource_type["push_metadata"]) . "'" : "NULL"),
-            (trim($resource_type["inherit_global_fields"]) == "" ? "'" . escape_check($resource_type["inherit_global_fields"]) . "'" : "NULL")
+            (trim($resource_type["name"]) != "" ? "'" . escape_check($resource_type["name"]) . "'" : "NULL"),
+            (trim($resource_type["config_options"]) != "" ? "'" . escape_check($resource_type["config_options"]) . "'" : "NULL"),
+            (trim($resource_type["allowed_extensions"]) != "" ? "'" . escape_check($resource_type["allowed_extensions"]) . "'" : "NULL"),
+            (trim($resource_type["tab_name"]) != "" ? "'" . escape_check($resource_type["tab_name"]) . "'" : "NULL"),
+            (trim($resource_type["push_metadata"]) != "" ? "'" . escape_check($resource_type["push_metadata"]) . "'" : "NULL"),
+            (trim($resource_type["inherit_global_fields"]) != "" ? "'" . escape_check($resource_type["inherit_global_fields"]) . "'" : "NULL")
         ));
         $new_rt_ref = sql_insert_id();
 
@@ -725,7 +778,11 @@ if($import)
 
         logScript("Created new record #{$new_rt_ref} '{$resource_type["name"]}'");
         $resource_types_spec[$resource_type["ref"]] = $new_rt_ref;
-        fwrite($spec_override_fh, "\$resource_types_spec[{$resource_type["ref"]}] = {$new_rt_ref};" . PHP_EOL);
+        fwrite($progress_fh, "\$resource_types_spec[{$resource_type["ref"]}] = {$new_rt_ref};" . PHP_EOL);
+        }
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
         }
     unset($src_resource_types);
     unset($dest_resource_types);
@@ -734,8 +791,17 @@ if($import)
     # RESOURCE TYPE FIELDS
     ######################
     logScript("");
-    logScript("Importing resource_type fields...");
-    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    logScript("Importing resource type fields...");
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - resource type fields - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
+    fwrite($progress_fh, PHP_EOL . PHP_EOL);
     if(!isset($resource_type_fields_spec) || empty($resource_type_fields_spec))
         {
         logScript("ERROR: Spec missing 'resource_type_fields_spec'");
@@ -768,7 +834,7 @@ if($import)
             {
             logScript("WARNING: Specification missing mapping for this resource type field! Skipping");
             $resource_type_fields_not_created[] = $src_rtf["ref"];
-            fwrite($spec_override_fh, "\$resource_type_fields_not_created[] = {$src_rtf["ref"]};" . PHP_EOL);
+            fwrite($progress_fh, "\$resource_type_fields_not_created[] = {$src_rtf["ref"]};" . PHP_EOL);
             continue;
             }
 
@@ -782,7 +848,7 @@ if($import)
             {
             logScript("Mapping set to not be created. Skipping");
             $resource_type_fields_not_created[] = $src_rtf["ref"];
-            fwrite($spec_override_fh, "\$resource_type_fields_not_created[] = {$src_rtf["ref"]};" . PHP_EOL);
+            fwrite($progress_fh, "\$resource_type_fields_not_created[] = {$src_rtf["ref"]};" . PHP_EOL);
             continue;
             }
 
@@ -848,7 +914,7 @@ if($import)
 
             logScript("Created new record #{$new_rtf_ref} '{$src_rtf["title"]}'");
             $resource_type_fields_spec[$src_rtf["ref"]] = array("create" => true, "ref" => $new_rtf_ref);
-            fwrite($spec_override_fh, "\$resource_type_fields_spec[{$src_rtf["ref"]}] = array(\"create\" => true, \"ref\" => {$new_rtf_ref});" . PHP_EOL);
+            fwrite($progress_fh, "\$resource_type_fields_spec[{$src_rtf["ref"]}] = array(\"create\" => true, \"ref\" => {$new_rtf_ref});" . PHP_EOL);
 
             $new_rtf_data = $src_rtf;
             $new_rtf_data["ref"] = $new_rtf_ref;
@@ -880,14 +946,27 @@ if($import)
             logScript("WARNING: SRC field is a category type and DEST field is a different fixed list type. THIS WILL FLATTEN THE CATEGORY TREE!");
             }
         }
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
+        }
     unset($src_resource_type_fields);
 
 
     # NODES
     #######
-    /*logScript("");
+    logScript("");
     logScript("Importing nodes...");
-    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - nodes - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
+    fwrite($progress_fh, PHP_EOL . PHP_EOL);
     $src_nodes = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "nodes_export.json", "r+b"));
     $nodes_mapping = (isset($nodes_mapping) ? $nodes_mapping : array());
     $nodes_not_created = (isset($nodes_not_created) ? $nodes_not_created : array());
@@ -899,7 +978,7 @@ if($import)
             {
             logScript("Skipping as resource type field was not created on the destination system!");
             $nodes_not_created[] = $src_node["ref"];
-            fwrite($spec_override_fh, "\$nodes_not_created[] = {$src_node["ref"]};" . PHP_EOL);
+            fwrite($progress_fh, "\$nodes_not_created[] = {$src_node["ref"]};" . PHP_EOL);
             continue;
             }
 
@@ -921,7 +1000,7 @@ if($import)
             {
             logScript("WARNING: unable to create new node because its parent was not created!");
             $nodes_not_created[] = $src_node["ref"];
-            fwrite($spec_override_fh, "\$nodes_not_created[] = {$src_node["ref"]};" . PHP_EOL);
+            fwrite($progress_fh, "\$nodes_not_created[] = {$src_node["ref"]};" . PHP_EOL);
             continue;
             }
         else if(
@@ -947,16 +1026,29 @@ if($import)
 
         logScript("Created new record #{$new_node_ref} '{$src_node["name"]}'");
         $nodes_mapping[$src_node["ref"]] = $new_node_ref;
-        fwrite($spec_override_fh, "\$nodes_mapping[{$src_node["ref"]}] = {$new_node_ref};" . PHP_EOL);
+        fwrite($progress_fh, "\$nodes_mapping[{$src_node["ref"]}] = {$new_node_ref};" . PHP_EOL);
         }
-    unset($src_nodes);*/
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
+        }
+    unset($src_nodes);
 
 
     # RESOURCES
     ###########
     logScript("");
     logScript("Importing resources...");
-    fwrite($spec_override_fh, PHP_EOL . PHP_EOL);
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - resources - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
+    fwrite($progress_fh, PHP_EOL . PHP_EOL);
     $src_resources = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resources_export.json", "r+b"));
     $resources_mapping = (isset($resources_mapping) ? $resources_mapping : array());
     foreach($src_resources as $src_resource)
@@ -990,15 +1082,28 @@ if($import)
 
         logScript("Created new record #{$new_resource_ref}");
         $resources_mapping[$src_resource["ref"]] = $new_resource_ref;
-        fwrite($spec_override_fh, "\$resources_mapping[{$src_resource["ref"]}] = {$new_resource_ref};" . PHP_EOL);
+        fwrite($progress_fh, "\$resources_mapping[{$src_resource["ref"]}] = {$new_resource_ref};" . PHP_EOL);
+        }
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
         }
     unset($src_resources);
 
 
     # RESOURCE NODES
     ################
-    /*logScript("");
+    logScript("");
     logScript("Importing resource nodes...");
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - resource nodes - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
     $src_resource_nodes = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_nodes_export.json", "r+b"));
     foreach($src_resource_nodes as $src_rn)
         {
@@ -1019,13 +1124,26 @@ if($import)
         sql_query("INSERT INTO resource_node (resource, node, hit_count, new_hit_count)
                         VALUES ('{$resources_mapping[$src_rn["resource"]]}', '{$nodes_mapping[$src_rn["node"]]}', '{$src_rn["hit_count"]}', '{$src_rn["new_hit_count"]}')");
         }
-    unset($src_resource_nodes);*/
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
+        }
+    unset($src_resource_nodes);
 
 
     # RESOURCE DATA
     ###############
     logScript("");
     logScript("Importing resource data...");
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - resource data - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
     $src_resource_data = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_data_export.json", "r+b"));
     foreach($src_resource_data as $src_rd)
         {
@@ -1057,6 +1175,10 @@ if($import)
             exit(1);
             }
         }
+    if(db_end_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Commit transaction!");
+        }
     unset($src_resource_data);
 
 
@@ -1064,6 +1186,15 @@ if($import)
     #####################
     logScript("");
     logScript("Importing resource dimensions...");
+    if(db_begin_transaction(TX_SAVEPOINT))
+        {
+        logScript("MySQL: Transaction - resource dimensions - savepoint!");
+        }
+    else
+        {
+        logScript("MySQL: Failed to record savepoint!");
+        exit(1);
+        }
     $src_resource_dimensions = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_dimensions_export.json", "r+b"));
     foreach($src_resource_dimensions as $src_rdms)
         {
@@ -1086,23 +1217,16 @@ if($import)
                                 '{$src_rdms["unit"]}',
                                 {$page_count})");
         }
-
-
-
-
-
-
-    // fwrite($spec_override_fh, "" . PHP_EOL);
-    fclose($spec_override_fh);
-
-    if(!($dry_run || $rollback_transaction) && db_end_transaction())
+    if(db_end_transaction(TX_SAVEPOINT))
         {
-        logScript("");
         logScript("MySQL: Commit transaction!");
         }
-    else if(db_rollback_transaction())
-        {
-        logScript("");
-        logScript("MySQL: Rollback Successful!");
-        }
+
+
+
+
+
+
+    // fwrite($progress_fh, "" . PHP_EOL);
+    fclose($progress_fh);
     }
