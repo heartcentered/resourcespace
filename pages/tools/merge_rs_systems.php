@@ -14,18 +14,18 @@ $help_text = "NAME
     merge_rs_systems - a script to help administrators merge two ResourceSpace systems.
 
 SYNOPSIS
-    On the system (also known as SRC system) that is going to merge with the master system:
+    On the system (also known as SRC system) that is going to merge with the other (DEST) system:
         php path/tools/merge_rs_systems.php [OPTION...] DEST
 
-    On the master system (also known as DEST system), merging in data from the slave system:
+    On the system (also known as DEST system), merging in data from the other (SRC) system:
         php path/tools/merge_rs_systems.php [OPTION...] SRC
 
 DESCRIPTION
     A script to help administrators merge two ResourceSpace systems.
 
     A specification file is required for the migration to be possible. The spec file will contain:
-    - A mapping between the migrating system and the master systems' metadata fields. How should we treat the case where 
-      one metadata field is of a different type than the other one (this is especially important for category trees).
+    - A mapping between the SRC system and the DEST systems' metadata fields. Use the --generate-spec-file option to get
+      an example.
     - User groups mapping and how we should deal with new user groups that do not exist on the master system
 
 OPTIONS SUMMARY
@@ -87,7 +87,7 @@ foreach($options as $option_name => $option_value)
             "export",
             "import",)))
         {
-        fwrite(STDOUT, "Script running with '{$option_name}' option enabled!");
+        fwrite(STDOUT, "Script running with '{$option_name}' option enabled!" . PHP_EOL);
 
         $option_name = str_replace("-", "_", $option_name);
         $$option_name = true;
@@ -401,7 +401,7 @@ if($export && isset($folder_path))
     }
 
 
-if($import)
+if($import && isset($folder_path))
     {
     if(!isset($spec_file_path) || trim($spec_file_path) == "")
         {
@@ -438,7 +438,7 @@ if($import)
         }
     else
         {
-        logScript("ERROR: unable to disable autocommit!");
+        logScript("ERROR: MySQL - unable to disable autocommit!");
         exit(1);
         }
 
@@ -461,11 +461,17 @@ if($import)
         logScript("ERROR: Spec missing 'usergroups_spec'");
         exit(1);
         }
+    $processed_usergroups = (isset($processed_usergroups) ? $processed_usergroups : array());
+    $usergroups_not_created = (isset($usergroups_not_created) ? $usergroups_not_created : array());
     $src_usergroups = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "usergroups_export.json", "r+b"));
     $dest_usergroups = get_usergroups(false, "", true);
-    $usergroups_not_created = (isset($usergroups_not_created) ? $usergroups_not_created : array());
     foreach($src_usergroups as $src_ug)
         {
+        if(in_array($src_ug["ref"], $processed_usergroups) || in_array($src_ug["ref"], $usergroups_not_created))
+            {
+            continue;
+            }
+
         logScript("Processing {$src_ug["name"]} (ID #{$src_ug["ref"]})...");
         if(!array_key_exists($src_ug["ref"], $usergroups_spec))
             {
@@ -479,6 +485,8 @@ if($import)
         if(is_numeric($spec_cfg_value) && $spec_cfg_value > 0 && array_key_exists($spec_cfg_value, $dest_usergroups))
             {
             logScript("Found direct 1:1 mapping to '{$dest_usergroups[$spec_cfg_value]}' (ID #{$spec_cfg_value})... Skipping");
+            $processed_usergroups[] = $src_ug["ref"];
+            fwrite($progress_fh, "\$processed_usergroups[] = {$src_ug["ref"]};" . PHP_EOL);
             continue;
             }
         else if(is_array($spec_cfg_value))
@@ -486,7 +494,7 @@ if($import)
             if(!isset($spec_cfg_value["create"]))
                 {
                 logScript("ERROR: usergroup specification config value is invalid. Required keys: create - true/false");
-                continue;
+                exit(1);
                 }
 
             if((bool) $spec_cfg_value["create"] == false)
@@ -497,7 +505,6 @@ if($import)
                 continue;
                 }
 
-            // create user group and save mapping in cache
             sql_query("INSERT INTO usergroup(name, request_mode) VALUES ('" . escape_check($src_ug["name"]) . "', '1')");
             $new_ug_ref = sql_insert_id();
             log_activity(null, LOG_CODE_CREATED, null, 'usergroup', null, $new_ug_ref);
@@ -506,7 +513,13 @@ if($import)
 
             logScript("Created new user group '{$src_ug["name"]}' (ID #{$new_ug_ref})");
             $usergroups_spec[$src_ug["ref"]] = $new_ug_ref;
-            fwrite($progress_fh, "\$usergroups_spec[{$src_ug["ref"]}] = {$new_ug_ref};" . PHP_EOL);
+            $processed_usergroups[] = $src_ug["ref"];
+            fwrite(
+                $progress_fh,
+                "\$usergroups_spec[{$src_ug["ref"]}] = {$new_ug_ref};"
+                . PHP_EOL
+                . "\$processed_usergroups[] = {$src_ug["ref"]};"
+                . PHP_EOL);
             }
         else
             {
