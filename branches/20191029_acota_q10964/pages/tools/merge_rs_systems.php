@@ -48,7 +48,7 @@ EXAMPLES
 
     Import
     ======
-    php /path/to/pages/tools/merge_rs_systems.php --dry-run --spec-file=\"/path/to/spec.php\" --import /path/to/export_folder_from_src/
+    php /path/to/pages/tools/merge_rs_systems.php --clear-progress --spec-file=\"/path/to/spec.php\" --import /path/to/export_folder_from_src/
     " . PHP_EOL;
 
 
@@ -244,9 +244,40 @@ if($export && isset($folder_path))
             "sql" => array(
                 "where" => "ref > 0
                     AND resource_type IN (SELECT ref FROM resource_type)
-                    AND archive IN (SELECT ref FROM archive_states)",
+                    AND archive IN (SELECT `code` FROM archive_states)
+                    AND (file_extension IS NOT NULL AND trim(file_extension) <> '')
+                    AND (preview_extension IS NOT NULL AND trim(preview_extension) <> '')",
+            ),
+            "additional_process" => function($record) {
+                // new fake column used at import for ingesting the file in the DEST system
+                $record["merge_rs_systems_file_url"] = "";
+
+                $path = get_resource_path($record["ref"], true, "", false, $record["file_extension"]);
+
+                if(!file_exists($path))
+                    {
+                    logScript("WARNING: unable to get original file for resource #{$record["ref"]}");
+                    return false;
+                    }
+
+                $record["merge_rs_systems_file_url"] = get_resource_path($record["ref"], false, "", false, $record["file_extension"]);
+
+                return $record;
+            },
+        ),
+        array(
+            "name" => "resource_alt_files",
+            "formatted_name" => "resource alternative files",
+            "filename" => "resource_alt_files",
+            "record_feedback" => array(),
+            "sql" => array(
+                "select"  => "raf.*",
+                "from"  => "resource_alt_files AS raf
+                    RIGHT JOIN resource AS r ON raf.resource = r.ref",
+                "where" => "resource > 0 AND EXISTS(SELECT ref FROM resource WHERE ref = raf.resource)",
             ),
         ),
+/*
         array(
             "name" => "resource_data",
             "formatted_name" => "resource data",
@@ -271,7 +302,9 @@ if($export && isset($folder_path))
                     RIGHT JOIN node AS n ON rn.node = n.ref",
                 "where" => "resource > 0
                     AND r.resource_type IN (SELECT ref FROM resource_type)
-                    AND r.archive IN (SELECT ref FROM archive_states)
+                    AND r.archive IN (SELECT `code` FROM archive_states)
+                    AND (r.file_extension IS NOT NULL AND trim(r.file_extension) <> '')
+                    AND (r.preview_extension IS NOT NULL AND trim(r.preview_extension) <> '')
                     AND n.resource_type_field IN (SELECT ref FROM resource_type_field)",
             ),
         ),
@@ -294,7 +327,7 @@ if($export && isset($folder_path))
                     AND EXISTS(SELECT ref FROM resource WHERE ref = resource_related.resource)
                     AND EXISTS(SELECT ref FROM resource WHERE ref = resource_related.related)",
             ),
-        ),
+        ),*/
     );
 
     foreach($tables as $table)
@@ -307,6 +340,7 @@ if($export && isset($folder_path))
         $select = isset($table["sql"]["select"]) && trim($table["sql"]["select"]) != "" ? $table["sql"]["select"] : "*";
         $from = isset($table["sql"]["from"]) && trim($table["sql"]["from"]) != "" ? $table["sql"]["from"] : $table["name"];
         $where = isset($table["sql"]["where"]) && trim($table["sql"]["where"]) != "" ? "WHERE {$table["sql"]["where"]}" : "";
+        $additional_process = isset($table["additional_process"]) && is_callable($table["additional_process"]) ? $table["additional_process"] : null;
 
         // @todo: consider limiting the results and keep paging until all data is retrieved to avoid running out of memory
         $records = sql_query("SELECT {$select} FROM {$from} {$where}");
@@ -327,6 +361,17 @@ if($export && isset($folder_path))
                     $log_msg = str_replace("%{$placeholder}", $record["{$placeholder}"], $log_msg);
                     }
                 logScript($log_msg);
+                }
+
+            if(!is_null($additional_process))
+                {
+                $record = $additional_process($record);
+
+                // additional processing might determine we don't want to process this record at all
+                if($record === false)
+                    {
+                    continue;
+                    }
                 }
 
             if($dry_run)
@@ -676,10 +721,10 @@ if($import && isset($folder_path))
 
             fwrite(
                 $config_fh,
-                "\$additional_archive_states[] = {$new_archive_state};"
+                PHP_EOL
+                . "\$additional_archive_states[] = {$new_archive_state};"
                 . PHP_EOL
-                . "\$lang['status{$new_archive_state}'] = '{$archive_state["lang"]}';"
-                . PHP_EOL);
+                . "\$lang['status{$new_archive_state}'] = '{$archive_state["lang"]}';");
             fclose($config_fh);
             }
         }
@@ -1056,6 +1101,37 @@ if($import && isset($folder_path))
         if($new_resource_ref === false)
             {
             logScript("ERROR: unable to create new resource!");
+            exit(1);
+            }
+
+        // we don't want to extract, revert or autorotate. This is a basic file pull into the DEST system from a remote SRC
+        $job_data = array(
+            "resource" => $new_resource_ref,
+            "extract" => false,
+            "revert" => false,
+            "autorotate" => false,
+            "upload_file_by_url" => $src_resource["merge_rs_systems_file_url"],
+        );
+        $job_code = "merge_rs_systems_{$src_resource["ref"]}_{$new_resource_ref}_" . md5("{$src_resource["ref"]}_{$new_resource_ref}");
+        $job_success_lang = "Merge RS systems - upload processing success "
+            . str_replace(
+                array('%ref', '%title'),
+                array($new_resource_ref, ""),
+                $lang["ref-title"]);
+        $job_failure_lang = "Merge RS systems - upload processing fail "
+            . str_replace(
+                array('%ref', '%title'),
+                array($new_resource_ref, ""),
+                $lang["ref-title"]);
+        $job_queue_added = job_queue_add("upload_processing", $job_data, $userref, "", $job_success_lang, $job_failure_lang, $job_code);
+        if($job_queue_added === false)
+            {
+            logScript("ERROR: unable to create job queue for uploading (copying) resource original file!");
+            exit(1);
+            }
+        else if(is_string($job_queue_added) && trim($job_queue_added) != "")
+            {
+            logScript("ERROR: unable to create job queue. Reason: '{$job_queue_added}'");
             exit(1);
             }
 
