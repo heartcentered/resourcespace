@@ -273,9 +273,49 @@ if($export && isset($folder_path))
             "sql" => array(
                 "select"  => "raf.*",
                 "from"  => "resource_alt_files AS raf
-                    RIGHT JOIN resource AS r ON raf.resource = r.ref",
-                "where" => "resource > 0 AND EXISTS(SELECT ref FROM resource WHERE ref = raf.resource)",
+                    INNER JOIN resource AS r ON raf.resource = r.ref",
+                "where" => "raf.resource > 0
+                    AND r.resource_type IN (SELECT ref FROM resource_type)
+                    AND r.archive IN (SELECT `code` FROM archive_states)
+                    AND (r.file_extension IS NOT NULL AND trim(r.file_extension) <> '')
+                    AND (r.preview_extension IS NOT NULL AND trim(r.preview_extension) <> '')",
             ),
+            "additional_process" => function($record) {
+                // new fake column used at import for ingesting the file in the DEST system
+                $record["merge_rs_systems_file_url"] = "";
+
+                $path = get_resource_path(
+                    $record["resource"],
+                    true,
+                    "",
+                    false,
+                    $record["file_extension"],
+                    true,
+                    1,
+                    false,
+                    "",
+                    $record["ref"]);
+
+                if(!file_exists($path))
+                    {
+                    logScript("WARNING: unable to get original file for resource alternative pair: {$record["resource"]} - #{$record["ref"]}");
+                    return false;
+                    }
+
+                $record["merge_rs_systems_file_url"] = get_resource_path(
+                    $record["resource"],
+                    false,
+                    "",
+                    false,
+                    $record["file_extension"],
+                    true,
+                    1,
+                    false,
+                    "",
+                    $record["ref"]);
+
+                return $record;
+            },
         ),
 /*
         array(
@@ -1126,7 +1166,7 @@ if($import && isset($folder_path))
         $job_queue_added = job_queue_add("upload_processing", $job_data, $userref, "", $job_success_lang, $job_failure_lang, $job_code);
         if($job_queue_added === false)
             {
-            logScript("ERROR: unable to create job queue for uploading (copying) resource original file!");
+            logScript("ERROR: unable to create job queue for uploading (copying) resource original file from SRC system");
             exit(1);
             }
         else if(is_string($job_queue_added) && trim($job_queue_added) != "")
@@ -1301,6 +1341,78 @@ if($import && isset($folder_path))
         fwrite($progress_fh, "\$processed_resource_related[] = \"{$src_rr["resource"]}_{$src_rr["related"]}\";" . PHP_EOL);
         }
     unset($src_resource_related);
+
+
+    # RESOURCE ALTERNATIVE FILES
+    ############################
+    logScript("");
+    logScript("Importing resource alternative files...");
+    fwrite($progress_fh, PHP_EOL . PHP_EOL);
+    $processed_resource_alt_files = (isset($processed_resource_alt_files) ? $processed_resource_alt_files : array());
+    $src_resource_alt_files = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "resource_alt_files_export.json", "r+b"));
+    foreach($src_resource_alt_files as $src_raf)
+        {
+        if(in_array("{$src_raf["resource"]}_{$src_raf["ref"]}", $processed_resource_alt_files))
+            {
+            continue;
+            }
+
+        logScript("Processing resource alternative file - resource: #{$src_raf["resource"]} | alternative: #{$src_raf["ref"]}");
+
+        if(!array_key_exists($src_raf["resource"], $resources_mapping))
+            {
+            logScript("WARNING: Unable to find a resource mapping. Skipping");
+            continue;
+            }
+
+        db_begin_transaction(TX_SAVEPOINT);
+        $new_alternative_ref = add_alternative_file(
+            $resources_mapping[$src_raf["resource"]],
+            $src_raf["name"],
+            $src_raf["description"],
+            $src_raf["file_name"],
+            $src_raf["file_extension"],
+            $src_raf["file_size"],
+            $src_raf["alt_type"]);
+
+        // we don't want to extract, revert or autorotate. This is a basic file pull into the DEST system from a remote SRC
+        $job_data = array(
+            "resource" => $resources_mapping[$src_raf["resource"]],
+            "extract" => false,
+            "revert" => false,
+            "autorotate" => false,
+            "upload_file_by_url" => $src_raf["merge_rs_systems_file_url"],
+        );
+        $job_code = "merge_rs_systems_{$src_raf["ref"]}_{$resources_mapping[$src_raf["resource"]]}_" . md5("{$src_raf["ref"]}_{$resources_mapping[$src_raf["resource"]]}");
+        $job_success_lang = "Merge RS systems - alternative upload processing success "
+            . str_replace(
+                array('%ref', '%title'),
+                array($src_raf["ref"], ""),
+                $lang["ref-title"]);
+        $job_failure_lang = "Merge RS systems - alternative upload processing fail "
+            . str_replace(
+                array('%ref', '%title'),
+                array($src_raf["ref"], ""),
+                $lang["ref-title"]);
+
+        // @FIX: this is adding the file as the original for the resource
+        $job_queue_added = job_queue_add("upload_processing", $job_data, $userref, "", $job_success_lang, $job_failure_lang, $job_code);
+        if($job_queue_added === false)
+            {
+            logScript("ERROR: unable to create job queue for uploading (copying) resource alternative file from SRC system");
+            exit(1);
+            }
+        else if(is_string($job_queue_added) && trim($job_queue_added) != "")
+            {
+            logScript("ERROR: unable to create job queue. Reason: '{$job_queue_added}'");
+            exit(1);
+            }
+
+        $processed_resource_alt_files[] = "{$src_raf["resource"]}_{$src_raf["ref"]}";
+        fwrite($progress_fh, "\$processed_resource_alt_files[] = \"{$src_raf["resource"]}_{$src_raf["ref"]}\";" . PHP_EOL);
+        db_end_transaction(TX_SAVEPOINT);
+        }
+    unset($src_resource_alt_files);
 
 
     logScript("");
