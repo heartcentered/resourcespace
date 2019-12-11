@@ -6,22 +6,19 @@ include_once '../../include/config_functions.php';
 
 if(!extension_loaded("zip"))
     {
-    error_alert(str_replace("%%MODULE%%","php-zip",$lang["error_server_missing_module"]),true,200);
-    exit();
+    $error = str_replace("%%MODULE%%","php-zip",$lang["error_server_missing_module"]);
     }
 elseif(!$offline_job_queue)
     {
-    error_alert(str_replace("%%CONFIG_OPTION%%","\$offline_job_queue",$lang["oj-check-config"]),true,200);
-    exit();
+    $error = str_replace("%%CONFIG_OPTION%%","\$offline_job_queue",$lang["error_check_config"]);
     }
 elseif(!isset($mysql_bin_path))
     {
-    error_alert(str_replace("%%CONFIG_OPTION%%","\$mysql_bin_path",$lang["oj-check-config"]),true,200);
-    exit();
+        $error = str_replace("%%CONFIG_OPTION%%","\$mysql_bin_path",$lang["error_check_config"]);
     }
 
 $export = getval("export","") != "";
-if ($export!="" && enforcePostRequest(false))
+if (!isset($error) && $export!="" && enforcePostRequest(false))
 	{
     // Create array of tables to export    
     $obfuscate = getval("obfuscate","") !== "";
@@ -142,9 +139,14 @@ include '../../include/header.php';
     </p>
     <h1><?php echo $lang['exportdata']; ?></h1>
     <?php
-    if (isset($message))
+    if (isset($error))
         {
-        echo "<div class=\"PageInformal\">" . $message . "</div>";
+        echo "<div class=\"FormError\">" . htmlspecialchars($error) . "</div>";
+        }
+
+    elseif (isset($message))
+        {
+        echo "<div class=\"PageInformal\">" . htmlspecialchars($message) . "</div>";
         }
     ?>
     <p><?php echo $lang['exportdata-instructions']; render_help_link("admin/download-config");?></p>
@@ -164,9 +166,9 @@ include '../../include/header.php';
         </div>
 
 
-        <div class="Question">
+        <div class="Question" <?php if(isset($error)){echo "style=\"display: none;\"";}?>>
             <label for="export"></label>
-            <input type="button" name="export" value="<?php echo $lang["export"]; ?>" onClick="jQuery(this.form).submit();">
+            <input type="button" name="export" value="<?php echo $lang["export"]; ?>" onClick="jQuery(this.form).submit();" >
             <div class="clearerleft"> </div>
         </div>
 
