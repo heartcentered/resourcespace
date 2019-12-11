@@ -298,7 +298,7 @@ if($export && isset($folder_path))
 
                 if(!file_exists($path))
                     {
-                    logScript("WARNING: unable to get original file for resource alternative pair: {$record["resource"]} - #{$record["ref"]}");
+                    logScript("WARNING: unable to get original file for resource - alternative pair: #{$record["resource"]} - #{$record["ref"]}");
                     return false;
                     }
 
@@ -1381,9 +1381,12 @@ if($import && isset($folder_path))
             "extract" => false,
             "revert" => false,
             "autorotate" => false,
+            "alternative" => $new_alternative_ref,
             "upload_file_by_url" => $src_raf["merge_rs_systems_file_url"],
+            "extension" => $src_raf["file_extension"],
         );
-        $job_code = "merge_rs_systems_{$src_raf["ref"]}_{$resources_mapping[$src_raf["resource"]]}_" . md5("{$src_raf["ref"]}_{$resources_mapping[$src_raf["resource"]]}");
+        $job_code = "merge_rs_systems_{$src_raf["ref"]}_{$resources_mapping[$src_raf["resource"]]}_"
+                    . md5("{$src_raf["ref"]}_{$resources_mapping[$src_raf["resource"]]}");
         $job_success_lang = "Merge RS systems - alternative upload processing success "
             . str_replace(
                 array('%ref', '%title'),
@@ -1395,7 +1398,6 @@ if($import && isset($folder_path))
                 array($src_raf["ref"], ""),
                 $lang["ref-title"]);
 
-        // @FIX: this is adding the file as the original for the resource
         $job_queue_added = job_queue_add("upload_processing", $job_data, $userref, "", $job_success_lang, $job_failure_lang, $job_code);
         if($job_queue_added === false)
             {
