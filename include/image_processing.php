@@ -12,7 +12,7 @@
 include_once 'metadata_functions.php';
 
 if (!function_exists("upload_file")){
-function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_path="",$after_upload_processing=false)
+function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_path="",$after_upload_processing=false, $deletesource=true)
     {
     debug("upload_file(ref = $ref, no_exif = $no_exif,revert = $revert, autorotate = $autorotate, file_path = $file_path, after_upload_processing = $after_upload_processing)");
 
@@ -142,7 +142,7 @@ function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_p
 
                     // If the user filename doesn't have an extension add the original one
                     $path_parts = pathinfo($filename);
-                    if(!isset($path_parts['extension'])) 
+                    if(!isset($path_parts['extension']) && $original_extension != "") 
                         {
                         $filename .= '.' . $uploaded_extension;
                         }
@@ -162,12 +162,21 @@ function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_p
             # if not, try exiftool  
             else if ($exiftool_fullpath!=false)
                 {
-                $cmd=$exiftool_fullpath." -filetype -s -s -s ".escapeshellarg($processfile['tmp_name']);
-                $file_type_by_exiftool=run_command($cmd);
+                if(isset($file_path))
+                    {
+                    $cmd=$exiftool_fullpath." -filetype -s -s -s ".escapeshellarg($file_path);
+                    $file_type_by_exiftool=run_command($cmd);
+                    }
+                else
+                    {
+                    $cmd=$exiftool_fullpath." -filetype -s -s -s ".escapeshellarg($processfile['tmp_name']);
+                    $file_type_by_exiftool=run_command($cmd);
+                    }
+                
                 if (strlen($file_type_by_exiftool)>0)
                     {
                     $extension=str_replace(" ","_",trim(strtolower($file_type_by_exiftool)));
-                    $filename=$filename;
+                    $filename = $filename . "." . $extension;
                     }
                 else
                     {
@@ -246,15 +255,16 @@ function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_p
             if(!$after_upload_processing)
                 {
                 global $replace_batch_existing;
-                if (!$replace_batch_existing && $file_path!="")
+                if ($file_path!="" && ($replace_batch_existing || !$deletesource))
+                    {
+                    $result=copy($file_path, $filepath);    
+                    }
+                elseif (!$replace_batch_existing && $file_path!="")
                     {
                     # File path has been specified. Let's use that directly.
                     $result=rename($file_path, $filepath);
                     }
-                elseif ($file_path!="" && $replace_batch_existing)
-                    {
-                    $result=copy($file_path, $filepath);    
-                    }
+               
                 else
                     {
                     # Standard upload.
@@ -470,15 +480,13 @@ function upload_file($ref,$no_exif=false,$revert=false,$autorotate=false,$file_p
                 if (file_exists($path)) {unlink($path);}
                 }   
 
-            # Create previews
-            global $enable_thumbnail_creation_on_upload,$file_upload_block_duplicates,$checksum;
-            # Checksums are also normally created at preview generation time, but we may already have a checksum if $file_upload_block_duplicates is enabled
-            $checksum_required=true;
-            if($file_upload_block_duplicates && isset($checksum))
+            global $enable_thumbnail_creation_on_upload, $file_upload_block_duplicates, $checksum, $file_checksums_offline;
+            $checksum_required = true;
+            if($file_upload_block_duplicates && !$file_checksums_offline && generate_file_checksum($ref, $extension, false))
                 {
-                sql_query("UPDATE resource SET file_checksum='" . escape_check($checksum) . "', last_verified=NOW(), integrity_fail=0 WHERE ref='" . escape_check($ref) . "'");
-                $checksum_required=false;
+                $checksum_required = false;
                 }
+
             if ($enable_thumbnail_creation_on_upload)
                 { 
                 create_previews($ref,false,$extension,false,false,-1,false,false,$checksum_required);
@@ -2582,7 +2590,9 @@ function generate_file_checksum($resource,$extension,$anyway=false)
         if (file_exists($path))
             {
             $checksum = get_checksum($path);
-            sql_query("UPDATE resource SET file_checksum='" . escape_check($checksum) . "' WHERE ref='$resource'");
+            sql_query(sprintf("UPDATE resource SET file_checksum = '%s', last_verified = NOW(), integrity_fail = 0 WHERE ref='%s'",
+                escape_check($checksum),
+                escape_check($resource)));
             $generated = true;
             }
         }
@@ -3107,6 +3117,8 @@ function calculate_image_dimensions($image_path, $target_width, $target_height, 
 
 function upload_file_by_url($ref,$no_exif=false,$revert=false,$autorotate=false,$url)
     {
+    debug("upload_file_by_url(ref = $ref, no_exif = $no_exif,revert = $revert, autorotate = $autorotate, url = $url)");
+
     if(!(checkperm('c') || checkperm('d') || hook('upload_file_permission_check_override')))
         {
         return false;
@@ -3117,7 +3129,12 @@ function upload_file_by_url($ref,$no_exif=false,$revert=false,$autorotate=false,
     $file_path=get_temp_dir(false,$userref) . "/" . basename($url); # Temporary path creation for the downloaded file.
     $s=explode("?",$file_path);$file_path=$s[0]; # Remove query string if it was present in the URL
 
-    copy($url, $file_path); # Download the file.
+    $copied = @copy($url, $file_path); # Download the file.
+    if(!$copied)
+        {
+        debug("upload_file_by_url - failed to copy file from '$url' to '$file_path'");
+        return false;
+        }
     return upload_file($ref,$no_exif,$revert,$autorotate,$file_path);   # Process as a normal upload...
     }
 
