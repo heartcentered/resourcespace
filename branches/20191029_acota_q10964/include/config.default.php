@@ -169,6 +169,7 @@ and running.
 #
 #$storagedir="/path/to/filestore"; # Where to put the media files. Can be absolute (/var/www/blah/blah) or relative to the installation. Note: no trailing slash
 #$storageurl="http://my.storage.server/filestore"; # Where the storagedir is available. Can be absolute (http://files.example.com) or relative to the installation. Note: no trailing slash
+# If you are changing '$storagedir' in your config, please make sure '$storageurl' is also set.
 
 # Store original files separately from RS previews? If this setting is adjusted with resources in the system you'll need to run ../pages/tools/filestore_separation.php.
 $originals_separate_storage=false;
@@ -809,9 +810,6 @@ $advanced_search_contributed_by = true;
 
 # Show Media section on Advanced Search
 $advanced_search_media_section = true;
-
-# Do not display 'search results' link in the top navigation
-$disable_searchresults = false;
 
 # Display a 'Recent' link in the top navigation
 $recent_link=true;
@@ -3582,7 +3580,7 @@ collection.
 $upload_alternatives_suffix = '';
 
 // Set this to true if changing the scramble key. If switching from a non-null key set the $scramble_key_old variable
-// Run pages/tools/xfer_srambled.php to move the files, but any ommitted should be detected by get_resource_path if this is set.
+// Run pages/tools/xfer_scrambled.php to move the files, but any omitted should be detected by get_resource_path() if this is set.
 $migrating_scrambled = false;
 // $scramble_key_old = "";
 
@@ -3667,5 +3665,9 @@ $batch_replace_local_folder = "/upload";
 // Display help links on pages
 $contextual_help_links=true;
 
-// Display upgrade available tile
-$check_upgrade_available=true;
+// Option to distribute files in filestore more equally. 
+// Setting $filestore_evenspread=true; means that all resources with IDs ending in 1 will be stored under filestore/1, whereas historically (with this set to false) this would contain all resources with IDs starting with 1.
+// If enabling this after the system has been in use you can run /pages/tools/filetore_migrate.php which will relocate the existing files into the neew folders
+// You may also wish to set the option $filestore_migrate=true; which will force the system to check for a file in the old location and move it in the event that it cannot be found.
+$filestore_evenspread=false;
+$filestore_migrate=false;

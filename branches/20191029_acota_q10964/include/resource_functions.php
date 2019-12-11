@@ -562,31 +562,36 @@ function save_resource_data($ref,$multi,$autosave_field="")
         {
         return $errors;
         }
+      
+   # Save related resource field if value for Related input field is autosaved, or if form has been submitted by user
+    if (($autosave_field=="") || ($autosave_field=="Related"))
+        {
+         # save related resources field
+         sql_query("delete from resource_related where resource='$ref' or related='$ref'"); # remove existing related items
+         $related=explode(",",getvalescaped("related",""));
+         # Make sure all submitted values are numeric
+         $ok=array();for ($n=0;$n<count($related);$n++) {if (is_numeric(trim($related[$n]))) {$ok[]=trim($related[$n]);}}
+         if (count($ok)>0) {sql_query("insert into resource_related(resource,related) values ($ref," . join("),(" . $ref . ",",$ok) . ")");} 
+        }    
+
         
-        if ($autosave_field=="")
-            {
-            # Additional tasks when editing all fields (i.e. not autosaving)
-            
-            # Always index the resource ID as a keyword
-            remove_keyword_mappings($ref, $ref, -1);
-            add_keyword_mappings($ref, $ref, -1);
-            
-            # Also index the resource type name, unless disabled
-            global $index_resource_type;
-            if ($index_resource_type)
-                    {
-                    $restypename=sql_value("select name value from resource_type where ref in (select resource_type from resource where ref='" . escape_check($ref) . "')","");
-                    remove_all_keyword_mappings_for_field($ref,-2);
-                    add_keyword_mappings($ref,$restypename,-2);
-                    }
-            
-            # Also save related resources field
-            sql_query("delete from resource_related where resource='$ref' or related='$ref'"); # remove existing related items
-            $related=explode(",",getvalescaped("related",""));
-            # Make sure all submitted values are numeric
-            $ok=array();for ($n=0;$n<count($related);$n++) {if (is_numeric(trim($related[$n]))) {$ok[]=trim($related[$n]);}}
-            if (count($ok)>0) {sql_query("insert into resource_related(resource,related) values ($ref," . join("),(" . $ref . ",",$ok) . ")");}
-            }
+    if ($autosave_field=="")
+        {
+        # Additional tasks when editing all fields (i.e. not autosaving)
+        
+        # Always index the resource ID as a keyword
+        remove_keyword_mappings($ref, $ref, -1);
+        add_keyword_mappings($ref, $ref, -1);
+        
+        # Also index the resource type name, unless disabled
+        global $index_resource_type;
+        if ($index_resource_type)
+                {
+                $restypename=sql_value("select name value from resource_type where ref in (select resource_type from resource where ref='" . escape_check($ref) . "')","");
+                remove_all_keyword_mappings_for_field($ref,-2);
+                add_keyword_mappings($ref,$restypename,-2);
+                }
+       }
 
     // Update resource_node table
     db_begin_transaction("update_resource_node");
@@ -3090,6 +3095,8 @@ function delete_alternative_file($resource,$ref)
 	
 function get_alternative_file($resource,$ref)
 	{
+    $resource = escape_check($resource);
+    $ref = escape_check($ref);
 	# Returns the row for the requested alternative file
 	$return=sql_query("select ref,name,description,file_name,file_extension,file_size,creation_date,alt_type from resource_alt_files where resource='$resource' and ref='$ref'");
 	if (count($return)==0) {return false;} else {return $return[0];}
@@ -3350,11 +3357,17 @@ function notify_user_contributed_unsubmitted($refs,$collection=0)
 		}
 	}		
 	
+
+/**
+*  A standard field title is translated using $lang.  A custom field title is i18n translated.
+* 
+* @param integer $field Resource type field ID
+* 
+* @return boolean|array Returns FALSE or record data (array)
+*/
 function get_field($field)
     {
-    # A standard field title is translated using $lang.  A custom field title is i18n translated.
-
-    # Executes query.
+    $field_escaped = escape_check($field);
     $r = sql_query("
         SELECT ref,
                name,
@@ -3379,7 +3392,7 @@ function get_field($field)
                display_as_dropdown,
                automatic_nodes_ordering
           FROM resource_type_field
-         WHERE ref = '{$field}'
+         WHERE ref = '{$field_escaped}'
      ");
 
     # Translates the field title if the searched field is found.
@@ -3948,33 +3961,42 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
 /* PARSE EDIT FILTER - Transforms $filter like 'country|emotion=France|thoughtful' into an array */
 
 function parse_edit_filter_to_array($filter)
-{        
+    {        
     $cleaned_array = array();
     $temp_array = array();
 
     # First seperate that colon, if not add to temp array anyway
     if(strpos($filter, ';') !== false)
-    { 
+        { 
         $explode_colon = explode(';', $filter);
         foreach($explode_colon as $string)
-        {
+            {
             $temp_array[] = $string;
+            }
         }
-    }
     else
-    {
+        {
         $temp_array[] = $filter;
-    }
+        }
     foreach($temp_array as $key => $item_string) 
-    {
+        {
         $part_array = array();
         $equals_num = substr_count($item_string, '=');
-        if(strpos($item_string, '!=') !== false) { $the_symbol = '!='; } else { $the_symbol = '='; }
+        
+        if(strpos($item_string, '!=') !== false) 
+            { 
+            $the_symbol = '!='; 
+            } 
+        else 
+            { 
+            $the_symbol = '='; 
+            }
+
         $dash_num = substr_count($item_string, '|');
 
         # Work on the lobsided dashes
         if($dash_num > 0) 
-        {
+            {
             $exploded_equals = explode($the_symbol, $item_string);
 
             # Now work on the | and whether it's one sided or not (country|emotion=Albania|Brazil|Happy)
@@ -3982,34 +4004,48 @@ function parse_edit_filter_to_array($filter)
             $dashes_right_num = substr_count($exploded_equals[1], '|');  
 
             # Dashes            
-            if($dashes_left_num > 0) { $names = explode("|", $exploded_equals[0]); } else { $names = array($exploded_equals[0]); }  
+            if($dashes_left_num > 0) 
+                { 
+                $names = explode("|", $exploded_equals[0]); 
+                } 
+            else 
+                { 
+                $names = array($exploded_equals[0]); 
+                }  
 
             # Now we need to explode the right-hand-side and then match up to the left                
-            if($dashes_right_num > 0) { $values = explode("|", $exploded_equals[1]); } else { $values = array($exploded_equals[1]); } 
+            if($dashes_right_num > 0) 
+                { 
+                $values = explode("|", $exploded_equals[1]); 
+                } 
+            else 
+                { 
+                $values = array($exploded_equals[1]); 
+                } 
 
             # So now loop through all the lefts and populate with all the rights                
             foreach($names as $name) 
-            {
-                foreach($values as $val) 
                 {
+                foreach($values as $val) 
+                    {
                     $build_string = $name . $the_symbol . $val;
                     $part_array[] = $build_string;
+                    }
                 }
-            }
             $cleaned_array[] = $part_array;
-        }
+            }
         else
-        {
+            {
             $cleaned_array[] = array($item_string);
+            }
         }
-    }
     return $cleaned_array;
-}
+    }
 
 /* FILTER MATCH ARRAY - Match metadata against the parsed filter */
 
 function filter_match_array($filtered_array, $metadata) 
-{
+    {
     $filtered_array_count = count($filtered_array);
     $equals_found = array();
     $not_equals_found = array();
@@ -4017,31 +4053,54 @@ function filter_match_array($filtered_array, $metadata)
     
     # For each of the metadata, test against the array for a match
     for($n = 0; $n < count($metadata); $n++) 
-    {
+        {
         $name = strtolower($metadata[$n]["name"]);
         $value = strtolower($metadata[$n]["value"]);
         foreach($filtered_array as $i => $sub) 
-        {
-            foreach($sub as $item_string) 
             {
-                if(strpos($item_string, '!=') !== false) { $the_symbol = '!='; } else { $the_symbol = '='; }
-                if($i == 0) { $symbols_array[0] = $the_symbol; }
-                if($i == 1) { $symbols_array[1] = $the_symbol; }
+            foreach($sub as $item_string) 
+                {
+                if(strpos($item_string, '!=') !== false) 
+                    { 
+                    $the_symbol = '!='; 
+                    } 
+                else 
+                    { 
+                    $the_symbol = '='; 
+                    }
+
+                if($i == 0) 
+                    { 
+                    $symbols_array[0] = $the_symbol; 
+                    }
+                
+                if($i == 1) 
+                    { 
+                    $symbols_array[1] = $the_symbol; 
+                    }
+
                 $explode_item = explode($the_symbol, $item_string);
                 $filter_name = strtolower($explode_item[0]);
                 $filter_value = strtolower($explode_item[1]);
                 if($filter_name == $name && $filter_value == $value) 
-                { 
+                    { 
                     $result = 1;
-                    if($the_symbol == '=') { $equals_found[] = 1; } else { $not_equals_found[] = 1; }                    
-                } 
+                    if($the_symbol == '=') 
+                        { 
+                        $equals_found[] = 1; 
+                        } 
+                    else 
+                        { 
+                        $not_equals_found[] = 1; 
+                        }    
+                    } 
                 else 
-                { 
+                    { 
                     $result = 0; 
+                    }
                 }
             }
         }
-    }
 
     $equals_found_count = count($equals_found);
     $not_equals_found_count = count($not_equals_found);
@@ -4051,44 +4110,69 @@ function filter_match_array($filtered_array, $metadata)
 
     # 0
     if($filtered_array_count == 0) 
-    {
+        {
         $final_result = false;
-    }
+        }
 
     # 1
     if($filtered_array_count == 1) 
-    {
+        {
         if($symbols_array[0] == '=')
-        {
-            if($equals_found_count == 1) { $final_result = true; }
-        }
+            {
+            if($equals_found_count == 1) 
+                { 
+                $final_result = true; 
+                }
+            }
         else
-        {
-            if($equals_found_count >= 0) { $final_result = true; }
-            if($not_equals_found_count > 0) { $final_result = false; }
+            {
+            if($equals_found_count >= 0) 
+                { 
+                $final_result = true; 
+                }
+
+            if($not_equals_found_count > 0) 
+                { 
+                $final_result = false; 
+                }
+            }
         }
-    }
 
     # 2
     if($filtered_array_count == 2) 
-    {
+        {
         if($symbols_array[0] == '=' && $symbols_array[1] == '=')
-        {
-            if($equals_found_count == 2) { $final_result = true; }
-        }
+            {
+            if($equals_found_count == 2) 
+                { 
+                $final_result = true; 
+                }
+            }
         elseif($symbols_array[0] == '=' && $symbols_array[1] == '!=' xor $symbols_array[0] == '!=' && $symbols_array[1] == '=')
-        {
-            if($equals_found_count >= 0) { $final_result = true; }
-            if($not_equals_found_count > 0) { $final_result = false; }
-            if($equals_found_count == 0 && $not_equals_found_count == 0) { $final_result = false; }
-        }
+            {
+            if($equals_found_count >= 0) 
+                { 
+                $final_result = true; 
+                }
+            if($not_equals_found_count > 0) 
+                {
+                $final_result = false; 
+                }
+            if($equals_found_count == 0 && $not_equals_found_count == 0) 
+                { 
+                $final_result = false; 
+                }
+            }
         else
-        {
-            if($equals_found_count == 0 && $not_equals_found_count == 0) { $final_result = true; }
+            {
+            if($equals_found_count == 0 && $not_equals_found_count == 0) 
+                { 
+                $final_result = true; 
+                }
+            }
         }
-    }
     return $final_result;
-}
+    }
 
 function filter_match($filter,$name,$value)
 	{
@@ -4243,16 +4327,44 @@ function download_summary($resource)
 	return sql_query("select usageoption,count(*) c from resource_log where resource='$resource' and type='D' group by usageoption order by usageoption");
 	}
 	
-	
 function check_use_watermark(){
-	# access status must be available prior to this.
-	# This function checks whether to use watermarks or not.
-	# Three cases:
-	# if access is restricted and the group has "w"
-	# if $watermark_open is true and the group has "w"
-	# if $watermark is set and it's an external share.
-	global $access,$k,$watermark,$watermark_open,$pagename,$watermark_open_search;
-	if (($watermark_open && ($pagename == "preview" || $pagename == "view" || ($pagename == "search" && $watermark_open_search)) || $access==1) && (checkperm('w') || ($k!="" && isset($watermark)))){return true;} else {return false;}
+	# This function checks whether or not to use watermarks
+	# Note that access status must be available prior to calls to this function
+
+    global $access,$k,$watermark,$watermark_open,$pagename,$watermark_open_search;
+
+    # Cannot watermark without a watermark
+    if(!isset($watermark))
+        { 
+        return false; 
+        }
+
+    # Cannot watermark unless permission "w" is present       
+    if(!checkperm('w'))
+        { 
+        return false; 
+        }
+
+    # Watermark is present and permission "w" is present
+
+    # Watermark if access is restricted
+    if($access == 1)
+        { 
+        return true; 
+        }
+
+    # Watermark if open override is present    
+    if(    $watermark_open  
+        && (    ($pagename == "preview") 
+             || ($pagename == "view") 
+             || ($pagename == "search" && $watermark_open_search)
+           ) )
+        { 
+        return true; 
+        } 
+
+    # Watermark not necessary
+    return false;
 }
 
 
@@ -4746,14 +4858,14 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 	if($ref=="" || $path==""){return false;}
 	global $imagemagick_path, $imagemagick_calculate_sizes;
 	$file=$path;
-	
-	$o_size=sql_query("select * from resource_dimensions where resource={$ref}");
+    $ref_escaped = escape_check($ref);
+	$o_size=sql_query("select * from resource_dimensions where resource='{$ref_escaped}'");
 	if(!empty($o_size))
 		{
 		if(count($o_size)>1)
 			{
 			# delete all the records and start fresh. This is a band-aid should there be multiple records as a result of using api_search
-			sql_query("delete from resource_dimensions where resource={$ref}");
+			sql_query("delete from resource_dimensions where resource='{$ref_escaped}'");
 			$o_size=false;
 			$forcefromfile=true;
 			}
@@ -4798,11 +4910,11 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			{
 			if(!$o_size)
 				{
-				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('". $ref ."', '". $sw ."', '". $sh ."', '" . $filesize . "')");
+				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
 				}
 			else
 				{
-				sql_query("update resource_dimensions set width='". $sw ."', height='". $sh ."', file_size='" . $filesize . "' where resource={$ref}");
+				sql_query("update resource_dimensions set width='". escape_check($sw) ."', height='". escape_check($sh) ."', file_size='" . escape_check($filesize) . "' where resource='{$ref_escaped}'");
 				}
 			}
 		}	
@@ -4817,11 +4929,11 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			{
 			if(!$o_size)
 				{	
-				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('". $ref ."', '". $sw ."', '". $sh ."', '" . $filesize . "')");
+				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
 				}
 			else
 				{
-				sql_query("update resource_dimensions set width='". $sw ."', height='". $sh ."', file_size='" . $filesize . "' where resource={$ref}");
+				sql_query("update resource_dimensions set width='". escape_check($sw) ."', height='". escape_check($sh) ."', file_size='" . escape_check($filesize) . "' where resource='{$ref_escaped}'");
 				}
 			}
 		else
@@ -4858,11 +4970,11 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			    # Size could be calculated after all
 			    if(!$o_size)
 					{
-					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('". $ref ."', '". $sw ."', '". $sh ."', '" . $filesize . "')");
+					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
 					}
 				else
 					{
-					sql_query("update resource_dimensions set width='". $sw ."', height='". $sh ."', file_size='" . $filesize . "' where resource={$ref}");
+					sql_query("update resource_dimensions set width='". escape_check($sw) ."', height='". escape_check($sh) ."', file_size='" . escape_check($filesize) . "' where resource='{$ref_escaped}'");
 					}
 			    }
 			else
@@ -4873,11 +4985,11 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 				if(!$o_size)
 					{
 					# Insert a dummy row to prevent recalculation on every view.
-					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('". $ref ."','0', '0', '" . $filesize . "')");
+					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}','0', '0', '" . escape_check($filesize) . "')");
 					}
 				else
 					{
-					sql_query("update resource_dimensions set width='0', height='0', file_size='" . $filesize . "' where resource={$ref}");
+					sql_query("update resource_dimensions set width='0', height='0', file_size='" . escape_check($filesize) . "' where resource='{$ref_escaped}'");
 					}
 				}
 			}
@@ -5426,30 +5538,24 @@ function copy_locked_fields($ref, &$fields,&$all_selected_nodes,$locked_fields,$
             // Check if this field is listed in the $fields array - if resource type has changed it may not be present
             $key = array_search($locked_field, array_column($fields, 'ref'));
             if($key!==false)
-                {                
+                {
                 $fieldtype = $fields[$key]["type"];
                 }    
             else
-                {                
+                {
                 $lockfieldinfo = get_resource_type_field($locked_field);
                 $fieldtype = $lockfieldinfo["type"];
                 }                
             
             if(in_array($fieldtype, $FIXED_LIST_FIELD_TYPES))
                 {
-                # Gets the checked values (like 'Keywords - Subject') and puts them in the specific resource table columns (like 'field73' (Keywords - Subject))
-                $specific_field = 'field' . $locked_field;
-                $current_field_for_last_edited = sql_query("SELECT $specific_field AS thefield FROM resource WHERE ref = '$lastedited'");
-                $the_field_data = $current_field_for_last_edited[0]['thefield'];
-                sql_query("UPDATE resource SET $specific_field = '$the_field_data' WHERE ref = '$ref'");
-                
                 // Replace nodes for this field
                 $field_nodes = get_nodes($locked_field, NULL, $fieldtype == FIELD_TYPE_CATEGORY_TREE);
                 $field_node_refs = array_column($field_nodes,"ref");
                 $stripped_nodes = array_diff ($all_selected_nodes, $field_node_refs);
                 $locked_nodes = get_resource_nodes($lastedited, $locked_field);
                 $all_selected_nodes = array_merge($stripped_nodes, $locked_nodes);
-                if($save == true)
+                if($save)
                     {
                     debug("- adding locked field nodes for resource " . $ref . ", field id: " . $locked_field);
                     delete_resource_nodes($ref,$field_node_refs);
@@ -5480,7 +5586,7 @@ function copy_locked_fields($ref, &$fields,&$all_selected_nodes,$locked_fields,$
                 debug(" - adding field value for resource " . $lastedited . " field id:" . $locked_field);
                     $fields[] = $last_fields[$addkey];
                     }
-                if($save == true)
+                if($save)
                     {
                     debug("- adding locked field value for resource " . $ref . ", field id: " . $locked_field);
                     update_field($ref,$locked_field,$last_fields[$addkey]["value"]);
@@ -5709,83 +5815,139 @@ function get_default_archive_state($requestedstate = "")
 * @return boolean             true = file saved successfully; false = file not saved
 */    
 
-
 function save_original_file_as_alternative($ref)
-{
-debug("save_original_file function called");
-if (!$ref){
-    debug("ERROR: Unable to save original file as alternative - no resource id passed");
-    return false;
-}
+    {
+    debug("save_original_file function called");
+    if (!$ref)
+        {
+        debug("ERROR: Unable to save original file as alternative - no resource id passed");
+        return false;
+        }
 
-/*
-global vars
-* @param boolean $alternative_file_previews                  Generate thumbs/previews for alternative files?
-* @param boolean $alternative_file_previews_batch            Generate thumbs/previews for alternative files?
-* @param array   $lang 
+    /*
+    global vars
+    * @param boolean $alternative_file_previews                  Generate thumbs/previews for alternative files?
+    * @param boolean $alternative_file_previews_batch            Generate thumbs/previews for alternative files?
+    * @param array   $lang 
+    */
+
+    global $lang, $alternative_file_previews, $alternative_file_previews_batch;
+
+    // GET variables
+    $replace_resource_original_alt_filename = getvalescaped('replace_resource_original_alt_filename', ''); // alternative filename
+    $alternative                            = getvalescaped('alternative', ''); # Batch upload alternative files    
+    $filename_field                         = getval('filename_field', ''); // GET variable - field to use for filename
+
+    // Make the original into an alternative, need resource data so we can get filepath/extension
+    $origdata     = get_resource_data($ref);
+    $origfilename = get_data_by_field($ref, $filename_field);
+
+    $newaltname        = str_replace('%EXTENSION', strtoupper($origdata['file_extension']), $lang['replace_resource_original_description']);
+    $newaltdescription = nicedate(date('Y-m-d H:i'), true);
+
+    if('' != $replace_resource_original_alt_filename)
+        {
+        $newaltname = $replace_resource_original_alt_filename;
+        $newaltdescription = '';
+        }
+
+    $newaref = add_alternative_file($ref, $newaltname, $newaltdescription, escape_check($origfilename), $origdata['file_extension'], $origdata['file_size']);
+
+    $origpath=get_resource_path($ref, true, "", true, $origdata["file_extension"]);
+    $newaltpath=get_resource_path($ref, true, "", true, $origdata["file_extension"], -1, 1, false, "", $newaref);
+    # Move the old file to the alternative file location
+    $result=rename($origpath, $newaltpath);								
+
+    if ($alternative_file_previews)
+        {
+        // Move the old previews to new paths
+        $ps=sql_query("select * from preview_size");
+        for ($n=0;$n<count($ps);$n++)
+            {
+            # Find the original 
+            $orig_preview_path=get_resource_path($ref, true, $ps[$n]["id"],false, "");
+            if (file_exists($orig_preview_path))
+                {
+                # Move the old preview file to the alternative preview file location
+                $alt_preview_path=get_resource_path($ref, true, $ps[$n]["id"], true, "", -1, 1, false, "", $newaref);
+                rename($orig_preview_path, $alt_preview_path);			
+                }
+            # Also for the watermarked versions.
+            $wmpath=get_resource_path($ref,true,$ps[$n]["id"],false,"jpg",-1,1,true,"",$alternative);
+            if (file_exists($wmpath))
+                {
+                # Move the old preview file to the alternative preview file location
+                $alt_preview_wmpath=get_resource_path($ref, true, $ps[$n]["id"], true, "", -1, 1, true, "", $newaref);
+                rename($wmpath, $alt_preview_wmpath);			
+                }
+            }
+        }
+    debug("save_original_file_as_alternative() completed");
+    return true;
+    }
+
+
+/**
+* Replace the primary resource file with the file located at the path specified
+*
+* @param integer    $ref    Resource ID to replace
+*
+* @return boolean
 */
 
-global $lang, $alternative_file_previews, $alternative_file_previews_batch;
-
-// GET variables
-$replace_resource_original_alt_filename = getvalescaped('replace_resource_original_alt_filename', ''); // alternative filename
-$alternative                            = getvalescaped('alternative', ''); # Batch upload alternative files    
-$filename_field                         = getval('filename_field', ''); // GET variable - field to use for filename
-
-// Make the original into an alternative, need resource data so we can get filepath/extension
-$origdata     = get_resource_data($ref);
-$origfilename = get_data_by_field($ref, $filename_field);
-
-$newaltname        = str_replace('%EXTENSION', strtoupper($origdata['file_extension']), $lang['replace_resource_original_description']);
-$newaltdescription = nicedate(date('Y-m-d H:i'), true);
-
-if('' != $replace_resource_original_alt_filename)
-{
-    $newaltname = $replace_resource_original_alt_filename;
-    $newaltdescription = '';
-}
-
-$newaref = add_alternative_file($ref, $newaltname, $newaltdescription, escape_check($origfilename), $origdata['file_extension'], $origdata['file_size']);
-
-$origpath=get_resource_path($ref, true, "", true, $origdata["file_extension"]);
-$newaltpath=get_resource_path($ref, true, "", true, $origdata["file_extension"], -1, 1, false, "", $newaref);
-
-# Move the old file to the alternative file location
-$result=rename($origpath, $newaltpath);								
-
-if ($alternative_file_previews)
-{
-    // Move the old previews to new paths
-    $ps=sql_query("select * from preview_size");
-    for ($n=0;$n<count($ps);$n++)
+function replace_resource_file($ref, $file_location, $no_exif=false, $autorotate=false, $keep_original=true)
     {
-    # Find the original 
-        $orig_preview_path=get_resource_path($ref, true, $ps[$n]["id"],false, "");
-        if (file_exists($orig_preview_path))
+    global $replace_resource_preserve_option, $notify_on_resource_change_days, $lang;
+    debug("replace_resource_file(ref=" . $ref . ", file_location=" . $file_location . ", no_exif=" . ($no_exif ? "TRUE" : "FALSE") . " , keep_original=" . ($keep_original ? "TRUE" : "FALSE"));
+    
+    $resource = get_resource_data($ref);
+    if (!get_edit_access($ref,$resource["archive"],false,$resource))
         {
-        # Move the old preview file to the alternative preview file location
-        $alt_preview_path=get_resource_path($ref, true, $ps[$n]["id"], true, "", -1, 1, false, "", $newaref);
-        rename($orig_preview_path, $alt_preview_path);			
+        return false;
         }
-        # Also for the watermarked versions.
-        $wmpath=get_resource_path($ref,true,$ps[$n]["id"],false,"jpg",-1,1,true,"",$alternative);
-        if (file_exists($wmpath))
+    
+    // save original file as an alternative file
+    if($replace_resource_preserve_option && $keep_original)
         {
-        # Move the old preview file to the alternative preview file location
-        $alt_preview_wmpath=get_resource_path($ref, true, $ps[$n]["id"], true, "", -1, 1, true, "", $newaref);
-        rename($wmpath, $alt_preview_wmpath);			
+        $savedasalt = save_original_file_as_alternative($ref); 
+        if(!$savedasalt) 
+            {
+            return false;
+            }
         }
+    
+    if (filter_var($file_location, FILTER_VALIDATE_URL))
+        {
+        $uploadstatus = upload_file_by_url($ref,$no_exif,false,$autorotate,$file_location);
+        if(!$uploadstatus)
+            {
+            debug("replace_resource_file - upload_file_by_url() failed");
+            return false;
+            }
+        }
+    else
+        {
+        $uploadstatus = upload_file($ref,$no_exif,false,$autorotate,$file_location,false,false);
+        if(!$uploadstatus)
+            {
+            debug("replace_resource_file - upload_file() failed");
+            return false;
+            }
+        }
+
+    resource_log($ref,LOG_CODE_REPLACED,'','','');
+    daily_stat('Resource upload', $ref);
+    hook("additional_replace_existing");        
+						
+    if($notify_on_resource_change_days != 0)
+        {								
+        // we don't need to wait for this.
+        ob_flush();flush();	
+        notify_resource_change($ref);
+        }
+
+    return true;
     }
-}
-            
-
-return true;
-
-
-
-
-}
-
 
 /**
 * Return all sizes available for a specific resource. Multi page resources should have each page size included as well 

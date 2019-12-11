@@ -609,6 +609,7 @@ $lang["log-missinglang"]="[type] (missing lang)"; # [type] will be replaced.
 $lang['log-adminpermissionsrequired'] = 'Full admin permission required!';
 $lang['log-removedcustomuseraccess'] = 'Removed custom access for user: ';
 $lang['log-deleted_all'] = 'All resources of this collection deleted (moved to state %ARCHIVE)';
+$lang['log-f']="Replaced file";
 
 /* Universal log codes (generic - not for example, resource specific) */
 $lang["log_code_a"]="Access changed";
@@ -1042,7 +1043,7 @@ $lang["expiredantispam"]="The anti-spam code has expired, please try again";
 $lang["viewduplicates"]="View duplicate resources";
 $lang["duplicateresources"]="Duplicate resources";
 $lang["duplicateresourcesfor"]="Duplicate resources for ";
-$lang["duplicateresourceupload"]="Upload failed. This file matches existing resources:";
+$lang["duplicateresourcefound"]="Duplicates have been found within this upload, please consult the log below";
 $lang["noresourcesfound"]="No resources found";
 $lang["userlog"]="User log";
 $lang["ipaddressrestriction"]="IP address restriction (optional)";
@@ -1808,7 +1809,7 @@ $lang["list-recipients"] = "This message was sent to the following e-mail addres
 
 $lang["sort"] = "Sort";
 $lang["sortcollection"] = "Sort collection";
-$lang["emptycollection"] = "Remove resources";
+$lang["emptycollection"] = "Remove all resources";
 $lang["deleteresources"] = "Delete resources";
 $lang["emptycollectionareyousure"]="Are you sure you want to remove all resources from this collection?";
 
@@ -2802,12 +2803,12 @@ $lang['browse_by_tag']                  = "Browse by tag";
 $lang['browse_by_workflow_state']       = "Workflow";
 
 # Updates to workflow
-$lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+$lang["userresources_status_change"]    = "Resources that you have contributed have been moved to the state: ";
 
-$lang["collection_description"] = "Description";
+$lang["collection_description"]         = "Description";
 
 # Updates to workflow
-$lang["userresources_status_change"]="Resources that you have contributed have been moved to the state: ";
+$lang["userresources_status_change"]    = "Resources that you have contributed have been moved to the state: ";
 
 # Batch replace updates
 $lang["replacebatchlocalfolder"]        = "Retrieve files from local folder on server? (this will create an offline job)";
@@ -2835,3 +2836,9 @@ $lang["collection_actiontype_4"]        = "Share";
 $lang["collection_actiontype_5"]        = "Research";
 $lang["collection_actiontype_6"]        = "Advanced";
 $lang["collection_actiontype_999"]      = "Other";
+
+# Date checks
+# %row% row number if in csv or similar, %date% field data, %field% field name
+$lang["unknown_date_format_error"]         = "Error: %row% '%date%' in [%field%] invalid yyyy-mm-dd hh:mm format (partials allowed e.g. no time, day or month)";
+# %row% row number if in csv or similar, %date% field data, %field% field name, %parts% an imploded array of parts that are invalid
+$lang["date_format_error"]                 = "Error: %row% '%date%' in [%field%] invalid entry into the %parts% part(s)";

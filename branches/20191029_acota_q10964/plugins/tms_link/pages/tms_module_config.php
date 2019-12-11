@@ -215,6 +215,9 @@ include '../../../include/header.php';
                 new_row_html += '</tr>';
 
                 jQuery(new_row_html).insertBefore(jQuery(button).closest('tr'));
+
+                reindexTable();
+
                 }
 
             function delete_tms_field_mapping(element)
@@ -223,7 +226,32 @@ include '../../../include/header.php';
                 var record = jQuery(button).closest('tr');
 
                 record.remove();
+                reindexTable();
+
                 }
+
+            // This function reindexes the attribute 'name' when 'Add mapping' or 'Delete' is pressed
+            function reindexTable()
+                {
+                                
+                // Go through each row (not first or last though)
+                jQuery('#tmsModulesMappingTable tr').not(':first').not(':last').each(function(i) 
+                    {
+
+                    // Build strings again using correct number
+                    nameFirst   = "tms_rs_mappings[" + i + "][tms_column]";
+                    nameMiddle  = "tms_rs_mappings[" + i + "][rs_field]";
+                    nameLast    = "tms_rs_mappings[" + i + "][encoding]";
+
+                    // Change name of each input/select to its correct number
+                    jQuery(this).find('td').eq(0).find('input').attr("name", nameFirst);
+                    jQuery(this).find('td').eq(1).find('select').attr("name", nameMiddle);
+                    jQuery(this).find('td').eq(2).find('input').attr("name", nameLast);
+
+                    });
+
+                }
+
             </script>
         </div>
         <div class="QuestionSubmit">
