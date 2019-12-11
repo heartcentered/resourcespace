@@ -24,9 +24,10 @@ DESCRIPTION
     A script to help administrators merge two ResourceSpace systems.
 
     A specification file is required for the migration to be possible. The spec file will contain:
-    - A mapping between the SRC system and the DEST systems' metadata fields. Use the --generate-spec-file option to get
+    - A mapping between the SRC system and the DEST systems' records. Use the --generate-spec-file option to get
       an example.
-    - User groups mapping and how we should deal with new user groups that do not exist on the master system
+    - If new workflow states will have to be created, the script will attempt to update config.php with this extra 
+      information.
 
 OPTIONS SUMMARY
     Here is a short summary of the options available in merge_rs_systems. Please refer to the detailed description below 
@@ -34,7 +35,7 @@ OPTIONS SUMMARY
 
     -h, --help              display this help and exit
     -u, --user              run script as a ResourceSpace user. Use the ID of the user
-    --dry-run               perform a trial run with no changes made
+    --dry-run               perform a trial run with no changes made. IMPORTANT: unavailable for import!
     --clear-progress        clear the progress file which is automatically generated at import
     --generate-spec-file    generate an example specification file
     --spec-file=FILE        read specification from FILE
@@ -61,7 +62,7 @@ $cli_long_options  = array(
     "spec-file:",
     "export",
     "import",
-    "generate-spec-file", # @todo: implement this - might be helpful!
+    "generate-spec-file",
 );
 $options = getopt($cli_short_options, $cli_long_options);
 
@@ -85,7 +86,8 @@ foreach($options as $option_name => $option_value)
             "dry-run",
             "clear-progress",
             "export",
-            "import",)))
+            "import",
+            "generate-spec-file")))
         {
         fwrite(STDOUT, "Script running with '{$option_name}' option enabled!" . PHP_EOL);
 
@@ -108,7 +110,8 @@ foreach($options as $option_name => $option_value)
         {
         if(!is_numeric($option_value) || (int) $option_value <= 0)
             {
-            fwrite(STDERR, "ERROR: Invalid 'user' value provided: '{$user}' of type " . gettype($user) . PHP_EOL);
+            fwrite(STDERR, "ERROR: Invalid 'user' value provided: '{$option_value}' of type " . gettype($option_value) . PHP_EOL);
+            fwrite(STDOUT, PHP_EOL . $help_text);
             exit(1);
             }
 
@@ -167,6 +170,78 @@ $json_decode_file_data = function($fh)
 
     return $json_decoded_data;
     };
+
+if(isset($generate_spec_file) && $generate_spec_file)
+    {
+    $spec_fh = $get_file_handler("spec_file_example.php", "w+b");
+    fwrite($spec_fh, '<?php
+// All of the following configuration options have the left side (keys) represent the SRC and DEST on the right (values)
+
+
+// User groups can be configured in three ways:
+// - map to an existing record in DEST system
+// - create new
+// - do not create
+$usergroups_spec = array(
+    3 => 3, # Super Admin
+    9 => array(
+        "create" => true,
+    ),
+    13 => array(
+        "create" => false,
+    ),
+);
+
+
+// Archive states can either be mapped to an existing record or be created as a new state on the DEST system
+$archive_states_spec = array(
+    0 => 0, # Active
+    4 => null, # Marketing - new on DEST system
+);
+
+
+// Resource types can either be mapped to an existing record or be created as a new state on the DEST system
+$resource_types_spec = array(
+    0 => 0, # Global
+    1 => 1, # Photo
+    5 => null, # Case Study
+);
+
+
+/*
+Resource type fields can be configured in three ways:
+- map to an existing record on DEST system
+- do not create 
+- create new record
+
+IMPORTANT: make sure you map to a compatible field on the DEST system. This is especially true for a category tree which
+can end up a flat structure if mapped to a fixed list field of different type.
+*/
+$resource_type_fields_spec = array(
+    3  => array(
+        "create" => true,
+        "ref"    => 3,
+    ), # Country | dynamic keywords
+    8  => array(
+        "create" => true,
+        "ref"    => 8,
+    ), # Title | text box
+    9  => array("create" => false), # Document extract
+    10 => array("create" => false), # Credit
+    87 => array(
+        "create" => true,
+        "ref" => null,
+    ), # Display condition parent | drop down
+    88 => array(
+        "create" => true,
+        "ref" => null,
+    ), # Display condition child | text box
+);
+    ' . PHP_EOL);
+    fclose($spec_fh);
+    logScript("Successfully generated an example of the spec file. Location: '" . __DIR__ . "/spec_file_example.php'");
+    exit(0);
+    }
 
 if(isset($user))
     {
@@ -317,7 +392,6 @@ if($export && isset($folder_path))
                 return $record;
             },
         ),
-/*
         array(
             "name" => "resource_data",
             "formatted_name" => "resource data",
@@ -367,7 +441,7 @@ if($export && isset($folder_path))
                     AND EXISTS(SELECT ref FROM resource WHERE ref = resource_related.resource)
                     AND EXISTS(SELECT ref FROM resource WHERE ref = resource_related.related)",
             ),
-        ),*/
+        ),
     );
 
     foreach($tables as $table)
