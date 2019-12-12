@@ -1026,7 +1026,7 @@ if($import && isset($folder_path))
                 $src_rtf["name"],
                 $src_rtf["keywords_index"]);
 
-            if($new_rt_ref === false)
+            if($new_rtf_ref === false)
                 {
                 logScript("ERROR: unable to create new resource type field!");
                 exit(1);
