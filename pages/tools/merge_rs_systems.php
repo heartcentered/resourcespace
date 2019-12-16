@@ -218,6 +218,7 @@ IMPORTANT: make sure you map to a compatible field on the DEST system. This is e
 can end up a flat structure if mapped to a fixed list field of different type.
 */
 $resource_type_fields_spec = array(
+    // Note: when mapping to a field on DEST system, the "create" property should still be true
     3  => array(
         "create" => true,
         "ref"    => 3,
