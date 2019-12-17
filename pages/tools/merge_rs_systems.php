@@ -40,7 +40,8 @@ OPTIONS SUMMARY
     --generate-spec-file    generate an example specification file
     --spec-file=FILE        read specification from FILE
     --export                export information from ResourceSpace
-    --import                import information to ResourceSpace based on the specification file (Requires spec-file option)
+    --import                import information to ResourceSpace based on the specification file (Requires spec-file and 
+                            user options)
 
 EXAMPLES
     Export
@@ -242,6 +243,13 @@ $resource_type_fields_spec = array(
     fclose($spec_fh);
     logScript("Successfully generated an example of the spec file. Location: '" . __DIR__ . "/spec_file_example.php'");
     exit(0);
+    }
+
+if($import && !isset($user))
+    {
+    logScript("ERROR: You need to specify a user when importing. It is best if it is a Super Admin.");
+    echo $help_text;
+    exit(1);
     }
 
 if(isset($user))
