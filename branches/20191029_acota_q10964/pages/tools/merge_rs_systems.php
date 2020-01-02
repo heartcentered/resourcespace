@@ -1280,6 +1280,12 @@ if($import && isset($folder_path))
             continue;
             }
 
+        if(!array_key_exists($src_rn["resource"], $resources_mapping))
+            {
+            logScript("WARNING: Unable to find a resource mapping. Skipping");
+            continue;
+            }
+
         logScript("Processing resource #{$src_rn["resource"]} and node #{$src_rn["node"]}");
 
         if(in_array($src_rn["node"], $nodes_not_created))
