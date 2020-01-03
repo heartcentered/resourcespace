@@ -1,15 +1,54 @@
 <?php
 namespace RseVersion;
 
+function get_reverse_state_process($type)
+    {
+    if(trim($type) == "")
+        {
+        return false;
+        }
+
+    $process_list = array(
+        // Process for reverting removed/added resources
+        "remove" => array(
+            "callback" => function()
+                {
+                echo "from callback";
+                return;
+                }
+        ),
+        // Process for reverting deleted resources
+        "delete" => array(
+            "callback" => function()
+                {
+                return;
+                }
+        ),
+    );
+    $type_process_mapping = array(
+        LOG_CODE_COLLECTION_REMOVED_ALL_RESOURCES => $process_list["remove"],
+        LOG_CODE_COLLECTION_REMOVED_RESOURCE      => $process_list["remove"],
+        LOG_CODE_COLLECTION_ADDED_RESOURCE        => $process_list["remove"],
+
+        LOG_CODE_COLLECTION_DELETED_ALL_RESOURCES => $process_list["delete"],
+        LOG_CODE_COLLECTION_DELETED_RESOURCE      => $process_list["delete"],
+    );
+
+    if(!array_key_exists($type, $type_process_mapping))
+        {
+        return false;
+        }
+
+    return $type_process_mapping[$type];
+    }
+
 function is_valid_revert_state_request()
     {
     $collection = (int) getval("collection", 0, true);
-    $date = getval("date", "");
-    $resource = (int) getval("resource", 0, true);
+    $ref        = (int) getval("ref", 0, true);
 
-    if(
-        ($collection > 0 && $resource > 0 && trim($date) != "")
-        || ($collection > 0 && $resource == 0 && trim($date) != ""))
+    $process = get_reverse_state_process(getval("type", ""));
+    if($process !== false)
         {
         return true;
         }
@@ -23,13 +62,10 @@ function render_revert_state_form()
     global $lang, $baseurl_short;
 
     $collection = (int) getval("collection", 0, true);
-    $date = getval("date", "");
-    $resource = (int) getval("resource", 0, true);
+    $ref        = (int) getval("ref", 0, true);
+    $type       = trim(getval("type", ""));
 
-    $change_summary = str_replace(
-        array("%COLLECTION", "%DATE", "%RESOURCE"),
-        array($collection, nicedate($date, true), $resource), 
-        $lang['rse_version_rstate_changes']);
+    $change_summary = str_replace("%COLLECTION", $collection, $lang['rse_version_rstate_changes']);
     ?>
     <div class="BasicsBox">
         <p>
@@ -38,13 +74,14 @@ function render_revert_state_form()
        </p>
         <h1><?php echo $lang["rse_version_revert_state"]; ?></h1>
         <p><?php echo $change_summary; ?></p>
+        <!-- @todo: add information for the selected record -->
         <form method="post"
               name="rse_version_revert_state_form" 
               id="rse_version_revert_state_form"
               action="<?php echo $baseurl_short ?>plugins/rse_version/pages/revert.php" onsubmit="CentralSpacePost(this, true); return false;">
             <input type="hidden" name="collection" value="<?php echo $collection; ?>">
-            <input type="hidden" name="date" value="<?php echo $date; ?>">
-            <input type="hidden" name="resource" value="<?php echo $resource; ?>">
+            <input type="hidden" name="ref" value="<?php echo $ref; ?>">
+            <input type="hidden" name="type" value="<?php echo $type; ?>">
             <input type="hidden" name="action" value="revert_state">
             <?php generateFormToken("rse_version_revert_state_form"); ?>
             <div class="QuestionSubmit">
@@ -67,10 +104,29 @@ function process_revert_state_form()
         }
 
     $collection = (int) getval("collection", 0, true);
-    $date = getval("date", "");
-    $resource = (int) getval("resource", 0, true);
+    $ref        = (int) getval("ref", 0, true);
 
-    revert_collection_state($collection, $date, $resource);
+    $process = get_reverse_state_process(getval("type", ""));
+    if($process === false)
+        {
+        // @todo: show error back to the user
+        /*
+        include "../../../include/header.php";
+        echo error html
+        include "../../../include/footer.php";
+        exit();
+        */
+        return;
+        }
+
+    if(!is_callable($process["callback"]))
+        {
+        // @todo: error here
+        return;
+        }
+
+    $process["callback"]();
+    // revert_collection_state($collection, $date, $resource);
 
     return;
     }
