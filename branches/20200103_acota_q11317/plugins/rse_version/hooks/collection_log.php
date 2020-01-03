@@ -27,8 +27,8 @@ function HookRse_versionCollection_logLog_extra_columns_row($log, array $collect
         "{$baseurl}/plugins/rse_version/pages/revert.php",
         array(
             "collection" => $collection_info["ref"],
-            "date"       => $log["date"],
-            "resource"   => $log["resource"],
+            "ref" => $log["ref"],
+            "type" => $log["type"],
         )
     );
     ?>
@@ -45,6 +45,7 @@ function HookRse_versionCollection_logLog_extra_columns_row($log, array $collect
 
 function HookRse_versionCollection_logCollection_log_extra_fields()
     {
+    // @todo: update query for delete all
     return ",
             IF(
                    (`type` = 'a' AND BINARY `type` <> BINARY UPPER(`type`))
