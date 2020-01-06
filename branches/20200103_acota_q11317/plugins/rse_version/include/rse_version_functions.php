@@ -25,7 +25,7 @@ function get_reverse_state_process($type)
                          AND (
                             `type` = 'a' AND BINARY `type` <> BINARY UPPER(`type`)
                             # Ignore LOG_CODE_COLLECTION_REMOVED_ALL_RESOURCES (R) as individual logs will be available
-                            # anyway as LOG_CODE_COLLECTION_REMOVED_RESOURCE (r)
+                            # as LOG_CODE_COLLECTION_REMOVED_RESOURCE (r)
                             OR `type` = 'r' AND BINARY `type` <> BINARY UPPER(`type`)
                          )
                          AND ref < '{$ref_escaped}'
@@ -58,8 +58,83 @@ function get_reverse_state_process($type)
         ),
         // Process for reverting deleted resources
         "delete" => array(
-            "callback" => function()
+            "callback" => function($collection, $ref) use ($baseurl)
                 {
+                $collection_escaped = escape_check($collection);
+                $ref_escaped        = escape_check($ref);
+
+                $logs = sql_query("
+                      SELECT cl.ref,
+                             cl.`date`,
+                             cl.`type`,
+                             cl.resource,
+                             (
+                                SELECT IF(
+                                            EXISTS(
+                                                  SELECT ref
+                                                    FROM resource_log
+                                                   WHERE resource = cl.resource
+                                                     AND `type` = 's'
+                                                     AND ref > rl.ref
+                                                ORDER BY ref ASC
+                                                   LIMIT 1
+                                            ),
+                                            (
+                                                  SELECT previous_value
+                                                    FROM resource_log
+                                                   WHERE resource = cl.resource
+                                                     AND `type` = 's'
+                                                     AND ref > rl.ref
+                                                ORDER BY ref ASC
+                                                   LIMIT 1
+                                            ),
+                                            (SELECT archive FROM resource WHERE ref = cl.resource)
+                                         ) AS `archive`
+                                    FROM resource_log AS rl
+                                   WHERE resource = cl.resource
+                                     AND `type` = 's'
+                                     AND `date` <= cl.`date`
+                                ORDER BY ref DESC
+                                   LIMIT 1
+                             ) AS archive_state_at_time
+                        FROM collection_log AS cl
+                       WHERE collection = '{$collection_escaped}'
+                         AND (
+                                `type` = 'a' AND BINARY `type` <> BINARY UPPER(`type`)
+                                OR `type` = 'r' AND BINARY `type` <> BINARY UPPER(`type`)
+                                OR `type` = 'D' AND BINARY `type` = BINARY UPPER(`type`)
+                             )
+                         AND ref < '{$ref_escaped}'
+                    ORDER BY ref ASC;
+                ");
+
+                if(count($logs) == 0)
+                    {
+                    return;
+                    }
+
+                remove_all_resources_from_collection($collection);
+
+                foreach($logs as $log)
+                    {
+                    if($log["type"] === LOG_CODE_COLLECTION_ADDED_RESOURCE)
+                        {
+                        add_resource_to_collection($log['resource'], $collection);
+
+                        // When replaying the addition of resources, make sure archive is updated to the state at that time
+                        if(get_edit_access($log['resource']))
+                            {
+                            update_archive_status($log['resource'], $log['archive_state_at_time']);
+                            }
+                        }
+                    else if($log["type"] === LOG_CODE_COLLECTION_REMOVED_RESOURCE)
+                        {
+                        remove_resource_from_collection($log['resource'], $collection);
+                        }
+                    }
+
+                redirect("{$baseurl}/pages/collection_log.php?ref={$collection}");
+
                 return;
                 }
         ),
@@ -70,7 +145,6 @@ function get_reverse_state_process($type)
         LOG_CODE_COLLECTION_ADDED_RESOURCE        => $process_list["remove"],
 
         LOG_CODE_COLLECTION_DELETED_ALL_RESOURCES => $process_list["delete"],
-        LOG_CODE_COLLECTION_DELETED_RESOURCE      => $process_list["delete"],
     );
 
     if(!array_key_exists($type, $type_process_mapping))
@@ -143,22 +217,10 @@ function process_revert_state_form()
         }
 
     $process = get_reverse_state_process(getval("type", ""));
-    if($process === false)
+    if($process !== false && !is_callable($process["callback"]))
         {
-        // @todo: show error back to the user
-        /*
-        include "../../../include/header.php";
-        echo error html
-        include "../../../include/footer.php";
-        exit();
-        */
-        return;
-        }
-
-    if(!is_callable($process["callback"]))
-        {
-        // @todo: error here
-        return;
+        $callback_type = gettype($process["callback"]);
+        trigger_error("Reverse state process callback MUST be callable - '{$callback_type}' given.");
         }
 
     $collection = (int) getval("collection", 0, true);

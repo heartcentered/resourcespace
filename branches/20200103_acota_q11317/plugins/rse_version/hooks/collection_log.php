@@ -45,10 +45,11 @@ function HookRse_versionCollection_logLog_extra_columns_row($log, array $collect
 
 function HookRse_versionCollection_logCollection_log_extra_fields()
     {
-    // @todo: update query for delete all
     return ",
             IF(
                    (`type` = 'a' AND BINARY `type` <> BINARY UPPER(`type`))
-                OR `type` = 'r', true, false
+                OR `type` = 'r'
+                OR (`type` = 'D' AND BINARY `type` = BINARY UPPER(`type`))
+                , true, false
             ) AS revert_state_enabled";
     }
