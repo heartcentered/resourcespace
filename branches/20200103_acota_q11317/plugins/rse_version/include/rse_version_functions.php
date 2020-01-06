@@ -172,22 +172,75 @@ function is_valid_revert_state_request()
 
 function render_revert_state_form()
     {
-    global $lang, $baseurl_short;
+    global $lang, $baseurl_short, $view_title_field;
 
     $collection = (int) getval("collection", 0, true);
     $ref        = (int) getval("ref", 0, true);
     $type       = trim(getval("type", ""));
 
     $change_summary = str_replace("%COLLECTION", $collection, $lang['rse_version_rstate_changes']);
-    ?>
+
+    $log = sql_query("
+        SELECT c.*,
+               u.fullname,
+               r.field{$view_title_field} AS title
+          FROM collection_log AS c
+        LEFT JOIN user AS u ON u.ref = c.user
+        LEFT JOIN resource AS r ON r.ref = c.resource
+         WHERE c.ref = '{$ref}'");
+    if(count($log) > 0)
+        {
+        $log = $log[0];
+        }
+    else
+        {
+        $error = $lang["rse_version_log_not_found"];
+        }
+        ?>
     <div class="BasicsBox">
         <p>
             <a href="<?php echo $baseurl_short ?>pages/collection_log.php?ref=<?php echo $collection; ?>"
                onclick="CentralSpaceLoad(this, true); return false;"><?php echo LINK_CARET_BACK ?><?php echo $lang["back"]; ?></a>
-       </p>
+        </p>
+        <?php
+        if(isset($error))
+            {
+            ?>
+            <div class="PageInformal"><?php echo htmlspecialchars($error); ?></div>
+            </div> <!-- End of BasicsBox -->
+            <?php
+            return;
+            }
+            ?>
         <h1><?php echo $lang["rse_version_revert_state"]; ?></h1>
         <p><?php echo $change_summary; ?></p>
-        <!-- @todo: add information for the selected record -->
+        <div class="Listview">
+            <table border="0" cellspacing="0" cellpadding="0" class="ListviewStyle">
+                <tr class="ListviewTitleStyle">
+                    <td><?php echo $lang["date"]; ?></td>
+                    <td><?php echo $lang["user"]; ?></td>
+                    <td><?php echo $lang["action"]; ?></td>
+                    <td><?php echo $lang["resourceid"]; ?></td>
+                    <td><?php $field = get_fields(array($view_title_field));echo lang_or_i18n_get_translated($field[0]["title"], "fieldtitle-");?></td>
+                </tr>
+                <tr>
+                    <td><?php echo htmlspecialchars(nicedate($log["date"],true, true, true)) ?></td>
+                    <td><?php echo htmlspecialchars($log["fullname"])?></td>
+                    <td><?php 
+                        echo $lang["collectionlog-" . $log["type"]] ;
+                        if($log["notes"] != "" )
+                            {
+                            $standard = array('#all_users', '#new_resource');
+                            $translated   = array($lang["all_users"], $lang["new_resource"]);
+                            $newnotes = " - " . str_replace($standard, $translated, $log["notes"]);
+                            echo $newnotes;
+                            }
+                        ?></td>
+                    <td><?php if ($log['resource']!=0){?><a onClick="return CentralSpaceLoad(this,true);" href='<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($log["resource"]) ?>'><?php echo $log["resource"]?></a><?php } ?></td>
+                    <td><?php if ($log['resource']!=0){?><a onClick="return CentralSpaceLoad(this,true);" href='<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($log["resource"]) ?>'><?php echo i18n_get_translated($log["title"])?></a><?php } ?></td>
+                </tr>
+            </table>
+        </div>
         <form method="post"
               name="rse_version_revert_state_form" 
               id="rse_version_revert_state_form"
@@ -202,7 +255,7 @@ function render_revert_state_form()
                 <input name="revert" type="submit" value="<?php echo $lang["revert"]; ?>">
             </div>
         </form>
-    </div>
+    </div> <!-- End of BasicsBox -->
     <?php
     return;
     }
