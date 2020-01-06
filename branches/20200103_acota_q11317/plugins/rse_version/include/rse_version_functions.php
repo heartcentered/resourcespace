@@ -8,12 +8,51 @@ function get_reverse_state_process($type)
         return false;
         }
 
+    global $baseurl;
+
     $process_list = array(
         // Process for reverting removed/added resources
         "remove" => array(
-            "callback" => function()
+            "callback" => function($collection, $ref) use ($baseurl)
                 {
-                echo "from callback";
+                $collection_escaped = escape_check($collection);
+                $ref_escaped        = escape_check($ref);
+
+                $logs = sql_query("
+                      SELECT ref, `type`, resource
+                        FROM collection_log
+                       WHERE collection = '{$collection_escaped}'
+                         AND (
+                            `type` = 'a' AND BINARY `type` <> BINARY UPPER(`type`)
+                            # Ignore LOG_CODE_COLLECTION_REMOVED_ALL_RESOURCES (R) as individual logs will be available
+                            # anyway as LOG_CODE_COLLECTION_REMOVED_RESOURCE (r)
+                            OR `type` = 'r' AND BINARY `type` <> BINARY UPPER(`type`)
+                         )
+                         AND ref < '{$ref_escaped}'
+                    ORDER BY ref ASC;
+                ");
+
+                if(count($logs) == 0)
+                    {
+                    return;
+                    }
+
+                remove_all_resources_from_collection($collection);
+
+                foreach($logs as $log)
+                    {
+                    if($log["type"] === LOG_CODE_COLLECTION_ADDED_RESOURCE)
+                        {
+                        add_resource_to_collection($log['resource'], $collection);
+                        }
+                    else if($log["type"] === LOG_CODE_COLLECTION_REMOVED_RESOURCE)
+                        {
+                        remove_resource_from_collection($log['resource'], $collection);
+                        }
+                    }
+
+                redirect("{$baseurl}/pages/collection_log.php?ref={$collection}");
+
                 return;
                 }
         ),
@@ -103,9 +142,6 @@ function process_revert_state_form()
         return;
         }
 
-    $collection = (int) getval("collection", 0, true);
-    $ref        = (int) getval("ref", 0, true);
-
     $process = get_reverse_state_process(getval("type", ""));
     if($process === false)
         {
@@ -125,63 +161,10 @@ function process_revert_state_form()
         return;
         }
 
-    $process["callback"]();
-    // revert_collection_state($collection, $date, $resource);
+    $collection = (int) getval("collection", 0, true);
+    $ref        = (int) getval("ref", 0, true);
 
-    return;
-    }
-
-
-function revert_collection_state($collection, $date, $resource)
-    {
-    global $baseurl;
-
-    $collection_escaped = escape_check($collection);
-    $date_escaped = escape_check($date);
-    $resource_escaped = escape_check($resource);
-
-    $logs = sql_query("
-          SELECT `date`, `type`, resource
-            FROM collection_log
-           WHERE collection = '{$collection_escaped}'
-             AND (
-                `type` = 'a' AND BINARY `type` <> BINARY UPPER(`type`)
-                OR `type` = 'r'
-             )
-             AND `date` < '{$date_escaped}'
-        ORDER BY `date` ASC;
-    ");
-
-    if(count($logs) == 0)
-        {
-        return;
-        }
-
-    remove_all_resources_from_collection($collection);
-
-    foreach($logs as $log)
-        {
-        if($log["date"] == $date && $log["resource"] == $resource)
-            {
-            break;
-            }
-
-        if($log["type"] === LOG_CODE_COLLECTION_REMOVED_ALL_RESOURCES)
-            {
-            continue;
-            }
-
-        if($log["type"] === LOG_CODE_COLLECTION_ADDED_RESOURCE)
-            {
-            add_resource_to_collection($log['resource'], $collection);
-            }
-        else if($log["type"] === LOG_CODE_COLLECTION_REMOVED_RESOURCE)
-            {
-            remove_resource_from_collection($log['resource'], $collection);
-            }
-        }
-
-    redirect("{$baseurl}/pages/collection_log.php?ref={$collection}");
+    $process["callback"]($collection, $ref);
 
     return;
     }
