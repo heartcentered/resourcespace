@@ -73,3 +73,50 @@ function HookRse_versionEditSave_resource_data_multi_extra_modes($ref,$field)
             }
     return false;
     }
+
+
+   
+function HookRse_versionEditBefore_status_question()
+    {
+    global $lang;
+    ?>
+    <script>
+    jQuery(document).ready(function()
+        {
+        jQuery("#editthis_status").click(function()
+            {
+            var edit_mode_status = jQuery("#edit_mode_status");
+            var question_status  = jQuery("#question_status");
+
+            if(question_status.is(":visible") !== false)
+                {
+                question_status.show();
+                edit_mode_status.show();
+                }
+            else
+                {
+                question_status.hide();
+                edit_mode_status.hide();
+                }
+            });
+        });
+    </script>
+    <div class="Question" id="edit_mode_status" style="display: none; padding-bottom: 0px; margin-bottom: 0px;">
+        <label><?php echo $lang["editmode"]; ?></label>
+        <select id="modeselect_status" class="stdwidth" name="modeselect_status" onchange="modeselect_status_onchange();">
+            <option value=""></option>
+            <option value="Revert"><?php echo $lang["revertmetadatatodatetime"]; ?></option>
+        </select>
+        <script>
+        // @todo: modeselect_status_onchange()
+        </script>
+        <div class="clearerleft"></div>
+    </div>
+
+    <div class="Question" id="edit_multi_revert_status" style="display: none; border-top: none;">
+        <label></label>
+        <input type="text" name="edit_multi_revert_status" class="stdwidth" value="<?php echo date("Y-m-d H:i"); ?>" />
+        <div class="clearerleft"></div>
+    </div>
+    <?php
+    }
