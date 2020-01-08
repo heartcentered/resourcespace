@@ -75,7 +75,6 @@ function HookRse_versionEditSave_resource_data_multi_extra_modes($ref,$field)
     }
 
 
-   
 function HookRse_versionEditBefore_status_question()
     {
     global $lang;
@@ -85,30 +84,55 @@ function HookRse_versionEditBefore_status_question()
         {
         jQuery("#editthis_status").click(function()
             {
-            var edit_mode_status = jQuery("#edit_mode_status");
-            var question_status  = jQuery("#question_status");
+            var edit_mode_status          = jQuery("#edit_mode_status");
+            var question_status           = jQuery("#question_status");
+            var modeselect_status         = jQuery("#modeselect_status");
+            var edit_multi_revert_status  = jQuery("#edit_multi_revert_status");
 
-            if(question_status.is(":visible") !== false)
+            if(jQuery(this).is(":checked") && question_status.is(":visible") !== false)
                 {
                 question_status.show();
                 edit_mode_status.show();
+
+                modeselect_status_onchange(modeselect_status);
+
+                return true;
                 }
-            else
-                {
-                question_status.hide();
-                edit_mode_status.hide();
-                }
+
+            question_status.hide();
+            edit_mode_status.hide();
+            edit_multi_revert_status.hide();
+
+            return true;
             });
         });
     </script>
     <div class="Question" id="edit_mode_status" style="display: none; padding-bottom: 0px; margin-bottom: 0px;">
         <label><?php echo $lang["editmode"]; ?></label>
-        <select id="modeselect_status" class="stdwidth" name="modeselect_status" onchange="modeselect_status_onchange();">
+        <select id="modeselect_status" class="stdwidth" name="modeselect_status" onchange="modeselect_status_onchange(this);">
             <option value=""></option>
             <option value="Revert"><?php echo $lang["revertmetadatatodatetime"]; ?></option>
         </select>
         <script>
-        // @todo: modeselect_status_onchange()
+        function modeselect_status_onchange(el)
+            {
+            var modselect_status = jQuery(el);
+            var question_status  = jQuery("#question_status");
+            var edit_multi_revert_status  = jQuery("#edit_multi_revert_status");
+
+            if(modselect_status.val() == "Revert")
+                {
+                question_status.hide();
+                edit_multi_revert_status.show();
+
+                return true;
+                }
+
+            question_status.show();
+            edit_multi_revert_status.hide();
+
+            return true;
+            }
         </script>
         <div class="clearerleft"></div>
     </div>
