@@ -145,11 +145,17 @@ function HookRse_versionEditBefore_status_question()
     }
 
 
-function HookRse_versionEditSave_resource_data_multi_set_archive_state($resource_ref)
+function HookRse_versionEditSave_resource_data_multi_set_archive_state($resource_ref, $old_archive)
     {
     if(getval("modeselect_status", "") !== "revert")
         {
         return false;
+        }
+
+    $revert_status_to_date = trim(getval("revert_status_to_date", ""));
+    if($revert_status_to_date === "")
+        {
+        return $old_archive;
         }
 
     $archive_status_at_date = sql_value(sprintf("
@@ -163,7 +169,7 @@ function HookRse_versionEditSave_resource_data_multi_set_archive_state($resource
             LIMIT 1;
         ",
         escape_check($resource_ref),
-        escape_check(getval("revert_status_to_date", ""))
+        escape_check($revert_status_to_date)
     ), null);
 
     if(!is_null($archive_status_at_date) && trim($archive_status_at_date) !== "" && is_numeric($archive_status_at_date))
@@ -171,5 +177,5 @@ function HookRse_versionEditSave_resource_data_multi_set_archive_state($resource
         return $archive_status_at_date;
         }
 
-    return false;
+    return $old_archive;
     }

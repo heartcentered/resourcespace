@@ -1317,7 +1317,7 @@ function save_resource_data_multi($collection,$editsearch = array())
                 $oldarchive=sql_value("select archive value from resource where ref='$ref'","");
                 $setarchivestate=getvalescaped("status",$oldarchive,true); // We used to get the 'archive' value but this conflicts with the archiveused for searching
                 
-                $set_archive_state_hook = hook("save_resource_data_multi_set_archive_state", "", array($ref));
+                $set_archive_state_hook = hook("save_resource_data_multi_set_archive_state", "", array($ref, $oldarchive));
                 if($set_archive_state_hook !== false && is_numeric($set_archive_state_hook))
                     {
                     $setarchivestate = $set_archive_state_hook;
