@@ -282,7 +282,7 @@ if($export || $import)
     }
 
 if($export && isset($folder_path))
-    {
+    {   
     $tables = array(
         array(
             "name" => "usergroup",
@@ -332,7 +332,13 @@ if($export && isset($folder_path))
                     AND (file_extension IS NOT NULL AND trim(file_extension) <> '')
                     AND (preview_extension IS NOT NULL AND trim(preview_extension) <> '')",
             ),
-            "additional_process" => function($record) {
+            "additional_process" => function($record) use ($hide_real_filepath) {
+                if($hide_real_filepath)
+                    {
+                    logScript("ERROR: --export requires configuration option '\$hide_real_filepath' to be disabled (ie. set to FALSE)");
+                    exit(1);
+                    }
+
                 // new fake column used at import for ingesting the file in the DEST system
                 $record["merge_rs_systems_file_url"] = "";
 
