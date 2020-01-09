@@ -178,66 +178,91 @@ set_time_limit($php_time_limit);
 if (!isset($storagedir)) {$storagedir=dirname(__FILE__)."/../filestore";}
 if (!isset($storageurl)) {$storageurl=$baseurl."/filestore";}
 
+/**
+* Check if ResourceSpace has been configured to run with differnt users (read-write and/or read-only)
+* 
+* @return boolean
+*/
+function db_use_multiple_connection_modes()
+    {
+    if(
+        isset($GLOBALS["read_only_db_username"]) && isset($GLOBALS["read_only_db_password"])
+        && is_string($GLOBALS["read_only_db_username"]) && is_string($GLOBALS["read_only_db_password"])
+        && trim($GLOBALS["read_only_db_username"]) !== ""
+    )
+        {
+        return true;
+        }
+
+    return false;
+    }
+
+/**
+* @var  array  Holds database connections for different users (e.g read-write and/or read-only). NULL if no connection 
+*              has been registered.
+*/
 $db = null;
 function sql_connect() 
     {
-    global $use_mysqli,$db,$mysql_server,$mysql_username,$mysql_password,$mysql_db,$mysql_charset,$mysql_force_strict_mode, 
+    global $db,$mysql_server,$mysql_username,$mysql_password,$mysql_db,$mysql_charset,$mysql_force_strict_mode, 
            $mysql_server_port, $use_mysqli_ssl, $mysqli_ssl_server_cert, $mysqli_ssl_ca_cert;
-	# *** CONNECT TO DATABASE ***
-	if ($use_mysqli)
-	    {
-        $db = mysqli_connect($mysql_server, $mysql_username, $mysql_password, $mysql_db, $mysql_server_port);
+
+    $init_connection = function(
+        $mysql_server, 
+        $mysql_server_port, 
+        $mysql_username, 
+        $mysql_password, 
+        $mysql_db) use ($use_mysqli_ssl, $mysqli_ssl_server_cert, $mysqli_ssl_ca_cert)
+        {
+        $db_connection = mysqli_connect($mysql_server, $mysql_username, $mysql_password, $mysql_db, $mysql_server_port);
 
         if($use_mysqli_ssl)
             {
-            mysqli_ssl_set($db, null, $mysqli_ssl_server_cert, $mysqli_ssl_ca_cert, null, null);
+            mysqli_ssl_set($db_connection, null, $mysqli_ssl_server_cert, $mysqli_ssl_ca_cert, null, null);
             }
-	    } 
-	else 
-	    {
-	    mysql_connect($mysql_server,$mysql_username,$mysql_password);
-	    mysql_select_db($mysql_db);
-	    }
-	    // If $mysql_charset is defined, we use it
-	    // else, we use the default charset for mysql connection.
-	if(isset($mysql_charset))
-	    {
-		if($mysql_charset)
-		    {
-			if ($use_mysqli)
-			    {
-			    mysqli_set_charset($db,$mysql_charset);
-				}
-			else 
-			    {
-				mysql_set_charset($mysql_charset);
-			    }
-			}
-		}
-	
-	# Group concat limit increased to support option based metadata with more realistic limit for option entries
-	# Chose number of countries (approx 200 * 30 bytes) = 6000 as an example and scaled this up by factor of 5 (arbitrary)	
-	sql_query("SET SESSION group_concat_max_len = 32767",false,-1,false,0); 
-	
-    # Set MySQL Strict Mode (if configured)    
-    if ($mysql_force_strict_mode)    
-        {
-        sql_query("SET SESSION sql_mode='STRICT_ALL_TABLES'",false,-1,false,0);	
-        }
-    else
-        {
-        # Determine MySQL version
-        $mysql_version = sql_query('select LEFT(VERSION(),3) as ver');
-        # Set sql_mode for MySQL 5.7+
-        if (version_compare($mysql_version[0]['ver'], '5.6', '>')) 
+
+        if(isset($mysql_charset) && is_string($mysql_charset) && trim($mysql_charset) !== "")
             {
-             $sql_mode_current = sql_query('select @@SESSION.sql_mode');
-             $sql_mode_string = implode(" ", $sql_mode_current[0]);
-             $sql_mode_array_new = array_diff(explode(",",$sql_mode_string), array("ONLY_FULL_GROUP_BY", "NO_ZERO_IN_DATE", "NO_ZERO_DATE"));
-             $sql_mode_string_new = implode (",", $sql_mode_array_new);
-             sql_query("SET SESSION sql_mode = '$sql_mode_string_new'",false,-1,false,0);           
-             }
-        }    
+            mysqli_set_charset($db_connection, $mysql_charset);
+            }
+
+        #####################################
+        // @todo: make sure the following queries run for both connections
+
+        # Group concat limit increased to support option based metadata with more realistic limit for option entries
+        # Chose number of countries (approx 200 * 30 bytes) = 6000 as an example and scaled this up by factor of 5 (arbitrary)  
+        sql_query("SET SESSION group_concat_max_len = 32767", false, -1, false, 0); 
+        
+        # Set MySQL Strict Mode (if configured)    
+        if ($mysql_force_strict_mode)    
+            {
+            sql_query("SET SESSION sql_mode='STRICT_ALL_TABLES'", false, -1, false, 0);
+            return $db_connection;
+            }
+
+        $mysql_version = sql_query('SELECT LEFT(VERSION(), 3) AS ver');
+        if(version_compare($mysql_version[0]['ver'], '5.6', '>')) 
+            {
+            $sql_mode_current = sql_query('select @@SESSION.sql_mode');
+            $sql_mode_string = implode(" ", $sql_mode_current[0]);
+            $sql_mode_array_new = array_diff(explode(",",$sql_mode_string), array("ONLY_FULL_GROUP_BY", "NO_ZERO_IN_DATE", "NO_ZERO_DATE"));
+            $sql_mode_string_new = implode (",", $sql_mode_array_new);
+
+            sql_query("SET SESSION sql_mode = '$sql_mode_string_new'", false, -1, false, 0);           
+            }
+        #####################################
+
+        return $db_connection;
+        };
+
+    if(db_use_multiple_connection_modes())
+        {
+        $db["read_only"] = $init_connection($mysql_server, $mysql_server_port, $mysql_username, $mysql_password, $mysql_db);
+        }
+
+    $db["read_write"] = $init_connection($mysql_server, $mysql_server_port, $mysql_username, $mysql_password, $mysql_db);
+
+    return;
     }
 sql_connect();
 
@@ -827,9 +852,8 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 			}
 		
 		}
-    
-    # Execute query    
-	$result=$use_mysqli ? mysqli_query($db,$sql) : mysql_query($sql);
+
+	$result = mysqli_query($db, $sql);
 	
     if ($config_show_performance_footer){
     	# Stats
