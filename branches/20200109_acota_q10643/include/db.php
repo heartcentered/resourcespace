@@ -257,7 +257,12 @@ function sql_connect()
 
     if(db_use_multiple_connection_modes())
         {
-        $db["read_only"] = $init_connection($mysql_server, $mysql_server_port, $mysql_username, $mysql_password, $mysql_db);
+        $db["read_only"] = $init_connection(
+            $mysql_server,
+            $mysql_server_port,
+            $GLOBALS["read_only_db_username"],
+            $GLOBALS["read_only_db_password"],
+            $mysql_db);
         }
 
     $db["read_write"] = $init_connection($mysql_server, $mysql_server_port, $mysql_username, $mysql_password, $mysql_db);
