@@ -936,7 +936,8 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 			}
 		}
 
-    // Establish DB connection required for this query
+    // Establish DB connection required for this query. Note that developers can force the use of read-only mode if
+    // available using db_set_connection_mode(). An example use case for this is setting encoding and similar operations.
     $db_connection = $db["read_write"];
     if(
         db_use_multiple_connection_modes()
