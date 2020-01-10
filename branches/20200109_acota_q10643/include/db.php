@@ -1427,7 +1427,14 @@ function escape_check($text) #only escape a string if we need to, to prevent esc
     {
     global $db;
 
-    $text = mysqli_real_escape_string($db["read_write"], $text);
+    $db_connection = $db["read_write"];
+    if(db_use_multiple_connection_modes() && db_get_connection_mode() == "read_only")
+        {
+        $db_connection = $db["read_only"];
+        db_clear_connection_mode();
+        }
+
+    $text = mysqli_real_escape_string($db_connection, $text);
 
     # turn all \\' into \'
     while (!(strpos($text,"\\\\'")===false))
