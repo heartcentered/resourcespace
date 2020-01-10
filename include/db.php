@@ -714,7 +714,7 @@ function db_begin_transaction()
 
 	if($use_mysqli && function_exists('mysqli_begin_transaction'))
 		{
-		return mysqli_begin_transaction($db);
+		return mysqli_begin_transaction($db["read_write"]);
 		}
 
     return false;
@@ -738,7 +738,7 @@ function sql_query_prepared($sql,$bind_data)
             {
             $prepared_statement_cache=array();
             }
-        $prepared_statement_cache[$sql]=$db->prepare($sql);
+        $prepared_statement_cache[$sql]=$db["read_write"]->prepare($sql);
         if($prepared_statement_cache[$sql]===false)
             {
             die('Bad prepared SQL statement:' . $sql);
@@ -764,7 +764,7 @@ function db_end_transaction()
 
 	if($use_mysqli && function_exists('mysqli_commit'))
 		{
-		return mysqli_commit($db);
+		return mysqli_commit($db["read_write"]);
 		}
 
     return false;
@@ -780,7 +780,7 @@ function db_rollback_transaction()
 	global $db, $use_mysqli;
 	if($use_mysqli && function_exists('mysqli_rollback'))
 		{
-		return mysqli_rollback($db);
+		return mysqli_rollback($db["read_write"]);
 		}
 
     return false;
