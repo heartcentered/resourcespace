@@ -784,9 +784,9 @@ function hook($name,$pagename="",$params=array(),$last_hook_value_wins=false)
 */
 function db_begin_transaction()
 	{
-	global $db, $use_mysqli;
+	global $db;
 
-	if($use_mysqli && function_exists('mysqli_begin_transaction'))
+	if(function_exists('mysqli_begin_transaction'))
 		{
 		return mysqli_begin_transaction($db["read_write"]);
 		}
@@ -834,9 +834,9 @@ function sql_query_prepared($sql,$bind_data)
 */
 function db_end_transaction()
 	{
-	global $db, $use_mysqli;
+	global $db;
 
-	if($use_mysqli && function_exists('mysqli_commit'))
+	if(function_exists('mysqli_commit'))
 		{
 		return mysqli_commit($db["read_write"]);
 		}
@@ -851,8 +851,8 @@ function db_end_transaction()
 */
 function db_rollback_transaction()
 	{
-	global $db, $use_mysqli;
-	if($use_mysqli && function_exists('mysqli_rollback'))
+	global $db;
+	if(function_exists('mysqli_rollback'))
 		{
 		return mysqli_rollback($db["read_write"]);
 		}
@@ -871,7 +871,8 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
     # This has been added retroactively to support large result sets, yet a pager can work as if a full
     # result set has been returned as an array (as it was working previously).
 	# $logthis parameter is only relevant if $mysql_log_transactions is set.  0=don't log, 1=always log, 2=detect logging - i.e. SELECT statements will not be logged
-    global $db, $config_show_performance_footer, $debug_log, $debug_log_override, $suppress_sql_log, $mysql_verbatim_queries, $use_mysqli, $mysql_log_transactions;
+    global $db, $config_show_performance_footer, $debug_log, $debug_log_override, $suppress_sql_log,
+    $mysql_verbatim_queries, $mysql_log_transactions;
     
 	if (!isset($debug_log_override))
 		{
@@ -1049,10 +1050,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 
 	if ($fetchrows==-1)		// we do not care about the number of rows returned so get out of here
 		{
-        if($use_mysqli)
-            {
-            mysqli_free_result($result);
-            }
+        mysqli_free_result($result);
 		return $return_rows;
 		}
 	
@@ -1061,10 +1059,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 	
 	$query_returned_row_count = mysqli_num_rows($result);
 
-    if($use_mysqli)
-        {
-        mysqli_free_result($result);
-        }
+    mysqli_free_result($result);
 	
 	if ($return_row_count<$query_returned_row_count)
 		{
@@ -1098,15 +1093,9 @@ function sql_array($query)
 
 function sql_insert_id()
 	{
-	# Return last inserted ID (abstraction)
-	global $use_mysqli;
-	if ($use_mysqli){
-		global $db;
-		return mysqli_insert_id($db);
-	}
-	else { 
-		return mysql_insert_id();
-	}
+    global $db;
+
+    return mysqli_insert_id($db["read_write"]);
 	}
 
 function check_db_structs($verbose=false)
@@ -1435,7 +1424,7 @@ function getuid()
 
 function escape_check($text) #only escape a string if we need to, to prevent escaping an already escaped string
     {
-    global $db,$use_mysqli;
+    global $db;
 
     $text = mysqli_real_escape_string($db["read_write"], $text);
 
