@@ -281,64 +281,12 @@ $('#configstoragelocations').click(function(){
 $('p.iteminfo').click(function(){
 	$('p.iteminfo').hide("slow");
 	});
-$('.mysqlconn').keyup(function(){
-	$('#al-testconn').fadeIn("fast",function(){
-		$.ajax({
-			url: "dbtest.php",
-			async: true,
-			dataType: "text",
-			data: { mysqlserver: $('#mysqlserver').val(), mysqlusername: $('#mysqlusername').val(), mysqlpassword: $('#mysqlpassword').val(),mysqldb: $('#mysqldb').val() },
-			success: function(data,type){
-				if (data==200) {
-					$('#mysqlserver').removeClass('warn');
-					$('#mysqlusername').removeClass('warn');
-					$('#mysqlpassword').removeClass('warn');
-					$('#mysqldb').addClass('ok');
-					$('#mysqlserver').addClass('ok');
-					$('#mysqlusername').addClass('ok');
-					$('#mysqlpassword').addClass('ok');
-					$('#mysqldb').removeClass('warn');
-				}
-				else if (data==201) {
-					$('#mysqlserver').removeClass('warn');
-					$('#mysqlusername').removeClass('ok');
-					$('#mysqlpassword').removeClass('ok');
-					$('#mysqldb').removeClass('ok');
-					$('#mysqldb').removeClass('warn');
-					$('#mysqlserver').addClass('ok');
-					$('#mysqlusername').addClass('warn');
-					$('#mysqlpassword').addClass('warn');
-				}
-				else if (data==203) {
-					$('#mysqlserver').removeClass('warn');
-					$('#mysqlusername').removeClass('warn');
-					$('#mysqlpassword').removeClass('warn');
-					$('#mysqldb').removeClass('ok');
-					$('#mysqldb').addClass('warn');
-					$('#mysqlserver').addClass('ok');
-					$('#mysqlusername').addClass('ok');
-					$('#mysqlpassword').addClass('ok');
-				}
-				else{
-					$('#mysqlserver').removeClass('ok');
-					$('#mysqlusername').removeClass('ok');
-					$('#mysqlpassword').removeClass('ok');
-					$('#mysqldb').removeClass('ok');
-					$('#mysqldb').removeClass('warn');
-					$('#mysqlserver').addClass('warn');
-					$('#mysqlusername').removeClass('warn');
-					$('#mysqlpassword').removeClass('warn');
-				}
-				$('#al-testconn').hide();
-			},
-			error: function(){
-				alert('<?php echo $lang["setup-mysqltestfailed"] ?>');
-				$('#mysqlserver').addClass('warn');
-				$('#mysqlusername').addClass('warn');
-				$('#mysqlpassword').addClass('warn');
-				$('#al-testconn').hide();
-		}});
-	});
+
+
+// @todo: check using event target for both cases (usual user and read only)
+$('.mysqlconn').keyup(function(event){
+    console.log(event);
+	$('#al-testconn').fadeIn("fast", test_db());
 });
 
 // Check admin password security requirements/ policy -- client side
@@ -379,8 +327,70 @@ $('a.iflink	').click(function(){
 	return false;
 });
 $('#mysqlserver').keyup();
-
 });
+
+function test_db()
+    {
+    console.log(this);
+
+    return false;
+
+    $.ajax({
+        url: "dbtest.php",
+        async: true,
+        dataType: "text",
+        data: { mysqlserver: $('#mysqlserver').val(), mysqlusername: $('#mysqlusername').val(), mysqlpassword: $('#mysqlpassword').val(),mysqldb: $('#mysqldb').val() },
+        success: function(data,type){
+            if (data==200) {
+                $('#mysqlserver').removeClass('warn');
+                $('#mysqlusername').removeClass('warn');
+                $('#mysqlpassword').removeClass('warn');
+                $('#mysqldb').addClass('ok');
+                $('#mysqlserver').addClass('ok');
+                $('#mysqlusername').addClass('ok');
+                $('#mysqlpassword').addClass('ok');
+                $('#mysqldb').removeClass('warn');
+            }
+            else if (data==201) {
+                $('#mysqlserver').removeClass('warn');
+                $('#mysqlusername').removeClass('ok');
+                $('#mysqlpassword').removeClass('ok');
+                $('#mysqldb').removeClass('ok');
+                $('#mysqldb').removeClass('warn');
+                $('#mysqlserver').addClass('ok');
+                $('#mysqlusername').addClass('warn');
+                $('#mysqlpassword').addClass('warn');
+            }
+            else if (data==203) {
+                $('#mysqlserver').removeClass('warn');
+                $('#mysqlusername').removeClass('warn');
+                $('#mysqlpassword').removeClass('warn');
+                $('#mysqldb').removeClass('ok');
+                $('#mysqldb').addClass('warn');
+                $('#mysqlserver').addClass('ok');
+                $('#mysqlusername').addClass('ok');
+                $('#mysqlpassword').addClass('ok');
+            }
+            else{
+                $('#mysqlserver').removeClass('ok');
+                $('#mysqlusername').removeClass('ok');
+                $('#mysqlpassword').removeClass('ok');
+                $('#mysqldb').removeClass('ok');
+                $('#mysqldb').removeClass('warn');
+                $('#mysqlserver').addClass('warn');
+                $('#mysqlusername').removeClass('warn');
+                $('#mysqlpassword').removeClass('warn');
+            }
+            $('#al-testconn').hide();
+        },
+        error: function(){
+            alert('<?php echo $lang["setup-mysqltestfailed"] ?>');
+            $('#mysqlserver').addClass('warn');
+            $('#mysqlusername').addClass('warn');
+            $('#mysqlpassword').addClass('warn');
+            $('#al-testconn').hide();
+    }});
+}
 </script> 
  
 <style type="text/css"> 
@@ -1244,6 +1254,29 @@ else
 					<label for="mysqlpassword"><?php echo $lang["setup-mysqlpassword"];?></label><input class="mysqlconn" type="password" id="mysqlpassword" name="mysql_password" value="<?php echo $mysql_password;?>"/><a class="iflink" href="#if-mysql-password">?</a>
 					<p class="iteminfo" id="if-mysql-password"><?php echo $lang["setup-if_mysqlpassword"];?></p>
 				</div>
+
+
+
+
+
+                <div class="configitem">
+                    <label for="mysql_read_only_username"><?php echo $lang["setup-mysql_read_only_username"]; ?></label>
+                    <input id="mysql_read_only_username" class="mysqlconn" type="text" name="read_only_db_username" value="<?php echo $read_only_db_username; ?>">
+                    <a class="iflink" href="#if-mysql-read-only-username">?</a>
+                    <p class="iteminfo" id="if-mysql-read-only-username"><?php echo $lang["setup-if_mysql_read_only_username"]; ?></p>        
+                </div>
+                <div class="configitem">
+                    <label for="mysql_read_only_password"><?php echo $lang["setup-mysql_read_only_password"]; ?></label>
+                    <input id="mysql_read_only_password" class="mysqlconn" type="password" name="read_only_db_password" value="<?php echo $read_only_db_password; ?>">
+                    <a class="iflink" href="#if-mysql-read-only-password">?</a>
+                    <p class="iteminfo" id="if-mysql-read-only-password"><?php echo $lang["setup-if_mysql_read_only_password"]; ?></p>
+                </div>
+
+
+
+
+
+
 				<div class="configitem">
 					<label for="mysqldb"><?php echo $lang["setup-mysqldb"];?></label><input id="mysqldb" class="mysqlconn" type="text" required name="mysql_db" value="<?php echo $mysql_db;?>"/><a class="iflink" href="#if-mysql-db">?</a>
 					<p class="iteminfo" id="if-mysql-db"><?php echo $lang["setup-if_mysqldb"];?></p>
