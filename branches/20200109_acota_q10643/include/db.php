@@ -1070,25 +1070,56 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 	return $return_rows;        
     }
 	
-	
-function sql_value($query,$default)
+
+/**
+* Return a single value from a database query, or the default if no rows
+* 
+* NOTE: The value returned must have the column name aliased to 'value'
+* 
+* @uses sql_query()
+* 
+* @param string $query    SQL query
+* @param mixed  $default  Default value
+* 
+* @return string
+*/
+function sql_value($query, $default)
     {
-    # return a single value from a database query, or the default if no rows
-    # The value returned must have the column name aliased to 'value'
-    $result=sql_query($query,false,-1,true,0); // This is a select so we don't need to log this in the mysql log
-    if (count($result)==0) {return $default;} else {return $result[0]["value"];}
+    db_set_connection_mode("read_only");
+    $result = sql_query($query, false, -1, true, 0);
+
+    if(count($result) == 0)
+        {
+        return $default;
+        }
+
+        return $result[0]["value"];
     }
 
+
+/**
+* Like sql_value() but returns an array of all values found
+* 
+* NOTE: The value returned must have the column name aliased to 'value'
+* 
+* @uses sql_query()
+* 
+* @param string $query SQL query
+* 
+* @return array
+*/
 function sql_array($query)
 	{
-	# Like sql_value() but returns an array of all values found.
-    # The value returned must have the column name aliased to 'value'
-	$return=array();
-    $result=sql_query($query,false,-1,true,0); // This is a select so we don't need to log this in the mysql log
-    for ($n=0;$n<count($result);$n++)
+	$return = array();
+
+    db_set_connection_mode("read_only");
+    $result = sql_query($query, false, -1, true, 0);
+
+    for($n = 0; $n < count($result); $n++)
     	{
-    	$return[]=$result[$n]["value"];
+    	$return[] = $result[$n]["value"];
     	}
+
     return $return;
 	}
 
