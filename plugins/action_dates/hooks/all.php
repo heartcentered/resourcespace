@@ -1,4 +1,11 @@
 <?php
+
+function HookAction_datesAllInitialise()
+    {
+    global $action_dates_core_fields;
+    config_add_core_fields( "Action dates plugin",$action_dates_core_fields);
+    }
+
 function HookAction_datesCronCron()
 	{
 	global $lang, $action_dates_restrictfield,$action_dates_deletefield, $resource_deletion_state,
