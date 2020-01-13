@@ -427,83 +427,51 @@ if(getval("save","")!="" && getval("delete","")=="" && enforcePostRequest(false)
 
 $confirm_delete=false;	
 if (getval("delete","")!="" && enforcePostRequest($ajax))
-	{
-    $fieldvars = array();
-    foreach ($corefields as $scope=>$scopevars)
-        {
-        foreach($scopevars as $varname)
-            {
-            if(isset($$varname) && (is_array($$varname) && in_array($ref,$$varname) || ((int)$$varname==$ref)))
-                {
-                $block_deletion = true;
-                $fieldvars[] = $varname . ($scope != "BASE" ? " (" . $scope . ")" : "");
-                }
-            }
-        }
+	{	
+	$confirmdelete=getvalescaped("confirmdelete","");
+	# Check for resources of this  type
+	$affected_resources=sql_array("select distinct resource value from
+								  (
+								  select resource from resource_data where resource>0 and resource_type_field='$ref'
+								  UNION
+								  select resource from resource_node where resource>0 and node in (select ref from node where resource_type_field='$ref')
+								  ) all_resources
+								  
+								  ",0);
+	
+	$affected_resources_count=count($affected_resources);
+	if($affected_resources_count==0 || $confirmdelete!="")
+	    {	    
+	     // Delete the resource type field
+	    sql_query("delete from resource_type_field where ref='$ref'");
+		log_activity(null,LOG_CODE_DELETED,null,'resource_type_field',null,$ref);
 
-    if(count($fieldvars) > 0)
-        {
+	    //Remove all data	    
+	    sql_query("delete from resource_data where resource_type_field='$ref'");
+	    //Remove all keywords	    
+	    sql_query("delete from resource_keyword where resource_type_field='$ref'");
+	    hook("after_delete_resource_type_field");
+
         if($ajax)
             {
             echo json_encode(
                 array(
-                    'message' => $lang["admin_delete_field_error"] . "<br />\$" . implode(", \$",$fieldvars)
+                    'deleted' => $ref
                 )
             );
             exit();
             }
+
+        redirect(generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_params,array("ref"=>"","deleted"=>urlencode($ref))));
+	    }
         else
-            {
-            $error_text = $lang["admin_delete_field_error"] . "<br />\$" . implode("<br/>\$",$fieldvars);
-            }
-		}
-    else
-        {
-        $confirmdelete=getvalescaped("confirmdelete","");
-        # Check for resources of this  type
-        $affected_resources=sql_array("select distinct resource value from
-                                    (
-                                    select resource from resource_data where resource>0 and resource_type_field='$ref'
-                                    UNION
-                                    select resource from resource_node where resource>0 and node in (select ref from node where resource_type_field='$ref')
-                                    ) all_resources
-                                    
-                                    ",0);
-        
-        $affected_resources_count=count($affected_resources);
-        if($affected_resources_count==0 || $confirmdelete!="")
-            {    
-            // Delete the resource type field
-            sql_query("delete from resource_type_field where ref='$ref'");
-            log_activity(null,LOG_CODE_DELETED,null,'resource_type_field',null,$ref);
-
-            //Remove all data	    
-            sql_query("delete from resource_data where resource_type_field='$ref'");
-            //Remove all keywords	    
-            sql_query("delete from resource_keyword where resource_type_field='$ref'");
-            hook("after_delete_resource_type_field");
-
-            if($ajax)
-                {
-                echo json_encode(
-                    array(
-                        'deleted' => $ref
-                    )
-                );
-                exit();
-                }
-
-            redirect(generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_params,array("ref"=>"","deleted"=>urlencode($ref))));
-            }
-        else
-            {	    
-            // User needs to confirm deletion as data will be lost
-            $error_text=str_replace("%%AFFECTEDRESOURCES%%",$affected_resources_count,$lang["admin_delete_field_confirm"]);
-            $error_text.="<br /><a target=\"_blank\" href=\"" . $baseurl  . "/pages/search.php?search=!hasdata" . $ref . "\">" . $lang["show_resources"] . "</a>";
-            
-            $confirm_delete=true;
-            }
-        }
+	    {	    
+	    // User needs to confirm deletion as data will be lost
+	    $error_text=str_replace("%%AFFECTEDRESOURCES%%",$affected_resources_count,$lang["admin_delete_field_confirm"]);
+		$error_text.="<br /><a target=\"_blank\" href=\"" . $baseurl  . "/pages/search.php?search=!hasdata" . $ref . "\">" . $lang["show_resources"] . "</a>";
+	    
+	    $confirm_delete=true;
+	    }
 	}
 	
 # Fetch  data
