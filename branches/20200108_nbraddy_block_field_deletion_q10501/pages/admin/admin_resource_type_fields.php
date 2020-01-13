@@ -240,6 +240,10 @@ for ($n=0;$n<count($fields);$n++)
                                     redirect_link.href = "<?php echo $baseurl; ?>/pages/admin/admin_resource_type_fields.php?deleted=" + response.deleted + "&restypefilter=<?php echo urlencode($restypefilter)?>&field_order_by=<?php echo urlencode($field_order_by)?>&field_sort=<?php echo urlencode($field_sort)?>&find=<?php echo urlencode($find)?>";
                                     CentralSpaceLoad(redirect_link, true);
                                     }
+                                else
+                                    {
+                                    styledalert("<?php echo $lang["error"]; ?>",response.message);
+                                    }
                             }, "json"); 
 
                             return false;
