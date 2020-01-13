@@ -1,11 +1,5 @@
 <?php
 
-function HookGoogle_visionAllInitialise()
-    {
-    global $google_vision_core_fields;
-    config_add_core_fields( "Google vision plugin",$google_vision_core_fields);
-    }
-
 function HookGoogle_visionAllBeforeuploadfile($ref)
     {
     global $google_vision_restypes, $google_vision_face_detect_field, $google_vision_face_dependent_field, $enable_thumbnail_creation_on_upload, $offline_job_queue;

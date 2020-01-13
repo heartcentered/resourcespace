@@ -451,6 +451,7 @@ function save_resource_data($ref,$multi,$autosave_field="")
 				if ($error) 
 					{
 					global $lang;
+					global $lang;
 					if (getval("autosave","")!="")
 						{
 						exit($error);
