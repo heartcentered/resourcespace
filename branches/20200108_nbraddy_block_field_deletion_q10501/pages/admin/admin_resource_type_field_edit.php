@@ -33,7 +33,7 @@ $url_params = array("ref"=>$ref,
 $backurl=getvalescaped("backurl","");
 if($backurl=="")
     {
-    $backurl=$baseurl . "/pages/admin/admin_resource_type_fields.php?ref=" . urlencode($ref) . "&restypefilter=" . urlencode($restypefilter) . "&field_sort=" . urlencode($field_sort) . "&find=" . urlencode($find);
+    $backurl = generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_params);
     }
 else
 	{
@@ -428,61 +428,23 @@ if(getval("save","")!="" && getval("delete","")=="" && enforcePostRequest(false)
 $confirm_delete=false;	
 if (getval("delete","")!="" && enforcePostRequest($ajax))
 	{
-    $fieldvars = array();
-    foreach ($corefields as $scope=>$scopevars)
-        {
-        foreach($scopevars as $varname)
+    $confirmdelete=getvalescaped("confirmdelete","");
+    # Check for resources of this  type
+    $affected_resources=sql_array("select distinct resource value from
+                                (
+                                select resource from resource_data where resource>0 and resource_type_field='$ref'
+                                UNION
+                                select resource from resource_node where resource>0 and node in (select ref from node where resource_type_field='$ref')
+                                ) all_resources
+                                
+                                ",0);
+    
+    $affected_resources_count=count($affected_resources);
+    if($affected_resources_count==0 || $confirmdelete!="")
+        {    
+        $result = delete_resource_type_field($ref);
+        if($result === true)
             {
-            if(isset($$varname) && (is_array($$varname) && in_array($ref,$$varname) || ((int)$$varname==$ref)))
-                {
-                $block_deletion = true;
-                $fieldvars[] = $varname . ($scope != "BASE" ? " (" . $scope . ")" : "");
-                }
-            }
-        }
-
-    if(count($fieldvars) > 0)
-        {
-        if($ajax)
-            {
-            echo json_encode(
-                array(
-                    'message' => $lang["admin_delete_field_error"] . "<br />\$" . implode(", \$",$fieldvars)
-                )
-            );
-            exit();
-            }
-        else
-            {
-            $error_text = $lang["admin_delete_field_error"] . "<br />\$" . implode("<br/>\$",$fieldvars);
-            }
-		}
-    else
-        {
-        $confirmdelete=getvalescaped("confirmdelete","");
-        # Check for resources of this  type
-        $affected_resources=sql_array("select distinct resource value from
-                                    (
-                                    select resource from resource_data where resource>0 and resource_type_field='$ref'
-                                    UNION
-                                    select resource from resource_node where resource>0 and node in (select ref from node where resource_type_field='$ref')
-                                    ) all_resources
-                                    
-                                    ",0);
-        
-        $affected_resources_count=count($affected_resources);
-        if($affected_resources_count==0 || $confirmdelete!="")
-            {    
-            // Delete the resource type field
-            sql_query("delete from resource_type_field where ref='$ref'");
-            log_activity(null,LOG_CODE_DELETED,null,'resource_type_field',null,$ref);
-
-            //Remove all data	    
-            sql_query("delete from resource_data where resource_type_field='$ref'");
-            //Remove all keywords	    
-            sql_query("delete from resource_keyword where resource_type_field='$ref'");
-            hook("after_delete_resource_type_field");
-
             if($ajax)
                 {
                 echo json_encode(
@@ -492,17 +454,35 @@ if (getval("delete","")!="" && enforcePostRequest($ajax))
                 );
                 exit();
                 }
-
-            redirect(generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_params,array("ref"=>"","deleted"=>urlencode($ref))));
+            else
+                {
+                redirect(generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_params,array("ref"=>"","deleted"=>urlencode($ref))));
+                }
             }
-        else
-            {	    
-            // User needs to confirm deletion as data will be lost
-            $error_text=str_replace("%%AFFECTEDRESOURCES%%",$affected_resources_count,$lang["admin_delete_field_confirm"]);
-            $error_text.="<br /><a target=\"_blank\" href=\"" . $baseurl  . "/pages/search.php?search=!hasdata" . $ref . "\">" . $lang["show_resources"] . "</a>";
-            
-            $confirm_delete=true;
-            }
+        elseif(is_string($result))
+            {
+            if($ajax)
+                {
+                echo json_encode(
+                    array(
+                        'message' => $result
+                    )
+                );
+                exit();
+                }
+            else
+                {
+                $error_text = $result;
+                }            
+            }        
+        }
+    else
+        {	    
+        // User needs to confirm deletion as data will be lost
+        $error_text=str_replace("%%AFFECTEDRESOURCES%%",$affected_resources_count,$lang["admin_delete_field_confirm"]);
+        $error_text.="<br /><a target=\"_blank\" href=\"" . $baseurl  . "/pages/search.php?search=!hasdata" . $ref . "\">" . $lang["show_resources"] . "</a>";
+        
+        $confirm_delete=true;
         }
 	}
 	
@@ -547,7 +527,7 @@ var current_type      = <?php echo ('' != $fielddata['type'] ? $fielddata['type'
 
  
 
-<form method="post" class="FormWide" action="<?php echo $baseurl_short?>pages/admin/admin_resource_type_field_edit.php?ref=<?php echo $fielddata["ref"] . "&restypefilter=" . $restypefilter . "&field_order_by=" . $field_order_by . "&field_sort=" . $field_sort ."&find=" . urlencode($find); ?>" onSubmit="return CentralSpacePost(this,true);">
+<form method="post" class="FormWide" action="<?php echo $baseurl_short?>pages/admin/admin_resource_type_field_edit.php?ref=<?php echo (int)$fielddata["ref"] . "&restypefilter=" . (int)$restypefilter . "&field_order_by=" . urlencode($field_order_by) . "&field_sort=" . $field_sort ."&find=" . urlencode($find); ?>" onSubmit="return CentralSpacePost(this,true);">
     <?php generateFormToken("admin_resource_type_field_edit"); ?>
 <input type="hidden" name="ref" value="<?php echo urlencode($ref) ?>">
 
