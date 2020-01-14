@@ -1264,6 +1264,14 @@ if($import && isset($folder_path))
             exit(1);
             }
 
+        resource_log(
+            $new_resource_ref,
+            LOG_CODE_SYSTEM,
+            "",
+            "merge_rs_systems: SRC resource ref was #{$src_resource["ref"]}",
+            $src_resource["ref"],
+            $new_resource_ref);
+
         logScript("Created new record #{$new_resource_ref}");
         $resources_mapping[$src_resource["ref"]] = $new_resource_ref;
         fwrite($progress_fh, "\$resources_mapping[{$src_resource["ref"]}] = {$new_resource_ref};" . PHP_EOL);
