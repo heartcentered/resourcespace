@@ -283,11 +283,10 @@ $('p.iteminfo').click(function(){
 	});
 
 
-// @todo: check using event target for both cases (usual user and read only)
-$('.mysqlconn').keyup(function(event){
-    console.log(event);
-	$('#al-testconn').fadeIn("fast", test_db());
-});
+$('.mysqlconn').keyup(function(event)
+    {
+    $('#al-testconn').fadeIn("fast", test_db(event.target));
+    });
 
 // Check admin password security requirements/ policy -- client side
 $('#admin_password').keyup(function() {
@@ -329,73 +328,80 @@ $('a.iflink	').click(function(){
 $('#mysqlserver').keyup();
 });
 
-function test_db()
+function test_db(targetEl)
     {
-    console.log(this);
-
-    return false;
+    var db_user = $('#mysqlusername');
+    var db_pass = $('#mysqlpassword');
+    if($(targetEl).data("connection_mode") == "read_only")
+        {
+        db_user = $('#mysql_read_only_username');
+        db_pass = $('#mysql_read_only_password');
+        }
 
     $.ajax({
         url: "dbtest.php",
         async: true,
         dataType: "text",
-        data: { mysqlserver: $('#mysqlserver').val(), mysqlusername: $('#mysqlusername').val(), mysqlpassword: $('#mysqlpassword').val(),mysqldb: $('#mysqldb').val() },
+        data: {
+            mysqlserver: $('#mysqlserver').val(),
+            mysqlusername: db_user.val(),
+            mysqlpassword: db_pass.val(),
+            mysqldb: $('#mysqldb').val()
+        },
         success: function(data,type){
             if (data==200) {
                 $('#mysqlserver').removeClass('warn');
-                $('#mysqlusername').removeClass('warn');
-                $('#mysqlpassword').removeClass('warn');
+                db_user.removeClass('warn');
+                db_pass.removeClass('warn');
                 $('#mysqldb').addClass('ok');
                 $('#mysqlserver').addClass('ok');
-                $('#mysqlusername').addClass('ok');
-                $('#mysqlpassword').addClass('ok');
+                db_user.addClass('ok');
+                db_pass.addClass('ok');
                 $('#mysqldb').removeClass('warn');
             }
             else if (data==201) {
                 $('#mysqlserver').removeClass('warn');
-                $('#mysqlusername').removeClass('ok');
-                $('#mysqlpassword').removeClass('ok');
+                db_user.removeClass('ok');
+                db_pass.removeClass('ok');
                 $('#mysqldb').removeClass('ok');
                 $('#mysqldb').removeClass('warn');
                 $('#mysqlserver').addClass('ok');
-                $('#mysqlusername').addClass('warn');
-                $('#mysqlpassword').addClass('warn');
+                db_user.addClass('warn');
+                db_pass.addClass('warn');
             }
             else if (data==203) {
                 $('#mysqlserver').removeClass('warn');
-                $('#mysqlusername').removeClass('warn');
-                $('#mysqlpassword').removeClass('warn');
+                db_user.removeClass('warn');
+                db_pass.removeClass('warn');
                 $('#mysqldb').removeClass('ok');
                 $('#mysqldb').addClass('warn');
                 $('#mysqlserver').addClass('ok');
-                $('#mysqlusername').addClass('ok');
-                $('#mysqlpassword').addClass('ok');
+                db_user.addClass('ok');
+                db_pass.addClass('ok');
             }
             else{
                 $('#mysqlserver').removeClass('ok');
-                $('#mysqlusername').removeClass('ok');
-                $('#mysqlpassword').removeClass('ok');
+                db_user.removeClass('ok');
+                db_pass.removeClass('ok');
                 $('#mysqldb').removeClass('ok');
                 $('#mysqldb').removeClass('warn');
                 $('#mysqlserver').addClass('warn');
-                $('#mysqlusername').removeClass('warn');
-                $('#mysqlpassword').removeClass('warn');
+                db_user.removeClass('warn');
+                db_pass.removeClass('warn');
             }
             $('#al-testconn').hide();
         },
         error: function(){
             alert('<?php echo $lang["setup-mysqltestfailed"] ?>');
             $('#mysqlserver').addClass('warn');
-            $('#mysqlusername').addClass('warn');
-            $('#mysqlpassword').addClass('warn');
+            db_user.addClass('warn');
+            db_pass.addClass('warn');
             $('#al-testconn').hide();
-    }});
-}
+        }});
+    }
 </script> 
  
 <style type="text/css"> 
- 
-<!--
 #wrapper{ margin:0 auto;width:600px; }
  #intro {  margin-bottom: 40px; font-size:100%; background: #F7F7F7; text-align: left; padding: 40px; }
 #introbottom { padding: 10px; clear: both; text-align:center;}
@@ -403,7 +409,6 @@ function test_db()
 #preconfig h2 { border-bottom: 1px solid #ccc;	width: 100%;}
 #preconfig p { font-size:110%; padding:0; margin:0; margin-top: 5px;}
 #preconfig p.failure{ color: #f00; font-weight: bold; }
-
 #structural_plugins {margin-bottom: 40px;font-size: 100%;background: #F7F7F7;text-align: left;padding: 20px;}
 #structural_plugins h2{margin-bottom: 10px;}
 .templateitem{padding:10px; padding-left:40px;}
@@ -412,29 +417,21 @@ function test_db()
 .templateitem .desc{padding:0 10px;display: block;float: left;clear:left; padding-left:28px;}
 .templateitem a.moreinfo{color:#72A939;padding-left: 0;}
 .structurepluginradio{margin-right:10px;}
-
-
 .settings { background: #F7F7F7; clear: both; padding: 20px; text-align: left;width:80%;margin:0 auto 0 auto;}
-
 p.iteminfo{ background: #e3fefa; width: 60%; color: #000; padding: 4px; margin: 10px; clear:both; }
 strong { padding:0 5px; color: #F00; font-weight: bold; }
 a.iflink { color: #FFF; padding: 4px; margin-left: 4px; border-radius: 4px; background-color: #2E99E6;} 
 #defaultlanguage{font-size: 1em;}
 #baseurl, #admin_email, #emailfrom {border: 1px solid rgba(0,0,0,0.25);}
-
 input.warn { border: 2px solid #f00; }
 input.ok{ border:2px solid #0f0; }
 input#submit { margin: 30px; font-size:120%; }
-
 div.configitem { padding-top:10px; padding-left:40px; padding-bottom: 5px; border-bottom: 1px solid #555555; clear:left;}
 label { padding-right: 10px; width: 30%; font-weight: bold; }
-
 div.configitem label { width:400px; display:block; float:left;}
-
 div.advsection{ margin-bottom: 20px; }
 .ajloadicon { padding-left:4px; }
 h2#dbaseconfig{  min-height: 32px;}
-
 .erroritem{ background: #fcc; border: 2px solid #f00; color: #000; padding: 10px; margin: 7px; font-weight:bold;}
 .erroritem.p { margin: 0; padding:0px;padding-bottom: 5px;}
 .warnitem{ background: #FFFFB3; border: 2px solid #FFFF33; color: #000; padding: 10px; margin: 7px; font-weight:bold;}
@@ -443,9 +440,6 @@ h2#dbaseconfig{  min-height: 32px;}
 #configoutput { background: #777; color: #fff; text-align: left; padding: 20px; }
 #warnheader { font-size: 110%; margin-bottom: 20px; background: #FFFFB3; border: 1px solid #FFFF33; color: #000; padding: 10px; font-weight: bold; }
 .language {clear:both; text-align:center; padding:20px;}
-
---> 
- 
 </style> 
 </head>
 <body class="SlimHeader">
@@ -545,66 +539,99 @@ h2#dbaseconfig{  min-height: 32px;}
 
 		//Grab MySQL settings
 		$mysql_server = get_post('mysql_server');
-		$mysql_username = get_post('mysql_username');
-		$mysql_password = get_post('mysql_password');
-		$mysql_db = get_post('mysql_db');
-		//Make a connection to the database using the supplied credentials and see if we can create and drop a table.
-		$mysqli_connection = mysqli_connect($mysql_server, $mysql_username, $mysql_password);
-		if ($mysqli_connection){
-			$mysqlversion=mysqli_get_server_info($mysqli_connection);
-      
-			// Convert major and minor parts of mysql version to numeric for checking purposes
-			$mysqlversion_parts=explode(".",$mysqlversion);
-			$mysqlversion_majorminor=floatval($mysqlversion_parts[0].".".$mysqlversion_parts[1]);
-      
-			if ($mysqlversion_majorminor < 5) 
-				{
-				$errors['databaseversion'] = true;
-				}
-			else 
-				{
-				if (@mysqli_select_db($mysqli_connection, $mysql_db))	
-					{
-					if (@mysqli_query($mysqli_connection, "CREATE table configtest(test varchar(30))"))	
-						{
-						@mysqli_query($mysqli_connection, "DROP table configtest");
-						}
-					else 
-						{
-						$errors['databaseperms'] = true;
-						}
-					}
-				else 
-					{$errors['databasedb'] = true;}
-			}
-		}
-		else 
-			{
-			switch (mysqli_errno($mysqli_connection))
-				{
-				case 1045:  //User login failure.
-					$errors['databaselogin'] = true;
-					break;
-				default: //Must be a server problem.
-					$errors['databaseserver'] = true;
-					break;
-				}
-			}
-		if (isset($errors))
-			{
-			$errors['database'] = mysqli_error($mysqli_connection);
-			}
-		else 
-			{
-			//Test passed: Output MySQL config section
-			$config_output .= "# MySQL database settings\r\n";
-			$config_output .= "\$mysql_server = '$mysql_server';\r\n";
-			$config_output .= "\$mysql_username = '$mysql_username';\r\n";
-			$config_output .= "\$mysql_password = '$mysql_password';\r\n";
-			$config_output .= "\$mysql_db = '$mysql_db';\r\n";
-			$config_output .= "\r\n";
-			}
-		
+        $mysql_db = get_post('mysql_db');
+
+        $db_connection_modes = array(
+            "read_write" => array(
+                "mysql_username" => get_post("mysql_username"),
+                "mysql_password" => get_post("mysql_password"),
+            ),
+            "read_only" => array(
+                "mysql_username" => get_post("read_only_db_username"),
+                "mysql_password" => get_post("read_only_db_password"),
+            ),
+        );
+        $mysql_config_output = "";
+        foreach($db_connection_modes as $db_connection_mode => $db_credentials)
+            {
+            echo $db_connection_mode . "<br>";
+
+            $mysql_username = $db_credentials["mysql_username"];
+            $mysql_password = $db_credentials["mysql_password"];
+
+            // Check connection
+    		$mysqli_connection = mysqli_connect($mysql_server, $mysql_username, $mysql_password);
+            if($mysqli_connection === false)
+                {
+                switch(mysqli_errno($mysqli_connection))
+                    {
+                    case 1045:  //User login failure.
+                        $errors['databaselogin'] = true;
+                        break;
+                    default: //Must be a server problem.
+                        $errors['databaseserver'] = true;
+                        break;
+                    }
+                }
+
+            // Check version
+            $mysqlversion = mysqli_get_server_info($mysqli_connection);
+            $mysqlversion_parts = explode(".", $mysqlversion);
+            $mysqlversion_majorminor = floatval($mysqlversion_parts[0] . "." . $mysqlversion_parts[1]);
+            if($mysqlversion_majorminor < 5)
+                {
+                $errors['databaseversion'] = true;
+                break;
+                }
+
+            // Check DB access
+            if(@mysqli_select_db($mysqli_connection, $mysql_db) === false)
+                {
+                $errors['databasedb'] = true;
+                break;
+                }
+
+            // Check read-write permissions (if read-only mode credentials have been provided)
+            // @todo: refactor this part
+            if ($db_connection_mode == "read_write" && @mysqli_query($mysqli_connection, "CREATE table configtest(test varchar(30))"))  
+                {
+                @mysqli_query($mysqli_connection, "DROP table configtest");
+                }
+            else 
+                {
+                $errors['databaseperms'] = true;
+                break;
+                }
+
+
+
+
+
+    		if (isset($errors))
+    			{
+    			$errors['database'] = mysqli_error($mysqli_connection);
+                break;
+    			}
+
+            $config_var_username = ($db_connection_mode == "read_only" ? "read_only_db_username" : "mysql_username");
+            $config_var_password = ($db_connection_mode == "read_only" ? "read_only_db_password" : "mysql_password");
+
+            $mysql_config_output .= "\$config_var_username = '$mysql_username';\r\n";
+            $mysql_config_output .= "\$config_var_password = '$mysql_password';\r\n";
+            }
+
+        if(!isset($errors))
+            {
+            $config_output .= "# MySQL database settings\r\n";
+            $config_output .= "\$mysql_server = '$mysql_server';\r\n";
+            $config_output .= $mysql_config_output;
+            $config_output .= "\$mysql_db = '$mysql_db';\r\n";
+            $config_output .= "\r\n";
+            }
+
+echo "<pre>";print_r($config_output);echo "</pre>";die("You died in file " . __FILE__ . " at line " . __LINE__);
+
+
 		//Check MySQL bin path (not required)
 		$mysql_bin_path = sslash(get_post('mysql_bin_path'));
 		if ((isset($mysql_bin_path)) && ($mysql_bin_path!='')){
@@ -1247,11 +1274,11 @@ else
 					<p class="iteminfo" id="if-mysql-server"><?php echo $lang["setup-if_mysqlserver"];?></p>
 				</div>
 				<div class="configitem">
-					<label for="mysqlusername"><?php echo $lang["setup-mysqlusername"];?></label><input class="mysqlconn" type="text" required id="mysqlusername" name="mysql_username" value="<?php echo $mysql_username;?>"/><strong>*</strong><a class="iflink" href="#if-mysql-username">?</a>
+					<label for="mysqlusername"><?php echo $lang["setup-mysqlusername"];?></label><input class="mysqlconn" type="text" required id="mysqlusername" name="mysql_username" value="<?php echo $mysql_username;?>" data-connection_mode="read_write"/><strong>*</strong><a class="iflink" href="#if-mysql-username">?</a>
 					<p class="iteminfo" id="if-mysql-username"><?php echo $lang["setup-if_mysqlusername"];?></p>		
 				</div>
 				<div class="configitem">
-					<label for="mysqlpassword"><?php echo $lang["setup-mysqlpassword"];?></label><input class="mysqlconn" type="password" id="mysqlpassword" name="mysql_password" value="<?php echo $mysql_password;?>"/><a class="iflink" href="#if-mysql-password">?</a>
+					<label for="mysqlpassword"><?php echo $lang["setup-mysqlpassword"];?></label><input class="mysqlconn" type="password" id="mysqlpassword" name="mysql_password" value="<?php echo $mysql_password;?>" data-connection_mode="read_write"/><a class="iflink" href="#if-mysql-password">?</a>
 					<p class="iteminfo" id="if-mysql-password"><?php echo $lang["setup-if_mysqlpassword"];?></p>
 				</div>
 
@@ -1261,13 +1288,23 @@ else
 
                 <div class="configitem">
                     <label for="mysql_read_only_username"><?php echo $lang["setup-mysql_read_only_username"]; ?></label>
-                    <input id="mysql_read_only_username" class="mysqlconn" type="text" name="read_only_db_username" value="<?php echo $read_only_db_username; ?>">
+                    <input id="mysql_read_only_username"
+                           class="mysqlconn"
+                           type="text"
+                           name="read_only_db_username"
+                           value="<?php echo $read_only_db_username; ?>"
+                           data-connection_mode="read_only">
                     <a class="iflink" href="#if-mysql-read-only-username">?</a>
                     <p class="iteminfo" id="if-mysql-read-only-username"><?php echo $lang["setup-if_mysql_read_only_username"]; ?></p>        
                 </div>
                 <div class="configitem">
                     <label for="mysql_read_only_password"><?php echo $lang["setup-mysql_read_only_password"]; ?></label>
-                    <input id="mysql_read_only_password" class="mysqlconn" type="password" name="read_only_db_password" value="<?php echo $read_only_db_password; ?>">
+                    <input id="mysql_read_only_password"
+                           class="mysqlconn"
+                           type="password"
+                           name="read_only_db_password"
+                           value="<?php echo $read_only_db_password; ?>"
+                           data-connection_mode="read_only">
                     <a class="iflink" href="#if-mysql-read-only-password">?</a>
                     <p class="iteminfo" id="if-mysql-read-only-password"><?php echo $lang["setup-if_mysql_read_only_password"]; ?></p>
                 </div>
