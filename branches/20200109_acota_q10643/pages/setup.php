@@ -543,21 +543,25 @@ h2#dbaseconfig{  min-height: 32px;}
 
         $db_connection_modes = array(
             "read_write" => array(
-                "mysql_username" => get_post("mysql_username"),
-                "mysql_password" => get_post("mysql_password"),
+                "mysql_username" => trim(get_post("mysql_username")),
+                "mysql_password" => trim(get_post("mysql_password")),
             ),
             "read_only" => array(
-                "mysql_username" => get_post("read_only_db_username"),
-                "mysql_password" => get_post("read_only_db_password"),
+                "mysql_username" => trim(get_post("read_only_db_username")),
+                "mysql_password" => trim(get_post("read_only_db_password")),
             ),
         );
         $mysql_config_output = "";
         foreach($db_connection_modes as $db_connection_mode => $db_credentials)
             {
-            echo $db_connection_mode . "<br>";
-
             $mysql_username = $db_credentials["mysql_username"];
             $mysql_password = $db_credentials["mysql_password"];
+
+            // read-only credentials are optional
+            if($db_connection_mode == "read_only" && ($mysql_username == "" || $mysql_password == ""))
+                {
+                continue;
+                }
 
             // Check connection
     		$mysqli_connection = mysqli_connect($mysql_server, $mysql_username, $mysql_password);
@@ -591,21 +595,19 @@ h2#dbaseconfig{  min-height: 32px;}
                 break;
                 }
 
-            // Check read-write permissions (if read-only mode credentials have been provided)
-            // @todo: refactor this part
-            if ($db_connection_mode == "read_write" && @mysqli_query($mysqli_connection, "CREATE table configtest(test varchar(30))"))  
+            // Check DB permissions
+            if($db_connection_mode == "read_write")
                 {
-                @mysqli_query($mysqli_connection, "DROP table configtest");
+                if(@mysqli_query($mysqli_connection, "CREATE table configtest(test varchar(30))"))  
+                    {
+                    @mysqli_query($mysqli_connection, "DROP table configtest");
+                    }
+                else 
+                    {
+                    $errors['databaseperms'] = true;
+                    break;
+                    }
                 }
-            else 
-                {
-                $errors['databaseperms'] = true;
-                break;
-                }
-
-
-
-
 
     		if (isset($errors))
     			{
@@ -616,8 +618,8 @@ h2#dbaseconfig{  min-height: 32px;}
             $config_var_username = ($db_connection_mode == "read_only" ? "read_only_db_username" : "mysql_username");
             $config_var_password = ($db_connection_mode == "read_only" ? "read_only_db_password" : "mysql_password");
 
-            $mysql_config_output .= "\$config_var_username = '$mysql_username';\r\n";
-            $mysql_config_output .= "\$config_var_password = '$mysql_password';\r\n";
+            $mysql_config_output .= "\${$config_var_username} = '{$mysql_username}';\r\n";
+            $mysql_config_output .= "\${$config_var_password} = '{$mysql_password}';\r\n";
             }
 
         if(!isset($errors))
@@ -628,9 +630,6 @@ h2#dbaseconfig{  min-height: 32px;}
             $config_output .= "\$mysql_db = '$mysql_db';\r\n";
             $config_output .= "\r\n";
             }
-
-echo "<pre>";print_r($config_output);echo "</pre>";die("You died in file " . __FILE__ . " at line " . __LINE__);
-
 
 		//Check MySQL bin path (not required)
 		$mysql_bin_path = sslash(get_post('mysql_bin_path'));
@@ -1274,25 +1273,36 @@ else
 					<p class="iteminfo" id="if-mysql-server"><?php echo $lang["setup-if_mysqlserver"];?></p>
 				</div>
 				<div class="configitem">
-					<label for="mysqlusername"><?php echo $lang["setup-mysqlusername"];?></label><input class="mysqlconn" type="text" required id="mysqlusername" name="mysql_username" value="<?php echo $mysql_username;?>" data-connection_mode="read_write"/><strong>*</strong><a class="iflink" href="#if-mysql-username">?</a>
+					<label for="mysqlusername"><?php echo $lang["setup-mysqlusername"]; ?></label>
+                    <input class="mysqlconn"
+                           type="text"
+                           required
+                           id="mysqlusername"
+                           name="mysql_username"
+                           value="<?php echo $db_connection_modes["read_write"]["mysql_username"]; ?>"
+                           data-connection_mode="read_write"/>
+                    <strong>*</strong>
+                    <a class="iflink" href="#if-mysql-username">?</a>
 					<p class="iteminfo" id="if-mysql-username"><?php echo $lang["setup-if_mysqlusername"];?></p>		
 				</div>
 				<div class="configitem">
-					<label for="mysqlpassword"><?php echo $lang["setup-mysqlpassword"];?></label><input class="mysqlconn" type="password" id="mysqlpassword" name="mysql_password" value="<?php echo $mysql_password;?>" data-connection_mode="read_write"/><a class="iflink" href="#if-mysql-password">?</a>
+					<label for="mysqlpassword"><?php echo $lang["setup-mysqlpassword"];?></label>
+                    <input class="mysqlconn"
+                           type="password"
+                           id="mysqlpassword"
+                           name="mysql_password"
+                           value="<?php echo $db_connection_modes["read_write"]["mysql_password"]; ?>"
+                           data-connection_mode="read_write"/>
+                    <a class="iflink" href="#if-mysql-password">?</a>
 					<p class="iteminfo" id="if-mysql-password"><?php echo $lang["setup-if_mysqlpassword"];?></p>
 				</div>
-
-
-
-
-
                 <div class="configitem">
                     <label for="mysql_read_only_username"><?php echo $lang["setup-mysql_read_only_username"]; ?></label>
                     <input id="mysql_read_only_username"
                            class="mysqlconn"
                            type="text"
                            name="read_only_db_username"
-                           value="<?php echo $read_only_db_username; ?>"
+                           value="<?php echo $db_connection_modes["read_only"]["mysql_username"]; ?>"
                            data-connection_mode="read_only">
                     <a class="iflink" href="#if-mysql-read-only-username">?</a>
                     <p class="iteminfo" id="if-mysql-read-only-username"><?php echo $lang["setup-if_mysql_read_only_username"]; ?></p>        
@@ -1303,17 +1313,11 @@ else
                            class="mysqlconn"
                            type="password"
                            name="read_only_db_password"
-                           value="<?php echo $read_only_db_password; ?>"
+                           value="<?php echo $db_connection_modes["read_only"]["mysql_password"]; ?>"
                            data-connection_mode="read_only">
                     <a class="iflink" href="#if-mysql-read-only-password">?</a>
                     <p class="iteminfo" id="if-mysql-read-only-password"><?php echo $lang["setup-if_mysql_read_only_password"]; ?></p>
                 </div>
-
-
-
-
-
-
 				<div class="configitem">
 					<label for="mysqldb"><?php echo $lang["setup-mysqldb"];?></label><input id="mysqldb" class="mysqlconn" type="text" required name="mysql_db" value="<?php echo $mysql_db;?>"/><a class="iflink" href="#if-mysql-db">?</a>
 					<p class="iteminfo" id="if-mysql-db"><?php echo $lang["setup-if_mysqldb"];?></p>
@@ -1507,4 +1511,4 @@ if (($develmode)&& isset($config_output))
 	<?php 
 	} ?>
 </body>
-</html>	
+</html>
