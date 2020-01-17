@@ -1314,9 +1314,15 @@ function save_resource_data_multi($collection,$editsearch = array())
                         
             if (!hook('forbidsavearchive', '', array($errors)))
                 {
-                # Also update archive status   
                 $oldarchive=sql_value("select archive value from resource where ref='$ref'","");
-                $setarchivestate=getvalescaped("status",$oldarchive,true); // We used to get the 'archive' value but this conflicts with the archiveused for searching                                
+                $setarchivestate=getvalescaped("status",$oldarchive,true); // We used to get the 'archive' value but this conflicts with the archiveused for searching
+                
+                $set_archive_state_hook = hook("save_resource_data_multi_set_archive_state", "", array($ref, $oldarchive));
+                if($set_archive_state_hook !== false && is_numeric($set_archive_state_hook))
+                    {
+                    $setarchivestate = $set_archive_state_hook;
+                    }
+
                 if($setarchivestate!=$oldarchive && !checkperm("e" . $setarchivestate)) // don't allow change if user has no permission to change archive state
                     {
                     $setarchivestate=$oldarchive;
@@ -2388,7 +2394,7 @@ function get_resource_log($resource, $fetchrows = -1)
         LEFT OUTER JOIN resource_type_field AS rtf ON r.resource_type_field = rtf.ref
                   WHERE r.resource = '{$resource}'
                GROUP BY r.ref
-               ORDER BY r.date DESC",
+               ORDER BY r.ref DESC",
         false,
         $fetchrows);
 
@@ -5555,6 +5561,7 @@ function copy_locked_fields($ref, &$fields,&$all_selected_nodes,$locked_fields,$
                 $stripped_nodes = array_diff ($all_selected_nodes, $field_node_refs);
                 $locked_nodes = get_resource_nodes($lastedited, $locked_field);
                 $all_selected_nodes = array_merge($stripped_nodes, $locked_nodes);
+
                 if($save)
                     {
                     debug("- adding locked field nodes for resource " . $ref . ", field id: " . $locked_field);
@@ -5563,6 +5570,27 @@ function copy_locked_fields($ref, &$fields,&$all_selected_nodes,$locked_fields,$
                         {
                         add_resource_nodes($ref, $locked_nodes, false);
                         }
+
+                    # If this is a 'joined' field it still needs to add it to the resource column
+                    $joins=get_resource_table_joins();
+                    if (in_array($locked_field,$joins))
+                        {
+                        $node_vals = array();
+                        // Build new value:
+                        foreach($locked_nodes as $locked_node)
+                            {
+                            foreach ($field_nodes as $key => $val) 
+                                {
+                                if ($val['ref'] === $locked_node) 
+                                    {
+                                    array_push($node_vals, $field_nodes[$key]["name"]);
+                                    }
+                                }
+                            $resource_type_field=$field_nodes[$key]["resource_type_field"];
+                            $values_string = implode($node_vals,",");
+                            sql_query("update resource set field".$resource_type_field."='".escape_check(truncate_join_field_value(strip_leading_comma($values_string)))."' where ref='$ref'");
+                            }
+                        } 
                     }
                 }
             else
@@ -5717,7 +5745,7 @@ function get_extension(array $resource, $size)
         }
 
     // Offline collection download job may have requested a specific file extension
-    $pextension = $size == 'original' ? $resource['file_extension'] : (isset($job_ext) && trim($job_ext) != "") ? $job_ext : 'jpg';
+    $pextension = $size == 'original' ? $resource['file_extension'] : ((isset($job_ext) && trim($job_ext) != "") ? $job_ext : 'jpg');
 
     $replace_extension = hook('replacedownloadextension', '', array($resource, $pextension));
     if(trim($replace_extension) !== '')
@@ -5817,7 +5845,7 @@ function get_default_archive_state($requestedstate = "")
 
 function save_original_file_as_alternative($ref)
     {
-    debug("save_original_file function called");
+    debug("save_original_file function called for resource ref: " . (int)$ref);
     if (!$ref)
         {
         debug("ERROR: Unable to save original file as alternative - no resource id passed");
@@ -5831,16 +5859,15 @@ function save_original_file_as_alternative($ref)
     * @param array   $lang 
     */
 
-    global $lang, $alternative_file_previews, $alternative_file_previews_batch;
+    global $lang, $alternative_file_previews, $alternative_file_previews_batch, $filename_field;
 
-    // GET variables
+    // Values may be passed in POST or GET data from upload_plupload.php
     $replace_resource_original_alt_filename = getvalescaped('replace_resource_original_alt_filename', ''); // alternative filename
-    $alternative                            = getvalescaped('alternative', ''); # Batch upload alternative files    
-    $filename_field                         = getval('filename_field', ''); // GET variable - field to use for filename
+    $filename_field_use                     = getval('filename_field', $filename_field); // GET variable - field to use for filename
 
     // Make the original into an alternative, need resource data so we can get filepath/extension
     $origdata     = get_resource_data($ref);
-    $origfilename = get_data_by_field($ref, $filename_field);
+    $origfilename = get_data_by_field($ref, $filename_field_use);
 
     $newaltname        = str_replace('%EXTENSION', strtoupper($origdata['file_extension']), $lang['replace_resource_original_description']);
     $newaltdescription = nicedate(date('Y-m-d H:i'), true);
@@ -5848,8 +5875,7 @@ function save_original_file_as_alternative($ref)
     if('' != $replace_resource_original_alt_filename)
         {
         $newaltname = $replace_resource_original_alt_filename;
-        $newaltdescription = '';
-        }
+        }        
 
     $newaref = add_alternative_file($ref, $newaltname, $newaltdescription, escape_check($origfilename), $origdata['file_extension'], $origdata['file_size']);
 
@@ -5868,17 +5894,17 @@ function save_original_file_as_alternative($ref)
             $orig_preview_path=get_resource_path($ref, true, $ps[$n]["id"],false, "");
             if (file_exists($orig_preview_path))
                 {
-                # Move the old preview file to the alternative preview file location
+                # Copy the old preview file to the alternative preview file location, not moved as original may still be required
                 $alt_preview_path=get_resource_path($ref, true, $ps[$n]["id"], true, "", -1, 1, false, "", $newaref);
-                rename($orig_preview_path, $alt_preview_path);			
+                copy($orig_preview_path, $alt_preview_path);			
                 }
             # Also for the watermarked versions.
-            $wmpath=get_resource_path($ref,true,$ps[$n]["id"],false,"jpg",-1,1,true,"",$alternative);
+            $wmpath=get_resource_path($ref,true,$ps[$n]["id"],false,"jpg",-1,1,true );
             if (file_exists($wmpath))
                 {
                 # Move the old preview file to the alternative preview file location
                 $alt_preview_wmpath=get_resource_path($ref, true, $ps[$n]["id"], true, "", -1, 1, true, "", $newaref);
-                rename($wmpath, $alt_preview_wmpath);			
+                copy($wmpath, $alt_preview_wmpath);			
                 }
             }
         }
@@ -5905,7 +5931,7 @@ function replace_resource_file($ref, $file_location, $no_exif=false, $autorotate
         {
         return false;
         }
-    
+
     // save original file as an alternative file
     if($replace_resource_preserve_option && $keep_original)
         {
@@ -5915,7 +5941,7 @@ function replace_resource_file($ref, $file_location, $no_exif=false, $autorotate
             return false;
             }
         }
-    
+
     if (filter_var($file_location, FILTER_VALIDATE_URL))
         {
         $uploadstatus = upload_file_by_url($ref,$no_exif,false,$autorotate,$file_location);

@@ -77,6 +77,7 @@ if(!$modal)
 ?>
 
 <div class="BasicsBox"> 
+	
   <h1><?php echo $lang["deleteresource"];render_help_link("user/deleting-resources");?></h1>
   <p><?php if($delete_requires_password){text("introtext");}else{echo $lang["delete__nopassword"];} ?></p>
   
@@ -98,13 +99,29 @@ if(!$modal)
 	<div class="clearerleft"> </div>
 	<?php if ($error!="") { ?><div class="FormError">!! <?php echo htmlspecialchars($error) ?> !!</div><?php } ?>
 	</div>
-	<?php } ?>
+	<?php }
+	
+	$cancelparams = array();
+
+	$cancelparams["ref"] 		= $ref;
+	$cancelparams["search"] 	= $search;
+	$cancelparams["offset"] 	= $offset;
+	$cancelparams["order_by"] 	= $order_by;
+	$cancelparams["sort"] 		= $sort;
+	$cancelparams["archive"] 	= $archive;
+	
+	$cancelurl = generateURL($baseurl_short . "pages/view.php",$cancelparams);
+	?>
 	
 	<div class="QuestionSubmit">
 	<input name="save" type="hidden" value="true" />
 	<label for="buttons"> </label>			
-	<input name="save" type="submit" value="&nbsp;&nbsp;<?php echo $lang["deleteresource"]?>&nbsp;&nbsp;"  onclick="return ModalPost(this.form,true);"/>
+	<input name="save" type="submit" value="&nbsp;&nbsp;<?php echo $lang["deleteresource"]?>&nbsp;&nbsp;"  onclick="return ModalPost(this.form,true);"/>		
+	<input name="cancel" type="button" value="&nbsp;&nbsp;<?php echo $lang["cancel"]?>&nbsp;&nbsp;"  onclick='return CentralSpaceLoad("<?php echo $cancelurl ?>",true);'/>
 	</div>
+
+
+
 	</form>
 	
 </div>

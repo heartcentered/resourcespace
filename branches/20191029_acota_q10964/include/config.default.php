@@ -1316,7 +1316,7 @@ $upload_add_to_new_collection_opt=true;
 $upload_do_not_add_to_new_collection_opt=true;
 # Batch Uploads, require that a collection name is entered, to override the Upload<timestamp> default behavior
 $upload_collection_name_required=false;
-#Batch uploads - always upload to My Collection
+#Batch uploads - always upload to Default Collection
 $upload_force_mycollection=false;
 #Batch Uploads, do not display hidden collections
 $hidden_collections_hide_on_upload=false;
@@ -1611,12 +1611,13 @@ $show_status_and_access_on_upload=false;
 # Set Permission required to show "access" and "status" fields on upload, evaluates PHP code so must be preceded with 'return' and end with a semicolon. False = No permission required.
 $show_status_and_access_on_upload_perm = "return !checkperm('F*');"; # Stack permissions= " return !checkperm('e0') && !checkperm('c')";
 
-#Access will be shown if this value is set to true. This option acts as an override for the status and access flag.
+# Access will be shown if this value is set to true. This option acts as an override for the status and access flag.
 # Show Status and Access = true && Show Access = true   - Status and Access Shown
 # Show Status and Access = false && Show Access = true  - Only Access Shown
 # Show Status and Access = true && Show Access = false - Only Status Shown
 # Show Status and Access = false && Show Access = false - Neither Shown
 # DEFAULT VALUE: = $show_status_and_access_on_upload;
+# Please note: add unset($show_access_on_upload); to config if you wish to honour true/false or false/true variations
 $show_access_on_upload = &$show_status_and_access_on_upload;
 
 # Permission required to show "access" field on upload, this evaluates PHP code so must be preceded with 'return'. True = No permission required. 
@@ -2826,8 +2827,6 @@ $keyboard_navigation_next=39;
 $keyboard_navigation_pages_use_alt=false;
 # add resource to collection, default 'a'
 $keyboard_navigation_add_resource=65;
-# remove resource from collection, default 'r'
-$keyboard_navigation_remove_resource=82;
 # previous page in document preview, default ','
 $keyboard_navigation_prev_page=188;
 # next page in document preview, default '.'

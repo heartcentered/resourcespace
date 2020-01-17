@@ -875,15 +875,16 @@ function ShowHelp(field)
     function AutoSave(field, obj)
         {
         if(preventautosave) return false;
+      
+        // add div and change css to prevent user from clicking on input elements while database update underway
+        jQuery('#AutoSaveStatus' + field).parents(".Question").css("position","relative");
+        jQuery('#AutoSaveStatus' + field).parents(".Question").append("<div id=\"prevent_edit_conflict\" style=\"position:absolute; left:0; right:0; top:0; bottom:0;background-color:transparent;\"></div>");
 
         jQuery('#AutoSaveStatus' + field).html('<?php echo $lang["saving"] ?>');
         jQuery('#AutoSaveStatus' + field).show();
         jQuery.post(jQuery('#mainform').attr('action') + '&autosave=true&autosave_field=' + field,jQuery('#mainform').serialize(),
             function(data)
                 {
-                // disable input fields (not including hidden input) for this input group e.g. date range, input text    
-                jQuery(obj).parents(".Question").find("input:text,input:checkbox,input:radio,select,textarea,button").attr("disabled", true);
-
                 saveresult=JSON.parse(data);
                 if (saveresult['result']=="SAVED")
                     {
@@ -922,11 +923,12 @@ function ShowHelp(field)
                     jQuery('#AutoSaveStatus' + field).html('<?php echo $lang["save-error"] ?>');
                     // alert box with error message
                     styledalert('<?php echo $lang["error"] ?>',saveerrors);
-                    }
-                // once autosave has completed, remove disabled attribute    
-                jQuery(obj).parents(".Question").find("input:text,input:checkbox,input:radio,select,textarea,button").removeAttr("disabled");  
+                    }        
                 });
-	}
+        // once autosave has completed, reset css and remove the div that prevents user input      
+        jQuery('#AutoSaveStatus' + field).parents(".Question").css("position","");
+        jQuery('#prevent_edit_conflict').remove();
+	    }
 <?php } 
 
 # Resource next / back browsing.
@@ -1612,15 +1614,17 @@ if (($edit_upload_options_at_top || $upload_review_mode) && display_upload_optio
 }
 
 if($tabs_on_edit)
-{
+    {
+    // group fields by tab_name to prevent multiple tabs with the same name
+    usort($fields, function ($a, $b) 
+        {
+        return $a["tab_name"] <=> $b["tab_name"];     
+        });
     #  -----------------------------  Draw tabs ---------------------------
   $tabname="";
   $tabcount=0;
   if (count($fields)>0 && $fields[0]["tab_name"]!="")
-  { 
-    ?>
-
-    <?php
+    { 
     $extra="";
     $tabname="";
     $tabcount=0;
@@ -1769,10 +1773,13 @@ if ($ref>0 || $show_status_and_access_on_upload===true)
          { ?>
          <div class="Question" id="editmultiple_status"><input name="editthis_status" id="editthis_status" value="yes" type="checkbox" onClick="var q=document.getElementById('question_status');if (q.style.display!='block') {q.style.display='block';} else {q.style.display='none';}">&nbsp;<label id="editthis_status_label" for="editthis<?php echo $n?>"><?php echo $lang["status"]?></label></div>
          <?php
-         } ?>
+         }
+
+    hook("before_status_question");
+    ?>
       <div class="Question <?php if($lockable_fields && in_array("archive",$locked_fields)){echo "lockedQuestion ";} if(isset($save_errors) && is_array($save_errors) && array_key_exists('status',$save_errors)) { echo 'FieldSaveError'; } ?>" id="question_status" <?php if ($multiple) {?>style="display:none;"<?php } ?>>
          <label for="status">
-         <?php echo $lang["status"];
+         <?php echo ($multiple ? "" : $lang["status"]);
          if ($lockable_fields)
             {
             renderLockButton('archive', $locked_fields);
@@ -1879,7 +1886,7 @@ else
                    $editable= (!$ea3)?false:true;
                    if ($groups[$n]["access"]!="") {$access=$groups[$n]["access"];}
                    $perms=explode(",",$groups[$n]["permissions"]);
-                   if (in_array("v",$perms)) {$access=0;$editable=false;} ?>
+                   if (in_array("v",$perms) || $groups[$n]["ref"] == $usergroup) {$access=0;$editable=false;} ?>
                    <tr>
                       <td valign=middle nowrap><?php echo htmlspecialchars($groups[$n]["name"])?>&nbsp;&nbsp;</td>
 
@@ -1891,15 +1898,13 @@ else
                       <td width=10 valign=middle><input type=radio name="custom_<?php echo $groups[$n]["ref"]?>" value="1" <?php if (!$editable) { ?>disabled<?php } ?> <?php if ($access==1) { ?>checked <?php }
                       if ($edit_autosave) {?> onChange="AutoSave('Access',this);"<?php } ?>></td>
 
-                      <td align=left valign=middle><?php echo $lang["access1"]?></td><?php
+                      <td align=left valign=middle><?php echo $lang["access1"]?></td>
 
-                      if (checkperm("v"))
-                        { ?>
                      <td width=10 valign=middle><input type=radio name="custom_<?php echo $groups[$n]["ref"]?>" value="2" <?php if (!$editable) { ?>disabled<?php } ?> <?php if ($access==2) { ?>checked <?php }
                      if ($edit_autosave) {?> onChange="AutoSave('Access',this);"<?php } ?>></td>
 
-                     <td align=left valign=middle><?php echo $lang["access2"]?></td><?php
-                  } ?>
+                     <td align=left valign=middle><?php echo $lang["access2"]?></td>
+
                   </tr><?php
                } ?>
             </table>
