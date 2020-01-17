@@ -34,7 +34,8 @@ if ((!isset($suppress_headers) || !$suppress_headers) && !isset($nocache))
 # Error handling
 function errorhandler($errno, $errstr, $errfile, $errline)
     {
-    global $baseurl, $pagename, $show_report_bug_link, $email_errors, $show_error_messages;
+    global $baseurl, $pagename, $show_report_bug_link, $email_errors, $show_error_messages, $use_error_exception;
+
     if (!error_reporting()) 
         {
         return true;
@@ -43,7 +44,13 @@ function errorhandler($errno, $errstr, $errfile, $errline)
     $error_note = "Sorry, an error has occurred. ";
     $error_info  = "$errfile line $errline: $errstr";
 
-    if (substr(PHP_SAPI, 0, 3) == 'cli')
+
+    if($use_error_exception === true)
+        {
+        $errline = ($errline == "N/A" || !is_numeric($errline) ? NULL : $errline);
+        throw new ErrorException($error_info, 0, E_ALL, $errfile, $errline);
+        }
+    else if (substr(PHP_SAPI, 0, 3) == 'cli')
         {
         echo $error_note;
         if ($show_error_messages) 
@@ -71,6 +78,7 @@ function errorhandler($errno, $errstr, $errfile, $errline)
         </div>
         <?php
         }
+
     if ($email_errors)
         {
         global $email_notify, $email_from, $email_errors_address, $applicationname;
@@ -341,6 +349,7 @@ function sql_connect()
             }
         }
 
+    db_clear_connection_mode();
     return;
     }
 sql_connect();
@@ -937,7 +946,8 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 		}
 
     // Establish DB connection required for this query. Note that developers can force the use of read-only mode if
-    // available using db_set_connection_mode(). An example use case for this is setting encoding and similar operations.
+    // available using db_set_connection_mode(). An example use case for this can be reports.
+    $db_connection_mode = "read_write";
     $db_connection = $db["read_write"];
     if(
         db_use_multiple_connection_modes()
@@ -947,7 +957,12 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
         )
     )
         {
+        $db_connection_mode = "read_only";
         $db_connection = $db["read_only"];
+
+        // In case it needs to retry and developer has forced a read-only
+        $logthis = 2;
+
         db_clear_connection_mode();
         }
 
@@ -989,6 +1004,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 			{
 			# SQL server connection has timed out or been killed. Try to reconnect and run query again.
 			sql_connect();
+            db_set_connection_mode($db_connection_mode);
 			return sql_query($sql,$cache,$fetchrows,$dbstruct,$logthis,false);
 			}
         else
@@ -996,8 +1012,10 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
         	# Check that all database tables and columns exist using the files in the 'dbstruct' folder.
         	if ($dbstruct) # should we do this?
         		{
+                db_clear_connection_mode();
 				check_db_structs();
-        		
+                db_set_connection_mode($db_connection_mode);
+
         		# Try again (no dbstruct this time to prevent an endless loop)
         		return sql_query($sql,$cache,$fetchrows,false,$reconnect);
         		}
@@ -1008,7 +1026,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
         exit();
         }
     elseif ($result===true)
-        {        
+        {
 		return $return_rows;		// no result set, (query was insert, update etc.) - simply return empty array.
         }
 	
@@ -1049,11 +1067,11 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 		$return_row_count++;
 		}
 
-	if ($fetchrows==-1)		// we do not care about the number of rows returned so get out of here
-		{
+    if($fetchrows == -1)
+        {
         mysqli_free_result($result);
-		return $return_rows;
-		}
+        return $return_rows;
+        }
 	
 	# If we haven't returned all the rows ($fetchrows isn't -1) then we need to fill the array so the count
 	# is still correct (even though these rows won't be shown).
@@ -1066,8 +1084,8 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 		{
 		$return_rows=array_pad($return_rows,$query_returned_row_count,0);		// if short then pad out
 		}
-	
-	return $return_rows;        
+
+    return $return_rows;        
     }
 	
 
