@@ -652,6 +652,7 @@ if (getval("ajax","") == "")
 		if(jQuery(window).width() <= 1200)
 			{
 			jQuery('.ResponsiveViewFullSite').css('display', 'block');
+			SetCookie("browse_show","hide");
 			}
 		else
 			{

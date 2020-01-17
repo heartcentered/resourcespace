@@ -409,7 +409,7 @@ $lang["showthumbnails"]="Show thumbs";
 $lang["toggle"]="Toggle";
 $lang["resize"]="Resize";
 $lang["contactsheet"]="Contact sheet";
-$lang["mycollection"]="My Collection";
+$lang["mycollection"]="Default Collection";
 $lang["geolocatecollection"]="Geolocate collection";
 $lang["geoemptycollection"]="You provided an empty collection. Please add assets and try again.";
 $lang["editresearchrequests"]="Edit research requests";
@@ -641,6 +641,8 @@ $lang['user_approved_by']='Approved by';
 $lang['user_autoapproved']='Automatically approved';
 
 $lang["backtoresourceview"]="Back to resource view";
+$lang["backtoshareresource"]="Back to share resource";
+$lang["backtosharecollection"]="Back to share collection";
 $lang["continuetoresourceview"]="Continue to resource view";
 $lang["backtogeolocatecollection"]="Back to geolocate collection";
 
@@ -1274,7 +1276,7 @@ $lang["setup-collectionbarforeground"]="Custom collection bar secondary colour";
 
 # Collection log - actions
 $lang["collectionlog"]="Collection log";
-$lang["collectionlogheader"]="Collection log - %collection"; # %collection will be replaced, e.g. Collection Log - My Collection
+$lang["collectionlogheader"]="Collection log - %collection"; # %collection will be replaced, e.g. Collection Log - Default Collection
 $lang["collectionlog-r"]="Removed resource";
 $lang["collectionlog-R"]="Removed all resources";
 $lang["collectionlog-D"]="Deleted all resources";
@@ -1309,7 +1311,7 @@ $lang["videoplaylist"]="Video playlist";
 $lang["collection"]="Collection";
 $lang["idecline"]="I decline"; # For terms and conditions
 
-$lang["mycollection_notpublic"]="You cannot make your 'My Collection' into a featured or public collection. Please create a new collection for this purpose.";
+$lang["mycollection_notpublic"]="You cannot make your 'Default Collection' into a featured or public collection. Please create a new collection for this purpose.";
 
 $lang["resourcemetadata"]="Resource metadata";
 $lang["columnheader-expires"]=$lang["expires"]="Expires";
@@ -1930,7 +1932,7 @@ $lang["gigabyte-symbol-binary"]="GiB";
 $lang["terabyte-symbol-binary"]="TiB";
 
 $lang["upload_files"]="Upload files";
-$lang["upload_files-to_collection"]="Upload files (to the collection '%collection')"; # %collection will be replaced, e.g. Upload Files (to the collection 'My Collection')
+$lang["upload_files-to_collection"]="Upload files (to the collection '%collection')"; # %collection will be replaced, e.g. Upload Files (to the collection 'Default Collection')
 
 $lang["ascending"] = "Ascending";
 $lang["descending"] = "Descending";
@@ -2157,11 +2159,11 @@ $lang["admin_resource_type_field"]="Manage metadata field";
 $lang["admin_resource_type_field_count"]="Metadata fields";
 $lang["admin_resource_type_field_create"]="Create metadata field called...";
 $lang["admin_resource_type_field_reorder_information"]="To amend the display order, rearrange the rows in the table by dragging and dropping.";
-$lang["admin_resource_type_field_reorder_information_normal_order"]="Reordering is only available when viewing in display order and is set per resource type.";
+$lang["admin_resource_type_field_reorder_information_normal_order"]="Reordering is only available when Resource type 'All' is selected.";
 $lang["admin_resource_type_field_reorder_information_tab_order"]="Reordering is only available when viewing all fields in display order.";
 $lang["admin_resource_type_field_reorder_mode"]="Show in display order to enable reordering of fields using drag and drop";
 $lang["admin_resource_type_field_reorder_mode_all"]="Show all fields in display order to enable reordering of fields using drag and drop";
-$lang["admin_resource_type_field_reorder_select_restype"]="Select a single resource type or global fields in order to enable reordering ";
+$lang["admin_resource_type_field_reorder_select_restype"]="Select 'All' for Resource Type in order to enable reordering ";
 $lang["admin_resource_type_fields"]="Manage metadata fields";
 $lang["admin_resource_type_field_migrate_data_prompt"]="Do you want to migrate existing data?";
 $lang["admin_resource_type_field_migrate_data"]="Migrate existing data to fixed list options";
@@ -2230,7 +2232,6 @@ $lang["all__emailresource"]="[img_gfx/titles/title.gif]<br />\n[fromusername] [l
 $lang["all__emailresourcerequest"]="[img_gfx/titles/title.gif]<br />\n[lang_username] : [username] <br />\n[list] <br />\n[details]<br /><br />\n[lang_clicktoviewresource] <br /><br />\n<a href=\"[url]\">[url]</a>\n";
 $lang["all__footer"]="Powered by <a target=\"_blank\" href=\"https://www.resourcespace.com/\">ResourceSpace Open Source Digital Asset Management</a>";
 $lang["all__researchrequest"]="Let our resources team find the resources you need.";
-$lang["all__searchpanel"]="Search using descriptions, keywords and resource numbers";
 $lang["change_language__introtext"]="Please select your language below.";
 $lang['collection_download__write_metadata_on_download_label'] = 'Embed resource metadata in the downloaded file(s)? Enabling this will slow down your download.';
 $lang["collection_edit__introtext"]="Organise and manage your work by grouping resources together. Create 'Collections' to suit your way of working.\n\n<br />\n\nAll the collections in your list appear in the 'My Collections' panel at the bottom of the screen\n\n<br /><br />\n\n<strong>Private Access</strong> allows only you and and selected users to see the collection. Ideal for grouping resources under projects that you are working on independently and share resources amongst a project team.\n\n<br /><br />\n\n<strong>Public Access</strong> allows all users of the system to search and see the collection. Useful if you wish to share collections of resources that you think others would benefit from using.\n\n<br /><br />\n\nYou can choose whether you allow other users (public or users you have added to your private collection) to add and remove resources or simply view them for reference.";
@@ -2278,7 +2279,7 @@ $lang["team_content__introtext"]="";
 $lang["team_copy__introtext"]="Enter the ID of the resource you would like to copy. Only the resource data will be copied - any uploaded file will not be copied.";
 $lang["team_home__introtext"]="Welcome to the admin area. Use the links below to administer resources, respond to resource requests, manage featured collections and alter system settings.";
 $lang["team_report__introtext"]="Please choose a report and a date range. The report can be opened in Microsoft Excel or similar spreadsheet application.";
-$lang["team_research__introtext"]="Organise and manage 'Research Requests'. <br /><br />Choose 'edit research' to review the request details and assign the research to a team member. It is possible to base a research request on a previous collection by entering the collection ID in the 'edit' screen. <br /><br />Once the research request is assigned, choose 'edit collection' to add the research request to 'My collection' panel. Using the standard tools, it is then possible to add resources to the research. <br /><br />Once the research is complete, choose 'edit research',  change the status to complete and an email is automatically  sent to the user who requested the research. The email contains a link to the research and it is also automatically added to their 'My Collection' panel.";
+$lang["team_research__introtext"]="Organise and manage 'Research Requests'. <br /><br />Choose 'edit research' to review the request details and assign the research to a team member. It is possible to base a research request on a previous collection by entering the collection ID in the 'edit' screen. <br /><br />Once the research request is assigned, choose 'edit collection' to add the research request to 'Default collection' panel. Using the standard tools, it is then possible to add resources to the research. <br /><br />Once the research is complete, choose 'edit research',  change the status to complete and an email is automatically  sent to the user who requested the research. The email contains a link to the research and it is also automatically added to their 'Default Collection' panel.";
 $lang["team_resource__introtext"]="Add individual resources or batch upload resources. To edit individual resources, simply search for the resource, and click edit in the 'Resource Tool' panel on the resource screen.";
 $lang["team_stats__introtext"]="Charts are generated on demand based on live data. Tick the box to print all charts for your selected year.";
 $lang["team_user__introtext"]="Use this section to add, remove and modify users.";

@@ -365,7 +365,7 @@ if($relate_on_upload && $enable_related_resources && getval("uploaded_refs", "")
 
     if($stringlist !== "")
         {
-        exec($php_path . "/php " . dirname(__FILE__)."/tools/relate_resources.php \"" . $stringlist. "\" \"" . $_SERVER["HTTP_HOST"] . "\" > /dev/null 2>&1 &");
+        exec($php_path . "/php " . dirname(__FILE__)."/tools/relate_resources.php \"" . $stringlist. "\" \"" . escapeshellarg($_SERVER["HTTP_HOST"]) . "\" > /dev/null 2>&1 &");
         exit("Resource Relation Started: " . $stringlist);
         }
     }
@@ -984,6 +984,25 @@ function uploaderReference ()
     {
     this.object = null;
     } 
+    plupload.addFileFilter('valid_filename', function(check_filename, file, cb) 
+        {
+        var fname = file.name;
+        if ((fname.match(/[<>"'&()]/) != null) && check_filename == true) 
+            {
+            styledalert("Resource cannot be uploaded", "Reason: invalid characters in filename" );
+
+            this.trigger('Error', 
+                {
+                code : self.FILE_NAME_ERROR,
+                message : ("File name error."),
+                file : file
+                });
+                cb(false);
+            } else 
+            {
+            cb(true);
+            } 
+    });
 plup = new uploaderReference
 
 var pluploadconfig = {
@@ -1016,12 +1035,11 @@ var pluploadconfig = {
                 $allowedlist=explode(",",trim($allowed_extensions));
                 sort($allowedlist);
                 $allowed_extensions=implode(",",$allowedlist);
-                ?>
-                filters : [
-                        {title: "<?php echo $lang["allowedextensions"] ?>",extensions : '<?php echo $allowed_extensions ?>'}
-                ],<?php 
-                } ?>
-
+                $allowed_extension_filters = ",title: '" . $lang["allowedextensions"] . "', extensions : '$allowed_extensions'";
+            } else {
+                $allowed_extension_filters = "";
+            }  ?>
+        filters : {valid_filename: true <?php echo $allowed_extension_filters ?>},
         // Flash settings
         flash_swf_url: '../lib/plupload_2.1.8/Moxie.swf',
 
