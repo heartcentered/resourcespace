@@ -2,8 +2,8 @@
 
 function HookGoogle_visionAllInitialise()
     {
-    global $google_vision_core_fields;
-    config_add_core_fields( "Google vision plugin",$google_vision_core_fields);
+    global $google_vision_fieldvars;
+    config_register_core_fieldvars("Google vision plugin",$google_vision_fieldvars);
     }
 
 function HookGoogle_visionAllBeforeuploadfile($ref)

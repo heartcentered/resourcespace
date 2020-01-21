@@ -1238,7 +1238,7 @@ function get_header_image($full = false)
 *
 * @return void
 */
-function config_add_core_fields($source="BASE", $varnames=array())
+function config_register_core_fieldvars($source="BASE", $varnames=array())
     {
     global $corefields;
     if(!isset($corefields[$source]))
