@@ -25,3 +25,13 @@ if($deleted===true)
     {
     return false;
     }
+
+// Simulate a plugin registering core field variables
+config_register_core_fieldvars("Dummy plugin",array("dummy_plugin_fieldids"));
+$plugin_field = create_resource_type_field("Plugin field title",0,FIELD_TYPE_TEXT_BOX_SINGLE_LINE,"pluginfieldtitle",false);
+$dummy_plugin_fieldids = array($plugin_field);
+$deleted = delete_resource_type_field($plugin_field);
+if($deleted===true)
+    {
+    return false;
+    }
