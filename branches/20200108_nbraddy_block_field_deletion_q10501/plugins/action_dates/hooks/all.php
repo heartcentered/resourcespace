@@ -2,8 +2,8 @@
 
 function HookAction_datesAllInitialise()
     {
-    global $action_dates_core_fields;
-    config_add_core_fields( "Action dates plugin",$action_dates_core_fields);
+    global $action_dates_fieldvars;
+    config_register_core_fieldvars("Action dates plugin",$action_dates_fieldvars);
     }
 
 function HookAction_datesCronCron()

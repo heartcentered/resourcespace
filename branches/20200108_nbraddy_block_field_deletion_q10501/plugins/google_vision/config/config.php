@@ -14,7 +14,7 @@ $google_vision_face_dependent_field=0;
 
 // Add any new vars that specify metadata fields to this array to stop them being deleted if plugin is in use
 // These are added in hooks/all.php
-$google_vision_core_fields = array("google_vision_label_field",
+$google_vision_fieldvars = array("google_vision_label_field",
     "google_vision_landmarks_field",
     "google_vision_text_field",
     "google_vision_face_detect_field",

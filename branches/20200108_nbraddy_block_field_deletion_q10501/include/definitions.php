@@ -256,8 +256,6 @@ define ('ACTIONGROUP_SHARE',        4);
 define ('ACTIONGROUP_RESEARCH',     5);
 define ('ACTIONGROUP_ADVANCED',     6);
 
-
-//$corefields = array();
 $corefields = array(
     "BASE" => array(
         'filename_field',
@@ -288,6 +286,7 @@ $corefields = array(
         'iiif_description_field',
         'iiif_license_field',
         'iiif_sequence_field',
-        'facial_recognition_tag_field'
+        'facial_recognition_tag_field',
+        'join_fields'
         )
     );
