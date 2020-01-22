@@ -17,7 +17,7 @@ function HookFormat_chooserViewReplacedownloadoptions()
 	{
 	global $resource, $ref, $counter, $headline, $lang, $download_multisize, $showprice, $save_as,
 			$direct_link_previews, $hide_restricted_download_sizes, $format_chooser_output_formats,
-            $baseurl_short, $search, $offset, $k, $order_by, $sort, $archive, $direct_download,$baseurl,
+            $baseurl_short, $search, $offset, $k, $order_by, $sort, $archive,$baseurl,
             $urlparams;
 
 	$inputFormat = $resource['file_extension'];
@@ -176,7 +176,7 @@ function HookFormat_chooserViewReplacedownloadoptions()
 						+ selectedFormat.toLowerCase() + profile + '&size=' + sizeInfo[index]['id'];
 
 				jQuery('a#convertDownload').attr('href', <?php
-                        if (!$direct_download)
+                        if ($terms_download)
                             {
                             echo "'" . generateURL($baseurl . "/pages/terms.php",$urlparams) . "&url=' + encodeURIComponent(basePage)";
                             }
@@ -274,7 +274,7 @@ if ($alt_access)
 		<?php if ($access==0){?>
 		<td class="DownloadButton">
 		<?php 		
-		if (!$direct_download || $save_as)
+		if ($terms_download || $save_as)
 			{
 			if(!hook("downloadbuttonreplace"))
 				{
@@ -283,7 +283,7 @@ if ($alt_access)
 			}
 		else { ?>
 			<a href="#" onclick="directDownload('<?php echo $baseurl_short?>pages/download_progress.php?ref=<?php echo urlencode($ref)?>&ext=<?php echo $altfiles[$n]["file_extension"]?>&k=<?php echo urlencode($k)?>&alternative=<?php echo $altfiles[$n]["ref"]?>')"><?php echo $lang["action-download"]?></a>
-		<?php } // end if direct_download ?></td></td>
+		<?php } ?></td></td>
 		<?php } else { ?>
 		<td class="DownloadButton DownloadDisabled"><?php echo $lang["access1"]?></td>
 		<?php } ?>
