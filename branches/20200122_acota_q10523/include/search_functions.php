@@ -1513,11 +1513,16 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
                     case "cu":
                         $sql_filter.=" r.created_by='". intval($propertyval) . "'";
                     break;
+                    case "orientation":
+                        @todo: add logic based on $propertyval
+                        $sql_filter .= "";
+                        break;
                     }
                 }
             }
-            
+
         $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE r.ref > 0 AND $sql_filter GROUP BY r.ref ORDER BY $order_by" . $sql_suffix;
+
         return $returnsql?$sql:sql_query($sql,false,$fetchrows);
         }
 
