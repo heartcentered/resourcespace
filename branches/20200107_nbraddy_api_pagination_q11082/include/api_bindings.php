@@ -15,6 +15,11 @@ function api_do_search($search,$restypes="",$order_by="relevance",$archive=0,$fe
     {
     $fetchrows = ($fetchrows > 0 ? $fetchrows : -1);
     $offset = (int)$offset;
+
+    if($offset>0 && $fetchrows!=-1)
+        {
+        $fetchrows = $fetchrows + $offset;
+        }
     
     # Search capability.
     # Note the subset of the available parameters. We definitely don't want to allow override of permissions or filters.
