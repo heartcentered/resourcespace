@@ -317,7 +317,7 @@ function mix_date($fromdate, $maxoffset=30)
 
     $dateshift = 60*60*24*$maxoffset; // How much should dates be moved
     $newstamp = $tstamp + (mt_rand(-$dateshift,$dateshift));
-    $newdate = date('Y-m-d H:i:s',$newstamp);
+    $newdate = gmdate('Y-m-d H:i:s',$newstamp);
     debug("Converted date " . $fromdate . " to " . $newdate);
 
     // Update cache
@@ -335,7 +335,7 @@ function mix_date($fromdate, $maxoffset=30)
 */
 function mix_text($string, $recurse=true)
     {
-    global $mixcache;
+    global $mixcache, $mime_type_by_extension;
     if(isset($mixcache[md5($string)]))
         {
         return $mixcache[md5($string)];
@@ -349,12 +349,12 @@ function mix_text($string, $recurse=true)
         debug("This is a date - calling mix_date()");
         return mix_date($string);
         }
-    elseif(strpos($string,"http") === 0 && $recurse)
+    elseif(strpos($string,"http") === 0  && $recurse)
         {
         debug("This is a URL - calling mix_url()");
         return mix_url($string);
         }
-    elseif(strpos($string," ") === false && strpos($string,".") != false && $recurse)
+    elseif(in_array(mb_substr($string,strrpos($string,".")),$mime_type_by_extension) && $recurse)
         {
         debug("This is a filename - calling mix_filename()");
         return mix_filename($string);
@@ -382,7 +382,7 @@ function mix_text($string, $recurse=true)
         for($i=0;$i<$mbytelength;$i++)
             {
             $oldchar = mb_substr($string,$i,1);
-            debug( "Converting character #$i '" . $oldchar . "'"); 
+            //debug("Converting character #$i '" . $oldchar . "'"); 
 
             if($i > 3 && strpos($noreplace,$oldchar) === false)
                 {
@@ -435,14 +435,14 @@ function mix_text($string, $recurse=true)
                     {
                     $newchar = substr(str_shuffle($noreplace), 0,1);
                     }
-                debug("New random character: $newchar");
+                //debug("New random character: $newchar");
                 $newstring .= $newchar;        
                 }                         
             else
                 {
                 $newchar = random_char();
                 $newstring .= $newchar;   
-                debug("New random character: " . $newchar);
+                //debug("New random character: " . $newchar);
                 } // End of multibyte conversion
             }
         }
@@ -477,8 +477,26 @@ function alter_data(&$row,$key,$scramblecolumns=array())
 */
 function mix_url($string)
     {
-    $urlparts = explode("://", $string);
-    return $urlparts[0] . "://" . mix_text($urlparts[1], false);    
+    global $mixcache, $baseurl;
+    if(trim($string) == "")
+        {
+        return "";
+        }
+    if(isset($mixcache[md5($string)]))
+        {
+        return $mixcache[md5($string)];
+        }
+    if(strpos($string, "pages") === 0 || strpos($string, "/pages") === 0 || strpos($string,$baseurl) === 0)
+        {
+        // URL is a relative path within the system, don't scramble
+        return $string;
+        }
+    if(strpos($string, "://") !== false )
+        {
+        $urlparts = explode("://", $string);
+        return $urlparts[0] . "://" . mix_text($urlparts[1], false);
+        } 
+    return mix_text($string); 
     }
 
 /**
@@ -490,9 +508,14 @@ function mix_url($string)
 */
 function mix_filename($string)
     {
+    global $mixcache;
     if(trim($string) == "")
         {
         return "";
+        }
+    if(isset($mixcache[md5($string)]))
+        {
+        return $mixcache[md5($string)];
         }
 
     debug("filename: " . $string);

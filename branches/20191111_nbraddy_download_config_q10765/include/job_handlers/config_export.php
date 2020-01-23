@@ -8,8 +8,9 @@ $job_data["obfuscate"] -  Whether table data should be obfuscated or not
 */
 global $baseurl, $userref, $offline_job_delete_completed, $lang,$mysql_bin_path, $mysql_server, $mysql_db,$mysql_username,$mysql_password,$scramble_key;
 $exporttables   = $job_data["exporttables"];
-$obfuscate      = $job_data["obfuscate"];
+$obfuscate      = $job_data["obfuscate"] == "true"; 
 $userref        = $job_data["userref"];
+$separatesql    = $job_data["separatesql"] == "true"; 
 $path           = $mysql_bin_path . "/mysqldump";
 
 $jobuser = get_user($userref);
@@ -29,26 +30,31 @@ if(!isset($joberror))
     $dumppath = get_temp_dir(false,md5($userref . $randstring . $scramble_key)) . "/mysql";
     $zippath = get_temp_dir(false,'user_downloads');
     mkdir($dumppath,0777,true);
-    //mkdir($zippath,0777,true);
 
     $zipfile = $zippath . "/" . $userref . "_" . md5($jobusername . $randstring . $scramble_key) . ".zip";
-    debug("BANG " . $zipfile);
 
     $zip = new ZipArchive();
     $zip->open($zipfile, ZIPARCHIVE::CREATE);
 
     $zip->addFile("../../include/config.php", "config.php");
 
-    $dumpfile = $dumppath . "/resourcespace.sql";
+    
 
     foreach($exporttables as $exporttable=>$exportoptions)
         {
         echo "Exporting table " . $exporttable . "\n";
-    
+        $dumpfile = $separatesql ? $dumppath . "/" . $exporttable . ".sql" : $dumppath . "/resourcespace.sql";
+
         // Add the 'CREATE TABLE' command
         $dumpcmd = $path . " -h " . $mysql_server . " -u " . $mysql_username . ($mysql_password == "" ? "" : " -p" . $mysql_password) . " " . $mysql_db . " --no-data " . $exporttable . " >> " . $dumpfile;
         run_command($dumpcmd);
         
+        $sql = "SET sql_mode = '';\n"; // Ensure that any old values that may not now be valid are still accepted into new DB
+        $output = fopen($dumpfile,'a');
+        fwrite($output,$sql);
+        fclose($output);
+
+
         // Get data 
         $exportcondition = isset($exportoptions["exportcondition"]) ? $exportoptions["exportcondition"] : "";
         $datarows = sql_query("SELECT * FROM " . $exporttable . " " . $exportcondition); 
@@ -71,8 +77,17 @@ if(!isset($joberror))
             $output = fopen($dumpfile,'a');
             fwrite($output,$sql);
             fclose($output);
-            $zip->addFile($dumpfile, "mysql/" . $exporttable . ".sql");
-            }        
+            }
+        
+        if($separatesql)
+            {
+            $zip->addFile($dumpfile, "mysql/" . $exporttable . ".sql");   
+            }
+        }
+    
+    if(!$separatesql)
+        {
+        $zip->addFile($dumpfile, "mysql/resourcespace.sql");   
         }
 
     $zip->close();

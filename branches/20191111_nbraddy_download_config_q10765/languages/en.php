@@ -1107,6 +1107,7 @@ $lang["exportdata"]="Export system data";
 $lang['exportdata-instructions'] = "This will export system configuration data from your system for troubleshooting purposes, obfuscating data if required.</br>Select the information you want to export and click 'Export'. An offline job will be created and you will receive a notification when your download is ready.";
 $lang["exporttype"]="Export type";
 $lang["exportobfuscate"]="Obfuscate exported data?";
+$lang['export_separate_sql']  = "Create separate SQL export files for each database table?";
 $lang['exportcollection'] = "Include resources and associated metadata from this collection ID. Leave blank if no data required";
 $lang["exportcomplete"]="Your system configuration export is ready";
 $lang["exportfailed"]="Your system configuration export failed. Please contact your system administrator";
