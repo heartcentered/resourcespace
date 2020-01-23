@@ -1,7 +1,7 @@
 <?php
 include '../../include/db.php';
 include_once '../../include/general.php';
-include '../../include/authenticate.php'; if(!checkperm('a')) { exit('Permission denied.');}
+include '../../include/authenticate.php'; if(!(checkperm('a') && checkperm("v"))) { exit('Permission denied.');}
 include_once '../../include/config_functions.php';
 
 if(!extension_loaded("zip"))
@@ -14,15 +14,17 @@ elseif(!$offline_job_queue)
     }
 elseif(!isset($mysql_bin_path))
     {
-        $error = str_replace("%%CONFIG_OPTION%%","\$mysql_bin_path",$lang["error_check_config"]);
+    $error = str_replace("%%CONFIG_OPTION%%","\$mysql_bin_path",$lang["error_check_config"]);
     }
 
 $export = getval("export","") != "";
+$exportcollection = getval("exportcollection",0,true);
+$obfuscate = getval("obfuscate","") !== "";
+$separatesql = getval("separatesql","") !== "";
+
 if (!isset($error) && $export!="" && enforcePostRequest(false))
 	{
-    // Create array of tables to export    
-    $obfuscate = getval("obfuscate","") !== "";
-
+    // Create array of tables to export
     $exporttables = array();
     $exporttables["sysvars"] = array();
     $exporttables["preview_size"] = array();
@@ -38,13 +40,16 @@ if (!isset($error) && $export!="" && enforcePostRequest(false))
 
 
     $exporttables["dash_tile"] = array();
-    $exporttables["dash_tile"]["scramble"]=array("title"=>"mix_text","txt"=>"mix_text","url"=>"mix_text");
+    $exporttables["dash_tile"]["scramble"]=array("title"=>"mix_text","txt"=>"mix_text","url"=>"mix_url");
     $exporttables["user_dash_tile"] = array();
     $exporttables["usergroup_dash_tile"] = array();
 
     $exporttables["resource_type"] = array();
     $exporttables["resource_type_field"] = array();
+    $exporttables["resource_type_field"]["scramble"]=array("title"=>"mix_text","name"=>"mix_text");
+
     $exporttables["node"] = array();
+    $exporttables["node"]["scramble"]=array("name"=>"mix_text");
 
     $exporttables["filter"] = array();
     $exporttables["filter"]["scramble"]=array("name"=>"mix_text");
@@ -52,7 +57,6 @@ if (!isset($error) && $export!="" && enforcePostRequest(false))
     $exporttables["filter_rule_node"] = array();
 
     // Optional tables
-    $exportcollection = getval("exportcollection",0,true);
     if($exportcollection != 0)
         {
         // Collections 
@@ -94,7 +98,9 @@ if (!isset($error) && $export!="" && enforcePostRequest(false))
     $job_data["exporttables"]   = $exporttables;
     $job_data["obfuscate"]      = $obfuscate;
     $job_data["userref"]        = $userref;
-    $job_code = "system_export_" . $userref; // unique code for this job, used to prevent duplicate job creation
+    $job_data["separatesql"]    = $separatesql;
+    
+    $job_code = "system_export_" . md5($userref . $exportcollection . ($obfuscate ? "1" : "0") . ($separatesql ? "1" : "0")); // unique code for this job, used to prevent duplicate job creation.
     $jobadded=job_queue_add("config_export",$job_data,$userref,'',$lang["exportcomplete"],$lang["exportfailed"],$job_code);
     if($jobadded!==true)
         {
@@ -107,7 +113,7 @@ if (!isset($error) && $export!="" && enforcePostRequest(false))
     }
 
 
-// This page will create an offline job that creates a zip file containing sytem configuration nformation and data
+// This page will create an offline job that creates a zip file containing system configuration information and data
 /*
 - include/config.php
 - sysvars table
@@ -155,13 +161,19 @@ include '../../include/header.php';
         <input type="hidden" name="export" value="true" />
         <div class="Question">
             <label><?php echo $lang['exportobfuscate']; ?></label>
-            <input type="checkbox" name="obfuscate" value="1" checked />
+            <input type="checkbox" name="obfuscate" value="1"  <?php echo $obfuscate? "checked" : "";?> />
             <div class="clearerleft"> </div>
         </div>
 
         <div class="Question">
             <label><?php echo $lang['exportcollection']; ?></label>
-            <input type="number" name="exportcollection"></input>
+            <input type="number" name="exportcollection" value="<?php echo (int)$exportcollection; ?>"></input>
+            <div class="clearerleft"> </div>
+        </div>
+
+        <div class="Question">
+            <label><?php echo $lang['export_separate_sql']; ?></label>
+            <input type="checkbox" name="separatesql" value="1" <?php echo $separatesql? "checked" : "";?> />
             <div class="clearerleft"> </div>
         </div>
 
