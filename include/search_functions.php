@@ -1516,9 +1516,9 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
 
                     case "orientation":
                         $orientation_filters = array(
-                            "portrait"  => "rdim.height > rdim.width",
-                            "landscape" => "rdim.height < rdim.width",
-                            "square"    => "rdim.height = rdim.width",
+                            "portrait"  => "COALESCE(rdim.height, 0) > COALESCE(rdim.width, 0)",
+                            "landscape" => "COALESCE(rdim.height, 0) < COALESCE(rdim.width, 0)",
+                            "square"    => "COALESCE(rdim.height, 0) = COALESCE(rdim.width, 0)",
                         );
 
                         if(!in_array($propertyval, array_keys($orientation_filters)))
