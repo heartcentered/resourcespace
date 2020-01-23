@@ -1513,9 +1513,20 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
                     case "cu":
                         $sql_filter.=" r.created_by='". intval($propertyval) . "'";
                     break;
+
                     case "orientation":
-                        @todo: add logic based on $propertyval
-                        $sql_filter .= "";
+                        $orientation_filters = array(
+                            "portrait"  => "rdim.height > rdim.width",
+                            "landscape" => "rdim.height < rdim.width",
+                            "square"    => "rdim.height = rdim.width",
+                        );
+
+                        if(!in_array($propertyval, array_keys($orientation_filters)))
+                            {
+                            break;
+                            }
+
+                        $sql_filter .= $orientation_filters[$propertyval];
                         break;
                     }
                 }
