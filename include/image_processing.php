@@ -3293,3 +3293,29 @@ function getSvgSize($file_path)
 
     return $svg_size;
     } 
+
+/**
+* Replace preview image with preview image from another resource/alternaive file
+* 
+* @param int $ref               Resource to replace preview image for
+* @param int $previewresource   Preview source resource ref
+* @param int $previewalt        Preview source resource alternative ref
+* 
+* @return boolean
+*/
+function replace_preview_from_resource($ref,$previewresource,$previewalt)
+    {
+    $prepath = get_resource_path($ref,true,"pre",true);
+    $usepath = get_resource_path($ref,true,"pre",true,'jpg',true,1,false,'',$previewalt);
+    debug("Copying " . $usepath . " to  " . $prepath);
+    if(file_exists($usepath))
+        {
+        $result = copy($usepath,$prepath);
+        if($result === true)
+            {
+            create_previews($ref,false,'jpg',true);
+            return true;
+            }
+        }
+    return false;    
+    }
