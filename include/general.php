@@ -7159,10 +7159,10 @@ function create_resource_type_field($name, $restype = 0, $type = FIELD_TYPE_TEXT
         $shortname = mb_substr(mb_strtolower(str_replace("_","",safe_file_name($name))),0,20);
         }
 
-    $duplicates = (boolean) sql_value(sprintf(
+    $duplicate = (boolean) sql_value(sprintf(
         "SELECT count(ref) AS `value` FROM resource_type_field WHERE `name` = '%s'",
         escape_check($shortname)), 0);
-var_dump($duplicates);die();
+
     sql_query(sprintf("INSERT INTO resource_type_field (title, resource_type, type, `name`, keywords_index) VALUES ('%s', '%s', '%s', '%s', %s)",
         escape_check($name),
         escape_check($restype),
@@ -7172,8 +7172,10 @@ var_dump($duplicates);die();
     ));
     $new = sql_insert_id();
 
-    @todo: if it is duplicate, then the ID of the field will be appended to the shortname
-    // if()
+    if($duplicate)
+        {
+        sql_query(sprintf("UPDATE resource_type_field SET `name` = '%s' WHERE ref = '%s'", escape_check($shortname . $new), $new));
+        }
 
     log_activity(null, LOG_CODE_CREATED, $name, 'resource_type_field', 'title', $new, null, '');
 
