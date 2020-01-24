@@ -869,6 +869,7 @@ $lang['double_width'] = 'Double width';
 $lang['filter_by_table'] = 'Filter by table...';
 $lang['upload_here'] = "Upload here";
 $lang['help-tooltip'] = "Get more information on this page";
+$lang["unauthorized"] = "Unauthorized";
 
 # Pager
 $lang["next"]="Next";

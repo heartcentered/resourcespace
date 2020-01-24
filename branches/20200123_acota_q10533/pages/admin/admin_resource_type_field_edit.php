@@ -87,6 +87,8 @@ function admin_resource_type_field_constraint($ref, $currentvalue)
 	
 function admin_resource_type_field_option($propertyname,$propertytitle,$helptext="",$type, $currentvalue,$fieldtype)
 	{
+    debug("admin_resource_type_field_option(\$propertyname = '{$propertyname}', \$propertytitle = '{$propertytitle}', \$type = '{$type}', \$currentvalue = '{$currentvalue}', \$fieldtype = '{$fieldtype}');");
+
 	global $ref,$lang, $baseurl_short,$FIXED_LIST_FIELD_TYPES, $TEXT_FIELD_TYPES, $daterange_edtf_support, $allfields, $newfield;
 	if($propertyname=="linked_data_field")
 		{
@@ -266,6 +268,7 @@ function admin_resource_type_field_option($propertyname,$propertytitle,$helptext
 			<input name="<?php echo $propertyname ?>" type="text" class="stdwidth" value="<?php echo htmlspecialchars($currentvalue)?>">
 			<?php
 			}
+
 		if($helptext!="")
 				{
 				?>
@@ -275,9 +278,48 @@ function admin_resource_type_field_option($propertyname,$propertytitle,$helptext
 				</div>
 				<?php
 				}
-				?>
-		<div class="clearerleft"> </div>
-	</div>
+
+    if($propertyname == "name")
+        {
+        ?>
+        <script>
+        var validate_shortname_in_progress = false;
+        jQuery("input[name='name']").keyup(function(event)
+            {
+            if(validate_shortname_in_progress)
+                {
+                return;
+                }
+
+            validate_shortname_in_progress = true;
+
+            jQuery.get(
+                baseurl + "/pages/admin/ajax/validate_rtf_shortname.php",
+                {
+                ref: "<?php echo $ref; ?>",
+                new_shortname: event.target.value
+                },
+                function (response)
+                    {
+                    console.log(response.data.valid);
+                    if(typeof response.data !== "undefined" && !response.data.valid)
+                        {
+                        console.log("@todo: add error underneath to tell user there is already a field with the same shortname.");
+                        // add error underneath to tell user there is already a field with the same shortname.
+                        }
+
+                    validate_shortname_in_progress = false;
+                    },
+                "json");
+
+            return;
+            });
+        </script>
+        <?php
+        }
+        ?>
+        <div class="clearerleft"></div>
+    </div>
 	<?php
 	}
 
