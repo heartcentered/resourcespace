@@ -29,7 +29,7 @@ $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
 $previewresource=getval("previewref",0,true);
-$previewalt=getval("previewalt",-1,true);
+$previewresourcealt=getval("previewalt",-1,true);
 
 $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
@@ -65,7 +65,7 @@ if (array_key_exists("userfile",$_FILES) && enforcePostRequest(false))
     }
 elseif($previewresource > 0 && enforcePostRequest(false))
     {
-    $status=replace_preview_from_resource($ref,$previewresource,$previewalt);
+    $status=replace_preview_from_resource($ref,$previewresource,$previewresourcealt);
     if($status !== false)
         {
         redirect(generateurl($baseurl . "/pages/view.php", $urlparams));

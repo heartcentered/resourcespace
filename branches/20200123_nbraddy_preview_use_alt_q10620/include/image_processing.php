@@ -3305,8 +3305,8 @@ function getSvgSize($file_path)
 */
 function replace_preview_from_resource($ref,$previewresource,$previewalt)
     {
-    $prepath = get_resource_path($ref,true,"pre",true);
-    $usepath = get_resource_path($ref,true,"pre",true,'jpg',true,1,false,'',$previewalt);
+    $prepath = get_resource_path($ref,true,"tmp",true);
+    $usepath = get_resource_path($ref,true,"",true,'jpg',true,1,false,'',$previewalt);
     debug("Copying " . $usepath . " to  " . $prepath);
     if(file_exists($usepath))
         {

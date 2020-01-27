@@ -22,6 +22,7 @@ $curpos=getvalescaped("curpos","");
 $go=getval("go","");
 
 $urlparams= array(
+    'resource'          => $ref,
     'ref'				=> $ref,
     'search'			=> $search,
     'order_by'			=> $order_by,
@@ -126,7 +127,6 @@ if($alternative_file_resource_title && isset($resource['field'.$view_title_field
 hook("alt_files_before_list");
 for ($n=0;$n<count($files);$n++)
 	{
-    $urlparams['ref']  = $files[$n]["ref"];
 	?>
 	<!--List Item-->
 	<tr <?php if($files[$n]["ref"]==$alt){echo "class='Highlight' ";} ?>>
@@ -141,11 +141,11 @@ for ($n=0;$n<count($files);$n++)
 	
 	<a href="#" onclick="if (confirm('<?php echo $lang["filedeleteconfirm"]?>')) {document.getElementById('filedelete').value='<?php echo $files[$n]["ref"]?>';document.getElementById('fileform').submit();} return false;"><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a>
 
-	&nbsp;<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/alternative_file.php",$urlparams); ?>"><?php echo LINK_CARET ?><?php echo $lang["action-edit"]?></a>
+	&nbsp;<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/alternative_file.php",$urlparams,array("ref"=>$files[$n]["ref"])); ?>"><?php echo LINK_CARET ?><?php echo $lang["action-edit"]?></a>
 
     <?php if($editaccess)
         {
-        echo "<a href=\"#\" onclick=\"previewform=jQuery('#previewform');jQuery('#previewalt').val('" . $files[$n]["ref"] . "');return CentralSpacePost(previewform,true);\">" . LINK_CARET . $lang["useaspreviewimage"] . "</a>";
+        echo "<a href=\"#\" onclick=\"previewform=jQuery('#previewform');jQuery('#upload_pre_alt').val('" . $files[$n]["ref"] . "');return CentralSpacePost(previewform,true);\">" . LINK_CARET . $lang["useaspreviewimage"] . "</a>";
         } 
     
     hook("refreshinfo"); ?>
@@ -164,9 +164,9 @@ for ($n=0;$n<count($files);$n++)
 
 <form method=post id="previewform" name="previewform" action="<?php echo generateurl($baseurl . "/pages/upload_preview.php",$urlparams) ; ?>">
     <?php generateFormToken("previewform"); ?>
-    <input type=hidden name="ref", id="previewref" value="<?php echo htmlspecialchars($ref); ?>"/>
-    <input type=hidden name="previewref", id="previewref" value="<?php echo htmlspecialchars($ref); ?>"/>
-    <input type=hidden name="previewalt", id="previewalt" value=""/>
+    <input type=hidden name="ref", id="upload_ref" value="<?php echo htmlspecialchars($ref); ?>"/>
+    <input type=hidden name="previewref", id="upload_pre_ref" value="<?php echo htmlspecialchars($ref); ?>"/>
+    <input type=hidden name="previewalt", id="upload_pre_alt" value=""/>
 </form>
 
 <script type="text/javascript">
