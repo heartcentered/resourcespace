@@ -20,6 +20,12 @@ $collectiondata=get_collection($collection);
 $tardisabled=getvalescaped("tardownload","")=="off";
 $include_csv_file = getval('include_csv_file', '');
 
+if($k != "" || (isset($anonymous_login) && $username == $anonymous_login))
+    {
+    // Disable offline jobs as there is currently no way to notify the user upon job completion
+    $offline_job_queue = false;
+    }
+
 $collection_download_tar=true;
 
 // Has tar been disabled or is it not available
