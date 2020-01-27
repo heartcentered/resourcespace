@@ -163,7 +163,42 @@ if ($submitted != "")
 			$exiftool_write_option = true;
 			}
 		}
-					
+
+    if(!$collection_download_tar && $offline_job_queue)
+        {
+        $collection_download_job_data = array(
+            'collection'            => $collection,
+            'result'                => $result,
+            'size'                  => $size,
+            'exiftool_write_option' => $exiftool_write_option,
+            'useoriginal'           => $useoriginal,
+            'id'                    => $id,
+            'includetext'           => $includetext,
+            'count_data_only_types' => $count_data_only_types,
+            'usage'                 => $usage,
+            'usagecomment'          => $usagecomment,
+            'available_sizes'       => $available_sizes,
+            'settings_id'           => $settings_id,
+            'include_csv_file'      => $include_csv_file
+        );
+
+        $modified_job_data = hook("collection_download_modify_job","",array($collection_download_job_data));
+        if(is_array($modified_job_data))
+            {
+            $collection_download_job_data = $modified_job_data;
+            }
+
+        job_queue_add(
+            'collection_download',
+            $collection_download_job_data,
+            '',
+            '',
+            $lang["oj-collection-download-success-text"],
+            $lang["oj-collection-download-failure-text"]);
+
+        exit();
+        }
+
 	# Estimate the total volume of files to zip
 	$totalsize=0;
 	for ($n=0;$n<count($result);$n++)
@@ -241,45 +276,6 @@ if ($submitted != "")
 	// set up an array to store the filenames as they are found (to analyze dupes)
 	$filenames=array();	
 	
-    if(!$collection_download_tar && $offline_job_queue)
-        {
-        $collection_download_job_data = array(
-            'k'                     => $k,
-            'collection'            => $collection,
-            'result'                => $result,
-            'size'                  => $size,
-            'exiftool_write_option' => $exiftool_write_option,
-            'usertempdir'           => $usertempdir,
-            'useoriginal'           => $useoriginal,
-            'archiver'              => $archiver,
-            'id'                    => $id,
-            'includetext'           => $includetext,
-            'progress_file'         => $progress_file,
-            'count_data_only_types' => $count_data_only_types,
-            'usage'                 => $usage,
-            'usagecomment'          => $usagecomment,
-            'available_sizes'       => $available_sizes,
-            'settings_id'           => $settings_id,
-            'include_csv_file'      => $include_csv_file,
-        );
-
-        $modified_job_data = hook("collection_download_modify_job","",array($collection_download_job_data));
-        if(is_array($modified_job_data))
-            {
-            $collection_download_job_data = $modified_job_data;
-            }
-
-        job_queue_add(
-            'collection_download',
-            $collection_download_job_data,
-            '',
-            '',
-            $lang["oj-collection-download-success-text"],
-            $lang["oj-collection-download-failure-text"]);
-
-        exit();
-        }
-
 	# Build a list of files to download
 	for ($n=0;$n<count($result);$n++)
 		{
