@@ -282,6 +282,9 @@ function admin_resource_type_field_option($propertyname,$propertytitle,$helptext
     if($propertyname == "name")
         {
         ?>
+        <div id="shortname_err_msg" class="FormHelp DisplayNone" style="padding:0;clear:left;" >
+            <div class="FormHelpInner PageInformal"><?php echo $lang["warning_duplicate_shortname_fields"]; ?></div>
+        </div>
         <script>
         var validate_shortname_in_progress = false;
         jQuery("input[name='name']").keyup(function(event)
@@ -301,11 +304,15 @@ function admin_resource_type_field_option($propertyname,$propertytitle,$helptext
                 },
                 function (response)
                     {
-                    console.log(response.data.valid);
+                    var err_msg_el = jQuery("#shortname_err_msg");
+                    if(err_msg_el.hasClass("DisplayNone") === false)
+                        {
+                        err_msg_el.addClass("DisplayNone");
+                        }
+
                     if(typeof response.data !== "undefined" && !response.data.valid)
                         {
-                        console.log("@todo: add error underneath to tell user there is already a field with the same shortname.");
-                        // add error underneath to tell user there is already a field with the same shortname.
+                        err_msg_el.removeClass("DisplayNone");
                         }
 
                     validate_shortname_in_progress = false;
