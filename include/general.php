@@ -938,8 +938,7 @@ if (!function_exists("resolve_keyword")){
 function resolve_keyword($keyword,$create=false,$normalize=true,$stem=true)
     {
     global $quoted_string, $stemming;
-    
-    debug("resolving keyword " . $keyword  . ". Create=" . (($create)?"true":"false") . ", normalize:" . ($normalize?"TRUE":"FALSE") . ", stem:" . ($stem?"TRUE":"FALSE"));
+    debug("resolve_keyword(\$keyword = '{$keyword}', \$create = " . ($create ? "true" : "false") . ", \$normalize = " . ($normalize ? "true" : "false") . ", \$stem = " . ($stem ? "true" : "false") . ");");
     $keyword=substr($keyword,0,100); # Trim keywords to 100 chars for indexing, as this is the length of the keywords column.
             
     if(!$quoted_string && $normalize)
@@ -1084,7 +1083,7 @@ function get_image_sizes($ref,$internal=false,$extension="jpg",$onlyifexists=tru
         $returnline["path"]=$path2;
         $returnline["url"] = get_resource_path($ref, false, "", false, $extension);
         $returnline["id"]="";
-        $dimensions = sql_query("select width,height,file_size,resolution,unit from resource_dimensions where resource=". $ref);
+        $dimensions = sql_query("select width,height,file_size,resolution,unit from resource_dimensions where resource=". escape_check($ref));
         
         if (count($dimensions))
             {
@@ -3791,7 +3790,8 @@ function get_grouped_related_keywords($find="",$specific="")
 
 function save_related_keywords($keyword,$related)
     {
-    $keyref=resolve_keyword($keyword,true,false,false);
+    debug("save_related_keywords(\$keyword = $keyword, \$related = $related)");
+    $keyref = resolve_keyword($keyword, true, false, false);
     $s=trim_array(explode(",",$related));
 
     # Blank existing relationships.
