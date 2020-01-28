@@ -5303,7 +5303,7 @@ function convert_path_to_url($abs_path)
 */
 function escape_command_args($cmd, array $args)
     {
-    debug("escape_command_args(\$cmd = '{$cmd}', \$args = " . str_replace(PHP_EOL, " ", print_r($args, true)) . ")");
+    debug("escape_command_args(\$cmd = '{$cmd}', \$args = " . str_replace(PHP_EOL, "", print_r($args, true)) . ")");
 
     if(empty($args))
         {
