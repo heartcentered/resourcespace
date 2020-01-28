@@ -15,8 +15,13 @@ $new_shortname = getvalescaped("new_shortname", "");
 $rtf_data = get_resource_type_field($ref);
 $duplicate = (boolean) sql_value("SELECT count(ref) AS `value` FROM resource_type_field WHERE `name` = '{$new_shortname}'", 0);
 
+$is_synced_field = (
+    (int) $rtf_data["sync_field"] > 0
+    && (bool) sql_value("SELECT count(ref) AS `value` FROM resource_type_field WHERE ref = '{$rtf_data["sync_field"]}' OR sync_field = '{$rtf_data["ref"]}'", false)
+);
+
 $return["data"]["valid"] = true;
-if($rtf_data["name"] != $new_shortname && $duplicate)
+if($rtf_data["name"] != $new_shortname && $duplicate && !$is_synced_field)
     {
     $return["data"]["valid"] = false;
     }
