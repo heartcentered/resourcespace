@@ -527,10 +527,17 @@ foreach($checkparams as $checkparam)
     }
 
 
-if(false === strpos($search, '!') || '!properties' == substr($search, 0, 11))
+if(false === strpos($search, '!') || '!properties' == substr($search, 0, 11) )
     {
     rs_setcookie('search', $search,0,"","",false,false);
     }
+
+# set cookie when search form has been submitted - controls display of search results link in header_links.php
+if( isset($_REQUEST["search"]) && $_REQUEST["search"] == "" )
+    {
+    rs_setcookie('search_form_submit', true,0,"","",false,false);
+    } 
+
 
 hook('searchaftersearchcookie');
 if ($search_includes_resources || substr($search,0,1)==="!")
@@ -1294,7 +1301,7 @@ if($responsive_ui)
     // Generate a URL for drag drop function - fires same URL as "upload here" when dragging.
     $drag_upload_params=render_upload_here_button($searchparams,true);
     $drag_over="";
-    if (is_array($drag_upload_params) && ($display=='thumbs' || $display=='xlthumbs'))
+    if (is_array($drag_upload_params) && ($display=='thumbs' || $display=='xlthumbs') && $order_by == 'collection')
         {
         $drag_url=generateURL("{$GLOBALS['baseurl']}/pages/upload_plupload.php", $drag_upload_params);
         $drag_over=" onDragOver=\"UploadViaDrag('" . $drag_url . "');\" ";
