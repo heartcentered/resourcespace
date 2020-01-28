@@ -869,6 +869,8 @@ $lang['double_width'] = 'Double width';
 $lang['filter_by_table'] = 'Filter by table...';
 $lang['upload_here'] = "Upload here";
 $lang['help-tooltip'] = "Get more information on this page";
+$lang["unauthorized"] = "Unauthorized";
+$lang["warning_duplicate_shortname_fields"] = "There is already a resource type field with the same shortname. Please make it unique!";
 
 # Pager
 $lang["next"]="Next";
@@ -2843,3 +2845,5 @@ $lang["collection_actiontype_999"]      = "Other";
 $lang["unknown_date_format_error"]         = "Error: %row% '%date%' in [%field%] invalid yyyy-mm-dd hh:mm format (partials allowed e.g. no time, day or month)";
 # %row% row number if in csv or similar, %date% field data, %field% field name, %parts% an imploded array of parts that are invalid
 $lang["date_format_error"]                 = "Error: %row% '%date%' in [%field%] invalid entry into the %parts% part(s)";
+# %row% row number if in csv or similar, %date% field data, %field% field name
+$lang["invalid_date_error"]                 = "Error: %row% '%date%' in [%field%] is not a valid date";
