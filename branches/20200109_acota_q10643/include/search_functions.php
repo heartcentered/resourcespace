@@ -55,7 +55,7 @@ function get_advanced_search_fields($archive=false, $hiddenfields="")
 
     $hiddenfields=explode(",",$hiddenfields);
 
-    $fields=sql_query("SELECT *, ref, name, title, type ,order_by, keywords_index, partial_index, resource_type, resource_column, display_field, use_for_similar, iptc_equiv, display_template, tab_name, required, smart_theme_name, exiftool_field, advanced_search, simple_search, help_text, tooltip_text, display_as_dropdown, display_condition, field_constraint FROM resource_type_field WHERE advanced_search=1 AND ((keywords_index=1 AND length(name)>0) OR type IN (" . implode(",",$FIXED_LIST_FIELD_TYPES) . ")) " . (($archive)?"":"and resource_type<>999") . " ORDER BY resource_type,order_by");
+    $fields=sql_query("SELECT *, ref, name, title, type ,order_by, keywords_index, partial_index, resource_type, resource_column, display_field, use_for_similar, iptc_equiv, display_template, tab_name, required, smart_theme_name, exiftool_field, advanced_search, simple_search, help_text, tooltip_text, display_as_dropdown, display_condition, field_constraint, active FROM resource_type_field WHERE advanced_search=1 AND active=1 AND ((keywords_index=1 AND length(name)>0) OR type IN (" . implode(",",$FIXED_LIST_FIELD_TYPES) . ")) " . (($archive)?"":"and resource_type<>999") . " ORDER BY resource_type,order_by");
     # Apply field permissions and check for fields hidden in advanced search
     for ($n=0;$n<count($fields);$n++)
         {
@@ -1513,11 +1513,27 @@ function search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$or
                     case "cu":
                         $sql_filter.=" r.created_by='". intval($propertyval) . "'";
                     break;
+
+                    case "orientation":
+                        $orientation_filters = array(
+                            "portrait"  => "COALESCE(rdim.height, 0) > COALESCE(rdim.width, 0)",
+                            "landscape" => "COALESCE(rdim.height, 0) < COALESCE(rdim.width, 0)",
+                            "square"    => "COALESCE(rdim.height, 0) = COALESCE(rdim.width, 0)",
+                        );
+
+                        if(!in_array($propertyval, array_keys($orientation_filters)))
+                            {
+                            break;
+                            }
+
+                        $sql_filter .= $orientation_filters[$propertyval];
+                        break;
                     }
                 }
             }
-            
+
         $sql=$sql_prefix . "SELECT DISTINCT r.hit_count score, $select FROM resource r $sql_join WHERE r.ref > 0 AND $sql_filter GROUP BY r.ref ORDER BY $order_by" . $sql_suffix;
+
         return $returnsql?$sql:sql_query($sql,false,$fetchrows);
         }
 
