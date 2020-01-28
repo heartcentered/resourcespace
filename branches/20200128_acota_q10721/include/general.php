@@ -5303,6 +5303,8 @@ function convert_path_to_url($abs_path)
 */
 function escape_command_args($cmd, array $args)
     {
+    debug("escape_command_args(\$cmd = '{$cmd}', \$args = " . str_replace(PHP_EOL, " ", print_r($args, true)) . ")");
+
     if(empty($args))
         {
         return $cmd;
@@ -5336,9 +5338,9 @@ function escape_command_args($cmd, array $args)
 function run_command($command, $geterrors = false, array $params = array())
     {
     global $debug_log;
-    debug("CLI command: $command");
 
     $command = escape_command_args($command, $params);
+    debug("CLI command: $command");
 
     $descriptorspec = array(
         1 => array("pipe", "w") // stdout is a pipe that the child will write to
