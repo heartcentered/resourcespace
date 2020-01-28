@@ -365,7 +365,7 @@ if($relate_on_upload && $enable_related_resources && getval("uploaded_refs", "")
 
     if($stringlist !== "")
         {
-        exec($php_path . "/php " . dirname(__FILE__)."/tools/relate_resources.php \"" . $stringlist. "\" \"" . $_SERVER["HTTP_HOST"] . "\" > /dev/null 2>&1 &");
+        exec($php_path . "/php " . dirname(__FILE__)."/tools/relate_resources.php \"" . $stringlist. "\" \"" . escapeshellarg($_SERVER["HTTP_HOST"]) . "\" > /dev/null 2>&1 &");
         exit("Resource Relation Started: " . $stringlist);
         }
     }
@@ -983,26 +983,37 @@ var resource_ids_for_alternatives = [];
 function uploaderReference ()
     {
     this.object = null;
-    } 
-    plupload.addFileFilter('valid_filename', function(check_filename, file, cb) 
-        {
-        var fname = file.name;
-        if ((fname.match(/[<>"'&()]/) != null) && check_filename == true) 
-            {
-            styledalert("Resource cannot be uploaded", "Reason: invalid characters in filename" );
+    }
 
-            this.trigger('Error', 
-                {
-                code : self.FILE_NAME_ERROR,
-                message : ("File name error."),
-                file : file
-                });
-                cb(false);
-            } else 
+
+
+
+plupload.addFileFilter('valid_filename', function(check_filename, file, cb) 
+    {
+    var fname = file.name;
+
+    var pattern = "[\"<>`=&]"; // regex pattern to escape characters in file name
+    // escape file name
+    var fname_escaped = escape_HTML(fname, pattern);
+    file.name = fname_escaped;
+
+    if ((fname.match(pattern) != null) && check_filename == true) 
+        {
+        styledalert("Resource cannot be uploaded", "Reason: invalid characters in filename" );
+
+        this.trigger('Error', 
             {
-            cb(true);
-            } 
+            code : self.FILE_NAME_ERROR,
+            message : ("File name error."),
+            file : file
+            });
+            cb(false);
+        } else 
+        {
+        cb(true);
+        } 
     });
+
 plup = new uploaderReference
 
 var pluploadconfig = {

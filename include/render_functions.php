@@ -166,7 +166,8 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
         
         function checkSearchDisplayCondition<?php echo $field["ref"];?>(node)
 			{
-            field<?php echo $field['ref']; ?>status    = jQuery('#question_<?php echo $n; ?>').css('display');
+            var idname<?php echo $field['ref']; ?>     = "<?php echo $forsearchbar?"#simplesearch_".$field['ref']:"#question_".$n; ?>";
+            field<?php echo $field['ref']; ?>status    = jQuery(idname<?php echo $field['ref']; ?>).css('display');
 			newfield<?php echo $field['ref']; ?>status = 'none';
 			newfield<?php echo $field['ref']; ?>show   = false;
             newfield<?php echo $field['ref']; ?>provisional = true;
@@ -212,7 +213,6 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
                         {
                         $jquery_condition_selector = "select[name=\"nodes_searched[{$scriptcondition['field']}]\"] option:selected";
                         }
-						
 						?>
                     if(!newfield<?php echo $field['ref']; ?>show)
                         {
@@ -241,15 +241,18 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
 
                 if(newfield<?php echo $field['ref']; ?>status != field<?php echo $field['ref']; ?>status)
                     {
-                    jQuery('#question_<?php echo $n ?>').slideToggle();
-
-                    if(jQuery('#question_<?php echo $n ?>').css('display') == 'block')
+                    jQuery(idname<?php echo $field['ref']; ?>).slideToggle(function()
                         {
-                        jQuery('#question_<?php echo $n ?>').css('border-top', '');
+                        jQuery(idname<?php echo $field['ref']; ?>).clearQueue();
+                        });
+
+                    if(jQuery(idname<?php echo $field['ref']; ?>).css('display') == 'block')
+                        {
+                        jQuery(idname<?php echo $field['ref']; ?>).css('border-top', '');
                         }
                     else
                         {
-                        jQuery('#question_<?php echo $n ?>').css('border-top', 'none');
+                        jQuery(idname<?php echo $field['ref']; ?>).css('border-top', 'none');
                         }
                     }
         }

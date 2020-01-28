@@ -467,6 +467,7 @@ function get_resource_type_field($field)
                 personal_data,
                 include_in_csv_export,
                 browse_bar,
+                active,
                 read_only" . hook('add_resource_type_field_column') . "
            FROM resource_type_field
           WHERE ref = '{$field}'
@@ -526,6 +527,7 @@ function get_resource_field_data($ref,$multi=false,$use_permissions=true,$origin
           LEFT JOIN resource_data d
                  ON d.resource_type_field = f1.ref AND d.resource = '" . escape_check($ref) . "'
               WHERE (
+                            f1.active=1 and
                             f1.type NOT IN ({$node_fields_list})
                         AND (" . ($multi ? "1 = 1" : "f1.resource_type = 0 OR f1.resource_type = 999 OR f1.resource_type = '{$rtype}'") . ")
                     )
@@ -545,6 +547,7 @@ function get_resource_field_data($ref,$multi=false,$use_permissions=true,$origin
           LEFT JOIN node AS n ON n.resource_type_field = f2.ref
           LEFT JOIN resource_node AS rn ON rn.node = n.ref AND rn.resource = '" . escape_check($ref) . "'
               WHERE (
+                            f2.active=1 and
                             f2.type IN ({$node_fields_list})
                         AND (" . ($multi ? "1 = 1" : "f2.resource_type = 0 OR f2.resource_type = 999 OR f2.resource_type = '{$rtype}'") . ")
                     )
@@ -935,8 +938,7 @@ if (!function_exists("resolve_keyword")){
 function resolve_keyword($keyword,$create=false,$normalize=true,$stem=true)
     {
     global $quoted_string, $stemming;
-    
-    debug("resolving keyword " . $keyword  . ". Create=" . (($create)?"true":"false") . ", normalize:" . ($normalize?"TRUE":"FALSE") . ", stem:" . ($stem?"TRUE":"FALSE"));
+    debug("resolve_keyword(\$keyword = '{$keyword}', \$create = " . ($create ? "true" : "false") . ", \$normalize = " . ($normalize ? "true" : "false") . ", \$stem = " . ($stem ? "true" : "false") . ");");
     $keyword=substr($keyword,0,100); # Trim keywords to 100 chars for indexing, as this is the length of the keywords column.
             
     if(!$quoted_string && $normalize)
@@ -1081,7 +1083,7 @@ function get_image_sizes($ref,$internal=false,$extension="jpg",$onlyifexists=tru
         $returnline["path"]=$path2;
         $returnline["url"] = get_resource_path($ref, false, "", false, $extension);
         $returnline["id"]="";
-        $dimensions = sql_query("select width,height,file_size,resolution,unit from resource_dimensions where resource=". $ref);
+        $dimensions = sql_query("select width,height,file_size,resolution,unit from resource_dimensions where resource=". escape_check($ref));
         
         if (count($dimensions))
             {
@@ -3788,7 +3790,8 @@ function get_grouped_related_keywords($find="",$specific="")
 
 function save_related_keywords($keyword,$related)
     {
-    $keyref=resolve_keyword($keyword,true,false,false);
+    debug("save_related_keywords(\$keyword = $keyword, \$related = $related)");
+    $keyref = resolve_keyword($keyword, true, false, false);
     $s=trim_array(explode(",",$related));
 
     # Blank existing relationships.
@@ -4637,11 +4640,11 @@ function get_hidden_indexed_fields()
     if (is_array($hidden_fields_cache)){
         return $hidden_fields_cache;
     } else { 
-        $fields=sql_query("select ref from resource_type_field where length(name)>0");
+        $fields=sql_query("select ref,active from resource_type_field where length(name)>0");
         # Apply field permissions
         for ($n=0;$n<count($fields);$n++)
             {
-            if (metadata_field_view_access($fields[$n]["ref"]))
+            if ($fields[$n]["active"]==1 && metadata_field_view_access($fields[$n]["ref"]))
                 {
                 # Visible field
                 }
@@ -6162,13 +6165,24 @@ function get_indexed_resource_type_fields()
     return sql_array("select ref as value from resource_type_field where keywords_index=1");
     }
 
-function get_resource_type_fields($restypes="", $field_order_by="ref", $field_sort="asc", $find="", $fieldtypes = array())
+function get_resource_type_fields($restypes="", $field_order_by="ref", $field_sort="asc", $find="", $fieldtypes = array(), $include_inactive=false)
     {
     // Gets all metadata fields, optionally for a specified array of resource types 
     $conditionsql="";
     if(is_array($restypes))
         {
         $conditionsql = " WHERE resource_type IN (" . implode(",",$restypes) . ")";
+        }
+    if ($include_inactive==false)
+        {
+        if($conditionsql != "")
+            {
+            $conditionsql .= " AND active=1 ";
+            }
+        else
+            {
+            $conditionsql .= " WHERE active=1 ";
+            }
         }
     if($find!="")
         {
@@ -6241,8 +6255,9 @@ function get_resource_type_fields($restypes="", $field_order_by="ref", $field_so
                fits_field,
                personal_data,
                include_in_csv_export,
-               browse_bar
-          FROM resource_type_field" . $conditionsql . " ORDER BY " . escape_check($field_order_by) . " " . escape_check($field_sort));
+               browse_bar,
+               active
+          FROM resource_type_field" . $conditionsql . " ORDER BY active desc," . escape_check($field_order_by) . " " . escape_check($field_sort));
 
     return $allfields;
     }
@@ -7139,10 +7154,27 @@ function create_resource_type_field($name, $restype = 0, $type = FIELD_TYPE_TEXT
         $shortname = mb_substr(mb_strtolower(str_replace("_","",safe_file_name($name))),0,20);
         }
 
-    sql_query("insert into resource_type_field (title,resource_type, type, name, keywords_index) values ('" . escape_check($name) . "','" . escape_check($restype) . "','" . escape_check($type) . "','" . escape_check($shortname) . "'," . ($index ? "1" : "0") . ")");
-    $new=sql_insert_id();
-    log_activity(null,LOG_CODE_CREATED,$name,'resource_type_field','title',$new,null,'');
-    return $new;    
+    $duplicate = (boolean) sql_value(sprintf(
+        "SELECT count(ref) AS `value` FROM resource_type_field WHERE `name` = '%s'",
+        escape_check($shortname)), 0);
+
+    sql_query(sprintf("INSERT INTO resource_type_field (title, resource_type, type, `name`, keywords_index) VALUES ('%s', '%s', '%s', '%s', %s)",
+        escape_check($name),
+        escape_check($restype),
+        escape_check($type),
+        escape_check($shortname),
+        ($index ? "1" : "0")
+    ));
+    $new = sql_insert_id();
+
+    if($duplicate)
+        {
+        sql_query(sprintf("UPDATE resource_type_field SET `name` = '%s' WHERE ref = '%s'", escape_check($shortname . $new), $new));
+        }
+
+    log_activity(null, LOG_CODE_CREATED, $name, 'resource_type_field', 'title', $new, null, '');
+
+    return $new;
     }
 
 

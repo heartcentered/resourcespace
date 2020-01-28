@@ -78,7 +78,7 @@ function save_resource_data($ref,$multi,$autosave_field="")
 	# Also re-index all keywords from indexable fields.
 	global $lang, $auto_order_checkbox, $userresourcedefaults, $multilingual_text_fields,
            $languages, $language, $user_resources_approved_email, $FIXED_LIST_FIELD_TYPES,
-           $DATE_FIELD_TYPES, $range_separator, $reset_date_field, $reset_date_upload_template,
+           $DATE_FIELD_TYPES, $date_validator, $range_separator, $reset_date_field, $reset_date_upload_template,
            $edit_contributed_by, $new_checksums, $upload_review_mode, $blank_edit_template, $is_template;
 
 	hook("befsaveresourcedata", "", array($ref));
@@ -321,45 +321,35 @@ function save_resource_data($ref,$multi,$autosave_field="")
 					
 					$new_checksums[$fields[$n]['ref']] = md5(implode(",",$daterangenodes));
                     }
-				elseif(in_array($fields[$n]['type'], $DATE_FIELD_TYPES))
-					{
+                elseif(in_array($fields[$n]['type'], $DATE_FIELD_TYPES))
+                    {
                     # date type, construct the value from the date/time dropdowns
-                    $val=sprintf("%04d", getvalescaped("field_" . $fields[$n]["ref"] . "-y",""));
-                    if ((int)$val<=0) 
+                    $year=sprintf("%04d", getvalescaped("field_" . $fields[$n]["ref"] . "-y",""));
+                    $month=getval("field_" . $fields[$n]["ref"] . "-m","");
+                    $day=getval("field_" . $fields[$n]["ref"] . "-d","");
+                    $hour=getval("field_" . $fields[$n]["ref"] . "-h","");
+                    $minute=getval("field_" . $fields[$n]["ref"] . "-i","");
+                    $val="";
+
+                    $year!=""&&$year!="0000"?$val.=$year:$val.="year";
+                    $month!=""?$val.="-".$month:$val.="-month";
+                    $day!=""?$val.="-".$day:$val.="-day";
+                    $hour!=""?$val.=" ".$hour:$val.=" hh";
+                    $minute!=""?$val.=":".$minute:$val.=":mm";
+                    strpos($val, "year-month-day")!==false?$val=str_replace("year-month-day", "", $val):$val=$val;
+                    strpos($val, "-month-day")!==false?$val=str_replace("-month-day", "", $val):$val=$val;
+                    strpos($val, "-day")!==false&&$month!=""?$val=str_replace("-day", "", $val):$val=$val;
+                    strpos($val, " hh:mm")!==false?$val=str_replace(" hh:mm", "", $val):$val=$val;
+
+                    if ($date_validator && !$val == "")
                         {
-                        $val="";
-                        }
-                    elseif (($field=getvalescaped("field_" . $fields[$n]["ref"] . "-m",""))!="") 
-                        {
-                        $val.="-" . $field;
-                        if (($field=getvalescaped("field_" . $fields[$n]["ref"] . "-d",""))!="") 
+                        $valid_date = str_replace("%field%", $fields[$n]['name'], check_Date_Format($val));
+                        $valid_date = str_replace("%row% ", "", $valid_date);
+                        if ($valid_date && !$valid_date == "") 
                             {
-                            $val.="-" . $field;
-                            if (($field=getval("field_" . $fields[$n]["ref"] . "-h",""))!="")
-                                {
-                                $val.=" " . $field . ":";
-                                if (($field=getvalescaped("field_" . $fields[$n]["ref"] . "-i",""))!="") 
-                                    {
-                                    $val.=$field;
-                                    } 
-                                else 
-                                    {
-                                    $val.="00";
-                                    }
-                                }
-                            else 
-                                {
-                                $val.=" 00:00";
-                                }
+                            $errors[$fields[$n]["ref"]] = $valid_date;
+                            continue;
                             }
-                         else 
-                            {
-                            $val.="-00 00:00";
-                            }
-                        }
-                    else 
-                        {
-                        $val.="-00-00 00:00";
                         }
 
                     // Upload template: always reset to today's date, if configured and field is hidden
@@ -594,13 +584,13 @@ function save_resource_data($ref,$multi,$autosave_field="")
        }
 
     // Update resource_node table
-    db_begin_transaction();
+    db_begin_transaction("update_resource_node");
     delete_resource_nodes($ref, $nodes_to_remove);
     if(0 < count($nodes_to_add))
         {
         add_resource_nodes($ref, $nodes_to_add, false);
         }
-    db_end_transaction();
+    db_end_transaction("update_resource_node");
 
     // Autocomplete any blank fields without overwriting any existing metadata
     autocomplete_blank_fields($ref, false);
@@ -1783,14 +1773,14 @@ function update_field($resource, $field, $value, array &$errors = array(), $log=
             }
 
         # Update resource_node table
-        db_begin_transaction();
+        db_begin_transaction("update_field_{$field}");
         delete_resource_nodes($resource,$nodes_to_remove);
 
         if(count($nodes_to_add)>0)
             {
             add_resource_nodes($resource,$nodes_to_add, false);
             }
-        db_end_transaction();
+        db_end_transaction("update_field_{$field}");
         }
 
     if ($fieldinfo["keywords_index"])
@@ -5588,7 +5578,7 @@ function copy_locked_fields($ref, &$fields,&$all_selected_nodes,$locked_fields,$
                                 }
                             $resource_type_field=$field_nodes[$key]["resource_type_field"];
                             $values_string = implode($node_vals,",");
-                            sql_query("update resource set field".$resource_type_field."='".escape_check(truncate_join_field_value(strip_leading_comma($values_string)))."' where ref='$ref'");
+                            sql_query("update resource set field".$resource_type_field."='".escape_check(truncate_join_field_value(strip_leading_comma($values_string)))."' where ref='".escape_check($ref)."'");
                             }
                         } 
                     }
@@ -5745,7 +5735,7 @@ function get_extension(array $resource, $size)
         }
 
     // Offline collection download job may have requested a specific file extension
-    $pextension = $size == 'original' ? $resource['file_extension'] : (isset($job_ext) && trim($job_ext) != "") ? $job_ext : 'jpg';
+    $pextension = $size == 'original' ? $resource['file_extension'] : ((isset($job_ext) && trim($job_ext) != "") ? $job_ext : 'jpg');
 
     $replace_extension = hook('replacedownloadextension', '', array($resource, $pextension));
     if(trim($replace_extension) !== '')
