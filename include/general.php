@@ -5292,12 +5292,53 @@ function convert_path_to_url($abs_path)
     return str_ireplace($rootDir, $baseurl, $abs_path);
     }
 
-function run_command($command, $geterrors=false)
+
+/**
+* Escaping an unsafe command string
+* 
+* @param  string  $cmd   Unsafe command to run
+* @param  array   $args  List of placeholders and their values which will have to be escapedshellarg()d.
+* 
+* @return string Escaped command string
+*/
+function escape_command_args($cmd, array $args)
     {
-    # Works like system(), but returns the complete output
-    # string rather than just the last line of it.
+    if(empty($args))
+        {
+        return $cmd;
+        }
+
+    foreach($args as $placeholder => $value)
+        {
+        if(strpos($cmd, $placeholder) === false)
+            {
+            trigger_error("Unable to find arg '{$placeholder}' in '{$cmd}'. Make sure the placeholder exists in the command string");
+            }
+
+        $cmd = str_replace($placeholder, escapeshellarg($value), $cmd);
+        }
+
+    return $cmd;
+    }
+
+
+/**
+* Utility function which works like system(), but returns the complete output string rather than just the last line of it.
+* 
+* @uses escape_command_args()
+* 
+* @param  string   $command    Command to run
+* @param  boolean  $geterrors  Set to TRUE to include errors in the output
+* @param  array    $params     List of placeholders and their values which will have to be escapedshellarg()d.
+* 
+* @return string Command output
+*/
+function run_command($command, $geterrors = false, array $params = array())
+    {
     global $debug_log;
     debug("CLI command: $command");
+
+    $command = escape_command_args($command, $params);
 
     $descriptorspec = array(
         1 => array("pipe", "w") // stdout is a pipe that the child will write to
