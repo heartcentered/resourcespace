@@ -17,7 +17,7 @@ $offset=getvalescaped("offset",0);
 if (array_key_exists("find",$_POST)) {$offset=0;} # reset page counter when posting
     
     
-$restypefilter=getvalescaped("restypefilter",0);
+$restypefilter=getvalescaped("restypefilter","");
 $restypesfilter=($restypefilter != "")?array($restypefilter):"";
 $field_order_by=getvalescaped("field_order_by","order_by");
 $field_sort=getvalescaped("field_sort","asc");
@@ -51,7 +51,7 @@ $url=generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_p
 if (getval("newfield","")!="" && enforcePostRequest(false))
     {
     $newfieldname = getvalescaped("newfield","");
-    $newfieldtype = getval("fieldtype",0,true);    
+    $newfieldtype = getval("field_type",0,true);    
     $newfieldrestype = getvalescaped("newfieldrestype",0,true);
     $new = create_resource_type_field($newfieldname, $newfieldrestype, $newfieldtype, "", true);
     redirect($baseurl_short . 'pages/admin/admin_resource_type_field_edit.php?ref=' . $new . '&newfield=true');
@@ -94,7 +94,7 @@ function addColumnHeader($orderName, $labelKey)
     echo "<p>" . text("introtext") . "</p>";
     }
  
-$fields=get_resource_type_fields($restypesfilter, $field_order_by, $field_sort, $find);
+$fields=get_resource_type_fields($restypesfilter, $field_order_by, $field_sort, $find, array(),true);
 $resource_types=sql_query("select ref, name from resource_type");
 $arr_restypes=array();
 foreach($resource_types as $resource_type)
@@ -178,7 +178,7 @@ if (!hook('replacetabnamecolumnheader'))
 for ($n=0;$n<count($fields);$n++)
     {
     ?>
-    <tr class="resource_type_field_row" id="field_sort_<?php echo $fields[$n]["ref"];?>">
+    <tr class="resource_type_field_row <?php if ($fields[$n]["active"]==0) { ?>FieldDisabled<?php } ?>" id="field_sort_<?php echo $fields[$n]["ref"];?>">
         <td>
             <?php echo str_highlight ($fields[$n]["ref"],$find,STR_HIGHLIGHT_SIMPLE);?>
         </td>   
@@ -285,6 +285,20 @@ for ($n=0;$n<count($fields);$n++)
             <div class="tickset">
              <input type="hidden" name="newfieldrestype" value="<?php echo htmlspecialchars($restypefilter) ?>""/>   
              <div class="Inline"><input type=text name="newfield" id="newtype" maxlength="100" class="shrtwidth" /></div>
+
+            <div class="Inline"><select name="field_type" class="medwidth">
+         
+            <?php
+            foreach($field_types as $field_type=>$field_type_description)
+                {
+                ?>
+                <option value="<?php echo $field_type ?>"><?php echo $lang[$field_type_description] ; ?></option>
+                <?php
+                }
+            ?>
+            </select>
+            </div>
+
              <div class="Inline"><input name="Submit" type="submit" value="&nbsp;&nbsp;<?php echo $lang["create"] ?>&nbsp;&nbsp;" /></div>
             </div>
             <div class="clearerleft"> </div>

@@ -118,7 +118,8 @@ $lang["property-field_id"]="Field id";
 $lang["property-title"]="Title";
 $lang["property-resource_type"]="Resource type";
 $lang["property-field_type"]="Field type";
-$lang["property-field_constraint"]="Field Constraint";
+$lang["property-field_active"]="Enabled";
+$lang["property-field_constraint"]="Field constraint";
 $lang["property-field_constraint-none"]="None";
 $lang["property-field_constraint-number"]="Number";
 $lang["property-field_constraint-singlekeyword"]="Single select";
@@ -868,6 +869,8 @@ $lang['double_width'] = 'Double width';
 $lang['filter_by_table'] = 'Filter by table...';
 $lang['upload_here'] = "Upload here";
 $lang['help-tooltip'] = "Get more information on this page";
+$lang["unauthorized"] = "Unauthorized";
+$lang["warning_duplicate_shortname_fields"] = "There is already a resource type field with the same shortname. Please make it unique!";
 
 # Pager
 $lang["next"]="Next";
@@ -1767,7 +1770,7 @@ $lang["geographicsearch"]="Geographic search";
 $lang["geographicsearchresults"]="Geographic search results";
 
 $lang["geographicsearch_help"]="Drag to select a search area.";
-
+$lang["error-geotile-server-error"] = "Unable to retrieve tiles from your tile server. Please check your \$geo_tile_servers configuration setting";
 $lang["purge"]="Purge";
 $lang["purgeuserstitle"]="Purge users";
 $lang["purgeusers"]="Purge users";
@@ -1828,7 +1831,6 @@ $lang["error-403-forbidden"] = "403 Forbidden.";
 $lang["error-plugin-not-activated"] = "Plugin not activated";
 $lang["error-failed-to-delete"] = "Failed to delete";
 $lang["error-failed-to-move"] = "Failed to move";
-
 
 $lang["no-options-available"]="No options available";
 $lang["header-upload-subtitle"] = "Step %number: %subtitle"; # %number, %subtitle will be replaced, e.g. Step 1: Specify Default Content For New Resources
@@ -2843,3 +2845,5 @@ $lang["collection_actiontype_999"]      = "Other";
 $lang["unknown_date_format_error"]         = "Error: %row% '%date%' in [%field%] invalid yyyy-mm-dd hh:mm format (partials allowed e.g. no time, day or month)";
 # %row% row number if in csv or similar, %date% field data, %field% field name, %parts% an imploded array of parts that are invalid
 $lang["date_format_error"]                 = "Error: %row% '%date%' in [%field%] invalid entry into the %parts% part(s)";
+# %row% row number if in csv or similar, %date% field data, %field% field name
+$lang["invalid_date_error"]                 = "Error: %row% '%date%' in [%field%] is not a valid date";
