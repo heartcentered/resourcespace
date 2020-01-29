@@ -118,7 +118,7 @@ include '../../include/header.php';
         </div>
 
 
-
+        <?php generateFormToken("download_config"); ?>
     </form>
     
 </div>
