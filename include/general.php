@@ -938,8 +938,7 @@ if (!function_exists("resolve_keyword")){
 function resolve_keyword($keyword,$create=false,$normalize=true,$stem=true)
     {
     global $quoted_string, $stemming;
-    
-    debug("resolving keyword " . $keyword  . ". Create=" . (($create)?"true":"false") . ", normalize:" . ($normalize?"TRUE":"FALSE") . ", stem:" . ($stem?"TRUE":"FALSE"));
+    debug("resolve_keyword(\$keyword = '{$keyword}', \$create = " . ($create ? "true" : "false") . ", \$normalize = " . ($normalize ? "true" : "false") . ", \$stem = " . ($stem ? "true" : "false") . ");");
     $keyword=substr($keyword,0,100); # Trim keywords to 100 chars for indexing, as this is the length of the keywords column.
             
     if(!$quoted_string && $normalize)
@@ -1084,7 +1083,7 @@ function get_image_sizes($ref,$internal=false,$extension="jpg",$onlyifexists=tru
         $returnline["path"]=$path2;
         $returnline["url"] = get_resource_path($ref, false, "", false, $extension);
         $returnline["id"]="";
-        $dimensions = sql_query("select width,height,file_size,resolution,unit from resource_dimensions where resource=". $ref);
+        $dimensions = sql_query("select width,height,file_size,resolution,unit from resource_dimensions where resource='" . escape_check($ref) . "'");
         
         if (count($dimensions))
             {
@@ -3791,7 +3790,8 @@ function get_grouped_related_keywords($find="",$specific="")
 
 function save_related_keywords($keyword,$related)
     {
-    $keyref=resolve_keyword($keyword,true,false,false);
+    debug("save_related_keywords(\$keyword = $keyword, \$related = $related)");
+    $keyref = resolve_keyword($keyword, true, false, false);
     $s=trim_array(explode(",",$related));
 
     # Blank existing relationships.
@@ -4393,27 +4393,14 @@ function check_access_key($resource,$key)
             
             if($external_share_groups_config_options || stripos(trim(isset($userinfo[0]["config_options"])),"external_share_groups_config_options=true")!==false)
                 {
+
                 # Apply config override options
                 $config_options=trim($userinfo[0]["config_options"]);
-                if ($config_options!="")
-                    {
-                    $co=explode(";",$config_options);
-                    foreach($co as $ext_co)
-                        {
-                        $co_parts=explode("=",$ext_co);
-                        
-                        if($co_parts[0]!='' && isset($co_parts[1]))
-                            {
-                            $name=str_replace("$","",trim($co_parts[0]));
-                            $value=ltrim($co_parts[1]); 
-                            if(strtolower($value)=='false'){$value=0;}
-                            elseif(strtolower($value)=='true'){$value=1;}
-                            
-                            global $$name;
-                            $$name = $value;
-                            }
-                        }
-                    }
+
+                // We need to get all globals as we don't know what may be referenced here
+                extract($GLOBALS, EXTR_REFS | EXTR_SKIP);
+                eval($config_options);
+
                 }
         
         # Special case for anonymous logins.
@@ -5640,16 +5627,11 @@ function draw_performance_footer(){
 }
 }
 
-function sql_affected_rows(){
-    global $use_mysqli;
-    if ($use_mysqli){
-        global $db;
-        return mysqli_affected_rows($db);
+function sql_affected_rows()
+    {
+    global $db;
+    return mysqli_affected_rows($db["read_write"]);
     }
-    else {
-        return mysql_affected_rows();
-    }
-}
 
 function get_imagemagick_path($utilityname, $exeNames, &$checked_path)
 {
@@ -7159,10 +7141,27 @@ function create_resource_type_field($name, $restype = 0, $type = FIELD_TYPE_TEXT
         $shortname = mb_substr(mb_strtolower(str_replace("_","",safe_file_name($name))),0,20);
         }
 
-    sql_query("insert into resource_type_field (title,resource_type, type, name, keywords_index) values ('" . escape_check($name) . "','" . escape_check($restype) . "','" . escape_check($type) . "','" . escape_check($shortname) . "'," . ($index ? "1" : "0") . ")");
-    $new=sql_insert_id();
-    log_activity(null,LOG_CODE_CREATED,$name,'resource_type_field','title',$new,null,'');
-    return $new;    
+    $duplicate = (boolean) sql_value(sprintf(
+        "SELECT count(ref) AS `value` FROM resource_type_field WHERE `name` = '%s'",
+        escape_check($shortname)), 0);
+
+    sql_query(sprintf("INSERT INTO resource_type_field (title, resource_type, type, `name`, keywords_index) VALUES ('%s', '%s', '%s', '%s', %s)",
+        escape_check($name),
+        escape_check($restype),
+        escape_check($type),
+        escape_check($shortname),
+        ($index ? "1" : "0")
+    ));
+    $new = sql_insert_id();
+
+    if($duplicate)
+        {
+        sql_query(sprintf("UPDATE resource_type_field SET `name` = '%s' WHERE ref = '%s'", escape_check($shortname . $new), $new));
+        }
+
+    log_activity(null, LOG_CODE_CREATED, $name, 'resource_type_field', 'title', $new, null, '');
+
+    return $new;
     }
 
 
@@ -7944,4 +7943,64 @@ function check_script_last_ran($name, $fail_notify_allowance, &$last_ran_datetim
         }
 
     return false;
+    }
+
+/**
+* Delete the specified metadata field. Also delets any node or resource_data rows associated with that field
+* 
+* @param integer $ref Metadata field id (ref from resource_type_field)
+* @param array $varnames Array of variable names
+*
+* @return boolean|string Returns true on success or text on failure describing error
+*/
+function delete_resource_type_field($ref)
+    {
+    global $lang, $corefields;
+
+    if('cli' != php_sapi_name() && !checkperm('a'))
+        {
+        return $lang["error-permissiondenied"];
+        }
+
+    $fieldvars = array();
+    foreach ($corefields as $scope=>$scopevars)
+        {
+        foreach($scopevars as $varname)
+            {
+            global $$varname;
+            if(isset($$varname) && (is_array($$varname) && in_array($ref,$$varname) || ((int)$$varname==$ref)))
+                {
+                $fieldvars[] = $varname . ($scope != "BASE" ? " (" . $scope . ")" : "");
+                }
+            }
+        }
+
+    if(count($fieldvars) > 0)
+        {
+        return $lang["admin_delete_field_error"] . "<br />\$" . implode(", \$",$fieldvars);
+        }
+
+    
+    $fieldinfo = get_resource_type_field($ref);
+    
+    // Delete the resource type field
+    sql_query("DELETE FROM resource_type_field WHERE ref='$ref'");
+
+    // Remove all data	    
+    sql_query("DELETE FROM resource_data WHERE resource_type_field='$ref'");
+
+    // Remove all resource nodes	    
+    sql_query("DELETE rn.* FROM resource_node rn LEFT JOIN node n ON n.ref=rn.node WHERE n.resource_type_field='$ref'");
+
+    // Remove all nodes	    
+    sql_query("DELETE FROM node WHERE resource_type_field='$ref'");
+
+    // Remove all keywords	    
+    sql_query("DELETE FROM resource_keyword where resource_type_field='$ref'");
+
+    hook("after_delete_resource_type_field");
+
+    log_activity('Deleted metadata field "' . $fieldinfo["title"] . '" (' . $fieldinfo["ref"] . ')',LOG_CODE_DELETED,null,'resource_type_field',null,$ref);
+
+    return true;
     }

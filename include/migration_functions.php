@@ -94,7 +94,7 @@ function migrate_category_tree_to_nodes($resource_type_field_ref,$category_tree_
 
 function populate_resource_nodes($startingref=0)
 	{
-	global $use_mysqli,$mysql_server,$mysql_username,$mysql_password,$mysql_db;
+	global $mysql_server,$mysql_username,$mysql_password,$mysql_db;
 	
 	// Populate resource_node with all resources that have resource_data matching 
 	// Also get hit count from resource_keyword if the normalised keyword matches
@@ -194,8 +194,9 @@ function migrate_search_filter($filtertext)
         $logtext .= "FILTER MIGRATION: -- Parsing filter rule #" . $n . " : '" . $filter_rule . "'\n";
         $rule_parts = explode("=",$filter_rule);
         $rulefields = $rule_parts[0];
-        $rulevalues = explode("|",trim($rule_parts[1]));
-        
+        if (isset($rule_parts[1])){$rulevalues = explode("|",trim($rule_parts[1]));}
+        else{$errors[]="Invalid filter, no values are set.";return $errors;}
+
         // Create filter_rule
         $logtext .=  "FILTER MIGRATION: -- Creating filter_rule for '" . $filter_rule . "'\n";
         sql_query("INSERT INTO filter_rule (filter) VALUES ('{$filterid}')");

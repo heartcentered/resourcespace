@@ -869,6 +869,8 @@ $lang['double_width'] = 'Double width';
 $lang['filter_by_table'] = 'Filter by table...';
 $lang['upload_here'] = "Upload here";
 $lang['help-tooltip'] = "Get more information on this page";
+$lang["unauthorized"] = "Unauthorized";
+$lang["warning_duplicate_shortname_fields"] = "There is already a resource type field with the same shortname. Please make it unique!";
 
 # Pager
 $lang["next"]="Next";
@@ -1197,7 +1199,9 @@ $lang['setup-admin_fullname'] = 'Admin full name';
 $lang['setup-admin_email'] = 'Admin e-mail';
 $lang['setup-admin_username'] = 'Admin username';
 $lang['setup-admin_password'] = 'Admin password';
-
+$lang["setup-mysql_read_only_username"] = "MySQL read-only username";
+$lang["setup-mysql_read_only_password"] = "MySQL read-only password";
+$lang["setup-if_mysql_read_only_username"] = "The username used to connect to your MySQL server in read-only mode. This user must have SELECT rights only. It is optional and does NOT require rights to create tables or insert data.";
 $lang["setup-emailfrom"]="Email from address";
 $lang["setup-emailnotify"]="Email notify";
 $lang["setup-spiderpassword"]="Spider password";
@@ -1209,7 +1213,7 @@ $lang["setup-applicationname"]="Application name";
 $lang["setup-basicsettingsfooter"]="NOTE: The only <strong>required</strong> settings are on this page.  If you're not interested in checking out the advanced options, you may click below to begin the installation process.";
 $lang["setup-if_mysqlserver"]='The IP address or <abbr title="Fully Qualified Domain Name">FQDN</abbr> of your MySQL server installation.  If MySql is installed on the same server as your web server, use "localhost".';
 $lang["setup-if_mysqlusername"]="The username used to connect to your MySQL server.  This user must have rights to create tables in the database named below.";
-$lang["setup-if_mysqlpassword"]="The password for the MySQL username entered above.";
+$lang["setup-if_mysqlpassword"]= $lang["setup-if_mysql_read_only_password"] = "The password for the MySQL username entered above.";
 $lang["setup-if_mysqldb"]="The Name of the MySQL database RS will use. (This database must exist.)";
 $lang["setup-if_mysqlbinpath"]="The path to the MySQL client binaries - e.g. mysqldump. NOTE: This is only needed if you plan to use the export tool.";
 $lang["setup-if_baseurl"]="The 'base' web address for this installation.  NOTE: No trailing slash.";
@@ -1768,7 +1772,7 @@ $lang["geographicsearch"]="Geographic search";
 $lang["geographicsearchresults"]="Geographic search results";
 
 $lang["geographicsearch_help"]="Drag to select a search area.";
-
+$lang["error-geotile-server-error"] = "Unable to retrieve tiles from your tile server. Please check your \$geo_tile_servers configuration setting";
 $lang["purge"]="Purge";
 $lang["purgeuserstitle"]="Purge users";
 $lang["purgeusers"]="Purge users";
@@ -1829,7 +1833,6 @@ $lang["error-403-forbidden"] = "403 Forbidden.";
 $lang["error-plugin-not-activated"] = "Plugin not activated";
 $lang["error-failed-to-delete"] = "Failed to delete";
 $lang["error-failed-to-move"] = "Failed to move";
-
 
 $lang["no-options-available"]="No options available";
 $lang["header-upload-subtitle"] = "Step %number: %subtitle"; # %number, %subtitle will be replaced, e.g. Step 1: Specify Default Content For New Resources
@@ -2155,6 +2158,7 @@ $lang["resource_type_field_new"]    = "New metadata field";
 
 $lang["admin_advanced_field_properties"]="Advanced field properties";
 $lang["admin_delete_field_confirm"]="There are %%AFFECTEDRESOURCES%% resource(s) with data in this field. Some of the affected resource IDs are listed below. The metadata associated with this field will be lost if you continue. Are you sure you want to proceed with deletion?";
+$lang["admin_delete_field_error"]="Unable to delete field. Please contact your system administrator. This field is used for the following configuration options:-";
 $lang["admin_resource_type_create"]="Create resource type called...";
 $lang["admin_resource_type_field"]="Manage metadata field";
 $lang["admin_resource_type_field_count"]="Metadata fields";
@@ -2844,3 +2848,5 @@ $lang["collection_actiontype_999"]      = "Other";
 $lang["unknown_date_format_error"]         = "Error: %row% '%date%' in [%field%] invalid yyyy-mm-dd hh:mm format (partials allowed e.g. no time, day or month)";
 # %row% row number if in csv or similar, %date% field data, %field% field name, %parts% an imploded array of parts that are invalid
 $lang["date_format_error"]                 = "Error: %row% '%date%' in [%field%] invalid entry into the %parts% part(s)";
+# %row% row number if in csv or similar, %date% field data, %field% field name
+$lang["invalid_date_error"]                 = "Error: %row% '%date%' in [%field%] is not a valid date";
