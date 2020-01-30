@@ -6,12 +6,21 @@ Requires the following:-
 $job_data["exporttables"] - Array of table information to export
 $job_data["obfuscate"] -  Whether table data should be obfuscated or not
 */
-global $baseurl, $userref, $offline_job_delete_completed, $lang,$mysql_bin_path, $mysql_server, $mysql_db,$mysql_username,$mysql_password,$scramble_key;
+global $baseurl, $userref, $offline_job_delete_completed, $lang,$mysql_bin_path, $mysql_server, $mysql_db,$mysql_username,$mysql_password,$scramble_key, $system_download_config, $system_download_config_force_obfuscation;
 $exporttables   = $job_data["exporttables"];
-$obfuscate      = $job_data["obfuscate"] == "true"; 
+$obfuscate      = ($system_download_config_force_obfuscation || $job_data["obfuscate"] == "true"); 
 $userref        = $job_data["userref"];
 $separatesql    = $job_data["separatesql"] == "true"; 
 $path           = $mysql_bin_path . "/mysqldump";
+
+if(!$system_download_config)
+    {
+    // Not permitted but shouldn't ever occur. Update job queue
+	job_queue_update($jobref,$job_data,STATUS_ERROR);
+    $message=$lang["exportfailed"] . " - " . str_replace("%%CONFIG_OPTION%%","\$system_download_config",$lang["error_check_config"]);
+    message_add($job["user"],$message,"",0);
+    exit();
+    }
 
 $jobuser = get_user($userref);
 if(is_array($jobuser))
