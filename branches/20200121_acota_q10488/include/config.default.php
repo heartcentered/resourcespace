@@ -27,6 +27,8 @@ $mysql_server      = 'localhost';
 $mysql_server_port = 3306;
 $mysql_username    = 'root';
 $mysql_password    = '';
+$read_only_db_username = "";
+$read_only_db_password = "";
 $mysql_db          = 'resourcespace';
 # $mysql_charset     = 'utf8';
 
@@ -50,17 +52,13 @@ $mysql_verbatim_queries = false;
 $mysql_log_transactions = false;
 # $mysql_log_location     = '/var/resourcespace_backups/sql_log.sql';
 
-# Use php-mysqli extension for interfacing with the mysql database
-# Only enable if the extension is present.
-$use_mysqli = function_exists('mysqli_connect');
-
 # Use prepared statements
 # Default is false until technology proven
-$use_mysqli_prepared = $use_mysqli && false;
+$use_mysqli_prepared = false;
 
 # Enable establishing secure connections using SSL
-# Requires $use_mysqli = true and setting up mysqli_ssl_server_cert and mysqli_ssl_ca_cert
-$use_mysqli_ssl = $use_mysqli && false;
+# Requires setting up mysqli_ssl_server_cert and mysqli_ssl_ca_cert
+$use_mysqli_ssl = false;
 
 # $mysqli_ssl_server_cert = '/etc/ssl/certs/server.pem';
 # $mysqli_ssl_ca_cert     = '/etc/ssl/certs/ca_chain.pem';
@@ -2443,7 +2441,7 @@ $geo_layers="osm";
 $view_mapheight=200;
 
 # Cache openstreetmap tiles on your server. This is slower when loading, but eliminates non-ssl content warnings if your site is SSL (requires curl)
-$geo_tile_caching=false;
+$geo_tile_caching=true;
 
 # Optional path to tile cache directory
 #$geo_tile_cache_directory="";
@@ -2459,6 +2457,12 @@ $geo_search_restrict=array
 
 # Add OpenLayers configuration options to this variable to overwrite all other options. 
 $geo_override_options = "";
+
+$geo_tile_servers = array();
+$geo_tile_servers[] = 'a.tile.openstreetmap.org';
+$geo_tile_servers[] = 'b.tile.openstreetmap.org';
+$geo_tile_servers[] = 'c.tile.openstreetmap.org';
+$geo_tile_cache_lifetime = 60*60*24*365; // 1 year by default to prevent hitting tile server 
 
 
 # QuickLook previews (Mac Only)
@@ -3669,3 +3673,6 @@ $contextual_help_links=true;
 // You may also wish to set the option $filestore_migrate=true; which will force the system to check for a file in the old location and move it in the event that it cannot be found.
 $filestore_evenspread=false;
 $filestore_migrate=false;
+
+// Option to have the front end show pop up error when and invalid date value or format is entered e.g. 31-02-2020 or bad partial dates, this configuration could be removed once a more subtle way of erroring this is found.
+$date_validator=false;
