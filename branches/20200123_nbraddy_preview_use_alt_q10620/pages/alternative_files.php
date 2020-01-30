@@ -143,7 +143,7 @@ for ($n=0;$n<count($files);$n++)
 
 	&nbsp;<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/alternative_file.php",$urlparams,array("ref"=>$files[$n]["ref"])); ?>"><?php echo LINK_CARET ?><?php echo $lang["action-edit"]?></a>
 
-    <?php if($editaccess && file_exists(get_resource_path($ref , true, '', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true)))
+    <?php if($editaccess && (file_exists(get_resource_path($ref , true, '', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true)) || file_exists(get_resource_path($ref , true, 'hpr', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true))))
         {
         echo "<a href=\"#\" onclick=\"previewform=jQuery('#previewform');jQuery('#upload_pre_alt').val('" . $files[$n]["ref"] . "');return CentralSpacePost(previewform,true);\">" . LINK_CARET . $lang["useaspreviewimage"] . "</a>";
         } 
