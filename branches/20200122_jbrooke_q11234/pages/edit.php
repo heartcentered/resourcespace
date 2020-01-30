@@ -1597,12 +1597,6 @@ if($multiple)// this is closing a div that can be omitted via hook("replaceeditt
 hook('editbeforesectionhead');
 
 global $collapsible_sections;
-if($collapsible_sections)
-{
-  ?>
-  <div id="CollapsibleSections">
-     <?php
-  }
  
  if ($display_any_fields)
  {
@@ -2138,12 +2132,6 @@ if(!hook('replacesubmitbuttons'))
     SaveAndClearButtons("NoPaddingSaveClear QuestionSticky",true,true);
     }
 
-if($collapsible_sections)
-{
-  ?>
-</div><!-- end of collapsible section -->
-<?php
-}
 hook('aftereditcollapsiblesection');
 ?>
 </div><!-- end of BasicsBox -->
