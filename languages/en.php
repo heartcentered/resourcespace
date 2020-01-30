@@ -1112,7 +1112,6 @@ $lang['exportcollection'] = "Include resources and associated metadata from this
 $lang["exportcomplete"]="Your system configuration export is ready";
 $lang["exportfailed"]="Your system configuration export failed. Please contact your system administrator";
 
-
 $lang["managealternativefiles"]="Manage alternative files";
 $lang["managealternativefilestitle"]="Manage alternative files";
 $lang["alternativefiles"]="Alternative files";

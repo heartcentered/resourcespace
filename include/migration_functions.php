@@ -581,7 +581,7 @@ function safe_export($value)
 */
 function get_export_tables($exportcollection=0)
     {
-    if((string)(int)$exportcollection != (string)$exportcollection)
+    if((string)(int)$exportcollection !== (string)$exportcollection)
         {
         $exportcollection=0;
         }
