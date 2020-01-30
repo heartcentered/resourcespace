@@ -32,13 +32,9 @@ if(!isset($joberror))
     mkdir($dumppath,0777,true);
 
     $zipfile = $zippath . "/" . $userref . "_" . md5($jobusername . $randstring . $scramble_key) . ".zip";
-
     $zip = new ZipArchive();
     $zip->open($zipfile, ZIPARCHIVE::CREATE);
-
-    $zip->addFile("../../include/config.php", "config.php");
-
-    
+    $zip->addFile(__DIR__ . "/../../include/config.php", "config.php");
 
     foreach($exporttables as $exporttable=>$exportoptions)
         {
@@ -53,7 +49,6 @@ if(!isset($joberror))
         $output = fopen($dumpfile,'a');
         fwrite($output,$sql);
         fclose($output);
-
 
         // Get data 
         $exportcondition = isset($exportoptions["exportcondition"]) ? $exportoptions["exportcondition"] : "";
