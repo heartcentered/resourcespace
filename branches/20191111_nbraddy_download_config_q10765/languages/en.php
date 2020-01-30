@@ -1104,7 +1104,7 @@ $lang["searchkeyword"]="Search keyword";
 $lang["keywordfailedregexfilter"]="Keyword failed expression validation";
 
 $lang["exportdata"]="Export system data";
-$lang['exportdata-instructions'] = "This will export system configuration data from your system for troubleshooting purposes, obfuscating data if required.</br>Select the information you want to export and click 'Export'. An offline job will be created and you will receive a notification when your download is ready.";
+$lang['exportdata-instructions'] = "This will export system configuration data from your system for troubleshooting purposes. All data (field options, usernames, emails and metadata etc.) will be obfuscated unless permitted by your server administrator.</br>Select the information you want to export and click 'Export'. An offline job will be created and you will receive a notification when your download is ready.";
 $lang["exporttype"]="Export type";
 $lang["exportobfuscate"]="Obfuscate exported data?";
 $lang['export_separate_sql']  = "Create separate SQL export files for each database table?";

@@ -3674,3 +3674,12 @@ $contextual_help_links=true;
 // You may also wish to set the option $filestore_migrate=true; which will force the system to check for a file in the old location and move it in the event that it cannot be found.
 $filestore_evenspread=false;
 $filestore_migrate=false;
+
+// Set $system_download_config=true if you want to allow admin users to download the config.php file, user and configuration data from your server, optionally including resource data
+// Most data will be obfuscated unless you set $system_download_config_force_obfuscation = false
+// This requires offline jobs to be enabled
+//
+// Please note: due to the highly configurable nature of ResourceSpace this obfuscation cannot be guaranteed to remove all traces of sensitive data
+// and care must still be taken to keep secure any exported data.
+$system_download_config = false;
+$system_download_config_force_obfuscation = true;
