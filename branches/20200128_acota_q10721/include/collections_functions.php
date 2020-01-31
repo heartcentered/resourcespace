@@ -2219,7 +2219,7 @@ function get_session_collections($rs_session,$userref="",$create=false)
 	$collectionrefs=sql_array("select ref value from collection where session_id='" . escape_check($rs_session) . "' " . $extrasql,"");
 	if(count($collectionrefs)<1 && $create)
 		{
-		$collectionrefs[0]=create_collection($userref,"My Collection",0,1); # Do not translate this string!	
+		$collectionrefs[0]=create_collection($userref,"Default Collection",0,1); # Do not translate this string!	
 		}		
 	return $collectionrefs;	
 	}
@@ -2727,7 +2727,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         $o++;
 
 		// Hide Collection
-		$user_mycollection=sql_value("select ref value from collection where user='" . escape_check($userref) . "' and name='My Collection' order by ref limit 1","");
+		$user_mycollection=sql_value("select ref value from collection where user='" . escape_check($userref) . "' and name='Default Collection' order by ref limit 1","");
 		// check that this collection is not hidden. use first in alphabetical order otherwise
 		if(in_array($user_mycollection,$hidden_collections)){
 			$hidden_collections_list=implode(",",array_filter($hidden_collections));
@@ -2976,7 +2976,7 @@ function collection_download_use_original_filenames_when_downloading(&$filename,
         return;
         }
 
-    global $pextension, $usesize, $subbed_original, $prefix_resource_id_to_filename, $prefix_filename_string, $server_charset,
+    global $pextension, $usesize, $subbed_original, $prefix_resource_id_to_filename, $prefix_filename_string,
            $download_filename_id_only, $deletion_array, $use_zip_extension, $copy, $exiftool_write_option, $p, $size, $lang;
 
     # Only perform the copy if an original filename is set.
@@ -3002,14 +3002,7 @@ function collection_download_use_original_filenames_when_downloading(&$filename,
 
     $fs=explode("/",$filename);$filename=$fs[count($fs)-1];
 
-    # Convert $filename to the charset used on the server.
-    if (!isset($server_charset)) {$to_charset = 'UTF-8';}
-    else
-        {
-        if ($server_charset!="") {$to_charset = $server_charset;}
-        else {$to_charset = 'UTF-8';}
-        }
-    $filename = mb_convert_encoding($filename, $to_charset, 'UTF-8');
+  
     
     // check if a file has already been processed with this name
     if(in_array($filename, $filenames))
@@ -3119,7 +3112,11 @@ function collection_download_log_resource_ready($tmpfile, &$deletion_array, $ref
 
 function update_zip_progress_file($note)
     {
-    global $progress_file;
+    global $progress_file, $offline_job_in_progress;
+    if($offline_job_in_progress)
+        {
+        return false;
+        }
     $fp = fopen($progress_file, 'w');       
     $filedata=$note;
     fwrite($fp, $filedata);

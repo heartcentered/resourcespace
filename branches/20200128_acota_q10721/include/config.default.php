@@ -27,6 +27,8 @@ $mysql_server      = 'localhost';
 $mysql_server_port = 3306;
 $mysql_username    = 'root';
 $mysql_password    = '';
+$read_only_db_username = "";
+$read_only_db_password = "";
 $mysql_db          = 'resourcespace';
 # $mysql_charset     = 'utf8';
 
@@ -50,17 +52,13 @@ $mysql_verbatim_queries = false;
 $mysql_log_transactions = false;
 # $mysql_log_location     = '/var/resourcespace_backups/sql_log.sql';
 
-# Use php-mysqli extension for interfacing with the mysql database
-# Only enable if the extension is present.
-$use_mysqli = function_exists('mysqli_connect');
-
 # Use prepared statements
 # Default is false until technology proven
-$use_mysqli_prepared = $use_mysqli && false;
+$use_mysqli_prepared = false;
 
 # Enable establishing secure connections using SSL
-# Requires $use_mysqli = true and setting up mysqli_ssl_server_cert and mysqli_ssl_ca_cert
-$use_mysqli_ssl = $use_mysqli && false;
+# Requires setting up mysqli_ssl_server_cert and mysqli_ssl_ca_cert
+$use_mysqli_ssl = false;
 
 # $mysqli_ssl_server_cert = '/etc/ssl/certs/server.pem';
 # $mysqli_ssl_ca_cert     = '/etc/ssl/certs/ca_chain.pem';
@@ -2587,7 +2585,6 @@ $global_cookies=false;
 
 # Iframe-based direct download from the view page (to avoid going to download.php)
 # note this is incompatible with $terms_download and the $download_usage features, and is overridden by $save_as
-$direct_download=false;
 $debug_direct_download=false; // set to true to see the download iframe for debugging purposes.
 $direct_download_allow_ie7=false; // ie7 blocks initial downloads but after allowing once, it seems to work, so this option is available (no guarantees).
 $direct_download_allow_ie8=false; // ie7 blocks initial downloads but after allowing once, it seems to work, so this option is available (no guarantees).
@@ -3679,3 +3676,12 @@ $filestore_migrate=false;
 
 // Option to have the front end show pop up error when and invalid date value or format is entered e.g. 31-02-2020 or bad partial dates, this configuration could be removed once a more subtle way of erroring this is found.
 $date_validator=false;
+
+// Set $system_download_config=true if you want to allow admin users to download the config.php file, user and configuration data from your server, optionally including resource data
+// Most data will be obfuscated unless you set $system_download_config_force_obfuscation = false
+// This requires offline jobs to be enabled
+//
+// Please note: due to the highly configurable nature of ResourceSpace this obfuscation cannot be guaranteed to remove all traces of sensitive data
+// and care must still be taken to keep secure any exported data.
+$system_download_config = false;
+$system_download_config_force_obfuscation = true;
