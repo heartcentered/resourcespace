@@ -869,6 +869,8 @@ $lang['double_width'] = 'Double width';
 $lang['filter_by_table'] = 'Filter by table...';
 $lang['upload_here'] = "Upload here";
 $lang['help-tooltip'] = "Get more information on this page";
+$lang["unauthorized"] = "Unauthorized";
+$lang["warning_duplicate_shortname_fields"] = "There is already a resource type field with the same shortname. Please make it unique!";
 
 # Pager
 $lang["next"]="Next";
@@ -1106,8 +1108,14 @@ $lang["newkeywordrelationship"]="Create new relationship for keyword...";
 $lang["searchkeyword"]="Search keyword";
 $lang["keywordfailedregexfilter"]="Keyword failed expression validation";
 
-$lang["exportdata"]="Export data";
+$lang["exportdata"]="Export system data";
+$lang['exportdata-instructions'] = "This will export system configuration data from your system for troubleshooting purposes. All data (field options, usernames, emails and metadata etc.) will be obfuscated unless permitted by your server administrator.</br>Select the information you want to export and click 'Export'. An offline job will be created and you will receive a notification when your download is ready.";
 $lang["exporttype"]="Export type";
+$lang["exportobfuscate"]="Obfuscate exported data?";
+$lang['export_separate_sql']  = "Create separate SQL export files for each database table?";
+$lang['exportcollection'] = "Include resources and associated metadata from this collection ID. Leave blank if no data required";
+$lang["exportcomplete"]="Your system configuration export is ready";
+$lang["exportfailed"]="Your system configuration export failed. Please contact your system administrator";
 
 $lang["managealternativefiles"]="Manage alternative files";
 $lang["managealternativefilestitle"]="Manage alternative files";
@@ -1197,7 +1205,9 @@ $lang['setup-admin_fullname'] = 'Admin full name';
 $lang['setup-admin_email'] = 'Admin e-mail';
 $lang['setup-admin_username'] = 'Admin username';
 $lang['setup-admin_password'] = 'Admin password';
-
+$lang["setup-mysql_read_only_username"] = "MySQL read-only username";
+$lang["setup-mysql_read_only_password"] = "MySQL read-only password";
+$lang["setup-if_mysql_read_only_username"] = "The username used to connect to your MySQL server in read-only mode. This user must have SELECT rights only. It is optional and does NOT require rights to create tables or insert data.";
 $lang["setup-emailfrom"]="Email from address";
 $lang["setup-emailnotify"]="Email notify";
 $lang["setup-spiderpassword"]="Spider password";
@@ -1209,7 +1219,7 @@ $lang["setup-applicationname"]="Application name";
 $lang["setup-basicsettingsfooter"]="NOTE: The only <strong>required</strong> settings are on this page.  If you're not interested in checking out the advanced options, you may click below to begin the installation process.";
 $lang["setup-if_mysqlserver"]='The IP address or <abbr title="Fully Qualified Domain Name">FQDN</abbr> of your MySQL server installation.  If MySql is installed on the same server as your web server, use "localhost".';
 $lang["setup-if_mysqlusername"]="The username used to connect to your MySQL server.  This user must have rights to create tables in the database named below.";
-$lang["setup-if_mysqlpassword"]="The password for the MySQL username entered above.";
+$lang["setup-if_mysqlpassword"]= $lang["setup-if_mysql_read_only_password"] = "The password for the MySQL username entered above.";
 $lang["setup-if_mysqldb"]="The Name of the MySQL database RS will use. (This database must exist.)";
 $lang["setup-if_mysqlbinpath"]="The path to the MySQL client binaries - e.g. mysqldump. NOTE: This is only needed if you plan to use the export tool.";
 $lang["setup-if_baseurl"]="The 'base' web address for this installation.  NOTE: No trailing slash.";
@@ -2154,6 +2164,7 @@ $lang["resource_type_field_new"]    = "New metadata field";
 
 $lang["admin_advanced_field_properties"]="Advanced field properties";
 $lang["admin_delete_field_confirm"]="There are %%AFFECTEDRESOURCES%% resource(s) with data in this field. Some of the affected resource IDs are listed below. The metadata associated with this field will be lost if you continue. Are you sure you want to proceed with deletion?";
+$lang["admin_delete_field_error"]="Unable to delete field. Please contact your system administrator. This field is used for the following configuration options:-";
 $lang["admin_resource_type_create"]="Create resource type called...";
 $lang["admin_resource_type_field"]="Manage metadata field";
 $lang["admin_resource_type_field_count"]="Metadata fields";
@@ -2754,6 +2765,8 @@ $lang["oj-collection-download-success-text"] = "Collection ready for download";
 $lang["oj-collection-download-failure-text"] = "Unable to prepare collection archive for download";
 $lang["oj-batch-replace-local-success-text"] = "Batch replace has successfully replaced %TOTALRESOURCES resources";
 $lang["oj-batch-replace-local-failure-text"] = "Batch replace failed. Please check logs for errors";
+$lang["oj-creation-failure-text"]            = "An error occurred. Failed to create offline job";
+$lang["oj-creation-success"]                 = "Offline job created. You will be notified when it has completed";
 /* End of offline jobs */
 
 $lang["email_auto_digest_inactive"] = "This is a summary of your unread messages";
@@ -2845,3 +2858,6 @@ $lang["unknown_date_format_error"]         = "Error: %row% '%date%' in [%field%]
 $lang["date_format_error"]                 = "Error: %row% '%date%' in [%field%] invalid entry into the %parts% part(s)";
 # %row% row number if in csv or similar, %date% field data, %field% field name
 $lang["invalid_date_error"]                 = "Error: %row% '%date%' in [%field%] is not a valid date";
+
+$lang["error_server_missing_module"]        = "The server is missing the required software: %%MODULE%%. Please contact your system administrator";
+$lang["error_check_config"]                 = "Please check config option %%CONFIG_OPTION%%";
