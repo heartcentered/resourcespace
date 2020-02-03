@@ -1,5 +1,0 @@
-ref,int(11),NO,PRI,,auto_increment
-date,datetime,YES,,,
-mail_to,varchar(100),YES,,,
-mail_from,int(11),YES,,,
-subject,varchar(150),YES,,,
