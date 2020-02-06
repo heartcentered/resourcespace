@@ -536,8 +536,8 @@ if (!$daterange_search)
 	  <option value=""><?php echo $lang["anyyear"]?></option>
 	  <?php
 	  $y=date("Y");
-      for ($n=$y;$n>=$minyear;$n--)
-        {
+	  for ($n=$minyear;$n<=$y;$n++)
+		{
 		?><option <?php if ($n==$found_year) { ?>selected<?php } ?>><?php echo $n?></option><?php
 		}
 	  ?>
