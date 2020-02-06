@@ -1195,7 +1195,8 @@ var pluploadconfig = {
                             <?php } ?>
                             
                             uploader.bind('UploadComplete', function(up, files) {
-                                if(relate_on_upload)
+                                // if relateonupload input field checked, or relate_on_upload == true
+                                if(relate_on_upload || jQuery("#relateonupload").is(":checked"))
                                     {
                                     jQuery.post("<?php echo $baseurl_short; ?>pages/upload_plupload.php",
                                             {
