@@ -26,7 +26,6 @@ if (getval("save","") != "" && enforcePostRequest(false))
 
 include "../include/header.php";
 ?>
-
 <div class="BasicsBox">
     <h1><?php echo $lang["researchrequest"]?></h1>
     <p class="tight"><?php echo text("introtext");render_help_link("resourceadmin/user-research-requests");?></p>
@@ -148,10 +147,15 @@ include "../include/header.php";
             </select>
             <div class="clearerleft"></div>
         </div>
+        <?php
+        render_custom_fields($custom_researchrequest_fields);
 
-        <?php if (file_exists(dirname(__FILE__) . "/../plugins/research_request.php")) { include dirname(__FILE__) . "/../plugins/research_request.php"; } ?>
-
-
+        // Legacy plugins
+        if(file_exists(dirname(__FILE__) . "/../plugins/research_request.php"))
+            {
+            include dirname(__FILE__) . "/../plugins/research_request.php";
+            }
+        ?>
         <div class="QuestionSubmit">
             <label for="buttons"> </label>          
             <input name="save" type="submit" value="&nbsp;&nbsp;<?php echo $lang["sendrequest"]?>&nbsp;&nbsp;" />
@@ -160,7 +164,5 @@ include "../include/header.php";
     </form>
     <?php } # end hook('replace_research_request_form') ?>
 </div>
-
 <?php
 include "../include/footer.php";
-?>
