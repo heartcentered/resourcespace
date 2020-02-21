@@ -10,15 +10,34 @@ $description = getval('description', '');
 
 if (getval("save","") != "" && enforcePostRequest(false))
     {
-    $errors=false;
-    if ($name == "") {$errors=true;$error_name=true;}
-    if ($description == "") {$errors=true;$error_description=true;}
-    if (isset($anonymous_login) && $anonymous_login==$username && $email == "") {$errors=true;$error_email=true;}
+    $errors = false;
+    if ($name == "")
+        {
+        $errors = true;
+        $error_name = true;
+        }
+
+    if ($description == "")
+        {
+        $errors = true;
+        $error_description = true;
+        }
+
+    if (isset($anonymous_login) && $anonymous_login == $username && $email == "")
+        {
+        $errors = true;
+        $error_email = true;
+        }
+
+    $research_request_processing_errors = process_research_custom_fields($custom_researchrequest_fields);
+    if(is_array($research_request_processing_errors) && !empty($research_request_processing_errors))
+        {
+        $errors = true;
+        }
+
     if ($errors == false) 
         {
-        # Log this
         daily_stat("New research request",0);
-
         send_research_request();
         redirect($baseurl_short."pages/done.php?text=research_request");
         }
@@ -148,7 +167,9 @@ include "../include/header.php";
             <div class="clearerleft"></div>
         </div>
         <?php
-        render_custom_fields($custom_researchrequest_fields);
+        render_custom_fields(
+            $custom_researchrequest_fields,
+            isset($research_request_processing_errors) && is_array($research_request_processing_errors) ? $research_request_processing_errors : array());
 
         // Legacy plugins
         if(file_exists(dirname(__FILE__) . "/../plugins/research_request.php"))
