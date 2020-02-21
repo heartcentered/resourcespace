@@ -192,42 +192,44 @@ function set_research_collection($research,$collection)
 	sql_query("update research_request set collection='$collection' where ref='$research'");
 	}
 }	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-?>
+
+
+function process_research_custom_fields(array $fields)
+    {
+    if(empty($fields))
+        {
+        return true;
+        }
+
+    global $lang;
+
+    $expected_field_properties = array("title", "type", "required", "options");
+
+    $errors = array();
+
+    foreach($fields as $f)
+        {
+        // Skip over fields that were not properly configured
+        $available_properties = array_keys($f);
+        if($expected_field_properties !== $available_properties)
+            {
+            continue;
+            }
+
+        $field_id = md5(json_encode($f));
+        $field_name = "custom_{$field_id}";
+
+        if($f["required"] && trim(getval($field_name, "")) == "")
+            {
+            $errors[$field_id] = str_replace("%field", i18n_get_translated($f["title"]), $lang["researchrequest_custom_field_required"]);
+            continue;
+            }
+        }
+
+    if(!empty($errors))
+        {
+        return $errors;
+        }
+
+    return true;
+    }

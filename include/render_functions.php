@@ -2892,7 +2892,7 @@ function render_help_link($page='',$return_string=false)
 
 // @todo: break function apart once main logic is established
 // @todo: write phpdocs
-function render_custom_fields(array $cfields)
+function render_custom_fields(array $cfields, array $errors)
     {
     if(empty($cfields))
         {
@@ -2903,6 +2903,7 @@ function render_custom_fields(array $cfields)
 
     foreach($cfields as $f)
         {
+        // Skip over fields that were not properly configured
         $available_properties = array_keys($f);
         if($expected_field_properties !== $available_properties)
             {
@@ -2911,7 +2912,7 @@ function render_custom_fields(array $cfields)
 
         $field_id = md5(json_encode($f));
 
-        $field_renderer = function() use ($f, $field_id)
+        $field_renderer = function() use ($f, $field_id, $errors)
             {
             $required_html = ($f["required"] ? "<sup>*</sup>" : "");
             ?>
@@ -2962,6 +2963,13 @@ function render_custom_fields(array $cfields)
                            value="<?php echo htmlspecialchars($f_value); ?>">
                     <?php
                     break;
+                }
+
+            if(!empty($errors) && isset($errors[$field_id]))
+                {
+                ?>
+                <div class="FormError"><?php echo htmlspecialchars($errors[$field_id]); ?></div>
+                <?php
                 }
 
             return;
