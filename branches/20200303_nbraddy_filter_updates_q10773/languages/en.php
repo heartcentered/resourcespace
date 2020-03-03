@@ -2784,8 +2784,8 @@ $lang['error-duplicatesfound'] = "Duplicate found: resource(s) %resourceref% mat
 $lang['see_log'] = "Please refer to the log below for more details on this upload.";$lang["edit_copy_from_field"]       = "Copy data from field";
 // Filter rules 
 $lang["filter_migration"]           = "Filter migration";
-$lang["filter_search_success"]      = "Search filter has been successfully migrated.";
-$lang["filter_search_error"]        = "An error was encountered migrating a search filter. Please check the search filter.";
+$lang["filter_search_success"]      = "Filter has been successfully migrated.";
+$lang["filter_search_error"]        = "An error was encountered migrating a filter. Please check the search filter.";
 $lang["filter_search_delete_error"] = "Filter is in use by the following users or groups";
 $lang["filter_manage"]              = "Manage filters";
 $lang["filter_edit"]                = "Edit filter";

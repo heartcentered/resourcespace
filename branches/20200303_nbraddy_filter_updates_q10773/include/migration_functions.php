@@ -154,7 +154,7 @@ function populate_resource_nodes($startingref=0)
 	return true;
 	}
 
-function migrate_search_filter($filtertext)
+function migrate_filter($filtertext)
     {
     if(trim($filtertext) == "")
         {

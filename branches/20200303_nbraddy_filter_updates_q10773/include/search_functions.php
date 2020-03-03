@@ -1705,3 +1705,75 @@ function get_default_search_states()
         }
     return $defaultsearchstates;
     }
+
+/**
+* Get the required search filter sql for the given ilterfor use in do_search()
+*  
+* @return array
+*/
+function get_filter_sql($filterid)
+    {
+    global $userref, $access_override, $custom_access_overrides_search_filter, $open_access_for_contributor;
+
+    $filter         = get_filter($filterid);
+    $filterrules    = get_filter_rules($filterid);
+
+    $modfilterrules=hook("modifysearchfilterrules");
+    if ($modfilterrules)
+        {
+        $filterrules = $modfilterrules;
+        }
+        
+    $filtercondition = $filter["filter_condition"];
+    $filters = array();
+    $filter_ors = array(); // Allow filters to be overridden in certain cases
+        
+    foreach($filterrules as $filterrule)
+        {
+        $filtersql = "";
+        if(count($filterrule["nodes_on"]) > 0)
+            {
+            $filtersql .= "r.ref " . ($filtercondition == RS_FILTER_NONE ? " NOT " : "") . " IN (SELECT rn.resource FROM resource_node rn WHERE rn.node IN ('" . implode("','",$filterrule["nodes_on"]) . "')) ";
+            }
+        if(count($filterrule["nodes_off"]) > 0)
+            {
+            if($filtersql != "") {$filtersql .= " OR ";}
+            $filtersql .= "r.ref " . ($filtercondition == RS_FILTER_NONE ? "" : " NOT") . " IN (SELECT rn.resource FROM resource_node rn WHERE rn.node IN ('" . implode("','",$filterrule["nodes_off"]) . "')) ";
+            }
+            
+        $filters[] = "(" . $filtersql . ")";
+        }
+    
+    if (count($filters) > 0)
+        {   
+        if($filtercondition == RS_FILTER_ALL || $filtercondition == RS_FILTER_NONE)
+            {
+            $glue = " AND ";
+            }
+        else 
+            {
+            // This is an OR filter
+            $glue = " OR ";
+            }
+        
+        // Bracket the filters to ensure that there is no hanging OR to create an unintentional disjunct
+        $filter_add = "( " . implode($glue, $filters) . " )";
+        
+        # If custom access has been granted for the user or group, nullify the search filter, effectively selecting "true".
+        if (!checkperm("v") && !$access_override && $custom_access_overrides_search_filter) # only for those without 'v' (which grants access to all resources)
+            {
+            $filter_ors[] = "(rca.access IS NOT null AND rca.access<>2) OR (rca2.access IS NOT null AND rca2.access<>2)";
+            }
+
+        if($open_access_for_contributor)
+            {
+            $filter_ors[] = "(r.created_by='$userref')";
+            }
+        
+        if(count($filter_ors) > 0)
+            {
+            $filter_add = "((" . $filter_add . ") OR (" . implode(") OR (",$filter_ors) . "))";
+            }
+        return $filter_add;
+        }
+    }

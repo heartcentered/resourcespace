@@ -3651,6 +3651,7 @@ $non_image_types_generate_preview_only = true;
 
 // Enable updated search filter functionality? Allows for simpler setup of more advanced search filters
 // Once enabled the filters will gradually be updated as users search. To update all the filter immediately run upgrade/scripts/005_migrate_search_filters.php
+// NOTE - from 9.3 onwards, enabling this will also update edit and derestrict filters to use the same constrcuted filters
 $search_filter_nodes = false;
 
 // Browse bar 
