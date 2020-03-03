@@ -3588,6 +3588,10 @@ function add_field_option($field,$option)
 if (!function_exists("get_resource_access")){	
 function get_resource_access($resource)
 	{
+    global $customgroupaccess,$customuseraccess, $internal_share_access, $k,$uploader_view_override, $userref,
+        $prevent_open_access_on_edit_for_active, $search_filter_nodes, $open_access_for_contributor,
+        $userref,$usergroup, $usersearchfilter, $search_filter_strict, $search_all_workflow_states,
+        $userderestrictfilter;
 	# $resource may be a resource_data array from a search, in which case, many of the permissions checks are already done.	
 		
 	# Returns the access that the currently logged-in user has to $resource.
@@ -3605,28 +3609,25 @@ function get_resource_access($resource)
 	if (is_array($resource) && !isset($resource['group_access']) && !isset($resource['user_access'])){$resource=$resource['ref'];}
 	
 	if (!is_array($resource))
-                {
-                $resourcedata=get_resource_data($resource,true);
-                }
+        {
+        $resourcedata=get_resource_data($resource,true);
+        }
 	else
-                {
-                $resourcedata=$resource;
-                $passthru="yes";
-                }
+        {
+        $resourcedata=$resource;
+        $passthru="yes";
+        }
                 
 	$ref=$resourcedata['ref'];
 	$access=$resourcedata["access"];
 	$resource_type=$resourcedata['resource_type'];
 	
 	// Set a couple of flags now that we can check later on if we need to check whether sharing is permitted based on whether access has been specifically granted to user/group
-    global $customgroupaccess,$customuseraccess;
-	$customgroupaccess=false;
+    $customgroupaccess=false;
 	$customuseraccess=false;
 	
-	global $k;
 	if('' != $k)
 		{
-        global $internal_share_access;
 
 		# External access - check how this was shared.
 		$extaccess = sql_value("SELECT access `value` FROM external_access_keys WHERE resource = '{$ref}' AND access_key = '" . escape_check($k) . "' AND (expires IS NULL OR expires > NOW())", -1);
@@ -3637,7 +3638,6 @@ function get_resource_access($resource)
             }
 		}
 	
-	global $uploader_view_override, $userref;
 	if (checkperm("z" . $resourcedata['archive']) && !($uploader_view_override && $resourcedata['created_by'] == $userref))
 		{
 		// User has no access to this archive state 
@@ -3656,7 +3656,6 @@ function get_resource_access($resource)
 		$customgroupaccess=true;
 		# Load custom access level
 		if ($passthru=="no"){ 
-			global $usergroup;
 			$access=get_custom_access($resource,$usergroup);
 			} 
 		else {
@@ -3664,14 +3663,12 @@ function get_resource_access($resource)
 		}
 	}
 
-	global $prevent_open_access_on_edit_for_active;
 	if ($access == 1 && get_edit_access($ref,$resourcedata['archive'],false,$resourcedata) && !$prevent_open_access_on_edit_for_active)
 		{
 		# If access is restricted and user has edit access, grant open access.
 		$access = 0;
 		}
 
-	global $open_access_for_contributor;
 	if ($open_access_for_contributor && $resourcedata['created_by'] == $userref)
 		{
 		# If user has contributed resource, grant open access and ignore any further filters.
@@ -3679,8 +3676,7 @@ function get_resource_access($resource)
 		}
 
 	# Check for user-specific and group-specific access (overrides any other restriction)
-	global $userref,$usergroup;
-
+	
 	// We need to check for custom access either when access is set to be custom or
 	// when the user group has restricted access to all resource types or specific resource types
 	// are restricted
@@ -3715,19 +3711,17 @@ function get_resource_access($resource)
 		return 2;
 		}
 		
-	global $usersearchfilter, $search_filter_strict; 
 	if ((trim($usersearchfilter)!="") && $search_filter_strict)
-		{
+        {
 		# A search filter has been set. Perform filter processing to establish if the user can view this resource.		
-                # Apply filters by searching for the resource, utilising the existing filter matching in do_search to avoid duplication of logic.
+        # Apply filters by searching for the resource, utilising the existing filter matching in do_search to avoid duplication of logic.
 
-                global $search_all_workflow_states;
-                $search_all_workflow_states_cache = $search_all_workflow_states;
-                $search_all_workflow_states = TRUE;
-                $results=do_search("!resource" . $ref);
-                $search_all_workflow_states = $search_all_workflow_states_cache;
-                if (count($results)==0) {return 2;} # Not found in results, so deny
-                }
+        $search_all_workflow_states_cache = $search_all_workflow_states;
+        $search_all_workflow_states = TRUE;
+        $results=do_search("!resource" . $ref);
+        $search_all_workflow_states = $search_all_workflow_states_cache;
+        if (count($results)==0) {return 2;} # Not found in results, so deny
+        }
 
     /*
     Restricted access to all available resources
@@ -3745,29 +3739,34 @@ function get_resource_access($resource)
         $access = 1;
         }
 
-	// Check for a derestrict filter, this allows exeptions for users without the 'g' permission who normally have restricted accesss to all available resources)
-	global $userderestrictfilter;
+	// Check for a derestrict filter, this allows exceptions for users without the 'g' permission who normally have restricted accesss to all available resources)
 	if ($access==1 && !checkperm("g") && !checkperm("rws{$resourcedata['archive']}") && !checkperm('X'.$resource_type) && trim($userderestrictfilter) != "")
 		{
-		# A filter has been set to derestrict access when certain metadata criteria are met
-		if(!isset($metadata))
+        if($search_filter_nodes && is_numeric($userderestrictfilter) && $userderestrictfilter > 0)
             {
-            #  load metadata if not already loaded
-            $metadata=get_resource_field_data($ref,false,false);
+            $matchedfilter = filter_check($userderestrictfilter, get_resource_nodes($ref));
             }
-		$matchedfilter=false;
-		for ($n=0;$n<count($metadata);$n++)
-			{
-			$name=$metadata[$n]["name"];
-			$value=$metadata[$n]["value"];
-			if ($name!="")
-				{
-				$match=filter_match($userderestrictfilter,$name,$value);
-				if ($match==1) {$matchedfilter=false;break;}
-				if ($match==2) {$matchedfilter=true;} 
-				}
-			}
-			
+        else
+            {
+            # Old style filter 
+            if(!isset($metadata))
+                {
+                #  load metadata if not already loaded
+                $metadata=get_resource_field_data($ref,false,false);
+                }
+            $matchedfilter=false;
+            for ($n=0;$n<count($metadata);$n++)
+                {
+                $name=$metadata[$n]["name"];
+                $value=$metadata[$n]["value"];
+                if ($name!="")
+                    {
+                    $match=filter_match($userderestrictfilter,$name,$value);
+                    if ($match==1) {$matchedfilter=false;break;}
+                    if ($match==2) {$matchedfilter=true;} 
+                    }
+                }
+            }
 		if($matchedfilter){$access=0;}
         }
 		
@@ -5854,19 +5853,21 @@ function get_resource_all_image_sizes($ref)
 */
 function filter_check($filterid,$nodes)
     {
-    //     print_r($nodes);
-    //     exit("HERE");
     $filterdata         = get_filter($filterid);
     $filterrules        = get_filter_rules($filterid);
     $filtercondition    = $filterdata["filter_condition"];
+
+    // Used for RS_FILTER_ALL type
+    $filtersfailed  = 0;
+    $filtersok      = 0;
+
     foreach($filterrules as $filterrule)
         {
         // Check if any nodes are present that shouldn't be, or nodes not present that need to be 
         $badnodes   = array_diff($filterrule["nodes_off"],$nodes);
         $goodnodes  = array_intersect($filterrule["nodes_on"],$nodes); 
 
-        $rulemet = count($badnodes) == 0 && count($goodnodes) > 0;
-
+        $rulemet    = count($badnodes) == 0 && count($goodnodes) > 0;
         // Can return now if filter successfully matched and RS_FILTER_ANY or RS_FILTER_NONE,
         // or if filter not matched and RS_FILTER_ALL
         if($rulemet)
@@ -5879,25 +5880,23 @@ function filter_check($filterid,$nodes)
                 {
                 return false;
                 }
+            $filtersok++;
             }
         else
             {
             if($filtercondition == RS_FILTER_ALL)
                 {
                 return false;
-                }
+                }            
+            $filtersfailed++;
             }
-
-        // Need to check more rules if RS_FILTER_ALL and filter rule met
-        
-        
+        // Need to check subsequent rules if RS_FILTER_ALL and filter rule met        
         }
         
-       
-    //if($$filterdata["filter_condition"] == RS_FILTER_ALL || $$filterdata["filter_condition"] == RS_FILTER_NONE)
-       
-// print_r($filter);
-// print_r($filterrules);
-// exit();
-    return true;
+    if($filtercondition == RS_FILTER_ALL && $filtersfailed == 0 && $filtersok == count($filterrules))
+        {
+        return true;
+        }
+
+    return false;
     }
