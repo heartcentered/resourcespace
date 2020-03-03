@@ -3876,8 +3876,7 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
 	# For the provided resource and metadata, does the current user have edit access to this resource?
     # Checks the edit permissions (e0, e-1 etc.) and also the group edit filter which filters edit access based on resource metadata.
 	
-    global $userref,$usereditfilter,$edit_access_for_contributor;
-
+    global $userref,$usereditfilter,$edit_access_for_contributor, $search_filter_nodes;
     $plugincustomeditaccess = hook('customediteaccess','',array($resource,$status,$resourcedata));
 
     if($plugincustomeditaccess)
@@ -3912,16 +3911,23 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
         return false;
         } 
 	
-	$gotmatch=false;
+    $gotmatch=false;
+    
 	if (trim($usereditfilter)=="" || ($status<0 && $resourcedata['created_by'] == $userref)) # No filter set, or resource was contributed by user and is still in a User Contributed state in which case the edit filter should not be applied.
 		{
 		$gotmatch = true;
 		}
-	else
+    elseif($search_filter_nodes && is_numeric($usereditfilter) && $usereditfilter > 0)
+        {
+        $gotmatch = filter_check($usereditfilter, get_resource_nodes($resource));
+        }
+    else
 		{
-		# An edit filter has been set. Perform edit filter processing to establish if the user can edit this resource.
-		
-		# Always load metadata, because the provided metadata may be missing fields due to permissions.
+		# An old style edit filter has been set. Perform edit filter processing to establish if the user can edit this resource.
+        //$nodes = get_resource_nodes($resource);
+        //exit(print_r($nodes));
+        
+		// # Always load metadata, because the provided metadata may be missing fields due to permissions.
 		$metadata=get_resource_field_data($resource,false,false);
 				
 		for ($n=0;$n<count($metadata);$n++)
@@ -5836,4 +5842,62 @@ function get_resource_all_image_sizes($ref)
         }
 
     return array_values($all_image_sizes);
+    }
+
+/**
+* Check if a given set of nodes meets the conditions set for the provided filter
+*  
+* @param integer    $ref        Filter ID
+* @param array      $nodes      Array of nodes
+* 
+* @return boolean
+*/
+function filter_check($filterid,$nodes)
+    {
+    //     print_r($nodes);
+    //     exit("HERE");
+    $filterdata         = get_filter($filterid);
+    $filterrules        = get_filter_rules($filterid);
+    $filtercondition    = $filterdata["filter_condition"];
+    foreach($filterrules as $filterrule)
+        {
+        // Check if any nodes are present that shouldn't be, or nodes not present that need to be 
+        $badnodes   = array_diff($filterrule["nodes_off"],$nodes);
+        $goodnodes  = array_intersect($filterrule["nodes_on"],$nodes); 
+
+        $rulemet = count($badnodes) == 0 && count($goodnodes) > 0;
+
+        // Can return now if filter successfully matched and RS_FILTER_ANY or RS_FILTER_NONE,
+        // or if filter not matched and RS_FILTER_ALL
+        if($rulemet)
+            {
+            if($filtercondition == RS_FILTER_ANY)
+                {
+                return true;
+                }
+            elseif($filtercondition == RS_FILTER_NONE)
+                {
+                return false;
+                }
+            }
+        else
+            {
+            if($filtercondition == RS_FILTER_ALL)
+                {
+                return false;
+                }
+            }
+
+        // Need to check more rules if RS_FILTER_ALL and filter rule met
+        
+        
+        }
+        
+       
+    //if($$filterdata["filter_condition"] == RS_FILTER_ALL || $$filterdata["filter_condition"] == RS_FILTER_NONE)
+       
+// print_r($filter);
+// print_r($filterrules);
+// exit();
+    return true;
     }

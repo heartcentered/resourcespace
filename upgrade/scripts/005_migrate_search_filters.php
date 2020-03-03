@@ -18,7 +18,7 @@ if($search_filter_nodes && (!isset($sysvars["SEARCH_FILTER_MIGRATION"]) || $sysv
             }
             
         // Migrate unless marked not to due to failure (flag will be reset if group is edited)
-        $migrateresult = migrate_search_filter($filtertext);        
+        $migrateresult = migrate_filter($filtertext);        
         if(is_numeric($migrateresult))
             {
             message_add(array_column($notification_users,"ref"), $lang["filter_search_success"] . ": '" . $filtertext . "'",generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$group["ref"])));
@@ -44,7 +44,7 @@ if($search_filter_nodes && (!isset($sysvars["SEARCH_FILTER_MIGRATION"]) || $sysv
             continue;
             }
         // Migrate unless marked not to due to failure (flag will be reset if group is edited)
-        $migrateresult = migrate_search_filter($filtertext);
+        $migrateresult = migrate_filter($filtertext);
         if(is_numeric($migrateresult))
             {
             message_add(array_column($notification_users,"ref"), $lang["filter_search_success"] . ": '" . $filtertext . "'",generateURL($baseurl_short . "/pages/admin/admin_group_management_edit.php",array("ref"=>$group["ref"])));

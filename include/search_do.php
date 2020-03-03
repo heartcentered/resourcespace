@@ -1051,7 +1051,7 @@ function do_search(
     if($search_filter_nodes && strlen($usersearchfilter) > 0 && intval($usersearchfilter) == 0)
         {
         // Migrate unless marked not to due to failure (flag will be reset if group is edited)
-        $migrateresult = migrate_search_filter($usersearchfilter);
+        $migrateresult = migrate_filter($usersearchfilter);
         $notification_users = get_notification_users();
         global $userdata, $lang, $baseurl;
         if(is_numeric($migrateresult))
@@ -1090,68 +1090,12 @@ function do_search(
         
     if ($search_filter_nodes && is_numeric($usersearchfilter) && $usersearchfilter > 0)
         {
-        $filter         = get_filter($usersearchfilter);
-        $filterrules    = get_filter_rules($usersearchfilter);
-
-        $modfilterrules=hook("modifysearchfilterrules");
-        if ($modfilterrules)
+        $search_filter_sql = get_filter_sql($usersearchfilter);
+        if($search_filter_sql)
             {
-            $filterrules = $modfilterrules;
-            }
-            
-        $filtercondition = $filter["filter_condition"];
-        $filters = array();
-        $filter_ors = array(); // Allow filters to be overridden in certain cases
-            
-        foreach($filterrules as $filterrule)
-            {
-            $filtersql = "";
-            if(count($filterrule["nodes_on"]) > 0)
-                {
-                $filtersql .= "r.ref " . ($filtercondition == RS_FILTER_NONE ? " NOT " : "") . " IN (SELECT rn.resource FROM resource_node rn WHERE rn.node IN ('" . implode("','",$filterrule["nodes_on"]) . "')) ";
-                }
-            if(count($filterrule["nodes_off"]) > 0)
-                {
-                if($filtersql != "") {$filtersql .= " OR ";}
-                $filtersql .= "r.ref " . ($filtercondition == RS_FILTER_NONE ? "" : " NOT") . " IN (SELECT rn.resource FROM resource_node rn WHERE rn.node IN ('" . implode("','",$filterrule["nodes_off"]) . "')) ";
-                }
-                
-            $filters[] = "(" . $filtersql . ")";
-            }
-        
-        if (count($filters) > 0)
-            {   
-            if($filtercondition == RS_FILTER_ALL || $filtercondition == RS_FILTER_NONE)
-                {
-                $glue = " AND ";
-                }
-            else 
-                {
-                // This is an OR filter
-                $glue = " OR ";
-                }
-            
-            // Bracket the filters to ensure that there is no hanging OR to create an unintentional disjunct
-            $filter_add = "( " . implode($glue, $filters) . " )";
-            
-            # If custom access has been granted for the user or group, nullify the search filter, effectively selecting "true".
-            if (!checkperm("v") && !$access_override && $custom_access_overrides_search_filter) # only for those without 'v' (which grants access to all resources)
-                {
-                $filter_ors[] = "(rca.access IS NOT null AND rca.access<>2) OR (rca2.access IS NOT null AND rca2.access<>2)";
-                }
-
-            if($open_access_for_contributor)
-                {
-                $filter_ors[] = "(r.created_by='$userref')";
-                }
-            
-            if(count($filter_ors) > 0)
-                {
-                $filter_add = "((" . $filter_add . ") OR (" . implode(") OR (",$filter_ors) . "))";
-                }
-
-            if ($sql_filter != ""){$sql_filter .= " AND ";}
-            $sql_filter .=  $filter_add;
+            if ($sql_filter != "")
+                {$sql_filter .= " AND ";}
+            $sql_filter .=  $search_filter_sql;
             }
         }
     elseif (strlen($usersearchfilter)>0 && !is_numeric($usersearchfilter))
@@ -1285,9 +1229,19 @@ function do_search(
 
     if ($editable_only)
 		{
-		global $usereditfilter;			
-		if(strlen($usereditfilter)>0)
-			{
+        global $usereditfilter;
+        if ($search_filter_nodes && is_numeric($usereditfilter) && $usereditfilter > 0)
+            {
+            $edit_filter_sql = get_filter_sql($usereditfilter);
+            if($edit_filter_sql)
+                {
+                if ($sql_filter != "")
+                    {$sql_filter .= " AND ";}
+                $sql_filter .=  $edit_filter_sql;
+                }
+            }
+        elseif (strlen($usereditfilter)>0 && !is_numeric($usereditfilter))
+            {
 			$ef=explode(";",$usereditfilter);
 			for ($n=0;$n<count($ef);$n++)
 				{

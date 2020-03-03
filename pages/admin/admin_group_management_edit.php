@@ -114,8 +114,8 @@ if (getval("save",false) && enforcePostRequest(false))
             log_activity(null,null,null,'usergroup','group_specific_logo',$ref);
             }
 
-	foreach (array("name","permissions","parent","search_filter","search_filter_id","edit_filter","derestrict_filter",
-                    "resource_defaults","config_options","welcome_message","ip_restrict","request_mode",
+    foreach (array("name","permissions","parent","search_filter","search_filter_id","edit_filter","edit_filter_id","derestrict_filter",
+                    "derestrict_filter_id","resource_defaults","config_options","welcome_message","ip_restrict","request_mode",
                     "allow_registration_selection","inherit_flags", "download_limit","download_log_days") as $column)		
 		
 		{
@@ -148,7 +148,7 @@ if (getval("save",false) && enforcePostRequest(false))
             $search_filter_old = trim(getval("search_filter",""));
             if($search_filter_nodes && $val == 0 && $search_filter_old != "")
                 {
-                $migrateresult = migrate_search_filter($search_filter_old); 
+                $migrateresult = migrate_filter($search_filter_old); 
                 
                 if(is_numeric($migrateresult))
                     {
@@ -165,7 +165,55 @@ if (getval("save",false) && enforcePostRequest(false))
                     message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_search_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
                     }
                 }
-			}			
+			}
+        elseif($column=="edit_filter_id")
+            {
+            $val=getval($column, 1, true);
+            $edit_filter_old = trim(getval("edit_filter",""));
+            if($search_filter_nodes && $val == 0 && $edit_filter_old != "")
+                {
+                $migrateresult = migrate_filter($edit_filter_old); 
+                
+                if(is_numeric($migrateresult))
+                    {
+                    log_activity($lang["filter_search_success"] . ": '" . $edit_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
+                    // Successfully migrated - now use the new filter
+                    $val = $migrateresult;
+                    }
+                elseif(is_array($migrateresult))
+                    {
+                    debug("FILTER MIGRATION: Error migrating filter: '" . $edit_filter_old . "' - " . implode('\n' ,$migrateresult));
+                    // Error - set flag so as not to reattempt migration and notify admins of failure
+                    $val = -1;
+                    $notification_users = get_notification_users();
+                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_search_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
+                    }
+                }
+            }
+        elseif($column=="derestrict_filter_id")
+            {
+            $val=getval($column, 1, true);
+            $derestrict_filter_old = trim(getval("derestrict_filter",""));
+            if($search_filter_nodes && $val == 0 && $derestrict_filter_old != "")
+                {
+                $migrateresult = migrate_filter($derestrict_filter_old); 
+                
+                if(is_numeric($migrateresult))
+                    {
+                    log_activity($lang["filter_search_success"] . ": '" . $derestrict_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
+                    // Successfully migrated - now use the new filter
+                    $val = $migrateresult;
+                    }
+                elseif(is_array($migrateresult))
+                    {
+                    debug("FILTER MIGRATION: Error migrating filter: '" . $derestrict_filter_old . "' - " . implode('\n' ,$migrateresult));
+                    // Error - set flag so as not to reattempt migration and notify admins of failure
+                    $val = -1;
+                    $notification_users = get_notification_users();
+                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_search_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
+                    }
+                }
+            }		
 		else
 			{
 			$val=getvalescaped($column,"");
@@ -310,21 +358,22 @@ include "../../include/header.php";
 
         <p><?php echo $lang["action-title_see_wiki_for_advanced_options"]; ?></p>
 
+        <?php
+        $filters = get_filters($order = "name", $sort = "ASC");
 
-		<?php
 		if ($search_filter_nodes && (strlen($record['search_filter']) == "" || (is_numeric($record['search_filter_id']) && $record['search_filter_id'] > -1)))
 			{
             // Show filter selector if already migrated or no filter has been set
-			$search_filters = get_filters($order = "name", $sort = "ASC");
+			$filters = get_filters($order = "name", $sort = "ASC");
 			?>
 			<div class="Question">
 				<label for="search_filter_id"><?php echo $lang["property-search_filter"]; ?></label>
 				<select name="search_filter_id" class="stdwidth">
 					<?php
 					echo "<option value='0' >" . ($record['search_filter_id'] ? $lang["filter_none"] : $lang["select"]) . "</option>";
-					foreach	($search_filters as $search_filter)
+					foreach	($filters as $filter)
 						{
-						echo "<option value='" . $search_filter['ref'] . "' " . ($record['search_filter_id'] == $search_filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($search_filter['name']) . "</option>";
+						echo "<option value='" . $filter['ref'] . "' " . ($record['search_filter_id'] == $filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($filter['name']) . "</option>";
 						}?>
 				</select>
 				<div class="clearerleft"></div>
@@ -342,22 +391,68 @@ include "../../include/header.php";
 				<div class="clearerleft"></div>
 			</div>
 			<?php
-			}?>
-
-        <div class="Question">
-            <label for="edit_filter"><?php echo $lang["property-edit_filter"]; ?></label>
-            <textarea name="edit_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['edit_filter']; ?></textarea>
-            <div class="clearerleft"></div>
-        </div>
-
-        <div class="Question">
-            <label for="derestrict_filter"><?php echo $lang["fieldtitle-derestrict_filter"]; ?></label>
-            <textarea name="derestrict_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['derestrict_filter']; ?></textarea>
-            <div class="clearerleft"></div>
-            <div class="FormHelp">
-                <div class="FormHelpInner"><?php echo $lang["information-derestrict_filter"]; ?></div>
+            }
+            
+        
+		if ($search_filter_nodes && (strlen($record['edit_filter']) == "" || (is_numeric($record['edit_filter_id']) && $record['edit_filter_id'] > -1)))
+            {
+            ?>
+            <div class="Question">
+                <label for="edit_filter_id"><?php echo $lang["property-edit_filter"]; ?></label>
+                <select name="edit_filter_id" class="stdwidth">
+                    <?php
+                    echo "<option value='0' >" . ($record['edit_filter_id'] ? $lang["filter_none"] : $lang["select"]) . "</option>";
+                    foreach	($filters as $filter)
+                        {
+                        echo "<option value='" . $filter['ref'] . "' " . ($record['edit_filter_id'] == $filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($filter['name']) . "</option>";
+                        }?>
+                </select>
+                <div class="clearerleft"></div>
             </div>
-        </div>
+            <?php	
+            }
+        else
+            {
+            // Show old style text filter input
+            ?>
+            <input type="hidden" name="edit_filter_id" value="0" />
+            <div class="Question">
+                <label for="edit_filter"><?php echo $lang["property-edit_filter"]; ?></label>
+                <textarea name="edit_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['edit_filter']; ?></textarea>
+                <div class="clearerleft"></div>
+            </div>
+            <?php
+            }
+        
+        if ($search_filter_nodes && (strlen($record['derestrict_filter']) == "" || (is_numeric($record['derestrict_filter_id']) && $record['derestrict_filter_id'] > -1)))
+            {
+            ?>
+            <div class="Question">
+                <label for="derestrict_filter_id"><?php echo $lang["fieldtitle-derestrict_filter"]; ?></label>
+                <select name="derestrict_filter_id" class="stdwidth">
+                    <?php
+                    echo "<option value='0' >" . ($record['derestrict_filter_id'] ? $lang["filter_none"] : $lang["select"]) . "</option>";
+                    foreach	($filters as $filter)
+                        {
+                        echo "<option value='" . $filter['ref'] . "' " . ($record['derestrict_filter_id'] == $filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($filter['name']) . "</option>";
+                        }?>
+                </select>
+                <div class="clearerleft"></div>
+            </div>
+            <?php	
+            }
+        else
+            {
+            // Show old style text filter input
+            ?>
+            <input type="hidden" name="derestrict_filter_id" value="0" />
+            <div class="Question">
+                <label for="derestrict_filter"><?php echo $lang["fieldtitle-derestrict_filter"]; ?></label>
+                <textarea name="derestrict_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['derestrict_filter']; ?></textarea>
+                <div class="clearerleft"></div>
+            </div>
+            <?php
+            }?>
 
         <div class="Question">
             <label for="download_limit"><?php echo $lang["group_download_limit_title"]; ?></label>
