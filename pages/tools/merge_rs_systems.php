@@ -260,6 +260,10 @@ if(isset($user))
         logScript("ERROR: Unable to validate user ID #{$user}!");
         exit(1);
         }
+
+    // Reset any "maintenance mode" config options the system might be configured with
+    $global_permissions_mask = "";
+
     setup_user($user_data[0]);
     logScript("Running script as user '{$username}' (ID #{$userref})");
     }
@@ -292,6 +296,31 @@ if($export && isset($folder_path))
                 "text" => "User group #%ref '%name'",
                 "placeholders" => array("ref", "name")
             )
+        ),
+        array(
+            "name" => "user",
+            "formatted_name" => "users",
+            "filename" => "users",
+            "record_feedback" => array(
+                "text" => "User #%ref '%fullname' (Username: %username | E-mail: %email)",
+                "placeholders" => array("ref", "fullname", "username", "email")
+            ),
+            "sql" => array(
+                "select" => "*",
+                "from"  => "user",
+                "where" => "
+                    username IS NOT NULL AND trim(username) <> ''
+                    AND usergroup IS NOT NULL AND trim(usergroup) <> ''",
+            ),
+            "additional_process" => function($record) {
+                $user_preferences = array();
+                if(get_config_options($record["ref"], $user_preferences))
+                    {
+                    logScript("Found user preferences");
+                    $record["user_preferences"] = $user_preferences;
+                    }
+                return $record;
+            },
         ),
         array(
             "name" => "resource_type",
@@ -515,34 +544,6 @@ if($export && isset($folder_path))
         }
 
 
-    # USERS & USER PREFERENCES
-    ##########################
-    logScript("");
-    logScript("Exporting users and their preferences...");
-
-    $users_export_fh = $get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.json", "w+b");
-    foreach(get_users(0, "", "u.ref ASC", false, -1, 1, false, "") as $user)
-        {
-        logScript("User #{$user["ref"]} '{$user["fullname"]}' (Username: {$user["username"]} | E-mail: {$user["email"]})");
-
-        // Check user preferences and save for processing it later
-        $user_preferences = array();
-        if(get_config_options($user["ref"], $user_preferences))
-            {
-            logScript("Found user preferences");
-            $user["user_preferences"] = $user_preferences;
-            }
-
-        if($dry_run)
-            {
-            continue;
-            }
-
-        fwrite($users_export_fh, json_encode($user, JSON_NUMERIC_CHECK) . PHP_EOL);
-        }
-    fclose($users_export_fh);
-
-
     # ARCHIVE STATES
     ################
     logScript("");
@@ -703,7 +704,7 @@ if($import && isset($folder_path))
     $usernames_mapping = (isset($usernames_mapping) ? $usernames_mapping : array());
     $users_not_created = (isset($users_not_created) ? $users_not_created : array());
     $src_users = $json_decode_file_data($get_file_handler($folder_path . DIRECTORY_SEPARATOR . "users_export.json", "r+b"));
-    $process_user_preferences = function($user_ref, $user_data) use ($progress_fh)
+    $process_user_preferences = function($user_ref, $user_data) use ($progress_fh, &$usernames_mapping)
         {
         db_begin_transaction(TX_SAVEPOINT);
         if(isset($user_data["user_preferences"]) && is_array($user_data["user_preferences"]) && !empty($user_data["user_preferences"]))
