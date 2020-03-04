@@ -2932,12 +2932,13 @@ function render_custom_fields(array $cfields, array $errors)
                     ?>
                     <select id="<?php echo $f_id; ?>" class="stdwidth" name="<?php echo $f_name; ?>">
                     <?php
-                    foreach($f["options"] as $f_option)
+                    foreach($f["options"] as $i => $f_option)
                         {
-                        // @todo: make value URL safe and add ability to select current value
-                        $value = base64_encode($f_option);
+                        $value = md5("{$f_id}_{$i}_{$f_option}");
                         $label = htmlspecialchars(i18n_get_translated($f_option));
-                        echo render_dropdown_option($value, $label, array(), "");
+                        $extra_attributes = ($value === $f_value ? " selected" : "");
+
+                        echo render_dropdown_option($value, $label, array(), $extra_attributes);
                         }
                     ?>
                     </select>
@@ -2987,7 +2988,7 @@ function render_custom_fields(array $cfields, array $errors)
 */
 function render_question_div($id, callable $render_content)
     {
-    $id = (trim($id) !== "" ? 'id="' . htmlspecialchars($id) . '"' : "");
+    $id = (trim($id) !== "" ? 'id="' . htmlspecialchars(trim($id)) . '"' : "");
     ?>
     <div <?php echo $id; ?> class="Question">
         <?php $render_content(); ?>

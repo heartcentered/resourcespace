@@ -21,6 +21,8 @@ function send_research_request()
 	",'" . getvalescaped("contact","") . "','" . getvalescaped("email","") . "','" . getvalescaped("finaluse","") . "','" . $rt . "'," .
 	((getvalescaped("noresources","")=="")?"null":"'" . getvalescaped("noresources","") . "'") . 
 	",'" . getvalescaped("shape","") . "')");
+
+    // @todo: process custom fields received - consider injecting
 	
 	# E-mails a resource request (posted) to the team
 	global $applicationname,$email_from,$baseurl,$email_notify,$username,$userfullname,$useremail,$lang, $admin_resource_access_notifications;

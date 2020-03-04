@@ -3,6 +3,7 @@ include_once "../include/db.php";
 include_once "../include/general.php";
 include_once "../include/authenticate.php";
 include_once "../include/research_functions.php";
+include_once "../include/request_functions.php";
 
 $name        = getval('name', '');
 $email       = getval('email', '');
@@ -29,6 +30,23 @@ if (getval("save","") != "" && enforcePostRequest(false))
         $error_email = true;
         }
 
+    $validation_errors = process_custom_fields($custom_researchrequest_fields, function($fields) use ($lang)
+        {
+        $errors = array();
+
+        foreach($fields as $field)
+            {
+            $field_name = "custom_field_{$field["id"]}";
+
+            if($field["required"] && trim(getval($field_name, "")) == "")
+                {
+                $errors[$field["id"]] = str_replace("%field", i18n_get_translated($field["title"]), $lang["researchrequest_custom_field_required"]);
+                continue;
+                }
+            }
+
+        return $errors;
+        });
     $research_request_processing_errors = process_research_custom_fields($custom_researchrequest_fields);
     if(is_array($research_request_processing_errors) && !empty($research_request_processing_errors))
         {
