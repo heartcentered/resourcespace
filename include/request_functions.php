@@ -1019,3 +1019,45 @@ function email_resource_request($ref,$details)
     sql_query("update resource set request_count=request_count+1 where ref='$ref'");
     }
 
+
+/**
+* Process custom fields
+* IMPORTANT: these fields are not metadata fields - they are configured through config options such as custom_researchrequest_fields
+* 
+*/
+function process_custom_fields(array $f, callable $callback)
+    {
+    if(empty($f))
+        {
+        return;
+        }
+
+    $fields = array_filter($f, function($field)
+        {
+        global $lang, $FIXED_LIST_FIELD_TYPES;
+
+        $expected_field_properties = array("id", "title", "type", "required");
+        $available_properties      = array_keys($field);
+        $missing_required_fields   = array_diff(
+            $expected_field_properties,
+            array_intersect($expected_field_properties, $available_properties));
+
+        if(count($missing_required_fields) > 0)
+            {
+            debug("process_custom_fields: custom field misconfigured. Missing properties: "
+                . implode(", ", array_values($missing_required_fields)));
+            return false;
+            }
+
+        // options property required for fixed list fields type
+        if(in_array($field["type"], $FIXED_LIST_FIELD_TYPES) && !array_key_exists("options", $field))
+            {
+            debug("process_custom_fields: custom field misconfigured. Missing the 'options' property for a fixed list type.");
+            return false;
+            }
+
+        return true;
+        });
+
+    return $callback($fields);
+    }
