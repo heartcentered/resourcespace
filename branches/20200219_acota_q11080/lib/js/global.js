@@ -32,11 +32,7 @@ function is_touch_device()
         || (navigator.msMaxTouchPoints > 0);
     }
 
-// unset cookie
-function unsetCookie(cookieName,path="")
-	{
-	document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;path=' + path;	
-	}
+
 
 function SetCookie (cookieName,cookieValue,nDays,global)
 	{
@@ -431,8 +427,9 @@ top.window.onpopstate = function(event)
 
 
 /* AJAX posting of a form, result are displayed in the CentralSpace area. */
-function CentralSpacePost (form,scrolltop,modal)
+function CentralSpacePost (form,scrolltop,modal,update_history)
 	{
+	update_history = (typeof update_history !== "undefined" ? update_history : true);
 	ajaxinprogress=true;
 	var url=form.action;
 	var CentralSpace=jQuery('#CentralSpace');// for ajax targeting top div
@@ -506,7 +503,7 @@ function CentralSpacePost (form,scrolltop,modal)
 		    }
 			    
 		// Change the browser URL and save the CentralSpace HTML state in the browser's history record.
-		if(typeof(top.history.pushState)=='function' && !modal)
+		if(update_history && typeof(top.history.pushState)=='function' && !modal)
 			{
 			top.history.pushState(document.title+'&&&'+data, applicationname, form.action);
 			}
@@ -1494,3 +1491,9 @@ function SelectTab()
 		});
 	});
 }
+
+// unset cookie
+function unsetCookie(cookieName, cpath)
+	{
+	document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;path=' + cpath;	
+	}

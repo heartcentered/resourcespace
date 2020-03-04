@@ -283,7 +283,7 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
         {
         hook("modifysearchfieldtitle");
         ?>
-        <div class="SearchItem" id="simplesearch_<?php echo $field["ref"] ?>" <?php if (!$displaycondition) {?>style="display:none;"<?php } if (strlen($field["tooltip_text"]) >= 1){ echo "title=\"" . htmlspecialchars(lang_or_i18n_get_translated($field["tooltip_text"], "fieldtooltip-")) . "\"";} ?> ><?php echo htmlspecialchars(lang_or_i18n_get_translated($field["title"], "fieldtitle-")) ?></br>
+        <div class="SearchItem" id="simplesearch_<?php echo $field["ref"] ?>" <?php if (!$displaycondition) {?>style="display:none;"<?php } if (strlen($field["tooltip_text"]) >= 1){ echo "title=\"" . htmlspecialchars(lang_or_i18n_get_translated($field["tooltip_text"], "fieldtooltip-")) . "\"";} ?> ><?php echo htmlspecialchars(lang_or_i18n_get_translated($field["title"], "fieldtitle-")) ?><br/>
         
         <?php
         #hook to modify field type in special case. Returning zero (to get a standard text box) doesn't work, so return 1 for type 0, 2 for type 1, etc.
@@ -529,7 +529,7 @@ function render_search_field($field,$value="",$autoupdate,$class="stdwidth",$for
               <option value=""><?php echo $lang["anyyear"]?></option>
               <?php
               $y=date("Y");
-              for ($d=$minyear;$d<=$y;$d++)
+              for ($d=$y;$d>=$minyear;$d--)
                 {
                 ?><option <?php if ($d==$found_year) { ?>selected<?php } ?>><?php echo $d?></option><?php
                 }
@@ -2699,10 +2699,10 @@ function render_upload_here_button(array $search_params, $return_params_only = f
     // Archive can be a list (e.g from advanced search) so always select the first archive state user access to, 
     // favouring the Active one
     $search_archive = explode(',', $search_params['archive']);
-    // Check access to Active state
-    if(in_array(0, $search_archive) && checkperm("e0"))
+    $default_workflow_state = get_default_archive_state(0);
+    if($default_workflow_state == 0)
         {
-        $upload_here_params['status'] = 0;
+        $upload_here_params['status'] = $default_workflow_state;
         $search_archive = array();
         }
     // Check remaining states
@@ -2713,23 +2713,18 @@ function render_upload_here_button(array $search_params, $return_params_only = f
             continue;
             }
 
-        if(checkperm("e{$archive}"))
+        if(get_default_archive_state($archive) != $archive)
             {
-            $upload_here_params['status'] = $archive;
-            break;
+            continue;
             }
+        
+        $upload_here_params['status'] = $archive;
+        break;
         }
     // Last attempt to set the archive state
     if(!isset($upload_here_params['status']))
         {
-        $editable_archives = get_editable_states($GLOBALS['userref']);
-
-        if($editable_archives === false || empty($editable_archives))
-            {
-            trigger_error("Unable to determine the correct archive state!");
-            }
-
-        $upload_here_params['status'] = $editable_archives[0]['id'];
+        $upload_here_params['status'] = $default_workflow_state;
         }
 
     // Option to return out just the upload params

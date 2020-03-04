@@ -42,6 +42,11 @@ if ((isset($header_link_style_override) && $header_link_style_override != ''))
         {
         border-color: <?php echo $header_link_style_override; ?>;
         }
+    #HeaderNav1 li.UploadButton a 
+        {
+        color: #FFFFFF;
+        }
+    
     <?php
     }
 
