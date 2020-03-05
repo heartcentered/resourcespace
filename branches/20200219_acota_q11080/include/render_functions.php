@@ -2885,99 +2885,6 @@ function render_help_link($page='',$return_string=false)
     }
 
 
-// @todo: break function apart once main logic is established
-// @todo: write phpdocs
-function render_custom_fields(array $cfields, array $errors)
-    {
-    if(empty($cfields))
-        {
-        return;
-        }
-
-    $expected_field_properties = array("title", "type", "required", "options");
-
-    foreach($cfields as $f)
-        {
-        // Skip over fields that were not properly configured
-        $available_properties = array_keys($f);
-        if($expected_field_properties !== $available_properties)
-            {
-            continue;
-            }
-
-        $field_id = md5(json_encode($f));
-
-        $field_renderer = function() use ($f, $field_id, $errors)
-            {
-            $required_html = ($f["required"] ? "<sup>*</sup>" : "");
-            ?>
-            <label for="custom_<?php echo $field_id; ?>"><?php echo htmlspecialchars(i18n_get_translated($f["title"])) . $required_html; ?></label>
-            <?php
-            $f_id = $f_name = "custom_{$field_id}";
-            $f_value = getval($f_id, ""); # @todo: inject current values into the function from outer context
-
-            switch($f["type"])
-                {
-                case FIELD_TYPE_TEXT_BOX_MULTI_LINE:
-                    ?>
-                    <textarea id="<?php echo $f_id; ?>"
-                              class="stdwidth MultiLine"
-                              name="<?php echo $f_name; ?>"
-                              rows=6
-                              cols=50><?php echo htmlspecialchars($f_value); ?></textarea>
-                    <?php
-                    break;
-
-                case FIELD_TYPE_DROP_DOWN_LIST:
-                    ?>
-                    <select id="<?php echo $f_id; ?>" class="stdwidth" name="<?php echo $f_name; ?>">
-                    <?php
-                    foreach($f["options"] as $i => $f_option)
-                        {
-                        $value = md5("{$f_id}_{$i}_{$f_option}");
-                        $label = htmlspecialchars(i18n_get_translated($f_option));
-                        $extra_attributes = ($value === $f_value ? " selected" : "");
-
-                        echo render_dropdown_option($value, $label, array(), $extra_attributes);
-                        }
-                    ?>
-                    </select>
-                    <?php
-                    break;
-
-                case FIELD_TYPE_CHECK_BOX_LIST:
-                    // @todo: render custom check box field
-                    break;
-
-                case FIELD_TYPE_TEXT_BOX_SINGLE_LINE:
-                default:
-                    ?>
-                    <input type=text
-                           id="<?php echo $f_id; ?>"
-                           class="stdwidth"
-                           name="<?php echo $f_name; ?>"
-                           value="<?php echo htmlspecialchars($f_value); ?>">
-                    <?php
-                    break;
-                }
-
-            if(!empty($errors) && isset($errors[$field_id]))
-                {
-                ?>
-                <div class="FormError"><?php echo htmlspecialchars($errors[$field_id]); ?></div>
-                <?php
-                }
-
-            return;
-            };
-
-        render_question_div("Question_{$field_id}", $field_renderer);
-        }
-
-    return;
-    }
-
-
 /**
 * Render generic Question div (including clearleft)
 * 
@@ -2996,4 +2903,79 @@ function render_question_div($id, callable $render_content)
     </div>
     <?php
     return;
+    }
+
+
+/**
+* Render custom fields (not metadata fields)
+* @todo: break function apart once main logic is established
+* @todo: write phpdocs
+*/
+function render_custom_fields(array $cfs)
+    {
+    return array_walk($cfs, function($field, $i)
+        {
+        render_question_div("Question_{$field["html_properties"]["id"]}", function() use ($field)
+            {
+            $field_id   = $field["html_properties"]["id"];
+            $field_name = $field["html_properties"]["name"];
+            $f_value = getval($field_id, ""); # @todo: inject current values into the function from outer context
+
+            $required_html = ($field["required"] ? "<sup>*</sup>" : "");
+            ?>
+            <label for="custom_<?php echo $field_id; ?>"><?php echo htmlspecialchars(i18n_get_translated($field["title"])) . $required_html; ?></label>
+            <?php
+            switch($field["type"])
+                {
+                case FIELD_TYPE_TEXT_BOX_MULTI_LINE:
+                    ?>
+                    <textarea id="<?php echo $field_id; ?>"
+                              class="stdwidth MultiLine"
+                              name="<?php echo $field_name; ?>"
+                              rows=6
+                              cols=50><?php echo htmlspecialchars($f_value); ?></textarea>
+                    <?php
+                    break;
+
+                case FIELD_TYPE_DROP_DOWN_LIST:
+                    ?>
+                    <select id="<?php echo $field_id; ?>" class="stdwidth" name="<?php echo $field_name; ?>">
+                    <?php
+                    foreach($field["options"] as $i => $f_option)
+                        {
+                        $value = md5("{$field_id}_{$i}_{$f_option}");
+                        $label = htmlspecialchars(i18n_get_translated($f_option));
+                        $extra_attributes = ($value === $f_value ? " selected" : "");
+
+                        echo render_dropdown_option($value, $label, array(), $extra_attributes);
+                        }
+                    ?>
+                    </select>
+                    <?php
+                    break;
+
+                case FIELD_TYPE_CHECK_BOX_LIST:
+                    // @todo: render custom check box field
+                    break;
+
+                case FIELD_TYPE_TEXT_BOX_SINGLE_LINE:
+                default:
+                    ?>
+                    <input type=text
+                           id="<?php echo $field_id; ?>"
+                           class="stdwidth"
+                           name="<?php echo $field_name; ?>"
+                           value="<?php echo htmlspecialchars($f_value); ?>">
+                    <?php
+                    break;
+                }
+
+            if(isset($field["error"]) && trim($field["error"]) != "")
+                {
+                ?>
+                <div class="FormError"><?php echo htmlspecialchars($field["error"]); ?></div>
+                <?php
+                }
+            });
+        });
     }
