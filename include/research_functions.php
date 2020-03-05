@@ -11,16 +11,25 @@ function send_research_request()
 	$rt="";
 	$types=get_resource_types();for ($n=0;$n<count($types);$n++) {if (getval("resource" . $types[$n]["ref"],"")!="") {if ($rt!="") {$rt.=", ";} $rt.=$types[$n]["ref"];}}
 	
-	global $userref;
+	global $userref, $custom_researchrequest_fields;
 	$as_user=getvalescaped("as_user",$userref,true); # If userref submitted, use that, else use this user
-	
-	# Insert the request
-	sql_query("insert into research_request(created,user,name,description,deadline,contact,email,finaluse,resource_types,noresources,shape)
+
+    $processed_rr_cfields = process_custom_fields_submission(
+        gen_custom_fields_html_props(
+            get_valid_custom_fields($custom_researchrequest_fields)
+        ),
+        true
+    );
+    $processed_rr_cfields = array_map(function($v) {unset($v["html_properties"]); return $v; }, $processed_rr_cfields);
+    $rr_cfields_json = json_encode($processed_rr_cfields);
+    $rr_cfields_json_sql = ($rr_cfields_json === false ? "NULL" : "'" . escape_check($rr_cfields_json) . "'");
+
+	sql_query("insert into research_request(created,user,name,description,deadline,contact,email,finaluse,resource_types,noresources,shape, custom_fields_json)
 	values (now(),'$as_user','" . getvalescaped("name","") . "','" . getvalescaped("description","") . "'," .
 	((getvalescaped("deadline","")=="")?"null":"'" . getvalescaped("deadline","") . "'") . 
 	",'" . getvalescaped("contact","") . "','" . getvalescaped("email","") . "','" . getvalescaped("finaluse","") . "','" . $rt . "'," .
 	((getvalescaped("noresources","")=="")?"null":"'" . getvalescaped("noresources","") . "'") . 
-	",'" . getvalescaped("shape","") . "')");
+	",'" . getvalescaped("shape","") . "', {$rr_cfields_json_sql})");
 
     // @todo: process custom fields received - consider injecting
 	
@@ -193,45 +202,4 @@ function set_research_collection($research,$collection)
 	{
 	sql_query("update research_request set collection='$collection' where ref='$research'");
 	}
-}	
-
-
-function process_research_custom_fields(array $fields)
-    {
-    if(empty($fields))
-        {
-        return true;
-        }
-
-    global $lang;
-
-    $expected_field_properties = array("title", "type", "required", "options");
-
-    $errors = array();
-
-    foreach($fields as $f)
-        {
-        // Skip over fields that were not properly configured
-        $available_properties = array_keys($f);
-        if($expected_field_properties !== $available_properties)
-            {
-            continue;
-            }
-
-        $field_id = md5(json_encode($f));
-        $field_name = "custom_{$field_id}";
-
-        if($f["required"] && trim(getval($field_name, "")) == "")
-            {
-            $errors[$field_id] = str_replace("%field", i18n_get_translated($f["title"]), $lang["researchrequest_custom_field_required"]);
-            continue;
-            }
-        }
-
-    if(!empty($errors))
-        {
-        return $errors;
-        }
-
-    return true;
-    }
+}

@@ -8,8 +8,15 @@ include_once "../include/request_functions.php";
 $name        = getval('name', '');
 $email       = getval('email', '');
 $description = getval('description', '');
+$save        = getval("save","") != "" && enforcePostRequest(false);
+$processed_rr_cfields = process_custom_fields_submission(
+    gen_custom_fields_html_props(
+        get_valid_custom_fields($custom_researchrequest_fields)
+    ),
+    $save
+);
 
-if (getval("save","") != "" && enforcePostRequest(false))
+if ($save)
     {
     $errors = false;
     if ($name == "")
@@ -30,25 +37,7 @@ if (getval("save","") != "" && enforcePostRequest(false))
         $error_email = true;
         }
 
-    $validation_errors = process_custom_fields($custom_researchrequest_fields, function($fields) use ($lang)
-        {
-        $errors = array();
-
-        foreach($fields as $field)
-            {
-            $field_name = "custom_field_{$field["id"]}";
-
-            if($field["required"] && trim(getval($field_name, "")) == "")
-                {
-                $errors[$field["id"]] = str_replace("%field", i18n_get_translated($field["title"]), $lang["researchrequest_custom_field_required"]);
-                continue;
-                }
-            }
-
-        return $errors;
-        });
-    $research_request_processing_errors = process_research_custom_fields($custom_researchrequest_fields);
-    if(is_array($research_request_processing_errors) && !empty($research_request_processing_errors))
+    if(count_errors($processed_rr_cfields) > 0)
         {
         $errors = true;
         }
@@ -185,9 +174,7 @@ include "../include/header.php";
             <div class="clearerleft"></div>
         </div>
         <?php
-        render_custom_fields(
-            $custom_researchrequest_fields,
-            isset($research_request_processing_errors) && is_array($research_request_processing_errors) ? $research_request_processing_errors : array());
+        render_custom_fields(gen_custom_fields_html_props($processed_rr_cfields));
 
         // Legacy plugins
         if(file_exists(dirname(__FILE__) . "/../plugins/research_request.php"))

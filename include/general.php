@@ -8039,3 +8039,27 @@ function delete_resource_type_field($ref)
 
     return true;
     }
+
+
+/**
+* Counting errors found in a collection of items. An error is found when an item has an "error" key.
+* 
+* @param  array  $a  Collection of items that may contain errors.
+* 
+* @return integer
+*/
+function count_errors(array $a)
+    {
+    return array_reduce(
+        $a,
+        function($carry, $item)
+            {
+            if(isset($item["error"]) && trim($item["error"]) !== "")
+                {
+                return ++$carry;
+                }
+
+            return $carry;
+            },
+        0);
+    }

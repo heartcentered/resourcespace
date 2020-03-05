@@ -1021,18 +1021,22 @@ function email_resource_request($ref,$details)
 
 
 /**
-* Process custom fields
+* Get collection of valid custom fields. A valid fields has at least the expected field properties
+* 
 * IMPORTANT: these fields are not metadata fields - they are configured through config options such as custom_researchrequest_fields
 * 
+* @param  array  $fields  List of custom fields. Often this will simply be the global configuratio option (e.g custom_researchrequest_fields)
+* 
+* @return array
 */
-function process_custom_fields(array $f, callable $callback)
+function get_valid_custom_fields(array $fields)
     {
-    if(empty($f))
+    if(empty($fields))
         {
-        return;
+        return $fields;
         }
 
-    $fields = array_filter($f, function($field)
+    return array_filter($fields, function($field)
         {
         global $lang, $FIXED_LIST_FIELD_TYPES;
 
@@ -1044,7 +1048,7 @@ function process_custom_fields(array $f, callable $callback)
 
         if(count($missing_required_fields) > 0)
             {
-            debug("process_custom_fields: custom field misconfigured. Missing properties: "
+            debug("get_valid_custom_fields: custom field misconfigured. Missing properties: "
                 . implode(", ", array_values($missing_required_fields)));
             return false;
             }
@@ -1052,12 +1056,84 @@ function process_custom_fields(array $f, callable $callback)
         // options property required for fixed list fields type
         if(in_array($field["type"], $FIXED_LIST_FIELD_TYPES) && !array_key_exists("options", $field))
             {
-            debug("process_custom_fields: custom field misconfigured. Missing the 'options' property for a fixed list type.");
+            debug("get_valid_custom_fields: custom fixed list field misconfigured. Missing the 'options' property!");
             return false;
             }
 
         return true;
         });
+    }
 
-    return $callback($fields);
+
+/**
+* Generate HTML properties for custom fields. These properties can then be used by other functions
+* like render_custom_fields or process_custom_fields_submission
+* 
+* @param  array  $fields  List of custom fields as returned by get_valid_custom_fields(). Note: At this point code 
+* assumes fields have been validated
+* 
+* @return array Returns collection items with the extra "html_properties" key
+*/
+function gen_custom_fields_html_props(array $fields)
+    {
+    return array_map(function($field)
+        {
+        $field["html_properties"] = array(
+            "id"   => "custom_field_{$field["id"]}",
+            "name" => "custom_field_{$field["id"]}",
+        );
+        return $field;
+        }, $fields);
+    }
+
+
+/**
+* Process custom fields
+* 
+* 
+* @param  array    $fields     List of custom fields as returned by get_valid_custom_fields(). Note: At this point code 
+*                              assumes fields have been validated
+* @param  boolean  $submitted  Processing submitted fields?
+* 
+* @return array Returns collection items with the extra "html_properties" key
+*/
+function process_custom_fields_submission(array $fields, $submitted)
+    {
+    if(!$submitted)
+        {
+        return $fields;
+        }
+
+    return array_map(function($field)
+        {
+        global $lang, $FIXED_LIST_FIELD_TYPES;
+
+        $field["value"] = trim(getval($field["html_properties"]["name"], ""));
+
+        if($field["required"] && $field["value"] == "")
+            {
+            $field["error"] = str_replace("%field", i18n_get_translated($field["title"]), $lang["researchrequest_custom_field_required"]);
+            return $field;
+            }
+
+        if(!in_array($field["type"], $FIXED_LIST_FIELD_TYPES))
+            {
+            return $field;
+            }
+
+        // Find the options selected
+        $field["value"] = implode(", ", array_filter($field["options"], function($option, $i) use ($field)
+            {
+            $computed_value = md5("{$field["html_properties"]["id"]}_{$i}_{$option}");
+            if($computed_value == $field["value"])
+                {
+                return true;
+                }
+
+            return false;
+            },
+            ARRAY_FILTER_USE_BOTH));
+
+        return $field;
+        }, $fields);
     }
