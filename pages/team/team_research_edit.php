@@ -79,13 +79,23 @@ if(!hook("replaceresearcheditshape"))
     <?php
     }
 
-render_custom_fields(
-    gen_custom_fields_html_props(
-        get_valid_custom_fields(
-            json_decode($research["custom_fields_json"], true)
-        )
+// Render research request custom fields
+$rr_cfields = gen_custom_fields_html_props(
+    get_valid_custom_fields(
+        json_decode($research["custom_fields_json"], true)
     )
 );
+array_walk($rr_cfields, function($field, $i)
+    {
+    render_question_div("Question_{$field["html_properties"]["id"]}", function() use ($field)
+        {
+        $field_id = $field["html_properties"]["id"];
+        ?>
+        <label for="custom_<?php echo $field_id; ?>"><?php echo htmlspecialchars(i18n_get_translated($field["title"])); ?></label>
+        <div class="Fixed"><?php echo htmlspecialchars(i18n_get_translated($field["value"])); ?></div>
+        <?php
+        });
+    });
 ?>
 <div class="Question"><label><?php echo $lang["assignedtoteammember"]?></label>
 <select class="shrtwidth" name="assigned_to"><option value="0"><?php echo $lang["requeststatus0"]?></option>

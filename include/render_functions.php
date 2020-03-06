@@ -2943,11 +2943,11 @@ function render_custom_fields(array $cfs)
                     <?php
                     foreach($field["options"] as $i => $f_option)
                         {
-                        $value = md5("{$field_id}_{$i}_{$f_option}");
+                        $computed_value = md5("{$field_id}_{$i}_{$f_option}");
                         $label = htmlspecialchars(i18n_get_translated($f_option));
-                        $extra_attributes = ($value === $f_value ? " selected" : "");
+                        $extra_attributes = ($computed_value === $f_value ? " selected" : "");
 
-                        echo render_dropdown_option($value, $label, array(), $extra_attributes);
+                        echo render_dropdown_option($computed_value, $label, array(), $extra_attributes);
                         }
                     ?>
                     </select>
