@@ -20,7 +20,11 @@ function send_research_request(array $rr_cfields)
     * @see gen_custom_fields_html_props()
     */
     $rr_cfields_json = json_encode(array_map(function($v) { unset($v["html_properties"]); return $v; }, $rr_cfields));
-    $rr_cfields_json_sql = ($rr_cfields_json === false ? "NULL" : "'" . escape_check($rr_cfields_json) . "'");
+    if(json_last_error() !== JSON_ERROR_NONE)
+        {
+        trigger_error(json_last_error_msg());
+        }
+    $rr_cfields_json_sql = ($rr_cfields_json == "" ? "NULL" : "'" . escape_check($rr_cfields_json) . "'");
 
 	sql_query("insert into research_request(created,user,name,description,deadline,contact,email,finaluse,resource_types,noresources,shape, custom_fields_json)
 	values (now(),'$as_user','" . getvalescaped("name","") . "','" . getvalescaped("description","") . "'," .
@@ -28,8 +32,6 @@ function send_research_request(array $rr_cfields)
 	",'" . getvalescaped("contact","") . "','" . getvalescaped("email","") . "','" . getvalescaped("finaluse","") . "','" . $rt . "'," .
 	((getvalescaped("noresources","")=="")?"null":"'" . getvalescaped("noresources","") . "'") . 
 	",'" . getvalescaped("shape","") . "', {$rr_cfields_json_sql})");
-
-    // @todo: process custom fields received - consider injecting
 	
 	# E-mails a resource request (posted) to the team
 	global $applicationname,$email_from,$baseurl,$email_notify,$username,$userfullname,$useremail,$lang, $admin_resource_access_notifications;
