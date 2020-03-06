@@ -1057,6 +1057,52 @@ function search_filter($search,$archive,$restypes,$starsearch,$recent_search_day
             $editable_filter.="(archive NOT IN ('" . implode("','",$blockeditstates) . "')" . (($blockeditoverride!="")?" OR " . $blockeditoverride:"") . ")";
             }
 
+        
+        // Check for blocked/allowed resource types
+        $allrestypes = get_resource_types();
+        $blockedrestypes = array();
+        foreach($allrestypes as $restype)
+            {
+            if(checkperm("XE" . $restype["ref"]))
+                {
+                $blockedrestypes[] = $restype["ref"]; 
+                }
+            }        
+        if(checkperm("XE"))
+            {
+            $okrestypes = array();
+            $okrestypesor = "";
+            foreach($allrestypes as $restype)
+                {
+                if(checkperm("XE-" . $restype["ref"]))
+                    {
+                    $okrestypes[] = $restype["ref"]; 
+                    }
+                }
+            if(count($okrestypes) > 0)
+                {
+                if ($editable_filter != "")
+                    {
+                    $editable_filter .= " AND ";
+                    }
+    
+                if ($edit_access_for_contributor)
+                    {
+                    $okrestypesor .= " created_by='" . $userref . "'";
+                    }
+    
+                $editable_filter.="(resource_type IN ('" . implode("','",$okrestypes) . "')" . (($okrestypesor != "") ? " OR " . $okrestypesor : "") . ")";
+                }
+            else
+                {
+                $editable_filter .= " AND 0=1";
+                }
+            }
+        
+
+
+
+
         $updated_editable_filter = hook("modifysearcheditable","",array($editable_filter,$userref));
         if($updated_editable_filter !== false)
             {

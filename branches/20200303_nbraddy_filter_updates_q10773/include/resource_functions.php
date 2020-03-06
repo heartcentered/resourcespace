@@ -3896,7 +3896,15 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
     if ($edit_access_for_contributor && $userref==$resourcedata["created_by"]) {return true;}
         
     # Must have edit permission to this resource first and foremost, before checking the filter.
-    if (!checkperm("e" . $status) && !checkperm("ert" . $resourcedata['resource_type'])) {return false;} 
+    if ((!checkperm("e" . $status) && !checkperm("ert" . $resourcedata['resource_type']))
+        ||
+        (checkperm("XE" . $resourcedata['resource_type']))
+        ||
+        (checkperm("XE") && !checkperm("XE-" . $resourcedata['resource_type']))
+        )
+        {
+        return false;
+        }
     
     # Cannot edit if z permission
     if (checkperm("z" . $status)) {return false;}
@@ -4003,7 +4011,6 @@ function filter_match($filter,$name,$value)
 		}
 	return 0;
 	}
-
 
 /**
 * Check changes made to a metadata field and create a nice user friendly summary
@@ -5864,10 +5871,9 @@ function filter_check($filterid,$nodes)
     foreach($filterrules as $filterrule)
         {
         // Check if any nodes are present that shouldn't be, or nodes not present that need to be 
-        $badnodes   = array_diff($filterrule["nodes_off"],$nodes);
+        $badnodes   = array_intersect($filterrule["nodes_off"],$nodes);
         $goodnodes  = array_intersect($filterrule["nodes_on"],$nodes); 
-
-        $rulemet    = count($badnodes) == 0 && count($goodnodes) > 0;
+        $rulemet    = count($badnodes) == 0 && (count($filterrule["nodes_on"]) == 0 || count($goodnodes) > 0);
         // Can return now if filter successfully matched and RS_FILTER_ANY or RS_FILTER_NONE,
         // or if filter not matched and RS_FILTER_ALL
         if($rulemet)

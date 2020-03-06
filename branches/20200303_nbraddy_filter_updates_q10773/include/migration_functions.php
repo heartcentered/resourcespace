@@ -160,7 +160,7 @@ function migrate_filter($filtertext)
         {
         return false;
         }
-        
+
     $all_fields=get_resource_type_fields();
 
     // Don't migrate if already migrated
@@ -184,9 +184,9 @@ function migrate_filter($filtertext)
         $filterid = sql_insert_id();
         $logtext .= "FILTER MIGRATION: - Created new filter. ID = " . $filterid . "'\n";
         }
-            
+
     $filter_rules = explode(";",$filtertext);
-    
+
     $errors = array();
     $n = 1;
     foreach($filter_rules as $filter_rule)
