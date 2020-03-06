@@ -1031,11 +1031,6 @@ function email_resource_request($ref,$details)
 */
 function get_valid_custom_fields(array $fields)
     {
-    if(empty($fields))
-        {
-        return $fields;
-        }
-
     return array_filter($fields, function($field)
         {
         global $lang, $FIXED_LIST_FIELD_TYPES;

@@ -8,7 +8,8 @@
 include "../../include/db.php";
 include_once "../../include/general.php";
 include "../../include/authenticate.php"; if (!checkperm("r")) {exit ("Permission denied.");}
-include "../../include/research_functions.php";
+include_once "../../include/research_functions.php";
+include_once "../../include/request_functions.php";
 
 $ref=getvalescaped("ref","",true);
 
@@ -68,13 +69,24 @@ include "../../include/header.php";
 <?php if (!hook("replaceresearcheditnoresources")){?>
 <div class="Question"><label><?php echo $lang["noresourcesrequired"]?></label><div class="Fixed"><?php echo $research["noresources"]?></div>
 <div class="clearerleft"> </div></div>
-<?php } ?>
+<?php }
 
-<?php if (!hook("replaceresearcheditshape")){?>
-<div class="Question"><label><?php echo $lang["shaperequired"]?></label><div class="Fixed"><?php echo $research["shape"]?></div>
-<div class="clearerleft"> </div></div>
-<?php } ?>
+if(!hook("replaceresearcheditshape"))
+    {
+    ?>
+    <div class="Question"><label><?php echo $lang["shaperequired"]?></label><div class="Fixed"><?php echo $research["shape"]?></div>
+    <div class="clearerleft"> </div></div>
+    <?php
+    }
 
+render_custom_fields(
+    gen_custom_fields_html_props(
+        get_valid_custom_fields(
+            json_decode($research["custom_fields_json"], true)
+        )
+    )
+);
+?>
 <div class="Question"><label><?php echo $lang["assignedtoteammember"]?></label>
 <select class="shrtwidth" name="assigned_to"><option value="0"><?php echo $lang["requeststatus0"]?></option>
 <?php $users=get_users_with_permission("r");
