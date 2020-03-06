@@ -1088,14 +1088,13 @@ function gen_custom_fields_html_props(array $fields)
 
 
 /**
-* Process custom fields
-* 
+* Process posted custom fields
 * 
 * @param  array    $fields     List of custom fields as returned by get_valid_custom_fields(). Note: At this point code 
 *                              assumes fields have been validated
 * @param  boolean  $submitted  Processing submitted fields?
 * 
-* @return array Returns collection items with the extra "html_properties" key
+* @return array Returns collection of items with the extra "html_properties" key
 */
 function process_custom_fields_submission(array $fields, $submitted)
     {
