@@ -8054,7 +8054,7 @@ function count_errors(array $a)
         $a,
         function($carry, $item)
             {
-            if(isset($item["error"]) && trim($item["error"]) !== "")
+            if(isset($item["error"]))
                 {
                 return ++$carry;
                 }
