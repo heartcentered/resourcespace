@@ -1109,29 +1109,27 @@ function process_custom_fields_submission(array $fields, $submitted)
 
         $field["value"] = trim(getval($field["html_properties"]["name"], ""));
 
+        if(in_array($field["type"], $FIXED_LIST_FIELD_TYPES))
+            {
+            // Find the options selected
+            $field["value"] = implode(", ", array_filter($field["options"], function($option, $i) use ($field)
+                {
+                $computed_value = md5("{$field["html_properties"]["id"]}_{$i}_{$option}");
+                if($computed_value == $field["value"])
+                    {
+                    return true;
+                    }
+
+                return false;
+                },
+                ARRAY_FILTER_USE_BOTH));
+            }
+
         if($field["required"] && $field["value"] == "")
             {
             $field["error"] = str_replace("%field", i18n_get_translated($field["title"]), $lang["researchrequest_custom_field_required"]);
             return $field;
             }
-
-        if(!in_array($field["type"], $FIXED_LIST_FIELD_TYPES))
-            {
-            return $field;
-            }
-
-        // Find the options selected
-        $field["value"] = implode(", ", array_filter($field["options"], function($option, $i) use ($field)
-            {
-            $computed_value = md5("{$field["html_properties"]["id"]}_{$i}_{$option}");
-            if($computed_value == $field["value"])
-                {
-                return true;
-                }
-
-            return false;
-            },
-            ARRAY_FILTER_USE_BOTH));
 
         return $field;
         }, $fields);
