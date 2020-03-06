@@ -174,7 +174,7 @@ include "../include/header.php";
             <div class="clearerleft"></div>
         </div>
         <?php
-        render_custom_fields(gen_custom_fields_html_props($processed_rr_cfields));
+        render_custom_fields($processed_rr_cfields);
 
         // Legacy plugins
         if(file_exists(dirname(__FILE__) . "/../plugins/research_request.php"))
