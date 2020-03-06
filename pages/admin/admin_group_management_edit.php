@@ -152,7 +152,7 @@ if (getval("save",false) && enforcePostRequest(false))
                 
                 if(is_numeric($migrateresult))
                     {
-                    log_activity($lang["filter_search_success"] . ": '" . $search_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
+                    log_activity($lang["filter_migrate_success"] . ": '" . $search_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
                     // Successfully migrated - now use the new filter
                     $val = $migrateresult;
                     }
@@ -162,7 +162,7 @@ if (getval("save",false) && enforcePostRequest(false))
                     // Error - set flag so as not to reattempt migration and notify admins of failure
                     $val = -1;
                     $notification_users = get_notification_users();
-                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_search_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
+                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
                     }
                 }
 			}
@@ -176,7 +176,7 @@ if (getval("save",false) && enforcePostRequest(false))
                 
                 if(is_numeric($migrateresult))
                     {
-                    log_activity($lang["filter_search_success"] . ": '" . $edit_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
+                    log_activity($lang["filter_migrate_success"] . ": '" . $edit_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
                     // Successfully migrated - now use the new filter
                     $val = $migrateresult;
                     }
@@ -186,7 +186,7 @@ if (getval("save",false) && enforcePostRequest(false))
                     // Error - set flag so as not to reattempt migration and notify admins of failure
                     $val = -1;
                     $notification_users = get_notification_users();
-                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_search_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
+                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
                     }
                 }
             }
@@ -200,7 +200,7 @@ if (getval("save",false) && enforcePostRequest(false))
                 
                 if(is_numeric($migrateresult))
                     {
-                    log_activity($lang["filter_search_success"] . ": '" . $derestrict_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
+                    log_activity($lang["filter_migrate_success"] . ": '" . $derestrict_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
                     // Successfully migrated - now use the new filter
                     $val = $migrateresult;
                     }
@@ -210,7 +210,7 @@ if (getval("save",false) && enforcePostRequest(false))
                     // Error - set flag so as not to reattempt migration and notify admins of failure
                     $val = -1;
                     $notification_users = get_notification_users();
-                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_search_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
+                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
                     }
                 }
             }		
@@ -361,7 +361,7 @@ include "../../include/header.php";
         <?php
         $filters = get_filters($order = "name", $sort = "ASC");
 
-		if ($search_filter_nodes && (strlen($record['search_filter']) == "" || (is_numeric($record['search_filter_id']) && $record['search_filter_id'] > -1)))
+		if ($search_filter_nodes)
 			{
             // Show filter selector if already migrated or no filter has been set
 			$filters = get_filters($order = "name", $sort = "ASC");
@@ -380,11 +380,10 @@ include "../../include/header.php";
 			</div>
 			<?php	
 			}
-		else
+		if(strlen($record['search_filter']) != "" && (!(is_numeric($record['search_filter_id']) || $record['search_filter_id'] < 1)))
 			{
-            // Show old style text filter input
+            // Show old style text filter input - will not appear once a new style filter has been selected
 			?>
-            <input type="hidden" name="search_filter_id" value="0" />
 			<div class="Question">
 				<label for="search_filter"><?php echo $lang["property-search_filter"]; ?></label>
 				<textarea name="search_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['search_filter']; ?></textarea>
@@ -392,9 +391,8 @@ include "../../include/header.php";
 			</div>
 			<?php
             }
-            
         
-		if ($search_filter_nodes && (strlen($record['edit_filter']) == "" || (is_numeric($record['edit_filter_id']) && $record['edit_filter_id'] > -1)))
+		if ($search_filter_nodes)
             {
             ?>
             <div class="Question">
@@ -411,20 +409,19 @@ include "../../include/header.php";
             </div>
             <?php	
             }
-        else
+            //exit("==" . $record['edit_filter_id'] . "==" . ((int)$record['edit_filter_id'] < 1 ? "TRUE" : "FALSE"));
+        if(strlen($record['edit_filter']) != "" && (!is_numeric($record['edit_filter_id']) || (int)$record['edit_filter_id'] < 1))
             {
-            // Show old style text filter input
             ?>
-            <input type="hidden" name="edit_filter_id" value="0" />
             <div class="Question">
-                <label for="edit_filter"><?php echo $lang["property-edit_filter"]; ?></label>
-                <textarea name="edit_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['edit_filter']; ?></textarea>
+                <label for="edit_filter"><?php echo $search_filter_nodes ? "" : $lang["property-edit_filter"]; ?></label>
+                <textarea name="edit_filter" class="stdwidth" rows="3" cols="50" <?php echo ($search_filter_nodes ? "disabled" : "");?>><?php echo $record['edit_filter']; ?></textarea>
                 <div class="clearerleft"></div>
             </div>
             <?php
             }
         
-        if ($search_filter_nodes && (strlen($record['derestrict_filter']) == "" || (is_numeric($record['derestrict_filter_id']) && $record['derestrict_filter_id'] > -1)))
+        if ($search_filter_nodes)
             {
             ?>
             <div class="Question">
@@ -441,11 +438,9 @@ include "../../include/header.php";
             </div>
             <?php	
             }
-        else
+        if(strlen($record['derestrict_filter']) != "" && (!(is_numeric($record['derestrict_filter_id']) || $record['derestrict_filter_id'] < 1)))
             {
-            // Show old style text filter input
             ?>
-            <input type="hidden" name="derestrict_filter_id" value="0" />
             <div class="Question">
                 <label for="derestrict_filter"><?php echo $lang["fieldtitle-derestrict_filter"]; ?></label>
                 <textarea name="derestrict_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['derestrict_filter']; ?></textarea>
