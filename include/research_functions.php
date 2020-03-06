@@ -3,7 +3,7 @@
 # Functions to accomodate research requests
 
 if (!function_exists("send_research_request")){
-function send_research_request()
+function send_research_request(array $rr_cfields)
 	{
 	# Insert a search request into the requests table.
 	
@@ -14,14 +14,12 @@ function send_research_request()
 	global $userref, $custom_researchrequest_fields;
 	$as_user=getvalescaped("as_user",$userref,true); # If userref submitted, use that, else use this user
 
-    $processed_rr_cfields = process_custom_fields_submission(
-        gen_custom_fields_html_props(
-            get_valid_custom_fields($custom_researchrequest_fields)
-        ),
-        true
-    );
-    $processed_rr_cfields = array_map(function($v) {unset($v["html_properties"]); return $v; }, $processed_rr_cfields);
-    $rr_cfields_json = json_encode($processed_rr_cfields);
+    /**
+    * @var string JSON representation of custom research request fields after removing the generated HTML properties we 
+    *             need during processing
+    * @see gen_custom_fields_html_props()
+    */
+    $rr_cfields_json = json_encode(array_map(function($v) { unset($v["html_properties"]); return $v; }, $rr_cfields));
     $rr_cfields_json_sql = ($rr_cfields_json === false ? "NULL" : "'" . escape_check($rr_cfields_json) . "'");
 
 	sql_query("insert into research_request(created,user,name,description,deadline,contact,email,finaluse,resource_types,noresources,shape, custom_fields_json)
