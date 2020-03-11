@@ -1085,14 +1085,15 @@ function gen_custom_fields_html_props(array $fields)
 /**
 * Process posted custom fields
 * 
-* @param  array    $fields     List of custom fields as returned by get_valid_custom_fields(). Note: At this point code 
-*                              assumes fields have been validated
+* @param  array    $fields     List of custom fields
 * @param  boolean  $submitted  Processing submitted fields?
 * 
 * @return array Returns collection of items with the extra "html_properties" key
 */
 function process_custom_fields_submission(array $fields, $submitted)
     {
+    $fields = gen_custom_fields_html_props(get_valid_custom_fields($fields));
+
     if(!$submitted)
         {
         return $fields;
@@ -1112,17 +1113,16 @@ function process_custom_fields_submission(array $fields, $submitted)
             $submitted_data = getval($field["html_properties"]["id"], array());
 
             // Find the selected options
-            $field["selected_options"] = array_filter($field["options"], function($option, $i) use ($field, $submitted_data)
+            $field["selected_options"] = array_filter($field["options"], function($option) use ($field, $submitted_data)
                 {
-                $computed_value = md5("{$field["html_properties"]["id"]}_{$i}_{$option}");
+                $computed_value = md5("{$field["html_properties"]["id"]}_{$option}");
                 if(in_array($computed_value, $submitted_data))
                     {
                     return true;
                     }
 
                 return false;
-                },
-                ARRAY_FILTER_USE_BOTH);
+                });
 
             $field["value"] = implode(", ", $field["selected_options"]);
             }
