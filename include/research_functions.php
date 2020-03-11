@@ -16,7 +16,7 @@ function send_research_request(array $rr_cfields)
 
     /**
     * @var string JSON representation of custom research request fields after removing the generated HTML properties we 
-    *             need during processing
+    *             needed during form processing
     * @see gen_custom_fields_html_props()
     */
     $rr_cfields_json = json_encode(array_map(function($v) { unset($v["html_properties"]); return $v; }, $rr_cfields));

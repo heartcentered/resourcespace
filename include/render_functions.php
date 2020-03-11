@@ -2919,7 +2919,14 @@ function render_custom_fields(array $cfs)
             {
             $field_id   = $field["html_properties"]["id"];
             $field_name = $field["html_properties"]["name"];
-            $f_value = getval($field_id, ""); # @todo: inject current values into the function from outer context
+
+            // When form hasn't been submitted - value and selected_options will not be defined
+            $f_value = (isset($field["value"]) ? $field["value"] : "");
+            $selected_options_hashes = (isset($field["selected_options"]) ? $field["selected_options"] : array());
+            array_walk($selected_options_hashes, function(&$opt, $i) use ($field_id)
+                {
+                $opt = md5("{$field_id}_{$i}_{$opt}");
+                });
 
             $required_html = ($field["required"] ? "<sup>*</sup>" : "");
             ?>
@@ -2945,7 +2952,7 @@ function render_custom_fields(array $cfs)
                         {
                         $computed_value = md5("{$field_id}_{$i}_{$f_option}");
                         $label = htmlspecialchars(i18n_get_translated($f_option));
-                        $extra_attributes = ($computed_value === $f_value ? " selected" : "");
+                        $extra_attributes = (in_array($computed_value, $selected_options_hashes) ? " selected" : "");
 
                         echo render_dropdown_option($computed_value, $label, array(), $extra_attributes);
                         }
@@ -2955,7 +2962,24 @@ function render_custom_fields(array $cfs)
                     break;
 
                 case FIELD_TYPE_CHECK_BOX_LIST:
-                    // @todo: render custom check box field
+                    ?>
+                    <div>
+                    <?php
+                    foreach($field["options"] as $i => $f_option)
+                        {
+                        $computed_value = md5("{$field_id}_{$i}_{$f_option}");
+                        $label = htmlspecialchars(i18n_get_translated($f_option));
+                        $checked = (in_array($computed_value, $selected_options_hashes) ? " checked" : "");
+                        ?>
+                        <div class="Inline">
+                            <input type="checkbox" name="<?php echo $field_name; ?>" value="<?php echo $computed_value; ?>"<?php echo $checked; ?>>&nbsp;<?php echo $label; ?>
+                        </div>
+                        <?php
+                        }
+                        ?>
+                        <div class="clearerleft"></div>
+                    </div>
+                    <?php
                     break;
 
                 case FIELD_TYPE_TEXT_BOX_SINGLE_LINE:

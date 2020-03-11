@@ -1075,7 +1075,7 @@ function gen_custom_fields_html_props(array $fields)
         {
         $field["html_properties"] = array(
             "id"   => "custom_field_{$field["id"]}",
-            "name" => "custom_field_{$field["id"]}",
+            "name" => (!empty($field["options"]) ? "custom_field_{$field["id"]}[]" : "custom_field_{$field["id"]}"),
         );
         return $field;
         }, $fields);
@@ -1106,18 +1106,25 @@ function process_custom_fields_submission(array $fields, $submitted)
 
         if(in_array($field["type"], $FIXED_LIST_FIELD_TYPES))
             {
-            // Find the options selected
-            $field["value"] = implode(", ", array_filter($field["options"], function($option, $i) use ($field)
+            // The HTML id and name are basically identical (@see gen_custom_fields_html_props() ). If field is of fixed 
+            // list type, then the name prop will be appended with "[]". For this reason, when we call getval() we need 
+            // to use the elements' ID instead.
+            $submitted_data = getval($field["html_properties"]["id"], array());
+
+            // Find the selected options
+            $field["selected_options"] = array_filter($field["options"], function($option, $i) use ($field, $submitted_data)
                 {
                 $computed_value = md5("{$field["html_properties"]["id"]}_{$i}_{$option}");
-                if($computed_value == $field["value"])
+                if(in_array($computed_value, $submitted_data))
                     {
                     return true;
                     }
 
                 return false;
                 },
-                ARRAY_FILTER_USE_BOTH));
+                ARRAY_FILTER_USE_BOTH);
+
+            $field["value"] = implode(", ", $field["selected_options"]);
             }
 
         if($field["required"] && $field["value"] == "")
