@@ -2907,9 +2907,11 @@ function render_question_div($id, callable $render_content)
 
 
 /**
-* Render custom fields (not metadata fields)
-* @todo: break function apart once main logic is established
-* @todo: write phpdocs
+* Render custom fields (NOT metadata fields)
+* 
+* @param  array  $cfs  Custom fields information (as returned by process_custom_fields_submission function)
+* 
+* @return true
 */
 function render_custom_fields(array $cfs)
     {
@@ -2922,11 +2924,10 @@ function render_custom_fields(array $cfs)
 
             // When form hasn't been submitted - value and selected_options will not be defined
             $f_value = (isset($field["value"]) ? $field["value"] : "");
-            $selected_options_hashes = (isset($field["selected_options"]) ? $field["selected_options"] : array());
-            array_walk($selected_options_hashes, function(&$opt, $i) use ($field_id)
+            $selected_options_hashes = array_map(function($opt) use ($field_id)
                 {
-                $opt = md5("{$field_id}_{$i}_{$opt}");
-                });
+                return md5("{$field_id}_{$opt}");
+                }, (isset($field["selected_options"]) ? $field["selected_options"] : array()));
 
             $required_html = ($field["required"] ? "<sup>*</sup>" : "");
             ?>
@@ -2948,9 +2949,9 @@ function render_custom_fields(array $cfs)
                     ?>
                     <select id="<?php echo $field_id; ?>" class="stdwidth" name="<?php echo $field_name; ?>">
                     <?php
-                    foreach($field["options"] as $i => $f_option)
+                    foreach($field["options"] as $f_option)
                         {
-                        $computed_value = md5("{$field_id}_{$i}_{$f_option}");
+                        $computed_value = md5("{$field_id}_{$f_option}");
                         $label = htmlspecialchars(i18n_get_translated($f_option));
                         $extra_attributes = (in_array($computed_value, $selected_options_hashes) ? " selected" : "");
 
@@ -2965,9 +2966,9 @@ function render_custom_fields(array $cfs)
                     ?>
                     <div>
                     <?php
-                    foreach($field["options"] as $i => $f_option)
+                    foreach($field["options"] as $f_option)
                         {
-                        $computed_value = md5("{$field_id}_{$i}_{$f_option}");
+                        $computed_value = md5("{$field_id}_{$f_option}");
                         $label = htmlspecialchars(i18n_get_translated($f_option));
                         $checked = (in_array($computed_value, $selected_options_hashes) ? " checked" : "");
                         ?>
