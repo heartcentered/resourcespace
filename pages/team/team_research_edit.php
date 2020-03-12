@@ -92,7 +92,7 @@ array_walk($rr_cfields, function($field, $i)
         $field_id = $field["html_properties"]["id"];
         ?>
         <label for="custom_<?php echo $field_id; ?>"><?php echo htmlspecialchars(i18n_get_translated($field["title"])); ?></label>
-        <div class="Fixed"><?php echo htmlspecialchars(i18n_get_translated($field["value"])); ?></div>
+        <div class="Fixed"><?php echo htmlspecialchars(i18n_get_translated($field["value"], false)); ?></div>
         <?php
         });
     });
