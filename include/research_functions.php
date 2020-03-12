@@ -19,7 +19,7 @@ function send_research_request(array $rr_cfields)
     *             needed during form processing
     * @see gen_custom_fields_html_props()
     */
-    $rr_cfields_json = json_encode(array_map(function($v) { unset($v["html_properties"]); return $v; }, $rr_cfields));
+    $rr_cfields_json = json_encode(array_map(function($v) { unset($v["html_properties"]); return $v; }, $rr_cfields), JSON_UNESCAPED_UNICODE);
     if(json_last_error() !== JSON_ERROR_NONE)
         {
         trigger_error(json_last_error_msg());
