@@ -2919,15 +2919,15 @@ function render_custom_fields(array $cfs)
         {
         render_question_div("Question_{$field["html_properties"]["id"]}", function() use ($field)
             {
-            $field_id   = $field["html_properties"]["id"];
-            $field_name = $field["html_properties"]["name"];
+            $field_id    = $field["html_properties"]["id"];
+            $field_name  = $field["html_properties"]["name"];
+            $field_value = $field["value"];
 
-            // When form hasn't been submitted - value and selected_options will not be defined
-            $f_value = (isset($field["value"]) ? $field["value"] : "");
+            global $FIXED_LIST_FIELD_TYPES;
             $selected_options_hashes = array_map(function($opt) use ($field_id)
                 {
                 return md5("{$field_id}_{$opt}");
-                }, (isset($field["selected_options"]) ? $field["selected_options"] : array()));
+                }, (in_array($field["type"], $FIXED_LIST_FIELD_TYPES) ? $field["selected_options"] : array()));
 
             $required_html = ($field["required"] ? "<sup>*</sup>" : "");
             ?>
@@ -2941,7 +2941,7 @@ function render_custom_fields(array $cfs)
                               class="stdwidth MultiLine"
                               name="<?php echo $field_name; ?>"
                               rows=6
-                              cols=50><?php echo htmlspecialchars($f_value); ?></textarea>
+                              cols=50><?php echo htmlspecialchars($field_value); ?></textarea>
                     <?php
                     break;
 
@@ -2990,7 +2990,7 @@ function render_custom_fields(array $cfs)
                            id="<?php echo $field_id; ?>"
                            class="stdwidth"
                            name="<?php echo $field_name; ?>"
-                           value="<?php echo htmlspecialchars($f_value); ?>">
+                           value="<?php echo htmlspecialchars($field_value); ?>">
                     <?php
                     break;
                 }

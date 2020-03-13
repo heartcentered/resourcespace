@@ -1092,14 +1092,7 @@ function gen_custom_fields_html_props(array $fields)
 */
 function process_custom_fields_submission(array $fields, $submitted)
     {
-    $fields = gen_custom_fields_html_props(get_valid_custom_fields($fields));
-
-    if(!$submitted)
-        {
-        return $fields;
-        }
-
-    return array_map(function($field)
+    return array_map(function($field) use ($submitted)
         {
         global $lang, $FIXED_LIST_FIELD_TYPES;
 
@@ -1127,12 +1120,12 @@ function process_custom_fields_submission(array $fields, $submitted)
             $field["value"] = implode(", ", $field["selected_options"]);
             }
 
-        if($field["required"] && $field["value"] == "")
+        if($submitted && $field["required"] && $field["value"] == "")
             {
             $field["error"] = str_replace("%field", i18n_get_translated($field["title"]), $lang["researchrequest_custom_field_required"]);
             return $field;
             }
 
         return $field;
-        }, $fields);
+        }, gen_custom_fields_html_props(get_valid_custom_fields($fields)));
     }
