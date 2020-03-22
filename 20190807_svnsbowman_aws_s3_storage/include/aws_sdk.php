@@ -9,7 +9,7 @@ include_once 'general.php';
 
 global $aws_region, $aws_key, $aws_secret, $storagedir;
 
-// Load the AWS PHP v3 SDK and setup initial parameters.
+// Load the AWS PHP v3 SDK and setup initial parameters (https://docs.aws.amazon.com/aws-sdk-php/v3/download/aws.zip).
 $aws_path = str_replace("filestore", "", $storagedir);
 require $aws_path . 'lib/aws_sdk_php_3.133.41/aws-autoloader.php';
 
@@ -21,10 +21,10 @@ use Aws\Exception\MultipartUploadException;
 use Aws\S3\MultipartUploader;
 use Aws\CloudWatch\CloudWatchClient;
 
-// Latest AWS S3 API version.
+// Latest AWS S3 API version (https://docs.aws.amazon.com/aws-sdk-php/v3/api/api-s3-2006-03-01.html).
 $aws_s3_version = '2006-03-01';
 
-// Latest AWS CloudWatch API version.
+// Latest AWS CloudWatch API version (https://docs.aws.amazon.com/aws-sdk-php/v3/api/api-monitoring-2010-08-01.html).
 $aws_cw_version = '2010-08-01';
 
 // Create an AWS S3 connection client and catch errors.
