@@ -150,6 +150,28 @@ $collection_download_tar_option=false; // Default to using tar downloads for all
 // IMPORTANT: requires JAVA > 1.7
 // $fits_path = '/opt/fits-1.2.0';
 
+// AMAZON WEB SERVICES (AWS) SIMPLE STORAGE SERVICE (S3) OBJECT-BASED FILESTORE FOR ORIGINAL FILES-----------------
+// Requires curl and php-curl extension; must also set $storagedir, $exiftool_write = true, $force_exiftool_write_metadata = true, $replace_resource_preserve_option = false, $replace_resource_preserve_default = false, and $replace_batch_existing = false.
+    // Use AWS S3 storage for original files? (https://aws.amazon.com/s3/)
+    $aws_s3 = false;
+    $s3Client = ''; // Leave empty.
+
+    // AWS region the S3 storage bucket is located in, typically set to the region closest to your server, see https://docs.aws.amazon.com/general/latest/gr/rande.html for details.
+    $aws_region = ''; # Options: us-east-1, us-east-2, us-west-1, us-west-2, ca-central-1, eu-central-1, eu-west-1, eu-west-2, eu-west-3, eu-north-1, ap-east-1, ap-northeast-1, ap-northeast-2, ap-northeast-3, ap-southeast-1, ap-southeast-2, ap-south-1, me-south-1, sa-east-1, us-gov-east-1, or us-gov-west-1
+
+    // AWS S3 bucket name, see https://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html for bucket naming restrictions.
+    $aws_bucket = '';
+
+    // AWS storage class, see https://aws.amazon.com/s3/storage-classes/ for details.
+    $aws_storage_class = 'INTELLIGENT_TIERING'; # Options: STANDARD, INTELLIGENT_TIERING, STANDARD_IA, ONEZONE_IA, or REDUCED_REDUNDANCY
+
+    // AWS access keys, see https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html#access-keys-and-secret-access-keys for details.
+    $aws_key = ''; # AWS account access key.
+    $aws_secret = ''; # AWS account secret key.
+
+    // File age in minutes to purge in filestore tmp folder, not subfolders, minimum of 5 minutes.
+    $aws_tmp_purge = 5;
+
 /* ---------------------------------------------------
 OTHER PARAMETERS
 
@@ -1889,6 +1911,9 @@ $resource_deletion_state=3;
 # Does deleting resources require password entry? (single resource delete)
 # Off by default as resources are no longer really deleted by default, they are simply moved to a deleted state which is less dangerous - see $resource_deletion_state above.
 $delete_requires_password=false;
+
+// Show list of files to delete before actually deleting?
+$show_files_delete = false;
 
 # Offline processes (e.g. staticsync and create_previews.php) - for process locking, how old does a lock have to be before it is ignored?
 $process_locks_max_seconds=60*60*4; # 4 hours default.

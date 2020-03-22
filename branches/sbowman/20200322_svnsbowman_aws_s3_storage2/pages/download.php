@@ -7,6 +7,10 @@ include_once dirname(__FILE__) . '/../include/db.php';
 include_once dirname(__FILE__) . '/../include/general.php';
 include_once dirname(__FILE__) . '/../include/resource_functions.php';
 include_once dirname(__FILE__) . '/../include/search_functions.php';
+if ($aws_s3)
+    {
+    include_once dirname(__FILE__) . '/../include/aws_sdk.php';
+    }
 ob_end_clean(); 
 
 $k="";
@@ -130,6 +134,43 @@ else
     $noattach = getval('noattach','');
     $path     = get_resource_path($ref, true, $size, false, $ext, -1, $page, $use_watermark && $alternative == -1, '', $alternative);
 
+    // If using AWS S3 storage, get original file from the specified S3 bucket and save to the tmp folder.
+    if($aws_s3 && $size == '')
+        {
+        global $aws_bucket, $s3Client;
+
+        // Determine local S3 object tmpfile name.
+        $s3_tmpfile = aws_s3_file_tempname($path);
+
+        // Cleanup tmp folder by purging files based on file age.
+        filestore_temp_cleanup(5);
+
+        try
+            {
+            // Check if file exists in the specified AWS S3 bucket.
+            $s3_path = aws_s3_object_path($path);
+            $s3_result = $s3Client->doesObjectExist($aws_bucket, $s3_path);
+            debug("PAGES/DOWNLOAD S3 DoesObjectExist: " . boolean_convert($s3_result, "ok"));
+
+            // Download original file from the AWS S3 bucket and save in the tmp location.
+            if ($s3_result)
+                {
+                $s3_result = $s3Client->getObject([
+                    'Bucket' => $aws_bucket,
+                    'Key' => $s3_path,
+                    'SaveAs' => $s3_tmpfile
+                ]);
+                debug("PAGES/DOWNLOAD S3 GetObject: " . boolean_convert($s3_result, "ok"));
+                $path = $s3_tmpfile;
+                }
+            }
+        catch (Aws\S3\Exception\S3Exception $e) // Error check.
+            {
+            debug("PAGES/DOWNLOAD S3 Download Error: " . $e->getMessage());
+            }
+
+        }
+
     // Snapshots taken for videos? Make sure we convert to the real snapshot file
     if(1 < $ffmpeg_snapshot_frames && 0 < $snapshot_frame)
         {
@@ -173,7 +214,7 @@ else
         }
     }
 
-debug("PAGES/DOWNLOAD.PHP: Preparing to download/ stream file '{$path}'");
+debug("PAGES/DOWNLOAD.PHP: Preparing to download/stream file '{$path}'");
 
 // File does not exist
 if(!file_exists($path))
@@ -331,6 +372,13 @@ if(!hook('replacefileoutput'))
         }
 
     fclose($file_handle);
+    }
+
+// Delete download tmp file created from using AWS S3 storage.
+if($aws_s3 && file_exists($s3_tmpfile))
+    {
+    $result = unlink($s3_tmpfile);
+    debug("PAGES/DOWNLOAD Delete Temp File: " . boolean_convert($result, "ok"));
     }
 
 // Deleting Exiftool temp File:

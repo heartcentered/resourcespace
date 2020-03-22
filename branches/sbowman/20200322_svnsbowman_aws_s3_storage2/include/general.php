@@ -8117,4 +8117,30 @@ function search_array_by_keyvalue($array2search, $search_key, $search_value, $re
         }
 
     return $return_array; 
-    }    
+    }
+
+
+// Function to format date and time by $date_d_m_y and $year_yyyy settings.
+function format_datetime()
+    {
+    global $date_d_m_y, $year_yyyy;
+
+    if($date_d_m_y && !$year_yyyy)
+        {
+        $date_format = "d/m/y H:i:s";
+        }
+    elseif($date_d_m_y && $year_yyyy)
+        {
+        $date_format = "d/m/Y H:i:s";
+        }
+    elseif(!$date_d_m_y && !$year_yyyy)
+        {
+        $date_format = "m/d/y h:i:s A";
+        }
+    else
+        {
+        $date_format = "m/d/Y h:i:s A";
+        }
+
+    return $date_format;
+    }

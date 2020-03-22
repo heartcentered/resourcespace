@@ -9,6 +9,11 @@ include "../include/resource_functions.php";
 include_once "../include/collections_functions.php";
 include_once "../include/search_functions.php";
 
+global $aws_s3;
+if ($aws_s3)
+    {
+    include_once "../include/aws_sdk.php";
+    }
 
 $overquota                              = overquota();
 $status                                 = '';
@@ -611,6 +616,13 @@ if ($_FILES)
                             chmod($path,0777);
                             $file_size = @filesize_unlimited($path);
                             
+                            // AWS S3 original alternative file upload.
+                            if ($aws_s3)
+                                {
+                                debug("UPLOAD_PLUPLOAD-S3 Alternative File: " . $path);
+                                $s3_result = aws_s3_object_uploader($path, '', false);
+                                }
+                            
                             # Save alternative file data.
                             sql_query("update resource_alt_files set file_name='" . escape_check($plfilename) . "',file_extension='" . escape_check($extension) . "',file_size='" . $file_size . "',creation_date=now() where resource='$alternative' and ref='$aref'");
                             
@@ -637,7 +649,13 @@ if ($_FILES)
 			    	
                             # Update disk usage
                             update_disk_usage($alternative);
-	
+
+                            // For AWS S3 storage, delete filestore original alternative file and create a placeholder file.
+                            if ($aws_s3)
+                                {
+                                aws_s3_file_placeholder($path);
+                                }
+
                             die(
                                 json_encode(
                                     array(
@@ -782,6 +800,16 @@ if ($_FILES)
                                 }
                                 
                             $wait = hook('afterpluploadfile', '', array($ref, $extension));
+                            
+                            // AWS S3 original file upload.
+                            if ($aws_s3)
+                                {
+                                // Upload original file to AWS S3 storage.
+                                $fs_path = get_resource_path($ref, true, '', false, $extension);
+                                debug("UPLOAD_PLUPLOAD-S3 Original Upload Path: " . $fs_path);
+                                $s3_result = aws_s3_object_uploader($fs_path, '', true);
+                                }
+                            
                             die('{"jsonrpc" : "2.0", "message" : "' . $lang["created"] . '", "id" : "' . htmlspecialchars($ref) . '", "collection" : "' . $collection_add . '" }');
                             }
                         else if ($replace=="" && $replace_resource!="")
@@ -839,6 +867,14 @@ if ($_FILES)
                                         {
                                         unlink($plupload_processed_filepath);
                                         }
+                                    
+                                    // AWS S3 original file replace.
+                                    if ($aws_s3)
+                                        {
+                                        $fs_path = get_resource_path($target_resource[0], true, '', false, $extension);
+                                        debug("UPLOAD_PLUPLOAD-S3 Original Replace Path: " . $fs_path);
+                                        $s3_result = aws_s3_object_uploader($fs_path, '', true);
+                                        }
 
 									die('{"jsonrpc" : "2.0", "message" : "' . $lang["upload_success"] . ' - ' . $lang["replacefile"] . '", "id" : "' . htmlspecialchars($target_resource[0]) . '"}');
 									}
@@ -863,6 +899,15 @@ if ($_FILES)
 										foreach ($target_resource as $replaced)
 											{
                                             $success = replace_resource_file($replaced,$plupload_upload_location,$no_exif,$autorotate,$keep_original);
+                                            
+                                            // AWS S3 original file upload.
+                                            if ($aws_s3)
+                                                {
+                                                $fs_path = get_resource_path($replaced, true, '', false, $extension);
+                                                debug("UPLOAD_PLUPLOAD-S3 Original Replace Path: " . $fs_path);
+                                                $s3_result = aws_s3_object_uploader($fs_path, '', true);
+                                                }
+                                            
                                             if (!$success)
                                                 {
                                                 die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "Failed to replace resource file"}, "id" : "' . htmlspecialchars($replaced) . '"}');
@@ -915,6 +960,15 @@ if ($_FILES)
                                             $save_original = ($keep_original == 1) ? save_original_file_as_alternative($ref) : true;
                                             
                                             $success = replace_resource_file($ref,$plupload_upload_location,$no_exif,$autorotate,$keep_original);
+                                            
+                                            // AWS S3 original file replace.
+                                            if ($aws_s3)
+                                                {
+                                                $fs_path = get_resource_path($ref, true, '', false, $extension);
+                                                debug("UPLOAD_PLUPLOAD-S3 Original Upload Path: " . $fs_path);
+                                                $s3_result = aws_s3_object_uploader($fs_path, '', true);
+                                                }
+                                            
                                             if (!$success)
                                                 {
                                                 die('{"jsonrpc" : "2.0", "error" : {"code": 109, "message": "Failed to replace resource file"}, "id" : "' . htmlspecialchars($ref) . '"}');

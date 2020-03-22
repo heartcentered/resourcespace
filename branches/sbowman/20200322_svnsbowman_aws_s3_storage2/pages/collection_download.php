@@ -10,7 +10,10 @@ include "../include/resource_functions.php";
 include_once '../include/csv_export_functions.php';
 include_once '../include/pdf_functions.php';
 ob_end_clean();
-$uniqid="";$id="";
+global $aws_s3;
+
+$uniqid="";
+$id="";
 $collection=getvalescaped("collection","",true);  if ($k!=""){$usercollection=$collection;}
 $size=getvalescaped("size","");
 $submitted=getvalescaped("submitted","");
@@ -213,17 +216,24 @@ if ($submitted != "")
 		$usesize = ($size == 'original') ? "" : $usesize=$size;
 		$use_watermark=check_use_watermark();
 		
-		# Find file to use
-		$f=get_resource_path($ref,true,$usesize,false,$pextension,-1,1,$use_watermark);
-		if (!file_exists($f))
-			{
-			# Selected size doesn't exist, use original file
-			$f=get_resource_path($ref,true,'',false,$result[$n]['file_extension'],-1,1,$use_watermark);
-			}
-		if (file_exists($f))
-			{
-			$totalsize+=filesize_unlimited($f);
-			}
+		// Find file to use
+		$f = get_resource_path($ref, true, $usesize, false, $pextension, -1, 1, $use_watermark);
+		if(!file_exists($f) && !$aws_s3)
+            {
+            // Selected size does not exist, use original file.
+            $f = get_resource_path($ref, true, '', false, $result[$n]['file_extension'], -1 , 1, $use_watermark);
+            }
+        if(file_exists($f) && !$aws_s3)
+            {
+            $totalsize += filesize_unlimited($f);
+            debug("COLLECTION_DOWNLOAD/ID: " . $ref . " Filesize = " . filesize_unlimited($f));
+            }
+        else // Use fize size value in existing resource table for AWS S3 stored files.
+            {
+            $ref_data = get_resource_data($ref);
+            $totalsize += $ref_data['file_size'];
+            debug("COLLECTION_DOWNLOAD/S3 ID: " . $ref . " Filesize = " . $ref_data['file_size']);
+            }
 		}
 	if ($totalsize>$collection_download_max_size  && !$collection_download_tar)
 		{
@@ -333,17 +343,258 @@ if ($submitted != "")
 				$tmpfile = false;
 				if($exiftool_write_option)
 					{
-					# when writing metadata, we take an extra security measure by copying the files to tmp
-					$tmpfile = write_metadata($p, $ref, $id); // copies file
-	
-					if($tmpfile!==false && file_exists($tmpfile))
-						{
-						$p=$tmpfile; // file already in tmp, just rename it
-						}
-					else if (!$replaced_file)
-						{
-						$copy=true; // copy the file from filestore rather than renaming
-						}
+					// If using AWS S3 storage, get original files from the AWS S3 bucket instead.
+                    if($aws_s3)
+                        {
+                        include_once '../include/aws_sdk.php';
+                        global $s3Client, $storagedir, $exiftool_remove_existing, $exiftool_write, $exiftool_no_process, $mysql_charset, $exiftool_write_omit_utf8_conversion, $aws_bucket;
+
+                        // Fetch file extension and resource type.
+                        $resource_data = get_resource_data($ref);
+                        $extension = $resource_data["file_extension"];
+                        $resource_type = $resource_data["resource_type"];
+
+                        // Check if an attempt to write the metadata shall be performed.
+                        $exiftool_fullpath = get_utility_path("exiftool");
+                        if(false != $exiftool_fullpath && $exiftool_write && $exiftool_write_option && !in_array($extension, $exiftool_no_process))
+                            {
+                            // Trust ExifTool's list of writable formats.
+                            $writable_formats = run_command("{$exiftool_fullpath} -listwf");
+                            $writable_formats = str_replace("\n", "", $writable_formats);
+                            $writable_formats_array = explode(" ", $writable_formats);
+                            if(!in_array(strtoupper($extension), $writable_formats_array))
+                                {
+                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: No ExifTool writable file formats.");
+                                exit(); // No writable file formats.
+                                }
+                            else
+                                {
+                                // Determine tmp directory.
+                                $tmp_dir = get_temp_dir(false, $uniqid);
+                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA tmp folder: " . $tmp_dir);
+
+                                // Determine tmp filename to save as.
+                                $file_path_info = pathinfo($p);
+                                $filename = md5(mt_rand()) . "_{$file_path_info['basename']}";
+                                $tmpfile = "{$tmp_dir}/{$filename}";
+                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA tmpfile: " . $tmpfile);
+
+                                // Strip $storagedir and trailing slash from path for original file in the AWS S3 bucket.
+                                $p = str_replace($storagedir . DIRECTORY_SEPARATOR, "", $p);
+
+                                // Check the AWS S3 file path for a leading slash and if present, delete it.
+                                $path_check = substr($p, 0, 1);
+                                if($path_check == DIRECTORY_SEPARATOR)
+                                    {
+                                    $p = substr($p,1); // Strip leading slash in path for AWS S3.
+                                    }
+                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA Download Path: " . $p);
+
+                                // Check if file exists in the specified AWS S3 bucket.
+                                try {
+                                    $s3result = $s3Client->doesObjectExist($aws_bucket, $p);
+                                    if($s3result == 1)
+                                        {
+                                        $s3result = "Ok";
+                                        }
+                                    debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA doesObjectExist: " . $s3result);
+                                    }
+                                catch (Aws\S3\Exception\S3Exception $e)
+                                    {
+                                    debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA doesObjectExist Error: " . $e->getMessage());
+                                    }
+
+                                // Only proceed if file exists in the specified AWS S3 bucket.
+                                if($s3result == "Ok")
+                                    {
+                                    // Download file from the AWS S3 bucket to the tmp directory.
+                                    try {
+                                        $s3result2 = $s3Client->getObject([
+                                            'Bucket' => $aws_bucket,
+                                            'Key' => $p,
+                                            'SaveAs' => $tmpfile
+                                        ]);
+                                        }
+                                    catch (Aws\S3\Exception\S3Exception $e) // Error check.
+                                        {
+                                        debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA S3 Download Error: " . $e->getMessage());
+                                        }
+
+                                    // Check for successful file download from the AWS S3 bucket to the tmp location.
+                                    if(file_exists($tmpfile) && is_readable($tmpfile))
+                                        {
+                                        debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA S3 File Downloaded To: " . $tmpfile);
+                                        }
+                                    else
+                                        {
+                                        debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA S3 Download Failure");
+                                        }
+
+                                    // Add a call to ExifTool and some generic arguments to the command string.
+                                    $command = $exiftool_fullpath . " -m -overwrite_original -E ";
+                                    if($exiftool_remove_existing)
+                                        {
+                                        $command = stripMetadata(null) . ' ';
+                                        }
+
+                                    // Returns an array of ExifTool fields for the particular resource type, which are basically fields with an 'exiftool field' set.
+                                    $metadata_all = get_resource_field_data($ref, false, true, -1, getval("k","") != ""); // Using get_resource_field_data and honor field permissions.
+
+                                    $write_to = array();
+                                    foreach($metadata_all as $metadata_item)
+                                        {
+                                        if(trim($metadata_item["exiftool_field"]) != "")
+                                            {
+                                            $write_to[] = $metadata_item;
+                                            }
+                                        }
+
+                                        $writtenfields = array(); // Check if writing to an embedded field from more than one RS field where subsequent values need to be appended, not replaced.
+
+                                        for($i = 0; $i < count($write_to); $i++) // Loop through all the found fields.
+                                            {
+                                            $fieldtype = $write_to[$i]['type'];
+                                            $writevalue = $write_to[$i]['value'];
+
+                                            // Formatting and cleaning of the value to be written depending on the RS field type.
+                                            switch ($fieldtype)
+                                                {
+                                                case 2:
+                                                case 3:
+                                                case 9:
+                                                case 12: // Check box list, dropdown, radio buttons, or dynamic keyword list: remove initial comma if present.
+                                                    if (substr($writevalue, 0, 1) == ",")
+                                                        {
+                                                        $writevalue = substr($writevalue, 1);
+                                                        }
+                                                    break;
+                                                case 4:
+                                                case 6:
+                                                case 10: // Date/Expiry Date: write datetype fields in ExifTool preferred format.
+                                                    if($writevalue != '')
+                                                        {
+                                                        $writevalue_to_time = strtotime($writevalue);
+                                                        if($writevalue_to_time != '')
+                                                            {
+                                                            $writevalue = date("Y:m:d H:i:sP", strtotime($writevalue));
+                                                            }
+                                                        }
+                                                    break; // Other types, already set.
+                                                }
+                                            $filtervalue = hook("additionalmetadatafilter", "", array($write_to[$i]["exiftool_field"], $writevalue));
+                                            if ($filtervalue) $writevalue = $filtervalue;
+
+                                            # Add the tag name(s) and the value to the command string.
+                                            $group_tags = explode(",", $write_to[$i]['exiftool_field']); # Each 'exiftool field' may contain more than one tag.
+                                            foreach ($group_tags as $group_tag)
+                                                {
+                                                $group_tag = strtolower($group_tag); // IPTC:Keywords -> iptc:keywords
+                                                if (strpos($group_tag, ":") === false)
+                                                    { // subject -> subject
+                                                    $tag = $group_tag;
+                                                    }
+                                                else // iptc:keywords -> keywords
+                                                    {
+                                                    $tag = substr($group_tag, strpos($group_tag, ":") + 1);
+                                                    }
+
+                                                $exifappend = false; // Need to replace values by default.
+                                                if(isset($writtenfields[$group_tag]))
+                                                    {
+                                                    // This embedded field is already being updated, we need to append values from this field.
+                                                    $exifappend = true;
+                                                    debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: More than one field mapped to the tag '" . $group_tag . "'. Enabling append mode for this tag.");
+                                                    }
+
+                                                switch ($tag)
+                                                    {
+                                                    case "filesize": // Do nothing, no point to try to write the filesize.
+                                                        break;
+                                                    case "filename": // Do nothing, no point to try to write the filename either as RS controls this.
+                                                        break;
+                                                    case "directory": // Do nothing, we do not want metadata to control this.
+                                                        break;
+                                                    case "keywords": // Keywords shall be written one at a time and not all together.
+                                                        if(!isset($writtenfields["keywords"]))
+                                                            {
+                                                            $writtenfields["keywords"] = "";
+                                                            }
+                                                        $keywords = explode(",", $writevalue); // "keyword1,keyword2, keyword3" (with or without spaces).
+                                                        if (implode("", $keywords) != "")
+                                                            {
+                                                            # Only write non-empty keywords, may be more than one field mapped to keywords so we do not want to overwrite with blank.
+                                                            foreach ($keywords as $keyword)
+                                                                {
+                                                                $keyword = trim($keyword);
+                                                                if ($keyword != "")
+                                                                    {
+                                                                    debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: Writing keyword: " . $keyword);
+                                                                    $writtenfields[$group_tag] .= "," . $keyword;
+
+                                                                    # Convert the data to UTF-8 if not already.
+                                                                    if (!$exiftool_write_omit_utf8_conversion && (!isset($mysql_charset) || (isset($mysql_charset) && strtolower($mysql_charset) != "utf8")))
+                                                                        {
+                                                                        $keyword = mb_convert_encoding($keyword, mb_detect_encoding($keyword), 'UTF-8');
+                                                                        }
+                                                                    $command.= escapeshellarg("-" . $group_tag . "-=" . htmlentities($keyword, ENT_QUOTES, "UTF-8")) . " "; // In case value is already embedded, need to manually remove it to prevent duplication
+                                                                    $command.= escapeshellarg("-" . $group_tag . "+=" . htmlentities($keyword, ENT_QUOTES, "UTF-8")) . " ";
+                                                                    }
+                                                                }
+                                                            }
+                                                        break;
+                                                    default:
+                                                        if($exifappend && ($writevalue == "" || ($writevalue != "" && strpos($writtenfields[$group_tag], $writevalue) !== false)))
+                                                            {
+                                                            // The new value is blank or already included in what is being written; skip to next group tag.
+                                                            continue;
+                                                            }
+
+                                                        $writtenfields[$group_tag] = $writevalue;
+                                                        debug ("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: Updating Tag: " . $group_tag);
+                                                        // Write as is, convert the data to UTF-8 if not already.
+
+                                                        global $strip_rich_field_tags;
+                                                        if (!$exiftool_write_omit_utf8_conversion && (!isset($mysql_charset) || (isset($mysql_charset) && strtolower($mysql_charset) != "utf8")))
+                                                            {
+                                                            $writevalue = mb_convert_encoding($writevalue, mb_detect_encoding($writevalue), 'UTF-8');
+                                                            }
+                                                            if ($strip_rich_field_tags)
+                                                                {
+                                                            $command .= escapeshellarg("-" . $group_tag . "=" . trim(strip_tags($writevalue))) . " ";
+                                                                }
+                                                            else
+                                                                {
+                                                                $command .= escapeshellarg("-" . $group_tag . "=" . htmlentities($writevalue, ENT_QUOTES, "UTF-8")) . " ";
+                                                                }
+                                                    }
+                                                }
+                                            }
+
+                                                // Add the filename to the command string and execute.
+                                                $command .= " " . escapeshellarg($tmpfile);
+                                                $output = run_command($command);
+                                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA Complete: " . $tmpfile);
+                                                }
+                                            else
+                                                {
+                                                debug("COLLECTION_DOWNLOAD/S3 WRITE_METADATA: Fail " . $p);
+                                                }
+                                }
+                            }
+                        }
+                    else
+                        {
+                        $tmpfile = write_metadata($p, $ref, $id); // Copies file from normal filestore.
+                        }
+
+                    if($tmpfile !== false && file_exists($tmpfile)) // File already in tmp, just rename it.
+                        {
+                        $p = $tmpfile;
+                        }
+                    elseif(!$replaced_file) // Copy the file from filestore rather than renaming.
+                        {
+                        $copy = true;
+                        }
 					}
 
 				# if the tmpfile is made, from here on we are working with that. 
@@ -734,9 +985,8 @@ if ($archiver && count($collection_download_settings)>1)
 </div>
 
 <?php
-if($exiftool_write && !$force_exiftool_write_metadata)
-    {
-    ?>
+if($exiftool_write && !$force_exiftool_write_metadata && !$aws_s3)
+    { ?>
     <!-- Let user say (if allowed - ie. not enforced by system admin) whether metadata should be written to the file or not -->
     <div class="Question" id="exiftool_question" <?php if($collection_download_tar_option){echo "style=\"display:none;\"";} ?>>
         <label for="write_metadata_on_download"><?php echo $lang['collection_download__write_metadata_on_download_label']; ?></label>

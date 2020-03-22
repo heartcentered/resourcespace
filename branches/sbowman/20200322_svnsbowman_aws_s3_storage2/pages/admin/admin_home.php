@@ -72,6 +72,10 @@ include ("../../include/header.php");
 			<li><i aria-hidden="true" class="fa fa-fw fa-bolt"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/admin/admin_system_performance.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["system_performance"]?></a></li>
 			<li><i aria-hidden="true" class="fa fa-fw fa-cog"></i>&nbsp;<a href="<?php echo $baseurl; ?>/pages/admin/admin_system_config.php" onClick="return CentralSpaceLoad(this, true);"><?php echo $lang['systemconfig']; ?></a></li>
 			<?php
+            if($aws_s3)
+                { ?>
+                <li><i aria-hidden="true" class="fa fa-fw fa-amazon"></i>&nbsp;<a href="<?php echo $baseurl; ?>/pages/admin/admin_system_aws.php" onClick="return CentralSpaceLoad(this, true);"><?php echo $lang['system_aws']; ?></a></li> <?php
+                }
 			}
 hook("customadminfunction");
 ?>
