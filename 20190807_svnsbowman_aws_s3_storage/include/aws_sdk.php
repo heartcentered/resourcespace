@@ -1,6 +1,6 @@
 <?php
-// Amazon Web Services (AWS) PHP v3 SDK API S3 and CloudWatch Clients Setup and Related Functions
-// Last Updated 8/15/2019 by Steve D. Bowman
+// Amazon Web Services (AWS) PHP v3 SDK API Simple Storage Service (S3) and CloudWatch Clients Setup and Related Functions
+// Last Updated 3/22/2020 by Steve D. Bowman
 
 // Files are referred to as 'objects' in object-based storage systems and since they only store objects and have no traditional folder structure, the filename or 'key' includes the full filestore path to keep the same file structure in the filestore and AWS S3 storage.  The AWS credential 'key' and 'secret' should not be shared, as anyone with these values can access your data in AWS.
 
@@ -11,7 +11,7 @@ global $aws_region, $aws_key, $aws_secret, $storagedir;
 
 // Load the AWS PHP v3 SDK and setup initial parameters.
 $aws_path = str_replace("filestore", "", $storagedir);
-require $aws_path . 'lib/aws_sdk_php_3.109.4/aws-autoloader.php';
+require $aws_path . 'lib/aws_sdk_php_3.133.41/aws-autoloader.php';
 
 use Aws\S3\S3Client;
 use Aws\S3\Exception\S3Exception;
@@ -21,10 +21,13 @@ use Aws\Exception\MultipartUploadException;
 use Aws\S3\MultipartUploader;
 use Aws\CloudWatch\CloudWatchClient;
 
-$aws_s3_version = '2006-03-01'; // Latest AWS S3 API version.
-$aws_cw_version = '2010-08-01'; // Latest AWS CloudWatch API version.
+// Latest AWS S3 API version.
+$aws_s3_version = '2006-03-01';
 
-// Create an AWS Simple Storage Service (S3) connection client and catch errors.
+// Latest AWS CloudWatch API version.
+$aws_cw_version = '2010-08-01';
+
+// Create an AWS S3 connection client and catch errors.
 try
     {
     $s3Client = new Aws\S3\S3Client([
@@ -37,7 +40,7 @@ try
     ]);
     debug("AWS_SDK/S3 Client Setup: OK");
     }
-catch  (Aws\S3\Exception\S3Exception $e) // Error catch.
+catch(Aws\S3\Exception\S3Exception $e) // Error catch.
     {
     debug("AWS_SDK/S3 Client Error: " . $e->getMessage());
     }
@@ -74,7 +77,7 @@ function aws_s3_bucket_location($aws_bucket)
         $s3_result['location'] = $result['LocationConstraint'];
         $s3_result['status'] = $lang["status-ok"];
         }
-    catch (Aws\S3\Exception\S3Exception $e)
+    catch(Aws\S3\Exception\S3Exception $e)
         {
         $s3_result['status'] = $lang["status-fail"];
         debug("AWS_S3_BUCKET_LOCATION Error: " . $e->getMessage());
@@ -96,7 +99,7 @@ function aws_s3_bucket_check($aws_bucket)
         ]);
         $s3_result = $lang["status-ok"];
         }
-    catch (Aws\S3\Exception\S3Exception $e)
+    catch(Aws\S3\Exception\S3Exception $e)
         {
         $s3_result = $lang["status-fail"];
         debug("AWS_S3_BUCKET_CHECK Error: " . $e->getMessage());
@@ -120,7 +123,7 @@ function aws_s3_bucket_owner($aws_bucket)
         $s3_result['id'] = $result['Owner']['ID'];
         $s3_result['status'] = $lang["status-ok"];
         }
-    catch (Aws\S3\Exception\S3Exception $e)
+    catch(Aws\S3\Exception\S3Exception $e)
         {
         $s3_result['status'] = $lang["status-fail"];
         debug("AWS_S3_BUCKET_OWNER Error: " . $e->getMessage());
@@ -172,7 +175,7 @@ function aws_s3_bucket_statistics($cw_metric, $cw_statistic, $cw_unit, $cw_stora
     // Setup input parameters.
     $result = aws_s3_storage_class($aws_storage_class);
     
-    if ($cw_storage == "")
+    if($cw_storage == "")
         {
         $s3_storage_type = $result['code'];
         }
@@ -203,7 +206,7 @@ function aws_s3_bucket_statistics($cw_metric, $cw_statistic, $cw_unit, $cw_stora
         $cw_data = end($cw_result['Datapoints']);
         $cw_data['status'] = "";
         }
-    catch (Aws\Exception\AwsException $e) // Error checking.
+    catch(Aws\Exception\AwsException $e) // Error checking.
         {
         $cw_data['status'] = $lang["status-fail"];
         debug("AWS_S3_BUCKET_STATISTICS Error: " . $e->getMessage());
@@ -240,7 +243,7 @@ function aws_s3_object_check($path)
         $s3_result = $s3Client->doesObjectExist($aws_bucket, $s3_path);
         debug("AWS_S3_OBJECT_CHECK: " . boolean_convert($s3_result, "ok") . ", " . $s3_path);
         }
-    catch (Aws\S3\Exception\S3Exception $e) // Error check.
+    catch(Aws\S3\Exception\S3Exception $e) // Error check.
         {
         debug("AWS_S3_OBJECT_CHECK Error: " . $e->getAwsErrorMessage());
         return false;
@@ -256,7 +259,7 @@ function aws_s3_object_uploader($fs_path, $s3_path = '', $fs_delete = false)
     global $s3Client, $aws_bucket, $aws_storage_class, $lang;
 
     // Determine the AWS S3 upload file path parameters.
-    if ($s3_path == '')
+    if($s3_path == '')
         {
         $s3_path = aws_s3_object_path($fs_path);
         }
@@ -276,18 +279,18 @@ function aws_s3_object_uploader($fs_path, $s3_path = '', $fs_delete = false)
         try // Use SDK putObject.
             {
             $s3_result = $s3_uploader->upload();
-            if ($s3_result["@metadata"]["statusCode"] == '200' && $s3_upload_type == "PO")
+            if($s3_result["@metadata"]["statusCode"] == '200' && $s3_upload_type == "PO")
                 {
                 debug("AWS_S3_OBJECT_UPLOADER putObject: " . $lang["status-ok"] . ", " . $s3_result["ObjectURL"]);
                 $s3_out = true;
                 }
-            elseif ($s3_result["@metadata"]["statusCode"] == '200' && $s3_upload_type == "MP")
+            elseif($s3_result["@metadata"]["statusCode"] == '200' && $s3_upload_type == "MP")
                 {
                 debug("AWS_S3_OBJECT_UPLOADER Multipart: " . $lang["status-ok"] . ", " . $s3_result["ObjectURL"]);
                 $s3_out = true;
                 }
             }
-        catch (MultipartUploadException $e) // Use SDK MultipartUploader.
+        catch(MultipartUploadException $e) // Use SDK MultipartUploader.
             {
             rewind($fs_stream);
             $s3_uploader = new MultipartUploader($s3Client, $fs_stream, [
@@ -300,7 +303,7 @@ function aws_s3_object_uploader($fs_path, $s3_path = '', $fs_delete = false)
             $s3_upload_type = "MP";
             }
         }
-    while (!isset($s3_result));
+    while(!isset($s3_result));
 
     // Delete original file and create placeholder file in the local filestore if a successful AWS S3 upload.
     if ($fs_delete)
@@ -315,7 +318,7 @@ function aws_s3_object_uploader($fs_path, $s3_path = '', $fs_delete = false)
 // Delete a filestore original file and create a placeholder file in its place.
 function aws_s3_file_placeholder($fs_path)
     {
-    if (is_file($fs_path))
+    if(is_file($fs_path))
         {
         // Delete the filestore original file, as it is now in AWS S3 storage.
         $s3_result = unlink($fs_path);
@@ -363,7 +366,7 @@ function aws_s3_object_copy($old_path, $new_path, $old_delete = false)
 
     try
         {
-        if (!$s3_path)
+        if(!$s3_path)
             {
             $s3_result = $s3Client->copyObject([
                 'Bucket' => $aws_bucket,
@@ -374,7 +377,7 @@ function aws_s3_object_copy($old_path, $new_path, $old_delete = false)
             debug("AWS_S3_OBJECT_COPY: " . boolean_convert($s3_result, "ok"));
 
             // Delete AWS S3 old path object.
-            if ($old_delete && $s3_result)
+            if($old_delete && $s3_result)
                 {
                 $s3_result = aws_s3_object_delete(false, $old_path);
                 debug("AWS_S3_OBJECT_COPY Delete Old Object: " . boolean_convert($s3_result, "ok"));
@@ -385,7 +388,7 @@ function aws_s3_object_copy($old_path, $new_path, $old_delete = false)
             return false;
             }
         }
-    catch (Aws\S3\Exception\S3Exception $e) // Error check.
+    catch(Aws\S3\Exception\S3Exception $e) // Error check.
         {
         debug("AWS_S3_OBJECT_COPY Error: " . $e->getMessage());
         return false;
@@ -406,7 +409,7 @@ function aws_s3_object_download($path, $s3_tmpfile)
     // Download the original file from the AWS S3 bucket and save in the specified location.
     try
         {
-        if (!$s3_path)
+        if(!$s3_path)
             {
             $s3_result = $s3Client->getObject([
                 'Bucket' => $aws_bucket,
@@ -420,7 +423,7 @@ function aws_s3_object_download($path, $s3_tmpfile)
             return false;
             }
         }
-    catch (Aws\S3\Exception\S3Exception $e) // Error check.
+    catch(Aws\S3\Exception\S3Exception $e) // Error check.
         {
         debug("AWS_S3_OBJECT_DOWNLOAD Error: " . $e->getMessage());
         return false;
@@ -448,12 +451,12 @@ function aws_s3_object_delete($ref, $fs_path = "")
     global $s3Client, $aws_bucket;
 
     // Determine original file AWS SDK S3 parameters by $ref ID.
-    if (!$ref && is_numeric($ref))
+    if(!$ref && is_numeric($ref))
         {
         $fs_path1 = get_resource_path($ref, true, '', false);
         $s3_path = aws_s3_object_path($fs_path1);
         }
-    elseif ($fs_path != "") // Determine original file AWS SDK S3 parameters by filestore file path, such as for alternative files.
+    elseif($fs_path != "") // Determine original file AWS SDK S3 parameters by filestore file path, such as for alternative files.
         {
         $s3_path = aws_s3_object_path($fs_path);
         }
@@ -467,7 +470,7 @@ function aws_s3_object_delete($ref, $fs_path = "")
     try
         {
         $s3_check = aws_s3_object_check($s3_path);
-        if (!$s3_check)
+        if(!$s3_check)
             {
             $s3_result = $s3Client->deleteObject([
                 'Bucket' => $aws_bucket,
@@ -481,7 +484,7 @@ function aws_s3_object_delete($ref, $fs_path = "")
             return false;
             }
         }
-    catch (Aws\S3\Exception\S3Exception $e) // Error check.
+    catch(Aws\S3\Exception\S3Exception $e) // Error check.
         {
         debug("AWS_S3_OBJECT_DELETE Error: " . $e->getAwsErrorMessage());
         return false;
@@ -500,7 +503,7 @@ function filestore_temp_cleanup($min_age = 5)
     $age = $aws_tmp_purge * 60;
 
     // Set the minimum file age to protect other operations.
-    if ($age < $min_age * 60)
+    if($age < $min_age * 60)
         {
         $age = $min_age * 60;
         }    
@@ -508,13 +511,13 @@ function filestore_temp_cleanup($min_age = 5)
     if(file_exists($tmp_dir))
         {
         $time_now = time();
-        foreach (new FilesystemIterator($tmp_dir) as $file)
+        foreach(new FilesystemIterator($tmp_dir) as $file)
             {
-            if (is_dir($file))
+            if(is_dir($file))
                 {
                 continue;
                 }
-            if (is_file($file) && $age == 0 || $time_now - $file->getCTime() >= $age)
+            if(is_file($file) && $age == 0 || $time_now - $file->getCTime() >= $age)
                 {
                 $result = unlink($file->getRealPath());
                 debug("FILESTORE_TEMP_CLEANUP: " . boolean_convert($result, "ok"));
@@ -534,15 +537,15 @@ function filestore_folder_cleanup($path, $filename_text)
 
     if(file_exists($path))
         {
-        foreach (new FilesystemIterator($path) as $file)
+        foreach(new FilesystemIterator($path) as $file)
             {
             $filename = pathinfo($file, PATHINFO_FILENAME);
             
-            if (is_dir($file))
+            if(is_dir($file))
                 {
                 continue;
                 }
-            if (is_file($file) && strpos($filename, $filename_text) !== false)
+            if(is_file($file) && strpos($filename, $filename_text) !== false)
                 {
                 $result = unlink($file->getRealPath());
                 debug("FILESTORE_FOLDER_CLEANUP: " . boolean_convert($result, "ok") . ", " . $file);
@@ -560,19 +563,19 @@ function boolean_convert($input, $type)
     {
     global $lang;
 
-    if ($input && $type == "ok")
+    if($input && $type == "ok")
         {
         $result = $lang["status-ok"];
         }
-    elseif (!$input && $type == "ok")
+    elseif(!$input && $type == "ok")
         {
         $result = $lang["status-fail"];
         }
-    elseif ($input && $type == "yes")
+    elseif($input && $type == "yes")
         {
         $result = $lang["yes"];
         }
-    elseif (!$input && $type == "yes")
+    elseif(!$input && $type == "yes")
         {
         $result = $lang["no"];
         }
