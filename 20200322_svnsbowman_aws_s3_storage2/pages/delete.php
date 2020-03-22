@@ -28,6 +28,30 @@ $sort=getval("sort",$default_sort_direction);
 
 $error="";
 
+// Determine resource file directory path for later check after deleting resource.
+$ref_path = get_resource_path($ref, true, '', false);
+$ref_path = pathinfo($ref_path);
+$resource_path = $ref_path['dirname'] . "\n";
+$resource_path = substr_replace($resource_path, "", -1);
+
+// Determine AWS S3 file delete parameters.
+global $aws_s3, $delete_check, $delete_folder_check;
+if($aws_s3)
+    {
+    include_once '../include/aws_sdk.php';
+    global $s3Client, $aws_bucket, $storagedir, $resource_deletion_state;
+    $resource = get_resource_data($ref);
+
+    // Strip $storagedir and leading slash from path for S3.
+    $s3_path = ltrim(str_replace($storagedir, "", $resource_path), "/") . "/";
+
+    // Return list of objects (files) in the AWS S3 bucket.
+    $list_result = $s3Client->listObjectsV2([
+        'Bucket' => $aws_bucket,
+        'Prefix' => $s3_path,
+    ]);
+    }
+
 # Not allowed to edit this resource? They shouldn't have been able to get here.
 if (!get_edit_access($ref,$resource["archive"],false,$resource)) {exit ("Permission denied.");}
 
@@ -44,7 +68,31 @@ if (getval("save","")!="" && enforcePostRequest(getval("ajax", false)))
 		hook("custompredeleteresource");
 
 		delete_resource($ref);
-		
+
+        // Delete original file in an AWS S3 bucket.
+        if ($aws_s3 && $resource['archive'] == 3)
+            {
+            $s3filepath = get_resource_path($ref, true, '', false);
+            $s3strippath = ltrim(str_replace($storagedir, "", $s3filepath), DIRECTORY_SEPARATOR);
+
+            // Use AWS SDK doesObjectExist to verify and deleteObject to delete the file in the specified AWS S3 bucket.
+            try
+                {
+                $s3result = $s3Client->doesObjectExist($aws_bucket, $s3strippath);
+                if ($s3result)
+                    {
+                    $del_result = $s3Client->deleteObject([
+                        'Bucket' => $aws_bucket,
+                        'Key' => $s3strippath,
+                    ]);
+                    }
+                }
+            catch (Aws\S3\Exception\S3Exception $e) // Error check.
+                {
+                debug("PAGES/DELETE S3 Check Error: " . $e->getAwsErrorMessage());
+                }
+            }
+
 		hook("custompostdeleteresource");
 		
 		echo "<script>
@@ -100,9 +148,48 @@ if(!$modal)
 	<?php if ($error!="") { ?><div class="FormError">!! <?php echo htmlspecialchars($error) ?> !!</div><?php } ?>
 	</div>
 	<?php }
-	
-	$cancelparams = array();
 
+    // Show list of files and folder to delete?
+    if($aws_s3 || $show_files_delete)
+        { ?>
+        <br>
+        <h2><?php echo $lang["deletefilecheck"]?></h2>
+        <p><?php echo $lang["deletefilechecktext"]?></p>
+        <?php
+        // List normal filestore files.
+        $scandir = scandir($resource_path);
+        echo $lang["filestore"] . " (" . $resource_path . ")";
+        ?> <br> <hr> &nbsp;&nbsp;&nbsp; <?php
+        echo $resource_path;
+        ?> <br> <?php
+        foreach($scandir as $sdir)
+            {
+            if($sdir != "." && $sdir != "..")
+                {
+                ?> &nbsp;&nbsp;&nbsp; <?php
+                echo $sdir;
+                ?> <br> <?php
+                }
+            }
+        ?> <br> <?php
+
+        // List AWS S3 files.
+        if ($aws_s3)
+            {
+            echo $lang["aws_s3"] . " (" . $s3_path . ")";
+            ?> <br> <hr> <?php
+            foreach($list_result["Contents"] as $lresult)
+                {
+                ?> &nbsp;&nbsp;&nbsp; <?php
+                $s3_file = pathinfo($lresult["Key"]);
+                $s3_file = $s3_file['basename'];
+                echo $s3_file;
+                ?> <br> <?php
+                }
+            }
+        } ?> <br> <?php
+
+	$cancelparams = array();
 	$cancelparams["ref"] 		= $ref;
 	$cancelparams["search"] 	= $search;
 	$cancelparams["offset"] 	= $offset;

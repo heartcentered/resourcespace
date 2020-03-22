@@ -6,6 +6,8 @@ include "../include/search_functions.php";
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref","",true),$k))) {include "../include/authenticate.php";}
 
+global $aws_s3;
+
 $ref=getval("ref","");
 $size=getval("size","");
 $ext=getval("ext","");
@@ -63,7 +65,13 @@ if (!$save_as)
 	?>
 	<h2>&nbsp;<h2>
     <h1><?php echo $lang["downloadinprogress"]?></h1>
-    <p><?php echo text("introtext")?></p>
+    <p><?php echo text("introtext");
+    if($aws_s3)
+        { ?>
+        <br/> <?php
+        echo $lang["aws_s3_download_text"];
+        }
+    ?></p>
 	<?php } 
 	$offset= getval("saved_offset",getval("offset",""));
 	$order_by= getval("saved_order_by",getval("order_by",""));
