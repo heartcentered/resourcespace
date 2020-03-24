@@ -2867,4 +2867,4 @@ $lang["invalid_date_error"]                 = "Error: %row% '%date%' in [%field%
 $lang["error_server_missing_module"]        = "The server is missing the required software: %%MODULE%%. Please contact your system administrator";
 $lang["error_check_config"]                 = "Please check config option %%CONFIG_OPTION%%";
 $lang["useaspreviewimage"]                  = "Use as preview image";
-
+$lang["error_edit_filter_invalid"]          = "The edit filter is not correctly configured for this user group. Please contact your administrator";

@@ -2456,8 +2456,8 @@ function setup_user($userdata)
             $usersearchfilter=isset($userdata["search_filter_override"]) && $userdata["search_filter_override"]!='' ? $userdata["search_filter_override"] : $userdata["search_filter"];
             }
             
-        $usereditfilter         = (isset($userdata["edit_filter_id"]) && is_numeric($userdata["edit_filter_id"]) && $userdata['edit_filter_id'] > 0) ? $userdata['edit_filter_id'] : $userdata["edit_filter"];
-        $userderestrictfilter   = (isset($userdata["derestrict_filter_id"]) && is_numeric($userdata["derestrict_filter_id"]) && $userdata['derestrict_filter_id'] > 0) ? $userdata['derestrict_filter_id'] : $userdata["derestrict_filter"];;
+        $usereditfilter         = ($search_filter_nodes && isset($userdata["edit_filter_id"]) && is_numeric($userdata["edit_filter_id"]) && $userdata['edit_filter_id'] > 0) ? $userdata['edit_filter_id'] : $userdata["edit_filter"];
+        $userderestrictfilter   = ($search_filter_nodes && isset($userdata["derestrict_filter_id"]) && is_numeric($userdata["derestrict_filter_id"]) && $userdata['derestrict_filter_id'] > 0) ? $userdata['derestrict_filter_id'] : $userdata["derestrict_filter"];;
 
         $hidden_collections=explode(",",$userdata["hidden_collections"]);
         $userresourcedefaults=$userdata["resource_defaults"];

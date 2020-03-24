@@ -662,3 +662,48 @@ function get_export_tables($exportcollection=0)
     return $exporttables;
     }
 
+function edit_filter_to_restype_permission($filtertext, $usergroup, $existingperms)
+    {
+    $addpermissions = array($filtertext);
+    // Replace any resource type edit filter sections with new XE/XE-?/XE? permissions
+    $filterrules = explode(";", $filtertext);
+    $cleanedrules = array();
+    foreach($filterrules as $filterrule)
+        {
+        $filterparts = explode("=",$filterrule);
+        $checkattr = trim(strtolower($filterparts[0]));
+        if(substr($checkattr,0,13) == "resource_type")
+            {
+            $filternot = false;
+            if(substr($checkattr,-1) == "!")
+                {
+                $filternot = true;
+                }
+            else
+                {
+                // Only allowing certain resource types. Add permission to block all resource types 
+                // and then add a permission for each permitted type
+                $addpermissions[] = "XE";
+                }
+            
+            $checkrestypes = explode("|",$filterparts[1]);
+            foreach($checkrestypes as $checkrestype)
+                {
+                // Add either XE-? or XE? permission, depending on whether group is only allowed to edit the specified types or everything except these types
+                $addpermissions[] = "XE" . ($filternot ? "" : "-") . (int)trim($checkrestype);
+                }
+            }
+        else
+            {
+            $cleanedrules[] = trim($filterrule);
+            }
+        }
+    $newperms = array_diff($addpermissions,$existingperms);
+    if(count($newperms) > 0)
+        {
+        sql_query("UPDATE usergroup SET permissions=CONCAT(permissions,'," . implode(",",$newperms) . "') WHERE ref='" . $usergroup . "'");
+        }
+    // Reconstruct filter text without this to create new filter
+    $newfiltertext = implode(";",$cleanedrules);
+    return $newfiltertext;
+    }
