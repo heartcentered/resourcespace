@@ -3742,6 +3742,28 @@ function get_resource_access($resource)
 	// Check for a derestrict filter, this allows exceptions for users without the 'g' permission who normally have restricted accesss to all available resources)
 	if ($access==1 && !checkperm("g") && !checkperm("rws{$resourcedata['archive']}") && !checkperm('X'.$resource_type) && trim($userderestrictfilter) != "")
 		{
+        if($search_filter_nodes && strlen(trim($userderestrictfilter)) > 0 && !is_numeric($userderestrictfilter) && $userderestrictfilter != 0)
+            {
+            // Migrate unless marked not to due to failure (flag will be reset if group is edited)
+            $migrateresult = migrate_filter($userderestrictfilter);
+            $notification_users = get_notification_users();
+            global $userdata, $lang, $baseurl;
+            if(is_numeric($migrateresult))
+                {
+                // Successfully migrated - now use the new filter
+                sql_query("UPDATE usergroup SET derestrict_filter_id='" . $migrateresult . "' WHERE ref='" . $usergroup . "'");
+                debug("FILTER MIGRATION: Migrated derestrict_filter_id filter - '" . $userderestrictfilter . "' filter id#" . $migrateresult);
+                $userderestrictfilter = $migrateresult;
+                }
+            elseif(is_array($migrateresult))
+                {
+                debug("FILTER MIGRATION: Error migrating filter: '" . $userderestrictfilter . "' - " . implode('\n' ,$migrateresult));
+                // Error - set flag so as not to reattempt migration and notify admins of failure
+                sql_query("UPDATE usergroup SET derestrict_filter_id='0' WHERE ref='" . $usergroup . "'");
+                message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl . "/pages/admin/admin_group_management_edit.php",array("ref"=>$usergroup)));
+                }
+            }
+
         if($search_filter_nodes && is_numeric($userderestrictfilter) && $userderestrictfilter > 0)
             {
             $matchedfilter = filter_check($userderestrictfilter, get_resource_nodes($ref));
@@ -3754,6 +3776,7 @@ function get_resource_access($resource)
                 #  load metadata if not already loaded
                 $metadata=get_resource_field_data($ref,false,false);
                 }
+
             $matchedfilter=false;
             for ($n=0;$n<count($metadata);$n++)
                 {
@@ -3875,7 +3898,7 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
 	# For the provided resource and metadata, does the current user have edit access to this resource?
     # Checks the edit permissions (e0, e-1 etc.) and also the group edit filter which filters edit access based on resource metadata.
 	
-    global $userref,$usereditfilter,$edit_access_for_contributor, $search_filter_nodes;
+    global $userref,$usergroup, $usereditfilter,$edit_access_for_contributor, $search_filter_nodes;
     $plugincustomeditaccess = hook('customediteaccess','',array($resource,$status,$resourcedata));
 
     if($plugincustomeditaccess)
@@ -3919,8 +3942,30 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
         } 
 	
     $gotmatch=false;
+
+    if($search_filter_nodes && strlen(trim($usereditfilter)) > 0 && !is_numeric($usereditfilter) && $usereditfilter != 0)
+        {
+        // Migrate unless marked not to due to failure (flag will be reset if group is edited)
+        $migrateresult = migrate_filter($usereditfilter);
+        $notification_users = get_notification_users();
+        global $userdata, $lang, $baseurl;
+        if(is_numeric($migrateresult))
+            {
+            // Successfully migrated - now use the new filter
+            sql_query("UPDATE usergroup SET edit_filter_id='" . $migrateresult . "' WHERE ref='" . $usergroup . "'");
+            debug("FILTER MIGRATION: Migrated edit filter - '" . $usereditfilter . "' filter id#" . $migrateresult);
+            $usereditfilter = $migrateresult;
+            }
+        elseif(is_array($migrateresult))
+            {
+            debug("FILTER MIGRATION: Error migrating filter: '" . $usereditfilter . "' - " . implode('\n' ,$migrateresult));
+            // Error - set flag so as not to reattempt migration and notify admins of failure
+            sql_query("UPDATE usergroup SET edit_filter_id='0' WHERE ref='" . $usergroup . "'");
+            message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl . "/pages/admin/admin_group_management_edit.php",array("ref"=>$usergroup)));
+            }
+        }
     
-	if (trim($usereditfilter)=="" || ($status<0 && $resourcedata['created_by'] == $userref)) # No filter set, or resource was contributed by user and is still in a User Contributed state in which case the edit filter should not be applied.
+    if (trim($usereditfilter)=="" || ($status<0 && $resourcedata['created_by'] == $userref)) # No filter set, or resource was contributed by user and is still in a User Contributed state in which case the edit filter should not be applied.
 		{
 		$gotmatch = true;
 		}
@@ -3931,10 +3976,7 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
     else
 		{
 		# An old style edit filter has been set. Perform edit filter processing to establish if the user can edit this resource.
-        //$nodes = get_resource_nodes($resource);
-        //exit(print_r($nodes));
-        
-		// # Always load metadata, because the provided metadata may be missing fields due to permissions.
+        # Always load metadata, because the provided metadata may be missing fields due to permissions.
 		$metadata=get_resource_field_data($resource,false,false);
 				
 		for ($n=0;$n<count($metadata);$n++)
@@ -5852,6 +5894,7 @@ function get_resource_all_image_sizes($ref)
 
 /**
 * Check if a given set of nodes meets the conditions set for the provided filter
+* NOte that all resource_nodes for a resource should be passed to check if a filter is matched
 *  
 * @param integer    $ref        Filter ID
 * @param array      $nodes      Array of nodes

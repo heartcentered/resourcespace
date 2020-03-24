@@ -134,7 +134,7 @@ if (getval("save",false) && enforcePostRequest(false))
 			{
 			$val=implode(",",getvalescaped($column,''));
 			}			
-		elseif(in_array($column,array("parent","download_limit","download_log_days")))
+		elseif(in_array($column,array("parent","download_limit","download_log_days","search_filter_id","edit_filter_id","derestrict_filter_id")))
 			{
 			$val=getval($column,0,true);
 			}			
@@ -142,78 +142,6 @@ if (getval("save",false) && enforcePostRequest(false))
 			{
 			$val=getval($column, 1, true);
             }
-        elseif($column=="search_filter_id")
-			{
-            $val=getval($column, 1, true);
-            $search_filter_old = trim(getval("search_filter",""));
-            if($search_filter_nodes && $val == 0 && $search_filter_old != "")
-                {
-                $migrateresult = migrate_filter($search_filter_old); 
-                
-                if(is_numeric($migrateresult))
-                    {
-                    log_activity($lang["filter_migrate_success"] . ": '" . $search_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
-                    // Successfully migrated - now use the new filter
-                    $val = $migrateresult;
-                    }
-                elseif(is_array($migrateresult))
-                    {
-                    debug("FILTER MIGRATION: Error migrating filter: '" . $search_filter_old . "' - " . implode('\n' ,$migrateresult));
-                    // Error - set flag so as not to reattempt migration and notify admins of failure
-                    $val = -1;
-                    $notification_users = get_notification_users();
-                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
-                    }
-                }
-			}
-        elseif($column=="edit_filter_id")
-            {
-            $val=getval($column, 1, true);
-            $edit_filter_old = trim(getval("edit_filter",""));
-            if($search_filter_nodes && $val == 0 && $edit_filter_old != "")
-                {
-                $migrateresult = migrate_filter($edit_filter_old); 
-                
-                if(is_numeric($migrateresult))
-                    {
-                    log_activity($lang["filter_migrate_success"] . ": '" . $edit_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
-                    // Successfully migrated - now use the new filter
-                    $val = $migrateresult;
-                    }
-                elseif(is_array($migrateresult))
-                    {
-                    debug("FILTER MIGRATION: Error migrating filter: '" . $edit_filter_old . "' - " . implode('\n' ,$migrateresult));
-                    // Error - set flag so as not to reattempt migration and notify admins of failure
-                    $val = -1;
-                    $notification_users = get_notification_users();
-                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
-                    }
-                }
-            }
-        elseif($column=="derestrict_filter_id")
-            {
-            $val=getval($column, 1, true);
-            $derestrict_filter_old = trim(getval("derestrict_filter",""));
-            if($search_filter_nodes && $val == 0 && $derestrict_filter_old != "")
-                {
-                $migrateresult = migrate_filter($derestrict_filter_old); 
-                
-                if(is_numeric($migrateresult))
-                    {
-                    log_activity($lang["filter_migrate_success"] . ": '" . $derestrict_filter_old, LOG_CODE_SYSTEM, $migrateresult, "filter", "ref", $migrateresult, null, $search_filter_old, $userref);
-                    // Successfully migrated - now use the new filter
-                    $val = $migrateresult;
-                    }
-                elseif(is_array($migrateresult))
-                    {
-                    debug("FILTER MIGRATION: Error migrating filter: '" . $derestrict_filter_old . "' - " . implode('\n' ,$migrateresult));
-                    // Error - set flag so as not to reattempt migration and notify admins of failure
-                    $val = -1;
-                    $notification_users = get_notification_users();
-                    message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl_short . "pages/admin/admin_group_management_edit.php",array("ref"=>$ref)));
-                    }
-                }
-            }		
 		else
 			{
 			$val=getvalescaped($column,"");
@@ -380,7 +308,7 @@ include "../../include/header.php";
 			</div>
 			<?php	
 			}
-		if(strlen($record['search_filter']) != "" && (!(is_numeric($record['search_filter_id']) || $record['search_filter_id'] < 1)))
+		if((strlen($record['search_filter']) != "" && (!(is_numeric($record['search_filter_id']) || $record['search_filter_id'] < 1))) || !$search_filter_nodes)
 			{
             // Show old style text filter input - will not appear once a new style filter has been selected
 			?>
@@ -409,13 +337,13 @@ include "../../include/header.php";
             </div>
             <?php	
             }
-            //exit("==" . $record['edit_filter_id'] . "==" . ((int)$record['edit_filter_id'] < 1 ? "TRUE" : "FALSE"));
-        if(strlen($record['edit_filter']) != "" && (!is_numeric($record['edit_filter_id']) || (int)$record['edit_filter_id'] < 1))
+
+        if((strlen($record['edit_filter']) != "" && (!is_numeric($record['edit_filter_id']) || (int)$record['edit_filter_id'] < 1)) || !$search_filter_nodes)
             {
             ?>
             <div class="Question">
                 <label for="edit_filter"><?php echo $search_filter_nodes ? "" : $lang["property-edit_filter"]; ?></label>
-                <textarea name="edit_filter" class="stdwidth" rows="3" cols="50" <?php echo ($search_filter_nodes ? "disabled" : "");?>><?php echo $record['edit_filter']; ?></textarea>
+                <textarea name="edit_filter" class="stdwidth" rows="3" cols="50" <?php echo ($search_filter_nodes ? "readonly" : "");?>><?php echo $record['edit_filter']; ?></textarea>
                 <div class="clearerleft"></div>
             </div>
             <?php
@@ -438,12 +366,12 @@ include "../../include/header.php";
             </div>
             <?php	
             }
-        if(strlen($record['derestrict_filter']) != "" && (!(is_numeric($record['derestrict_filter_id']) || $record['derestrict_filter_id'] < 1)))
+        if((strlen($record['derestrict_filter']) != "" && (!(is_numeric($record['derestrict_filter_id']) || $record['derestrict_filter_id'] < 1))) || !$search_filter_nodes)
             {
             ?>
             <div class="Question">
                 <label for="derestrict_filter"><?php echo $lang["fieldtitle-derestrict_filter"]; ?></label>
-                <textarea name="derestrict_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['derestrict_filter']; ?></textarea>
+                <textarea name="derestrict_filter" class="stdwidth" rows="3" cols="50" <?php echo ($search_filter_nodes ? "readonly" : "");?>><?php echo $record['derestrict_filter']; ?></textarea>
                 <div class="clearerleft"></div>
             </div>
             <?php

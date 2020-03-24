@@ -1230,6 +1230,30 @@ function do_search(
     if ($editable_only)
 		{
         global $usereditfilter;
+        if($search_filter_nodes && strlen(trim($usereditfilter)) > 0 && !is_numeric($usereditfilter))
+            {
+            // Migrate unless marked not to due to failure
+            $usereditfilter = edit_filter_to_restype_permission($usereditfilter, $usergroup, $userpermissions);
+            $migrateresult = migrate_filter($usereditfilter);
+            $notification_users = get_notification_users();
+            global $userdata, $lang, $baseurl;
+            if(is_numeric($migrateresult))
+                {
+                debug("Migrated . " . $migrateresult);
+                // Successfully migrated - now use the new filter
+                sql_query("UPDATE usergroup SET edit_filter_id='" . $migrateresult . "' WHERE ref='" . $usergroup . "'");
+                debug("FILTER MIGRATION: Migrated edit filter - '" . $usereditfilter . "' filter id#" . $migrateresult);
+                $usereditfilter = $migrateresult;
+                }
+            elseif(is_array($migrateresult))
+                {
+                debug("FILTER MIGRATION: Error migrating filter: '" . $usersearchfilter . "' - " . implode('\n' ,$migrateresult));
+                // Error - set flag so as not to reattempt migration and notify admins of failure
+                sql_query("UPDATE usergroup SET edit_filter_id='0' WHERE ref='" . $usergroup . "'");
+                message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl . "/pages/admin/admin_group_management_edit.php",array("ref"=>$usergroup)));
+                }
+            }
+
         if ($search_filter_nodes && is_numeric($usereditfilter) && $usereditfilter > 0)
             {
             $edit_filter_sql = get_filter_sql($usereditfilter);
@@ -1242,13 +1266,14 @@ function do_search(
             }
         elseif (strlen($usereditfilter)>0 && !is_numeric($usereditfilter))
             {
+            // Old style edit filter
 			$ef=explode(";",$usereditfilter);
 			for ($n=0;$n<count($ef);$n++)
 				{
 				$s=explode("=",$ef[$n]);
 				if (count($s)!=2)
 					{
-					exit ("Edit filter is not correctly configured for this user group.");
+					return $lang["error_edit_filter_invalid"];
 					}
 				
 				# Support for "NOT" matching. Return results only where the specified value or values are NOT set.
