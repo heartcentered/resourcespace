@@ -181,9 +181,6 @@ $header_favicon="gfx/interface/favicon.png";
 #replace header logo with text, application name and description
 $header_text_title=false;
 
-# Is the logo a link to the home page?
-$header_link=true;
-
 # Header size class. Options are HeaderSmall, HeaderMid, HeaderLarge.
 $header_size="HeaderMid";
 
@@ -191,9 +188,6 @@ $header_size="HeaderMid";
 $header_include_username=false;
 
 # Custom source location for the header image (includes baseurl, requires leading "/"). Will default to the resourcespace logo if left blank. Recommended image size: 350px(X) x 80px(Y)
-
-# Set this to true in order for the top bar to remain present when scrolling down the page
-$slimheader_fixed_position=false;
 
 $linkedheaderimgsrc="";
 ###### END SLIM HEADER #######
@@ -739,9 +733,6 @@ $archive_search=false;
 # Allows users to request resources via a form, which is e-mailed.
 $research_request=false;
 
-# Country search in the right nav? (requires a field with the short name 'country')
-$country_search=false;
-
 # Resource ID search blank in right nav? (probably only needed if $config_search_for_number is set to true) 
 $resourceid_simple_search=false;
 
@@ -798,7 +789,6 @@ $descthemesorder=false;
 ##  To disable advanced search altogether, set 
 ##      $advancedsearch_disabled = true;
 ##      $home_advancedsearch=false;
-##      $advanced_search_nav=false;
 
 #Hide advanced search on search bar
 $advancedsearch_disabled = false;
@@ -943,10 +933,6 @@ $speedtaggingfield=1;
 # example to add speed tags for Photo type(1) to the Caption(18) field:
 # $speedtagging_by_type[1]=18; 
 
-
-# A list of types which get the extra video icon in the search results
-$videotypes=array(3);
-
 # Small icon above thumbnails showing the resource type
 $resource_type_icons=false;
 # Map the resource type to a font awesome 4 icon
@@ -992,9 +978,6 @@ $disabled_plugins_message = "";
 $anon_login_modal=false;
 
 $anonymous_user_session_collection=true;
-
-# Enable captioning and ranking of collections (deprecated - use $collection_commenting instead)
-$collection_reorder_caption=false; 
 
 # Enable collection commenting and ranking
 $collection_commenting = false;
@@ -1381,10 +1364,6 @@ $blank_edit_template=false;
 
 # Show expiry warning when expiry date has been passed
 $show_expiry_warning=true;
-
-# Make selection box in collection edit menu that allows you to select another accessible collection to base the current one upon.
-# It is helpful if you would like to make variations on collections that are heavily commented upon or re-ordered.
-$enable_collection_copy=true;
 
 # Default resource types to use for searching (leave empty for all)
 $default_res_types="";
@@ -2359,9 +2338,6 @@ $local_ftp_upload_folder = 'upload/';
 # Use a file tree display for local folder upload
 $local_upload_file_tree=false;
 
-# Hide links to other uploader
-$hide_uploadertryother = false;
-
 # Set path to Unoconv (a python-based bridge to OpenOffice) to allow document conversion to PDF.
 ## $unoconv_path="/usr/bin";
 # Files with these extensions will be passed to unoconv (if enabled above) for conversion to PDF and auto thumb-preview generation.
@@ -2565,7 +2541,7 @@ $allow_smart_collections=false;
 # This may not be appropriate for usergroups that depend on live updates in workflows based on smart collections.
 $smart_collections_async=false;
 
-# Allow a Preview page for entire collections (for more side to side comparison ability, works with collection_reorder_caption)
+# Allow a Preview page for entire collections
 $preview_all=false;
 # Minimize collections frame when visiting preview_all.php
 $preview_all_hide_collections=true;

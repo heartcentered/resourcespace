@@ -96,10 +96,6 @@ body {
         font-size:1em;
     }
 
-    div#Header.SlimHeaderFixedPosition #HeaderNav1Click { margin-right: 30px; }
-    div#CentralSpaceContainer.SlimHeaderFixedPosition { margin-top: 16px; }
-    div#SearchBox.SlimHeaderFixedPosition { margin-top: 46px; }
-
     .ui-layout-west { display:none; }
 }
 /* General Forms */
@@ -315,11 +311,7 @@ body {
         border:0;
         float: left;
     }
-    #Header .HorizontalNav ul li a, 
-    .SlimHeader #Header.slimheader_darken .HorizontalNav ul li a:link,
-    .SlimHeader #Header.slimheader_darken .HorizontalNav ul li a:active,
-    .SlimHeader #Header.slimheader_darken .HorizontalNav ul li a:hover,
-    .SlimHeader #Header.slimheader_darken .HorizontalNav ul li a:visited{
+    #Header .HorizontalNav ul li a {
         display:inline-block;
         text-align: center;
         background: #ffffff;   
@@ -339,9 +331,6 @@ body {
     }
     #HeaderImg {
         max-height:47px;
-    }
-    #Header.slimheader_darken a:link, #Header.slimheader_darken a:visited, #Header.slimheader_darken a:active {
-        color: #565656;
     }
     
     #BrowseBar, #BrowseBarTab{

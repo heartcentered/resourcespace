@@ -3819,7 +3819,7 @@ function resolve_users($users)
 
 function get_simple_search_fields()
     {
-    global $FIXED_LIST_FIELD_TYPES, $country_search;
+    global $FIXED_LIST_FIELD_TYPES;
     # Returns a list of fields suitable for the simple search box.
     # Standard field titles are translated using $lang.  Custom field titles are i18n translated.
    
@@ -3832,10 +3832,7 @@ function get_simple_search_fields()
         {
         if (
             # Check if for simple_search
-            # Also include the country field even if not selected
-            # This is to provide compatibility for older systems on which the simple search box was not configurable
-            # and had a simpler 'country search' option.
-            ($allfields[$n]["simple_search"] == 1 || (isset($country_search) && $country_search && $allfields[$n]["ref"] == 3))         
+            ($allfields[$n]["simple_search"] == 1)         
         &&
             # Must be either indexed or a fixed list type
             ($allfields[$n]["keywords_index"] == 1 || in_array($allfields[$n]["type"],$FIXED_LIST_FIELD_TYPES))

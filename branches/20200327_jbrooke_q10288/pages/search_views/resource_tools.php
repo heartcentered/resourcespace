@@ -28,19 +28,19 @@ if (isset($result[$n][$rating]) && $result[$n][$rating]>0)
 <!-- Collection comment icon -->
 <?php 
 if($k=="" || $internal_share_access)
-        {
-        if (($collection_reorder_caption || $collection_commenting) && (substr($search,0,11)=="!collection")) 
-                { ?>
-                        <a aria-hidden="true" class="fa fa-comment"
-                                href="<?php echo $baseurl_short?>pages/collection_comment.php?ref=<?php echo urlencode($ref)?>&collection=<?php echo urlencode(trim(substr($search,11)))?>"
-                                onClick="return ModalLoad(this,true);" 
-                                title="<?php echo $lang["addorviewcomments"]?>"
-                        ></a>
-                </span>
-                <?php 
-                $showkeycomment = true;
-                } 
+    {
+    if ($collection_commenting && (substr($search,0,11)=="!collection")) 
+        { ?>
+            <a aria-hidden="true" class="fa fa-comment"
+                href="<?php echo $baseurl_short?>pages/collection_comment.php?ref=<?php echo urlencode($ref)?>&collection=<?php echo urlencode(trim(substr($search,11)))?>"
+                onClick="return ModalLoad(this,true);" 
+                title="<?php echo $lang["addorviewcomments"]?>">
+            </a>
+        </span>
+        <?php 
+        $showkeycomment = true;
         } 
+    } 
 hook("largesearchicon");
 ?>
    
