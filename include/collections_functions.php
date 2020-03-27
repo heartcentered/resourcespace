@@ -2023,16 +2023,6 @@ function get_collection_log($collection, $fetchrows = -1)
                ORDER BY c.ref DESC", false, $fetchrows);
 	}
 	
-function get_collection_videocount($ref)
-	{
-	global $videotypes;
-    #figure out how many videos are in a collection. if more than one, can make a playlist
-	$resources = do_search("!collection" . $ref);
-	$videocount=0;
-	foreach ($resources as $resource){if (in_array($resource['resource_type'],$videotypes)){$videocount++;}}
-	return $videocount;
-	}
-	
 function collection_max_access($collection)	
 	{
 	# Returns the maximum access (the most permissive) that the current user has to the resources in $collection.

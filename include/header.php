@@ -317,11 +317,7 @@ if(isset($usergroup))
 
 $linkUrl=isset($header_link_url) ? $header_link_url : $homepage_url;
 ?>
-<div id="Header" class="ui-layout-north  <?php
-        echo ((isset($slimheader_darken) && $slimheader_darken) ? 'slimheader_darken' : '');
-        echo ((isset($slimheader_fixed_position) && $slimheader_fixed_position) ? ' SlimHeaderFixedPosition' : '');
-        echo " " . $header_size;
-?>">
+<div id="Header" class="ui-layout-north <?php echo " " . $header_size; ?>">
 
 <?php
 if($responsive_ui)
@@ -347,7 +343,7 @@ if(!hook('replace_header_text_logo'))
 	else
 		{
         $header_img_src = get_header_image();
-		if($header_link && ($k=="" || $internal_share_access))
+		if($k=="" || $internal_share_access)
 			{?>
 			<a href="<?php echo $linkUrl; ?>" onClick="return CentralSpaceLoad(this,true);" class="HeaderImgLink"><img src="<?php echo $header_img_src; ?>" id="HeaderImg" ></img></a>
 			<?php
