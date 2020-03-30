@@ -239,6 +239,7 @@ $languages["pl"]="Polski"; # Polish
 $languages["pt"]="Português"; # Portuguese
 $languages["pt-BR"]="Português do Brasil"; # Brazilian Portuguese
 $languages["ru"]="Русский язык"; # Russian
+$languages["sk"]="Slovenčina"; # Slovak
 $languages["fi"]="Suomi"; # Finnish
 $languages["sv"]="Svenska"; # Swedish
 
@@ -1642,6 +1643,7 @@ $mime_type_by_extension = array(
     'ods'  => 'application/vnd.oasis.opendocument.spreadsheet',
     'odp'  => 'application/vnd.oasis.opendocument.presentation',
     'svg'  => 'image/svg+xml',
+    'pdf'  => 'application/pdf',
   );
 
 # PHP execution time limit
@@ -2183,6 +2185,9 @@ $paypal_url="https://www.paypal.com/cgi-bin/webscr";
 # ------------------------------------------------------------------------------------------------------------------
 # StaticSync (staticsync.php)
 # The ability to synchronise ResourceSpace with a separate and stand-alone filestore.
+# Amend the following to set the ref of the user account that staticsync resources will be 'created by' 
+$staticsync_userref=1;
+
 # ------------------------------------------------------------------------------------------------------------------
 $syncdir="/dummy/path/to/syncfolder"; # The sync folder
 $nogo="[folder1]"; # A list of folders to ignore within the sign folder.
@@ -2234,10 +2239,6 @@ $staticsync_ignore_deletion_states = array(2, 3);
 
 # staticsync_revive_state - if this is set then deleted items that later reappear will be moved to this archive state
 # $staticsync_revive_state=-1;
-
-# Uncomment and set to the ref of the user account that the staticsync resources will be 'created by' 
-# $staticsync_userref=-1;
-
 #
 # StaticSync Path to metadata mapping
 # ------------------------
@@ -2272,8 +2273,12 @@ $staticsync_ignore_deletion_states = array(2, 3);
 #		"archive"=>2
 #		);
 #
-# Suffix to use for alternative files folder
-# If staticsync finds a folder in the same directory as a file with the same name as a file but with this suffix appended, then files in the folder will be treated as alternative files for the give file.
+# ALTERNATIVE FILES
+#
+# There are a number of options for adding alternative files automatically using staticsync. These only work when staticsync_ingest is true
+#
+# OPTION 1 - USE A SUBFOLDER WITH SAME NAME AS PRIMARY FILE
+# If staticsync finds a folder in the same directory as a file with the same name as a file but with this suffix appended, then files in the folder will be treated as alternative files for the given file.
 # For example a folder/file structure might look like:
 # /staticsync_folder/myfile.jpg
 # /staticsync_folder/myfile.jpg_alternatives/alternative1.jpg
@@ -2282,8 +2287,33 @@ $staticsync_ignore_deletion_states = array(2, 3);
 # NOTE: Alternative file processing only works when $staticsync_ingest is set to 'true'.
 $staticsync_alternatives_suffix="_alternatives";
 
+# OPTION 2 - ADD FILES IN SAME FOLDER WITH DEFINED STRING SUFFIX
 # Option to have alternative files located in same directory as primary files but identified by a defined string. As with staticsync_alternatives_suffix this only works when $staticsync_ingest is set to 'true'.
+# Can instead use $staticsync_alt_suffix_array below 
 #$staticsync_alternative_file_text="_alt_";
+
+# OPTION 3 - ADD FILES IN SAME FOLDER WITH VARIOUS STRING SUFFIXES
+# $staticsync_alt_suffixes / $staticsync_alt_suffix_array 
+# These can be used instead of $staticsync_alternatives_suffix to 
+# support mapping suffixes to the names used for the alternative files
+/*
+$staticsync_alt_suffixes = true;
+$staticsync_alt_suffix_array =array (
+    '_alt' => "",
+   '_verso' => "Verso",
+   '_dng' => "DNG",
+   '_orig' => "Original Scan",
+   '_tp' => "Title Page",
+   '_tpv' => "Title Page Verso",
+   '_cov' => "Cover",
+   '_ex' => "Enclosure",
+   '_scr' => "Inscription"
+    );
+*/
+# $numeric_alt_suffixes = 8;
+# Optionally set this to ignore files that aren't at least this many seconds old
+# $staticsync_file_minimum_age = 120; 
+
 
 # if false, the system will always synthesize a title from the filename and path, even
 # if an embedded title is found in the file. If true, the embedded title will be used.
@@ -2291,6 +2321,8 @@ $staticsync_prefer_embedded_title = true;
 
 # Do we allow deletion of files located in $syncdir through the UI?
 $staticsync_allow_syncdir_deletion=false;
+
+
 
 # End of StaticSync settings
 
