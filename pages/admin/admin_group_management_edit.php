@@ -123,21 +123,21 @@ if (getval("save",false) && enforcePostRequest(false))
             {
             # Do not allow config overrides to be changed from UI if $execution_lockout is set.
             continue;
-            } 
-        
+            }
+
 		if (in_array($column,array("allow_registration_selection")))
 			{
 			$val=getval($column,"0") ? "1" : "0";
 			}
-		
+
 		elseif($column=="inherit_flags" && getvalescaped($column,'')!="")
 			{
 			$val=implode(",",getvalescaped($column,''));
-			}			
+			}
 		elseif(in_array($column,array("parent","download_limit","download_log_days","search_filter_id","edit_filter_id","derestrict_filter_id")))
 			{
 			$val=getval($column,0,true);
-			}			
+			}
 		elseif($column=="request_mode")
 			{
 			$val=getval($column, 1, true);
@@ -146,7 +146,7 @@ if (getval("save",false) && enforcePostRequest(false))
 			{
 			$val=getvalescaped($column,"");
 			}
-			
+
 		if (isset($sql))
 			{
 			$sql.=",";
@@ -288,11 +288,12 @@ include "../../include/header.php";
 
         <?php
         $filters = get_filters($order = "name", $sort = "ASC");
+        $filters[] = array("ref" => -1, "name" => $lang["disabled"]);
 
 		if ($search_filter_nodes)
 			{
             // Show filter selector if already migrated or no filter has been set
-			$filters = get_filters($order = "name", $sort = "ASC");
+            // Add the option to indicate filter migration failed
 			?>
 			<div class="Question">
 				<label for="search_filter_id"><?php echo $lang["property-search_filter"]; ?></label>
@@ -302,7 +303,8 @@ include "../../include/header.php";
 					foreach	($filters as $filter)
 						{
 						echo "<option value='" . $filter['ref'] . "' " . ($record['search_filter_id'] == $filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($filter['name']) . "</option>";
-						}?>
+						}
+                    ?>
 				</select>
 				<div class="clearerleft"></div>
 			</div>
@@ -314,7 +316,7 @@ include "../../include/header.php";
 			?>
 			<div class="Question">
 				<label for="search_filter"><?php echo $lang["property-search_filter"]; ?></label>
-				<textarea name="search_filter" class="stdwidth" rows="3" cols="50"><?php echo $record['search_filter']; ?></textarea>
+				<textarea name="search_filter" class="stdwidth" rows="3" cols="50" <?php echo ($search_filter_nodes ? "readonly" : "");?>><?php echo $record['search_filter']; ?></textarea>
 				<div class="clearerleft"></div>
 			</div>
 			<?php
@@ -331,7 +333,8 @@ include "../../include/header.php";
                     foreach	($filters as $filter)
                         {
                         echo "<option value='" . $filter['ref'] . "' " . ($record['edit_filter_id'] == $filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($filter['name']) . "</option>";
-                        }?>
+                        }
+                    ?>
                 </select>
                 <div class="clearerleft"></div>
             </div>
@@ -360,7 +363,8 @@ include "../../include/header.php";
                     foreach	($filters as $filter)
                         {
                         echo "<option value='" . $filter['ref'] . "' " . ($record['derestrict_filter_id'] == $filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($filter['name']) . "</option>";
-                        }?>
+                        }
+                    ?>
                 </select>
                 <div class="clearerleft"></div>
             </div>
