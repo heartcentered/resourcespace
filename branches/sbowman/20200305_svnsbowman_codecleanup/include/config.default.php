@@ -1,308 +1,308 @@
 <?php
 /**
- * This file contains the default configuration settings.
+ * Default ResourceSpace Configuration Settings  **** DO NOT ALTER THIS FILE! ****
+ * If you need to change any of the below values, copy them to config.php and change them there.
  * 
- * **** DO NOT ALTER THIS FILE! ****
- * 
- * If you need to change any of the below values, copy
- * them to config.php and change them there.
- * 
- * This file will be overwritten when you upgrade and
- * ensures that any new configuration options are set to
- * a sensible default value.
+ * This file will be overwritten when you upgrade and ensures that any new configuration options are set to a sensible
+ * default value.
  * 
  * @package ResourceSpace
  * @subpackage Configuration
  */
+include "version.php";
 
+// BASIC PARAMETERS-----------------------------------------------------------------------------------------------------
 
-/* ---------------------------------------------------
-BASIC PARAMETERS
------------------------------------------------------- */
-
-#######################################
-################################ MySQL:
-#######################################
-$mysql_server      = 'localhost';
+// MySQL Settings
+$mysql_server = 'localhost';
 $mysql_server_port = 3306;
-$mysql_username    = 'root';
-$mysql_password    = '';
+# $mysql_charset = 'utf8';
+$mysql_db = 'resourcespace';
+$mysql_username = 'root';
+$mysql_password = '';
 $read_only_db_username = "";
 $read_only_db_password = "";
-$mysql_db          = 'resourcespace';
-# $mysql_charset     = 'utf8';
 
-# The path to the MySQL client binaries - e.g. mysqldump
-# (only needed if you plan to use the export tool)
-# IMPORTANT: no trailing slash
+// Path to the MySQL client binaries (mysqldump) with no trailing slash, only needed if you plan to use the export tool.
 $mysql_bin_path = '/usr/bin';
 
-# Force MySQL Strict Mode? (regardless of existing setting) - This is useful for developers so that errors that might only occur when Strict Mode is enabled are caught. Strict Mode is enabled by default with some versions of MySQL. The typical error caused is when the empty string ('') is inserted into a numeric column when NULL should be inserted instead. With Strict Mode turned off, MySQL inserts NULL without complaining. With Strict Mode turned on, a warning/error is generated.
+/* Force MySQL Strict Mode (regardless of existing setting)?  This is useful for developers so that errors that might
+ * only occur when Strict Mode is enabled are caught. Strict Mode is enabled by default with some versions of MySQL.
+ * The typical error caused is when the empty string ('') is inserted into a numeric column when NULL should be
+ * inserted instead. With Strict Mode turned off, MySQL inserts NULL without complaining. With Strict Mode turned on,
+ * a warning/error is generated. */
 $mysql_force_strict_mode = false;
 
-# If true, it does not remove the backslash from DB queries, and doesn't do any special processing.
-# to them. Unless you need to store '\' in your fields, you can safely keep the default.
+/* If TRUE, do not remove the backslash from database queries and do not do any special processing to them.
+ * Unless you need to store '\' in your fields, you can safely keep the default. */
 $mysql_verbatim_queries = false;
 
-# Ability to record important DB transactions (e.g. INSERT, UPDATE, DELETE) in a sql file to allow replaying of changes since DB was last backed.
-# You may schedule cron jobs to delete this sql log file and perform a mysqldump of the database at the same time.
-# Note that there is no built in database backup, you need to take care of this yourself!
-#
-# WARNING!! Ensure the location defined by $mysql_log_location is not in a web accessible directory -it is advisable to either block access in the web server configuration or make the file write only by the web service account
+/* Record important database transactions (e.g. INSERT, UPDATE, DELETE) in a SQL log file to allow replaying of changes
+ * since DB was last backed.  You may schedule cron jobs to delete this SQL log file and perform a mysqldump of the
+ * database at the same time.  There is no built in database backup, you need to take care of this yourself.
+ * WARNING!! Ensure the location defined by $mysql_log_location is not in a web accessible directory. It is advisable
+ * to either block access in the web server configuration or make the file write only by the web service account. */
 $mysql_log_transactions = false;
-# $mysql_log_location     = '/var/resourcespace_backups/sql_log.sql';
+# $mysql_log_location = '/var/resourcespace_backups/sql_log.sql';
 
-# Use prepared statements
-# Default is false until technology proven
+// Use prepared statements?  Default is FALSE until technology is proven.
 $use_mysqli_prepared = false;
 
-# Enable establishing secure connections using SSL
-# Requires setting up mysqli_ssl_server_cert and mysqli_ssl_ca_cert
+/* Enable establishing secure MySQL connections using SSL?  Requires setting up $mysqli_ssl_server_cert and $mysqli_ssl_ca_cert. */
 $use_mysqli_ssl = false;
-
 # $mysqli_ssl_server_cert = '/etc/ssl/certs/server.pem';
-# $mysqli_ssl_ca_cert     = '/etc/ssl/certs/ca_chain.pem';
-#######################################
-#######################################
+# $mysqli_ssl_ca_cert = '/etc/ssl/certs/ca_chain.pem';
 
 
-$baseurl="http://my.site/resourcespace"; # The 'base' web address for this installation. Note: no trailing slash
-$email_from="resourcespace@my.site"; # Where system e-mails appear to come from
-$email_notify="resourcespace@my.site"; # Where resource/research/user requests are sent
-$email_notify_usergroups=array(); # Use of email_notify is deprecated as system notifications are now sent to the appropriate users based on permissions and user preferences. This variable can be set to an array of usergroup references and will take precedence.
+// BASE RESOURCESPACE SETTINGS
+// Base web address for this installation with no trailing slash.
+$baseurl = "http://my.site/resourcespace"; 
 
-# Indicates which users can update very low level configuration options for example debug_log.
-$system_architect_user_names = array('admin');		// Warning: this is for experienced technical users, typically ResourceSpace providers.
+// User array that can update very low level configuration options, for example debug_log.
+$system_architect_user_names = array('admin'); # WARNING: this is for experienced technical users, typically ResourceSpace providers.
 
-$spider_password="TBTT6FD"; # The password required for spider.php - IMPORTANT - randomise this for each new installation. Your resources will be readable by anyone that knows this password.
-$spider_usergroup=2; # The user group that will be used to access the resource list for the spider index.
-$spider_access=array(0,1); # Which access level(s) are required when producing the index (0=Open, 1=Restricted, 2=Confidential/Hidden).
+/* Set to scramble resource paths. If this is a public installation, then this is a very wise idea.  Set the scramble
+ * key to be a hard-to-guess string (similar to a password).  To disable, set to the empty string (""). */
+$scramble_key = "abcdef123";
 
-$email_from_user=true; #enable user-to-user emails to come from user's address by default (for better reply-to), with the user-level option of reverting to the system address
-
-# Scramble resource paths? If this is a public installation then this is a very wise idea.
-# Set the scramble key to be a hard-to-guess string (similar to a password).
-# To disable, set to the empty string ("").
-$scramble_key="abcdef123";
-
-# If you agree to send occasional statistics to Montala, leave this set to 'yes'.
-# The following two numeric metrics alone will be sent every 7 days:
-# - Number of resources
-# - Number of users
-# The information will only be used to provide totals on the Montala site, e.g 
-# global number of installations, users and resources.
+/* Send occasional statistics to Montala? If TRUE, the following two numeric metrics alone will be sent every 7 days:
+ * the number of resources and the number of users.  The information will only be used to provide totals on the Montala
+ * website, e.g global number of installations, users and resources. */
 $send_statistics=true;
 
-# Enable work-arounds required when installed on Microsoft Windows systems
-$config_windows=false;
+// Enable work-arounds required when installed on Microsoft Windows systems?
+$config_windows = false;
 
-# Server charset (needed when dealing with filenames in some situations, e.g. at collection download).
-#$server_charset = ''; # E.g. 'UTF-8', 'ISO-8859-1' or 'Windows-1252'.
+// Server charset (needed when dealing with filenames in some situations, e.g. at collection download).
+#$server_charset = ''; # 'UTF-8', 'ISO-8859-1', or 'Windows-1252'
 
-# ---- Paths to various external utilities ----
 
-# If using ImageMagick/GraphicsMagick, uncomment and set next 2 lines
-# $imagemagick_path='/sw/bin';
-# $ghostscript_path='/sw/bin';
-$ghostscript_executable='gs';
+// WEB SPIDER SETTINGS
+// The password required for spider.php. IMPORTANT: randomise for each new installation as resources will be readable by anyone that knows this password.
+$spider_password = "TBTT6FD";
 
-# If using FFMpeg to generate video thumbs and previews, uncomment and set next line.
-# $ffmpeg_path='/usr/bin';
+// User group that will be used to access the resource list for the spider index.
+$spider_usergroup = 2; 
 
-# Install Exiftool and set this path to enable metadata-writing when resources are downloaded
-# $exiftool_path='/usr/local/bin';
+// Access level(s) required when producing the index (0=Open, 1=Restricted, 2=Confidential/Hidden).
+$spider_access = array(0,1); 
 
-# Path to Antiword - for text extraction / indexing of Microsoft Word Document (.doc) files
-# $antiword_path='/usr/bin';
 
-# Path to pdftotext - part of the XPDF project, see http://www.foolabs.com/xpdf/
-# Enables extraction of text from PDF files
-# $pdftotext_path='/usr/bin';
+// SYSTEM EMAIL SETTINGS
+// Where system emails appear to come from.
+$email_from = "resourcespace@my.site"; 
 
-# Path to blender
-# $blender_path='/usr/bin/';
+// Enable user-to-user emails to come from user's address by default for better reply-to, with the user-level option of reverting to the system address.
+$email_from_user = true; 
 
-# Path to an archiver utility - uncomment and set the lines below if download of collections is enabled ($collection_download = true)
-# Example given for Linux with the zip utility:
+// PATHS TO EXTERNAL UTILITIES AND DEPENDENCIES
+// If using ImageMagick or GraphicsMagick, uncomment and set the path for the next 2 lines:
+# $imagemagick_path = '/sw/bin';
+# $ghostscript_path = '/sw/bin';
+
+// GhostScript executible name.
+$ghostscript_executable = 'gs';
+
+// If using FFMpeg to generate video thumbs and previews, uncomment and set path:
+# $ffmpeg_path = '/usr/bin';
+
+// If using Exiftool to enable metadata writing when resources are downloaded, uncomment and set path:
+# $exiftool_path = '/usr/local/bin';
+
+// If using Antiword for text extraction and indexing of Microsoft Word document files, uncomment and set path:
+# $antiword_path = '/usr/bin';
+
+// If using pdftotext to enable PDF text extraction (http://www.foolabs.com/xpdf/), uncomment and set path:
+# $pdftotext_path = '/usr/bin';
+
+// If using blender, uncomment and set path:
+# $blender_path = '/usr/bin/';
+
+// If collection download ($collection_download = true) is enabled, uncomment and set the appropriate lines: 
+// Example for Linux with the zip utility:
 # $archiver_path = '/usr/bin';
 # $archiver_executable = 'zip';
 # $archiver_listfile_argument = "-@ <";
 
-# Example given for Linux with the 7z utility:
+// Example for Linux with the 7z utility:
 # $archiver_path = '/usr/bin';
 # $archiver_executable = '7z';
 # $archiver_listfile_argument = "@";
 
-# Example given for Windows with the 7z utility:
+// Example for Windows with the 7z utility:
 # $archiver_path = 'C:\Program\7-Zip';
 # $archiver_executable = '7z.exe';
 # $archiver_listfile_argument = "@";
 
-$use_zip_extension=false; //use php-zip extension instead of $archiver or $zipcommand
-$collection_download_tar_size = 100; // Use tar to speed up large collection downloads. Enter value in MB. Downloads above this size will default to using tar. Set value to 0 to disable tar downloads
-$collection_download_tar_option=false; // Default to using tar downloads for all downloads
+// Use the PHP ZIP extension instead of $archiver or $zipcommand?
+$use_zip_extension = false;
+ 
+// If using Python (programming language), uncomment and set path:
+# $python_path = '/usr/bin';
 
-// Path to Python (programming language)
-// $python_path = '/usr/bin';
-
-// Path to FITS (File Information Tool Set - https://projects.iq.harvard.edu/fits)
-// Make sure user has write access as it needs to write the log file (./fits.log).
-// IMPORTANT: requires JAVA > 1.7
-// $fits_path = '/opt/fits-1.2.0';
-
-/* ---------------------------------------------------
-OTHER PARAMETERS
-
-The below options customise your installation. 
-You do not need to review these items immediately
-but may want to review them once everything is up 
-and running.
------------------------------------------------------- */
+/* If using FITS (File Information Tool Set, https://projects.iq.harvard.edu/fits), uncomment and set path, make sure
+ * the user has write access as it needs to write the log file (./fits.log), and requires Java >1.7 */
+# $fits_path = '/opt/fits-1.2.0';
 
 
-# Uncomment and set next two lines to configure storage locations (to use another server for file storage)
-#
-# Note - these are really only useful on Windows systems where mapping filestore to a remote drive or other location is not trivial.
-# On Unix based systems it's usually much easier just to make '/filestore' a symbolic link to another location.
-#
-#$storagedir="/path/to/filestore"; # Where to put the media files. Can be absolute (/var/www/blah/blah) or relative to the installation. Note: no trailing slash
-#$storageurl="http://my.storage.server/filestore"; # Where the storagedir is available. Can be absolute (http://files.example.com) or relative to the installation. Note: no trailing slash
-# If you are changing '$storagedir' in your config, please make sure '$storageurl' is also set.
+// INSTALLTION NAME AND ICON SETTINGS
+// Name of your implementation or installation (e.g. 'MyCompany Resource System').
+$applicationname = "ResourceSpace"; 
 
-# Store original files separately from RS previews? If this setting is adjusted with resources in the system you'll need to run ../pages/tools/filestore_separation.php.
-$originals_separate_storage=false;
+// Subtitle (i18n translated) if $header_text_title=true;
+$applicationdesc = ""; 
 
-include "version.php";
+// Replace header logo with text, application name, and description?
+$header_text_title = false;
 
-$applicationname="ResourceSpace"; # The name of your implementation / installation (e.g. 'MyCompany Resource System')
-$applicationdesc=""; # Subtitle (i18n translated) if $header_text_title=true;
-$header_favicon="gfx/interface/favicon.png";
+// Page header favicon path.
+$header_favicon = "gfx/interface/favicon.png";
 
-#replace header logo with text, application name and description
-$header_text_title=false;
 
-# Is the logo a link to the home page?
-$header_link=true;
+// OTHER PARAMETERS
+/* The options below customise your installation. You do not need to review these items immediately, but may want to 
+ * review them once everything is up and running. */
 
-# Header size class. Options are HeaderSmall, HeaderMid, HeaderLarge.
-$header_size="HeaderMid";
+// STORAGE SETTINGS
+/* Absolute (/var/www/blah/blah) or relative path with no trailing slash to the filestore location to configure storage
+ * locations (to use another server for file storage).  Useful on Windows systems where mapping filestore to a remote
+ * drive or other location is not trivial.  On Unix-based systems, it is usually much easier to make '/filestore' a
+ * symbolic link to another location. */
+# $storagedir = "/path/to/filestore"; 
 
-# Header includes username to right of user menu icon
-$header_include_username=false;
+// Remote storage URL with no trailing slash.  If you are changing $storagedir, make sure $storageurl is set.
+# $storageurl = "http://my.storage.server/filestore"; 
 
-# Custom source location for the header image (includes baseurl, requires leading "/"). Will default to the resourcespace logo if left blank. Recommended image size: 350px(X) x 80px(Y)
+// Store original files separately from RS previews? If this setting is adjusted with resources in the system, you wil need to run ../pages/tools/filestore_separation.php.
+$originals_separate_storage = false;
 
-# Set this to true in order for the top bar to remain present when scrolling down the page
-$slimheader_fixed_position=false;
 
-$linkedheaderimgsrc="";
-###### END SLIM HEADER #######
+// PAGE HEADER SETTINGS
+// Is the logo a link to the homepage?
+$header_link = true;
 
-# Change the Header Logo link to another address by uncommenting and setting the variable below
-# $header_link_url=http://my-alternative-header-link
+// Header size class.
+$header_size = "HeaderMid"; # Options: HeaderSmall, HeaderMid, or HeaderLarge
 
-# Include ResourceSpace version header in View Source
-$include_rs_header_info=true;
+// Includes username to right of user menu icon in the header?
+$header_include_username = false;
 
-# Used for specifying custom colours for header 
+// Custom source location for the header image (includes baseurl, requires leading "/"). Will default to the resourcespace logo if left blank. Recommended image size: 350px(X) x 80px(Y)
+$linkedheaderimgsrc = "";
+
+// Should the top bar to remain present when scrolling down the page?
+$slimheader_fixed_position = false;
+
+// Use a custom Header logo link to another address by uncommenting and set:
+# $header_link_url = https://my-alternative-header-link
+
+// Include ResourceSpace version header in View Source?
+$include_rs_header_info = true;
+
+// Specify custom Header colours by setting next two lines:
 $header_colour_style_override='';
 $header_link_style_override='';
 
-# Used for specifying custom colours for home page elements (site text, dash tiles, simple search)
-$home_colour_style_override='';
-
-# Used for specifying custom colours for collection bar elements
-$collection_bar_background_override='';
-$collection_bar_foreground_override='';
-
-# Available languages
-# If $defaultlanguage is not set, the brower's default language will be used instead
-$defaultlanguage="en"; # default language, uses ISO 639-1 language codes ( en, es etc.)
-$languages["en"]="British English";
-$languages["en-US"]="American English";
-$languages["ar"]="العربية";
-$languages["id"]="Bahasa Indonesia"; # Indonesian
-$languages["ca"]="Català"; # Catalan
-$languages["zh-CN"]="简体字"; # Simplified Chinese
-$languages["da"]="Dansk"; # Danish
-$languages["de"]="Deutsch"; # German
-$languages["el"]="Ελληνικά"; # Greek
-$languages["es"]="Español"; # Spanish
-$languages["es-AR"]="Español (Argentina)";
-$languages["fr"]="Français"; # French
-$languages["hr"]="Hrvatski"; # Croatian
-$languages["it"]="Italiano"; # Italian
-$languages["jp"]="日本語"; # Japanese
-$languages["nl"]="Nederlands"; # Dutch
-$languages["no"]="Norsk"; # Norwegian
-$languages["pl"]="Polski"; # Polish
-$languages["pt"]="Português"; # Portuguese
-$languages["pt-BR"]="Português do Brasil"; # Brazilian Portuguese
-$languages["ru"]="Русский язык"; # Russian
-$languages["fi"]="Suomi"; # Finnish
-$languages["sv"]="Svenska"; # Swedish
 
 
-# Disable language selection options (Includes Browser Detection for language)
-$disable_languages=false;
+$collection_download_tar_size = 100; // Use tar to speed up large collection downloads. Enter value in MB. Downloads above this size will default to using tar. Set value to 0 to disable tar downloads
 
-# Show the language chooser on the bottom of each page
-$show_language_chooser=true;
-
-# Allow Browser Language Detection
-$browser_language=true;
-
-# FTP settings for batch upload
-# Only necessary if you plan to use the FTP upload feature.
-$ftp_server="my.ftp.server";
-$ftp_username="my_username";
-$ftp_password="my_password";
-$ftp_defaultfolder="temp/";
-
-# Can users change passwords?
-$allow_password_change=true;
-
-# search params
-# Common keywords to ignore both when searching and when indexing.
-# Copy this block to config.php and uncomment the languages you would like to use.
-
-$noadd=array();
-
-# English stop words
-$noadd=array_merge($noadd, array("", "a","the","this","then","another","is","with","in","and","where","how","on","of","to", "from", "at", "for", "-", "by", "be"));
-
-# Swedish stop words (copied from http://snowball.tartarus.org/algorithms/swedish/stop.txt 20101124)
-#$noadd=array_merge($noadd, array("och", "det", "att", "i", "en", "jag", "hon", "som", "han", "på", "den", "med", "var", "sig", "för", "så", "till", "är", "men", "ett", "om", "hade", "de", "av", "icke", "mig", "du", "henne", "då", "sin", "nu", "har", "inte", "hans", "honom", "skulle", "hennes", "där", "min", "man", "ej", "vid", "kunde", "något", "från", "ut", "när", "efter", "upp", "vi", "dem", "vara", "vad", "över", "än", "dig", "kan", "sina", "här", "ha", "mot", "alla", "under", "någon", "eller", "allt", "mycket", "sedan", "ju", "denna", "själv", "detta", "åt", "utan", "varit", "hur", "ingen", "mitt", "ni", "bli", "blev", "oss", "din", "dessa", "några", "deras", "blir", "mina", "samma", "vilken", "er", "sådan", "vår", "blivit", "dess", "inom", "mellan", "sånt", "varför", "varje", "vilka", "ditt", "vem", "vilket", "sitta", "sådana", "vart", "dina", "vars", "vårt", "våra", "ert", "era", "vilkas"));
+$collection_download_tar_option=false; // Default to using tar downloads for all downloads
 
 
-# How many results trigger the 'suggestion' feature, -1 disables the feature
-# WARNING - there is a significant performance penalty for enabling this feature as it attempts to find the most popular keywords for the entire result set.
-# It is not recommended for large systems.
-$suggest_threshold=-1; 
 
 
-$max_results=200000;
-$minyear=1980; # The year of the earliest resource record, used for the date selector on the search form. Unless you are adding existing resources to the system, probably best to set this to the current year at the time of installation.
+// Used for specifying custom colours for home page elements (site text, dash tiles, simple search).
+$home_colour_style_override = '';
 
-# Set folder for home images. Ex: "gfx/homeanim/mine/" 
-# Files should be numbered sequentially, and will be auto-counted.
-$homeanim_folder="gfx/homeanim/gfx";
+// Used for specifying custom colours for collection bar elements.
+$collection_bar_background_override = '';
+$collection_bar_foreground_override = '';
 
-# Set different size for slideshow images (value  in pixels). This is honoured by transform plugin so still allows easy replacement of images. 	
-# Can be used as config override in conjunction with $homeanim_folder as above (for large images you may also want to set $home_themeheaders, $home_themes, $home_mycollections and $home_helpadvice to false).
-# $home_slideshow_width=517;
-# $home_slideshow_height=350;
+// Available languages, if $defaultlanguage is not set, the browser's default language will be used instead.
+$defaultlanguage = "en";            # Default language, uses ISO 639-1 language codes ( en, es, etc.)
+$languages["en"] = "British English";
+$languages["en-US"] = "American English";
+$languages["ar"] = "العربية";
+$languages["id"] = "Bahasa Indonesia"; # Indonesian
+$languages["ca"] = "Català";        # Catalan
+$languages["zh-CN"] = "简体字";      # Simplified Chinese
+$languages["da"] = "Dansk";         # Danish
+$languages["de"] = "Deutsch";       # German
+$languages["el"] = "Ελληνικά";      # Greek
+$languages["es"] = "Español";       # Spanish
+$languages["es-AR"] = "Español (Argentina)";
+$languages["fr"] = "Français";      # French
+$languages["hr"] = "Hrvatski";      # Croatian
+$languages["it"] = "Italiano";      # Italian
+$languages["jp"] = "日本語";         # Japanese
+$languages["nl"] = "Nederlands";    # Dutch
+$languages["no"] = "Norsk";         # Norwegian
+$languages["pl"] = "Polski";        # Polish
+$languages["pt"] = "Português";     # Portuguese
+$languages["pt-BR"] = "Português do Brasil"; # Brazilian Portuguese
+$languages["ru"] = "Русский язык";  # Russian
+$languages["sk"] = "Slovenčina";    # Slovak
+$languages["fi"] = "Suomi";         # Finnish
+$languages["sv"] = "Svenska";       # Swedish
 
-# Small slideshow mode (old slideshow)
+// Disable language selection options, includes browser detection for language).
+$disable_languages = false;
+
+// Show the language chooser on the bottom of each webpage?
+$show_language_chooser = true;
+
+// Allow browser language detection?
+$browser_language = true;
+
+// FTP settings for batch upload, only necessary if you plan to use the FTP upload feature.
+$ftp_server = "my.ftp.server";
+$ftp_username = "my_username";
+$ftp_password = "my_password";
+$ftp_defaultfolder = "temp/";
+
+// Can users change passwords?
+$allow_password_change = true;
+
+// Common keywords to ignore both when searching and when indexing in $noadd array below.
+$noadd = array();
+
+// English stop words.
+$noadd = array_merge($noadd, array("", "a", "the", "this", "then", "another", "is", "with", "in", "and", "where", "how", "on", "of", "to", "from", "at", "for", "-", "by", "be"));
+
+// Swedish stop words (copied from http://snowball.tartarus.org/algorithms/swedish/stop.txt 20101124).
+# $noadd = array_merge($noadd, array("och", "det", "att", "i", "en", "jag", "hon", "som", "han", "på", "den", "med", "var", "sig", "för", "så", "till", "är", "men", "ett", "om", "hade", "de", "av", "icke", "mig", "du", "henne", "då", "sin", "nu", "har", "inte", "hans", "honom", "skulle", "hennes", "där", "min", "man", "ej", "vid", "kunde", "något", "från", "ut", "när", "efter", "upp", "vi", "dem", "vara", "vad", "över", "än", "dig", "kan", "sina", "här", "ha", "mot", "alla", "under", "någon", "eller", "allt", "mycket", "sedan", "ju", "denna", "själv", "detta", "åt", "utan", "varit", "hur", "ingen", "mitt", "ni", "bli", "blev", "oss", "din", "dessa", "några", "deras", "blir", "mina", "samma", "vilken", "er", "sådan", "vår", "blivit", "dess", "inom", "mellan", "sånt", "varför", "varje", "vilka", "ditt", "vem", "vilket", "sitta", "sådana", "vart", "dina", "vars", "vårt", "våra", "ert", "era", "vilkas"));
+
+
+/* Number of results to trigger the 'suggestion' feature, -1 disables feature.  WARNING: there is a significant
+ * performance penalty for enabling this feature, as it attempts to find the most popular keywords for the entire
+ * result set.  It is not recommended for large systems. */
+$suggest_threshold = -1; 
+
+// Maximum number of search results returned.
+$max_results = 200000;
+
+// Year of the earliest resource record, used for the date selector on the search form. Unless you are adding existing resources to the system, best to set this to the current year at the time of installation.
+$minyear = 1980; 
+
+// Path to homepage animation images, such as: "gfx/homeanim/mine/".  Number files sequentially.
+$homeanim_folder = "gfx/homeanim/gfx";
+
+/* Set a different size for slideshow images in pixels. This is used by the Transform plugin, so allows easy
+ * replacement of images.  Can be used as config override in conjunction with $homeanim_folder (for large images you
+ * may also want to set $home_themeheaders, $home_themes, $home_mycollections and $home_helpadvice to false). */
+# $home_slideshow_width = 517;
+# $home_slideshow_height = 350;
+
+// Enable small slideshow mode (old slideshow)?
 $small_slideshow = true;
 
-# Big slideshow mode (Fullscreen slideshow)
-# ----------------------------------
-# You will need to configure much bigger slideshow images with $home_slideshow_width and $home_slideshow_height, and regenerate
-# your slideshow images using the transform plugin. This is recommended to be used along with the slim header.
-$slideshow_big=false;
+/* Enable the big slideshow mode (fullscreen slideshow)?  If TRUE, will need to configure much bigger slideshow images
+ * with $home_slideshow_width and $home_slideshow_height, and regenerate your slideshow images using the transform
+ * plugin. This is recommended to be used along with the slim header. */
+$slideshow_big = false;
 
-# Number of seconds for slideshow to wait before changing image (must be greater than 1)
+// Number of seconds for slideshow to wait before changing image (must be greater than 1).
 $slideshow_photo_delay = 5;
 
 
@@ -341,35 +341,35 @@ $dash_tile_colour_options = array();
  * The home_dash option and functionality has replaced these config options 
  */
 
-	# Options to show/hide the tiles on the home page
-	$home_themeheaders=false;
-	$home_themes=true;
-	$home_mycollections=true;
-	$home_helpadvice=true;
-	$home_advancedsearch=false;
-	$home_mycontributions=false;
-	#
-	# Custom panels for the home page.
-	# You can add as many panels as you like. They must be numbered sequentially starting from zero (0,1,2,3 etc.)
-	#
-	# You may want to turn off $home_themes etc. above if you want ONLY your own custom panels to appear on the home page.
-	#
-	# The below are examples.
-	#
-	# $custom_home_panels[0]["title"]="Custom Panel A";
-	# $custom_home_panels[0]["text"]="Custom Panel Text A";
-	# $custom_home_panels[0]["link"]="search.php?search=example";
-	#
-	# You can add additional code to a link like this:
-	# $custom_home_panels[0]["additional"]="target='_blank'";
-	#
-	# $custom_home_panels[1]["title"]="Custom Panel B";
-	# $custom_home_panels[1]["text"]="Custom Panel Text B";
-	# $custom_home_panels[1]["link"]="search.php?search=example";
-	#
-	# $custom_home_panels[2]["title"]="Custom Panel C";
-	# $custom_home_panels[2]["text"]="Custom Panel Text C";
-	# $custom_home_panels[2]["link"]="search.php?search=example";
+    # Options to show/hide the tiles on the home page
+    $home_themeheaders=false;
+    $home_themes=true;
+    $home_mycollections=true;
+    $home_helpadvice=true;
+    $home_advancedsearch=false;
+    $home_mycontributions=false;
+    #
+    # Custom panels for the home page.
+    # You can add as many panels as you like. They must be numbered sequentially starting from zero (0,1,2,3 etc.)
+    #
+    # You may want to turn off $home_themes etc. above if you want ONLY your own custom panels to appear on the home page.
+    #
+    # The below are examples.
+    #
+    # $custom_home_panels[0]["title"]="Custom Panel A";
+    # $custom_home_panels[0]["text"]="Custom Panel Text A";
+    # $custom_home_panels[0]["link"]="search.php?search=example";
+    #
+    # You can add additional code to a link like this:
+    # $custom_home_panels[0]["additional"]="target='_blank'";
+    #
+    # $custom_home_panels[1]["title"]="Custom Panel B";
+    # $custom_home_panels[1]["text"]="Custom Panel Text B";
+    # $custom_home_panels[1]["link"]="search.php?search=example";
+    #
+    # $custom_home_panels[2]["title"]="Custom Panel C";
+    # $custom_home_panels[2]["text"]="Custom Panel Text C";
+    # $custom_home_panels[2]["link"]="search.php?search=example";
 
 /*
  * End of Legacy Tile Config
@@ -979,9 +979,9 @@ $disabled_plugins_message = "";
 # The usernames are the same rules for just a single anonymous account but you must match them against the full domain $Baseurl that they will be using.
 # Note that collections will be shared among all anonymous users for each domain - it's therefore usually best to turn off all collections functionality for the anonymous user.
 /* $anonymous_login = array(
-		"http://example.com" => "guest",
-		"http://test.com" => "guest2"
-		); */
+        "http://example.com" => "guest",
+        "http://test.com" => "guest2"
+        ); */
 
 # Alternative anonymous login mode. Automatically create a separate user for each anonymous session and log them in.
 # EXPERIMENTAL - use with caution!
@@ -1218,7 +1218,7 @@ $file_integrity_ignore_states = array();
 # $file_integrity_verify_window - set server time window that the file integrity check script can run in.
 # This can be resource intensive when checking checksums for a large number of resources.
 # Examples: -
-# $file_integrity_verify_window = array(22,6);	# # between 10PM and 6AM (first hour is later than second so time must be after first OR before second)
+# $file_integrity_verify_window = array(22,6);  # # between 10PM and 6AM (first hour is later than second so time must be after first OR before second)
 # $file_integrity_verify_window = array(18,0);  # between 6PM and 12AM (midnight)
 $file_integrity_verify_window = array(0,0);     # Off by default
 
@@ -1233,18 +1233,18 @@ $custom_access=true;
 # Set the Default Level for Custom Access. 
 # This will only work for resources that haven't been set to custom previously, otherwise they will show their previously set values.
 /*
-	0 - Open
-	1 - Restricted
-	2 - Confidential
+    0 - Open
+    1 - Restricted
+    2 - Confidential
 */
 $default_customaccess=2;
 
 # How are numeric searches handled?
 #
 # If true:
-# 		If the search keyword is numeric then the resource with the matching ID will be shown
+#       If the search keyword is numeric then the resource with the matching ID will be shown
 # If false:
-#		The search for the number provided will be performed as with any keyword. However, if a resource with a matching ID number if found then this will be shown first.
+#       The search for the number provided will be performed as with any keyword. However, if a resource with a matching ID number if found then this will be shown first.
 $config_search_for_number=false;
 
 # Display the download as a 'save as' link instead of redirecting the browser to the download (which sometimes causes a security warning).
@@ -1512,8 +1512,8 @@ $collection_public_hide_owner=true;
 # You can also set that particular fields are displayed in different ways as follows:
 # $custom_registration_types["Department"]=1;
 # Types are as follows:
-# 	1: Normal text box (default)
-# 	2: Large text box
+#   1: Normal text box (default)
+#   2: Large text box
 #   3: Drop down box (set options using $custom_registration_options["Field Name"]=array("Option 1","Option 2","Option 3");
 #   4: HTML block, e.g. help text paragraph (set HTML using $custom_registration_html["Field Name"]="<b>Some HTML</b>";
 #      Optionally, you can add the language to this, ie. $custom_registration_html["Field Name"]["en"]=...
@@ -1548,8 +1548,8 @@ $user_edit_approved_by_email=false;
 # You can also set that particular fields are displayed in different ways as follows:
 # $custom_request_types["Department"]=1;
 # Types are as follows:
-# 	1: Normal text box (default)
-# 	2: Large text box
+#   1: Normal text box (default)
+#   2: Large text box
 #   3: Drop down box (set options using $custom_request_options["Field Name"]=array("Option 1","Option 2","Option 3");
 #   4: HTML block, e.g. help text paragraph (set HTML usign $custom_request_html="<b>Some HTML</b>";
 
@@ -1642,6 +1642,7 @@ $mime_type_by_extension = array(
     'ods'  => 'application/vnd.oasis.opendocument.spreadsheet',
     'odp'  => 'application/vnd.oasis.opendocument.presentation',
     'svg'  => 'image/svg+xml',
+    'pdf'  => 'application/pdf',
   );
 
 # PHP execution time limit
@@ -1696,7 +1697,7 @@ $config_trimchars="";
 # Resource field verbatim keyword regex
 # Using the index value of [resource field], specifies regex criteria for adding verbatim strings to keywords.
 # It solves the problem, for example, indexing an entire "nnn.nnn.nnn" string value when '.' are used in $config_separators.
-# $resource_field_verbatim_keyword_regex[1] = '/\d+\.\d+\w\d+\.\d+/';		// this example would add 994.1a9.93 to indexed keywords for field 1.  This can be found using quoted search.
+# $resource_field_verbatim_keyword_regex[1] = '/\d+\.\d+\w\d+\.\d+/';       // this example would add 994.1a9.93 to indexed keywords for field 1.  This can be found using quoted search.
 
 # Global permissions
 # Permissions that will be prefixed to all user group permissions
@@ -1788,10 +1789,10 @@ $partial_index_min_word_length=3;
 $thumbs_display_fields=array(8);
 # array of defined thumbs_display_fields to apply CSS modifications to (via $search_results_title_wordwrap, $search_results_title_height, $search_results_title_trim)
 $thumbs_display_extended_fields=array();
-	# $search_result_title_height=26;
-	$search_results_title_trim=30;
-	$search_results_title_wordwrap=100; // Force breaking up of very large titles so they wrap to multiple lines (useful when using multi line titles with $search_result_title_height). By default this is set very high so that breaking doesn't occur. If you use titles that have large unbroken words (e.g. filenames with no spaces) then it may be useful to set this value to something lower, e.g. 20
-	
+    # $search_result_title_height=26;
+    $search_results_title_trim=30;
+    $search_results_title_wordwrap=100; // Force breaking up of very large titles so they wrap to multiple lines (useful when using multi line titles with $search_result_title_height). By default this is set very high so that breaking doesn't occur. If you use titles that have large unbroken words (e.g. filenames with no spaces) then it may be useful to set this value to something lower, e.g. 20
+    
 # Enable extra large thumbnails option for search screen
 $xlthumbs=false;
 
@@ -1799,9 +1800,9 @@ $xlthumbs=false;
 $xl_thumbs_display_fields=array(8);
 # array of defined xl_thumbs_display_fields to apply CSS modifications to (via $xl_search_results_title_wordwrap, $xl_search_results_title_height, $xl_search_results_title_trim)
 $xl_thumbs_display_extended_fields=array();
-	# $xl_search_result_title_height=26;
-	$xl_search_results_title_trim=60;
-	$xl_search_results_title_wordwrap=100;
+    # $xl_search_result_title_height=26;
+    $xl_search_results_title_trim=60;
+    $xl_search_results_title_wordwrap=100;
 
 
 
@@ -1819,7 +1820,7 @@ $search_anchors_highlight=false;
 
 # Related Resource title trim: set to 0 to disable
 $related_resources_title_trim=15;
-	
+    
 # SORT Fields: display fields to be added to the sort links in large,small, and xlarge thumbnail views
 $sort_fields=array(12);
 
@@ -1878,11 +1879,11 @@ $allow_resource_deletion = true;
 #
 # Possible options are:
 #
-# -2	User Contributed Pending Submission (not useful unless deleting user-contributed resources)
-# -1	User Contributed Pending Review (not useful unless deleting user-contributed resources) 
-# 1		Waiting to be archived
-# 2 	Archived
-# 3		Deleted (recommended)
+# -2    User Contributed Pending Submission (not useful unless deleting user-contributed resources)
+# -1    User Contributed Pending Review (not useful unless deleting user-contributed resources) 
+# 1     Waiting to be archived
+# 2     Archived
+# 3     Deleted (recommended)
 $resource_deletion_state=3;
 
 # Does deleting resources require password entry? (single resource delete)
@@ -1903,38 +1904,38 @@ $zip_contents_field_crop=1; # The number of lines to remove from the top of the 
 # Mostly video files.
 # @see http://en.wikipedia.org/wiki/List_of_file_formats#Video
 $ffmpeg_supported_extensions = array(
-		'aaf',
-		'3gp',
-		'asf',
-		'avchd',
-		'avi',
-		'cam',
-		'dat',
-		'dsh',
-		'flv',
-		'm1v',
-		'm2v',
-		'mkv',
-		'wrap',
-		'mov',
-		'mpeg',
-		'mpg',
-		'mpe',
-		'mp4',
-		'mxf',
-		'nsv',
-		'ogm',
-		'ogv',
-		'rm',
-		'ram',
-		'svi',
-		'smi',
-		'webm',
-		'wmv',
-		'divx',
-		'xvid',
-		'm4v',
-	);
+        'aaf',
+        '3gp',
+        'asf',
+        'avchd',
+        'avi',
+        'cam',
+        'dat',
+        'dsh',
+        'flv',
+        'm1v',
+        'm2v',
+        'mkv',
+        'wrap',
+        'mov',
+        'mpeg',
+        'mpg',
+        'mpe',
+        'mp4',
+        'mxf',
+        'nsv',
+        'ogm',
+        'ogv',
+        'rm',
+        'ram',
+        'svi',
+        'smi',
+        'webm',
+        'wmv',
+        'divx',
+        'xvid',
+        'm4v',
+    );
 
 # A list of extensions which will be ported to mp3 format for preview.
 # Note that if an mp3 file is uploaded, the original mp3 file will be used for preview.
@@ -1953,7 +1954,7 @@ $ffmpeg_audio_extensions = array(
     'rm',
     'gsm'
     );
-	
+    
 # The audio settings for mp3 previews
 $ffmpeg_audio_params = "-acodec libmp3lame -ab 64k -ac 1"; # Default to 64Kbps mono
 
@@ -2183,6 +2184,9 @@ $paypal_url="https://www.paypal.com/cgi-bin/webscr";
 # ------------------------------------------------------------------------------------------------------------------
 # StaticSync (staticsync.php)
 # The ability to synchronise ResourceSpace with a separate and stand-alone filestore.
+# Amend the following to set the ref of the user account that staticsync resources will be 'created by' 
+$staticsync_userref=1;
+
 # ------------------------------------------------------------------------------------------------------------------
 $syncdir="/dummy/path/to/syncfolder"; # The sync folder
 $nogo="[folder1]"; # A list of folders to ignore within the sign folder.
@@ -2234,10 +2238,6 @@ $staticsync_ignore_deletion_states = array(2, 3);
 
 # staticsync_revive_state - if this is set then deleted items that later reappear will be moved to this archive state
 # $staticsync_revive_state=-1;
-
-# Uncomment and set to the ref of the user account that the staticsync resources will be 'created by' 
-# $staticsync_userref=-1;
-
 #
 # StaticSync Path to metadata mapping
 # ------------------------
@@ -2246,34 +2246,38 @@ $staticsync_ignore_deletion_states = array(2, 3);
 # Hence meaningful metadata can be specified by placing the resource files at suitable positions within the static
 # folder heirarchy.
 # Use the line below as an example. Repeat this for every mapping you wish to set up
-#	$staticsync_mapfolders[]=array
-#		(
-#		"match"=>"/projects/",
-#		"field"=>10,
-#		"level"=>2
-#		);
+#   $staticsync_mapfolders[]=array
+#       (
+#       "match"=>"/projects/",
+#       "field"=>10,
+#       "level"=>2
+#       );
 #
 # You can also now enter "access" in "field" to set the access level for the resource. The value must match the name of the access level
 # in the default local language. Note that custom access levels are not supported. For example, the mapping below would set anything in 
 # the projects/restricted folder to have a "Restricted" access level.
-#	$staticsync_mapfolders[]=array
-#		(
-#		"match"=>"/projects/restricted",
-#		"field"=>"access",
-#		"level"=>2
-#		);
+#   $staticsync_mapfolders[]=array
+#       (
+#       "match"=>"/projects/restricted",
+#       "field"=>"access",
+#       "level"=>2
+#       );
 #
 # You can enter "archive" in "field" to set the archive state for the resource. You must include "archive" to the array and its value must match either a default level or a custom archive level. The mapped folder level does not need to match the name of the archive level. Note that this will override $staticsync_defaultstate. For example, the mapping below would set anything in the restricted folder to have an "Archived" archive level.
 #   $staticsync_mapfolders[]=array
-#		(
-#		"match"=>"/projects/restricted",
-#		"field"=>"archive",
-#		"level"=>2,
-#		"archive"=>2
-#		);
+#       (
+#       "match"=>"/projects/restricted",
+#       "field"=>"archive",
+#       "level"=>2,
+#       "archive"=>2
+#       );
 #
-# Suffix to use for alternative files folder
-# If staticsync finds a folder in the same directory as a file with the same name as a file but with this suffix appended, then files in the folder will be treated as alternative files for the give file.
+# ALTERNATIVE FILES
+#
+# There are a number of options for adding alternative files automatically using staticsync. These only work when staticsync_ingest is true
+#
+# OPTION 1 - USE A SUBFOLDER WITH SAME NAME AS PRIMARY FILE
+# If staticsync finds a folder in the same directory as a file with the same name as a file but with this suffix appended, then files in the folder will be treated as alternative files for the given file.
 # For example a folder/file structure might look like:
 # /staticsync_folder/myfile.jpg
 # /staticsync_folder/myfile.jpg_alternatives/alternative1.jpg
@@ -2282,8 +2286,33 @@ $staticsync_ignore_deletion_states = array(2, 3);
 # NOTE: Alternative file processing only works when $staticsync_ingest is set to 'true'.
 $staticsync_alternatives_suffix="_alternatives";
 
+# OPTION 2 - ADD FILES IN SAME FOLDER WITH DEFINED STRING SUFFIX
 # Option to have alternative files located in same directory as primary files but identified by a defined string. As with staticsync_alternatives_suffix this only works when $staticsync_ingest is set to 'true'.
+# Can instead use $staticsync_alt_suffix_array below 
 #$staticsync_alternative_file_text="_alt_";
+
+# OPTION 3 - ADD FILES IN SAME FOLDER WITH VARIOUS STRING SUFFIXES
+# $staticsync_alt_suffixes / $staticsync_alt_suffix_array 
+# These can be used instead of $staticsync_alternatives_suffix to 
+# support mapping suffixes to the names used for the alternative files
+/*
+$staticsync_alt_suffixes = true;
+$staticsync_alt_suffix_array =array (
+    '_alt' => "",
+   '_verso' => "Verso",
+   '_dng' => "DNG",
+   '_orig' => "Original Scan",
+   '_tp' => "Title Page",
+   '_tpv' => "Title Page Verso",
+   '_cov' => "Cover",
+   '_ex' => "Enclosure",
+   '_scr' => "Inscription"
+    );
+*/
+# $numeric_alt_suffixes = 8;
+# Optionally set this to ignore files that aren't at least this many seconds old
+# $staticsync_file_minimum_age = 120; 
+
 
 # if false, the system will always synthesize a title from the filename and path, even
 # if an embedded title is found in the file. If true, the embedded title will be used.
@@ -2291,6 +2320,8 @@ $staticsync_prefer_embedded_title = true;
 
 # Do we allow deletion of files located in $syncdir through the UI?
 $staticsync_allow_syncdir_deletion=false;
+
+
 
 # End of StaticSync settings
 
@@ -2314,11 +2345,11 @@ $multilingual_text_fields=false;
 # - fetch_from_ftp           : Enable / disable "Add Resource Batch - Fetch from FTP server"
 # - fetch_from_local_folder  : Enable / disable "Add Resource Batch - Fetch from local upload folder"
 $upload_methods = array(
-		'single_upload' => true,
-		'in_browser_upload' => true,
-		'fetch_from_ftp' => true,
-		'fetch_from_local_folder' => true,
-	);
+        'single_upload' => true,
+        'in_browser_upload' => true,
+        'fetch_from_ftp' => true,
+        'fetch_from_local_folder' => true,
+    );
 
 # Allow to change the location of the upload folder, so that it is not in the
 # web visible path. Relative and abolute paths are allowed.
@@ -2448,11 +2479,11 @@ $geo_tile_caching=true;
 # A list of upper/lower long/lat bounds, defining areas that will be excluded from geographical search results.
 # Areas are defined using values in the following sequence: southwest lat, southwest long, northeast lat, northeast long
 $geo_search_restrict=array
-	(	
-	# array(50,-3,54,3) # Example omission zone
-	# ,array(-10,-20,-8,-18) # Example omission zone 2
-	# ,array(1,1,2,2) # Example omission zone 3
-	);
+    (   
+    # array(50,-3,54,3) # Example omission zone
+    # ,array(-10,-20,-8,-18) # Example omission zone 2
+    # ,array(1,1,2,2) # Example omission zone 3
+    );
 
 # Add OpenLayers configuration options to this variable to overwrite all other options. 
 $geo_override_options = "";
@@ -2727,13 +2758,13 @@ $public_collections_header_only=false; // show public collections page in header
 $enable_ckeditor = true;
 $ckeditor_toolbars="'Styles', 'Bold', 'Italic', 'Underline','FontSize', 'RemoveFormat', 'TextColor','BGColor'";
 $ckeditor_content_toolbars="
-	{ name: 'basicstyles', items : [ 'Bold','Italic','Underline','Strike','RemoveFormat' ] },
-	{ name: 'clipboard', items : [ 'Cut','Copy','Paste','PasteText','-','Undo','Redo' ] },
-	{ name: 'styles', items : [ 'Format' ] },
-	{ name: 'paragraph', items : [ 'NumberedList','BulletedList' ] },
-	{ name: 'links', items : [ 'Link','Unlink' ] },
-	{ name: 'insert', items : [ 'Image','HorizontalRule'] },
-	{ name: 'tools', items : [ 'Source', 'Maximize' ] }
+    { name: 'basicstyles', items : [ 'Bold','Italic','Underline','Strike','RemoveFormat' ] },
+    { name: 'clipboard', items : [ 'Cut','Copy','Paste','PasteText','-','Undo','Redo' ] },
+    { name: 'styles', items : [ 'Format' ] },
+    { name: 'paragraph', items : [ 'NumberedList','BulletedList' ] },
+    { name: 'links', items : [ 'Link','Unlink' ] },
+    { name: 'insert', items : [ 'Image','HorizontalRule'] },
+    { name: 'tools', items : [ 'Source', 'Maximize' ] }
 ";
 
 # Automatically save the edit form after making changes?
@@ -2909,20 +2940,20 @@ $metadata_download_footer_text  = '';
 
 # settings for commenting on resources - currently not enabled by default
 
-# $comments_collection_enable=false; 			# reserved for future use
-$comments_resource_enable=false;				# allow users to make comments on resources
-$comments_flat_view=false;						# by default, show in a threaded (indented view)
-$comments_responses_max_level=10 ;				# maximum number of nested comments / threads
-$comments_max_characters=200;					# maximum number of characters for a comment
-$comments_email_notification_address="";		# email address to use for flagged comment notifications
-$comments_show_anonymous_email_address=false;	# by default keep anonymous commenter's email address private
-$comments_policy_external_url="";				# if specified, will popup a new window fulfilled by URL (when clicking on "comment policy" link)
-$comments_view_panel_show_marker=true;			# show an astrisk by the comment view panel title if comments exist
+# $comments_collection_enable=false;            # reserved for future use
+$comments_resource_enable=false;                # allow users to make comments on resources
+$comments_flat_view=false;                      # by default, show in a threaded (indented view)
+$comments_responses_max_level=10 ;              # maximum number of nested comments / threads
+$comments_max_characters=200;                   # maximum number of characters for a comment
+$comments_email_notification_address="";        # email address to use for flagged comment notifications
+$comments_show_anonymous_email_address=false;   # by default keep anonymous commenter's email address private
+$comments_policy_external_url="";               # if specified, will popup a new window fulfilled by URL (when clicking on "comment policy" link)
+$comments_view_panel_show_marker=true;          # show an astrisk by the comment view panel title if comments exist
 
 # show the login panel for anonymous users
 $show_anonymous_login_panel=true;
 
-$regex_email = "[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}";	# currently exclusively used for comments functionality - checking of valid (anonymous) email addresses entered in JS and in back-end PHP
+$regex_email = "[a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}";    # currently exclusively used for comments functionality - checking of valid (anonymous) email addresses entered in JS and in back-end PHP
 
 $do_not_add_to_new_collection_default=false;  # will set "do not add to a collection" as the default option for upload option
 $no_metadata_read_default=false; // If set to true and $metadata_read is false then metadata will be imported by default
@@ -3590,6 +3621,7 @@ $migrating_scrambled = false;
 ##################################################
 $CSRF_enabled = true;
 $CSRF_token_identifier = "CSRFToken";
+$CSRF_exempt_pages = array("login");
 // Allow other systems to make cross-origin requests. The elements of this configuration option should follow the 
 // "<scheme>://<hostname>" syntax
 $CORS_whitelist = array();
@@ -3684,3 +3716,12 @@ $date_validator=false;
 // and care must still be taken to keep secure any exported data.
 $system_download_config = false;
 $system_download_config_force_obfuscation = true;
+
+
+// DEPREDICATED SETTINGS
+
+// Where resource, research, and user requests are sent.
+$email_notify = "resourcespace@my.site"; 
+
+// Use of email_notify is deprecated as system notifications are now sent to the appropriate users based on permissions and user preferences. This variable can be set to an array of usergroup references and will take precedence.
+$email_notify_usergroups = array(); 

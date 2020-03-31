@@ -1,22 +1,21 @@
 <?php
+// Slideshow Functions
+
 /**
 * Create/ Update a slideshow image record. Use NULL for $ref to create new records.
-* 
-* @param integer $ref                       ID of the slideshow image. Use NULL to create a new record
-* @param integer $resource_ref              ID of the resource this slideshow is related to. Use NULL if no link is required
-* @param integer $homepage_show             Set to 1 if slideshow image should appear on the home page
-* @param integer $featured_collections_show Set to 1 if slideshow image should appear on the featured collections page
-* @param integer $login_show                Set to 1 if slideshow image should appear on the login page
 *
-* @return boolean|integer  Returns ID of the slideshow image(new/ updated), FALSE otherwise
+* @param integer $ref                  ID of the slideshow image. Use NULL to create a new record.
+* @param integer $resource_ref         ID of the resource this slideshow is related to. Use NULL if no link is required.
+* @param integer $homepage_show             Set to 1 if slideshow image should appear on the home page.
+* @param integer $featured_collections_show Set to 1 if slideshow image should appear on the featured collections page.
+* @param integer $login_show                Set to 1 if slideshow image should appear on the login page.
+*
+* @return boolean|integer  Returns ID of the slideshow image(new/ updated), FALSE otherwise.
 */
-function set_slideshow($ref, $resource_ref = NULL, $homepage_show = 1, $featured_collections_show = 1, $login_show = 0)
+function set_slideshow($ref, $resource_ref = null, $homepage_show = 1, $featured_collections_show = 1, $login_show = 0)
     {
-    if(
-        (!is_null($ref) && !is_numeric($ref))
-        || (!(is_null($resource_ref) || trim($resource_ref) == '') && !is_numeric($resource_ref))
-        || !is_numeric($homepage_show)
-        || !is_numeric($featured_collections_show)
+    if((!is_null($ref) && !is_numeric($ref)) || (!(is_null($resource_ref) || trim($resource_ref) == '')
+        && !is_numeric($resource_ref)) || !is_numeric($homepage_show) || !is_numeric($featured_collections_show)
         || !is_numeric($login_show))
         {
         return false;
@@ -56,10 +55,11 @@ function set_slideshow($ref, $resource_ref = NULL, $homepage_show = 1, $featured
     return false;
     }
 
+
 /**
-* Delete slideshow record
+* Delete slideshow record.
 *
-* @param integer $ref ID of the slideshow
+* @param integer $ref ID of the slideshow.
 *
 * @return boolean
 */
@@ -74,17 +74,16 @@ function delete_slideshow($ref)
     $ref = escape_check($ref);
     $query = "DELETE FROM slideshow WHERE ref = '{$ref}'";
     sql_query($query);
-
     log_activity("Deleted slideshow image", LOG_CODE_DELETED, null, 'slideshow', 'ref', $ref);
 
     return true;
     }
 
 /**
-* Function used to re-order slideshow images
-* 
-* @param array $from Slideshow image data we move FROM
-* @param array $to   Slideshow image data we move TO
+* Function used to re-order slideshow images.
+*
+* @param array $from Slideshow image data we move FROM.
+* @param array $to   Slideshow image data we move TO.
 *
 * @return  boolean
 */
@@ -100,12 +99,12 @@ function reorder_slideshow_images(array $from, array $to)
         trigger_error('File "' . $to['file_path'] . '" does not exist or could not be found/accessed!');
         }
 
-    // Calculate files to be moved around
+    // Calculate files to be moved around.
     $from_file = $from['file_path'];
     $temp_file = "{$from['file_path']}.tmp";
-    $to_file   = $to['file_path'];
+    $to_file = $to['file_path'];
 
-    // Swap the slideshow images
+    // Swap the slideshow images.
     if(!copy($from_file, $temp_file))
         {
         trigger_error("Failed to copy '{$from_file}' to temp file '{$temp_file}'");
@@ -133,12 +132,13 @@ function reorder_slideshow_images(array $from, array $to)
     return false;
     }
 
+
 /**
-* Get the full path for the slideshow image file
-* 
-* @param integer $ref ID of the slideshow image
-* 
-* @return string The full path to the slideshow image
+* Get the full path for the slideshow image file.
+*
+* @param integer $ref   ID of the slideshow image.
+*
+* @return string        The full path to the slideshow image.
 */
 function get_slideshow_image_file_path($ref)
     {

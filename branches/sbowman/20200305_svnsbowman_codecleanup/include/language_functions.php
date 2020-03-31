@@ -1,83 +1,138 @@
 <?php
-# Language functions
-# Functions for the translation of the application
+// Language Functions for the Translation of the Application
 
-if (!function_exists("lang_or_i18n_get_translated")) {
-function lang_or_i18n_get_translated($text, $mixedprefix, $suffix = "")
+// Translates field names and values using two methods:
+// First, it checks if $text exists in the current $lang (after $text is sanitized and $mixedprefix, one by one if an array, and $suffix are added).
+// If not found in the $lang, it tries to translate $text using the i18n_get_translated function.
+if(!function_exists("lang_or_i18n_get_translated"))
     {
-    # Translates field names / values using two methods:
-    # First it checks if $text exists in the current $lang (after $text is sanitized and $mixedprefix - one by one if an array - and $suffix are added).
-    # If not found in the $lang, it tries to translate $text using the i18n_get_translated function.
-
-    $text=trim($text);
-    global $lang;
-
-    if (is_array($mixedprefix)) {$prefix = $mixedprefix;}
-    else {$prefix = array($mixedprefix);}
-    for ($n = 0;$n<count($prefix);$n++) {
-        $langindex = $prefix[$n] . strip_tags(strtolower(str_replace(array(", ", " ", "\t", "/", "(", ")"), array("-", "_", "_", "and", "", ""), $text))) . $suffix;
-
-        # Checks if there is a $lang (should be defined for all standard field names / values).
-        if (isset($lang[$langindex])) {
-            $return = $lang[$langindex];
-            break;
-        }
-    }    
-        if (isset($return)) {return $return;}
-        else {return i18n_get_translated($text);} # Performs an i18n translation (of probably a custom field name / value).
-    }
-}
-
-if (!function_exists("i18n_get_translated")) {
-function i18n_get_translated($text,$i18n_split_keywords=true)
-    {
-    # For field names / values using the i18n syntax, return the version in the current user's language
-    # Format is ~en:Somename~es:Someothername
-    $text=trim($text);
-    
-    # For multiple keywords, parse each keyword.
-    if ($i18n_split_keywords && (strpos($text,",")!==false) && (strpos($text,"~")!==false)) {$s=explode(",",$text);$out="";for ($n=0;$n<count($s);$n++) {if ($n>0) {$out.=",";}; $out.=i18n_get_translated(trim($s[$n]));};return $out;}
-    
-    global $language,$defaultlanguage;
-	$asdefaultlanguage=$defaultlanguage;
-	if (!isset($asdefaultlanguage))
-		$asdefaultlanguage='en';
-    
-    # Split
-    $s=explode("~",$text);
-
-    # Not a translatable field?
-    if (count($s)<2) {return $text;}
-
-    # Find the current language and return it
-    $default="";
-    for ($n=1;$n<count($s);$n++)
+    function lang_or_i18n_get_translated($text, $mixedprefix, $suffix = "")
         {
-        # Not a translated string, return as-is
-        if (substr($s[$n],2,1)!=":" && substr($s[$n],5,1)!=":" && substr($s[$n],0,1)!=":") {return $text;}
-        
-        # Support both 2 character and 5 character language codes (for example en, en-US).
-        $p=strpos($s[$n],':');
-		$textLanguage=substr($s[$n],0,$p);
-        if ($textLanguage==$language) {return substr($s[$n],$p+1);}
-        
-        if ($textLanguage==$asdefaultlanguage || $p==0 || $n==1) {$default=substr($s[$n],$p+1);}
-        }    
-    
-    # Translation not found? Return default language
-    # No default language entry? Then consider this a broken language string and return the string unprocessed.
-    if ($default!="") {return $default;} else {return $text;}
+        $text = trim($text);
+        global $lang;
+
+        if(is_array($mixedprefix))
+            {
+            $prefix = $mixedprefix;
+            }
+        else
+            {
+            $prefix = array($mixedprefix);
+            }
+
+        $prefix_count = count($prefix);
+        for($n = 0; $n < $prefix_count; $n++)
+            {
+            $langindex = $prefix[$n] . strip_tags(strtolower(str_replace(array(", ", " ", "\t", "/", "(", ")"), array("-", "_", "_", "and", "", ""), $text))) . $suffix;
+
+            // Checks if there is a $lang (should be defined for all standard field names and values).
+            if(isset($lang[$langindex]))
+                {
+                $return = $lang[$langindex];
+                break;
+                }
+            }
+
+            if(isset($return))
+                {
+                return $return;
+                }
+            else // Performs an i18n translation (of probably a custom field name and value).
+                {
+                return i18n_get_translated($text);
+                }
+        }
     }
-}
 
-function i18n_get_collection_name($mixedcollection, $index="name")
+
+// For field names and values using the i18n syntax, return the version in the current user's language
+// Format is ~en:Somename~es:Someothername
+if(!function_exists("i18n_get_translated"))
     {
-    # Translates collection names
+    function i18n_get_translated($text, $i18n_split_keywords=true)
+        {
+        $text = trim($text);
 
+        // For multiple keywords, parse each keyword.
+        if($i18n_split_keywords && (strpos($text, ",") !== false) && (strpos($text, "~") !== false))
+            {
+            $s = explode(",", $text);
+            $out = "";
+            $s_count = count($s);
+            for($n = 0; $n < $s_count; $n++)
+                {
+                if($n > 0)
+                    {
+                    $out .= ",";
+                    }
+                $out .= i18n_get_translated(trim($s[$n]));
+                }
+            return $out;
+            }
+
+        global $language, $defaultlanguage;
+
+        $asdefaultlanguage = $defaultlanguage;
+        if(!isset($asdefaultlanguage))
+            {
+            $asdefaultlanguage = 'en';
+            }
+
+        // Split.
+        $s = explode("~", $text);
+        $s_count = count($s);
+
+        // Not a translatable field?
+        if($s_count < 2)
+            {
+            return $text;
+            }
+
+        // Find the current language and return it.
+        $default = "";
+        for($n = 1; $n < $s_count; $n++)
+            {
+            // Not a translated string, return as-is.
+            if(substr($s[$n], 2, 1) != ":" && substr($s[$n], 5, 1) != ":" && substr($s[$n], 0, 1) != ":")
+                {
+                return $text;
+                }
+
+            // Support both 2 and 5 character language codes (for example en, en-US).
+            $p = strpos($s[$n], ':');
+            $textLanguage = substr($s[$n], 0, $p);
+            if($textLanguage == $language)
+                {
+                return substr($s[$n], $p + 1);
+                }
+
+            if($textLanguage == $asdefaultlanguage || $p == 0 || $n == 1)
+                {
+                $default = substr($s[$n], $p + 1);
+                }
+            }
+
+        // Translation not found, return default language.  No default language entry, then consider this a broken
+        // language string and return the string unprocessed.
+        if($default != "")
+            {
+            return $default;
+            }
+        else
+            {
+            return $text;
+            }
+        }
+    }
+
+
+// Translates collection names.
+function i18n_get_collection_name($mixedcollection, $index = "name")
+    {
     global $lang;
 
-    # The function handles both strings and arrays.
-    if (!is_array($mixedcollection))
+    // The function handles both strings and arrays.
+    if(!is_array($mixedcollection))
         {
         $name_untranslated = $mixedcollection;
         }
@@ -85,235 +140,311 @@ function i18n_get_collection_name($mixedcollection, $index="name")
         {
         $name_untranslated = $mixedcollection[$index];
 
-        # Check if it is a Smart Collection
-        if (isset($mixedcollection['savedsearch']) && ($mixedcollection['savedsearch']!=null))
+        // Check if it is a Smart Collection.
+        if(isset($mixedcollection['savedsearch']) && ($mixedcollection['savedsearch'] != null))
             {
             return htmlspecialchars($lang['smartcollection'] . ": " . $name_untranslated);
             }
         }
 
-    # Check if it is a Default Collection (n)
+    // Check if it is a Default Collection (n).
     $name_translated = preg_replace('/(^Default Collection)(|(\s\d+))$/', $lang["mycollection"] . '$2', $name_untranslated, -1, $translated);
-    if ($translated==1) {return htmlspecialchars($name_translated);}
+    if($translated == 1)
+        {
+        return htmlspecialchars($name_translated);
+        }
 
-    # Check if it is a Upload YYMMDDHHMMSS
+    // Check if it is a Upload YYMMDDHHMMSS.
     $upload_date = preg_replace('/(^Upload)\s(\d{12})$/', '$2', $name_untranslated, -1, $translated);
-	if ($translated!=1)
-		$upload_date = preg_replace('/(^Upload)\s(\d{14})$/', '$2', $name_untranslated, -1, $translated);
-    if ($translated==1)
-		{
-		# Translate date into MySQL ISO format to be able to use nicedate()
-		if (strlen($upload_date)==14)
-			{
-			$year = substr($upload_date, 0, 4);
-			$upload_date=substr($upload_date, 2);
-			}
-		else
-			{
-			$year = substr($upload_date, 0, 2);
-			if ((int)$year > (int)date('y'))
-				$year = ((int)substr(date('Y'), 0, 2)-1) . $year;
-			else
-				$year = substr(date('Y'), 0, 2) . $year;
-			}
-		$month = substr($upload_date, 2, 2);
-		$day = substr($upload_date, 4, 2);
-		$hour = substr($upload_date, 6, 2);
-		$minute = substr($upload_date, 8, 2);
-		$second = substr($upload_date, 10, 2);
-		$date = nicedate("$year-$month-$day $hour:$minute:$second", true);
-		return htmlspecialchars($lang['upload'] . ' ' . $date);
-		}
+    if($translated != 1)
+        {
+        $upload_date = preg_replace('/(^Upload)\s(\d{14})$/', '$2', $name_untranslated, -1, $translated);
+        }
+    if($translated == 1)
+        {
+        // Translate date into MySQL ISO format to be able to use nicedate().
+        if(strlen($upload_date) == 14)
+            {
+            $year = substr($upload_date, 0, 4);
+            $upload_date=substr($upload_date, 2);
+            }
+        else
+            {
+            $year = substr($upload_date, 0, 2);
+            if((int)$year > (int)date('y'))
+                {
+                $year = ((int)substr(date('Y'), 0, 2)-1) . $year;
+                }
+            else
+                {
+                $year = substr(date('Y'), 0, 2) . $year;
+                }
+            }
 
-    # Check if it is a Research: [..]
-    if (substr($name_untranslated,0,9)=="Research:"){
-	return $lang["research"].": ".i18n_get_translated(substr($name_untranslated,9));
-    }
+        $month = substr($upload_date, 2, 2);
+        $day = substr($upload_date, 4, 2);
+        $hour = substr($upload_date, 6, 2);
+        $minute = substr($upload_date, 8, 2);
+        $second = substr($upload_date, 10, 2);
+        $date = nicedate("$year-$month-$day $hour:$minute:$second", true);
+
+        return htmlspecialchars($lang['upload'] . ' ' . $date);
+        }
+
+    // Check if it is a Research: [..]
+    if(substr($name_untranslated, 0, 9) == "Research:")
+        {
+        return $lang["research"] . ": " . i18n_get_translated(substr($name_untranslated, 9));
+        }
+
     //$name_translated = preg_replace_callback('/(^Research:)(\s.*)/', function ($matches){return i18n_get_translated($matches[2]);}, $name_untranslated, -1, $translated);
     //if ($translated==1) {return htmlspecialchars($lang["research"] . ": " . $name_translated);}
 
-    # Ordinary collection - translate with i18n_get_translated
-    return htmlspecialchars(i18n_get_translated($name_untranslated));
+    // Ordinary collection, translate with i18n_get_translated.
+    return htmlspecialchars(i18n_get_translated($name_untranslated, false));
     }
 
-if (!function_exists("i18n_get_indexable")) {
-function i18n_get_indexable($text)
+
+// For field names and values using the i18n syntax, return all language versions, as necessary for indexing.
+if(!function_exists("i18n_get_indexable"))
     {
-	# For field names / values using the i18n syntax, return all language versions, as necessary for indexing.
-	
-	// Make sure keywords don't get squashed together, then trim
-	$text=str_replace(array("<br />","<br>","\\r","\\n","&nbsp;")," ",$text);
-	$text=trim($text);
-	
-    $text=preg_replace('/~(.*?):/',',',$text);// remove i18n strings, which shouldn't be in the keywords
-		
-    # For multiple keywords, parse each keyword.
-    if (substr($text,0,1)!="," && (strpos($text,",")!==false) && (strpos($text,"~")!==false)) {
-        $s=explode(",",$text);
-        $out="";
-        for ($n=0;$n<count($s);$n++) {
-        if ($n>0) {$out.=",";} 
-        $out.=i18n_get_indexable(trim($s[$n]));
-        }
-        return $out;
-    }
-
-    # Split
-    $s=explode("~",$text);
-
-    # Not a translatable field?
-    if (count($s)<2) {return $text;}
-
-    $out="";
-    for ($n=1;$n<count($s);$n++)
+    function i18n_get_indexable($text)
         {
-        if (substr($s[$n],2,1)!=":") {return $text;}
-        if ($out!="") {$out.=",";}
-        $out.=substr($s[$n],3);
-        }    
-    return $out;
-    }
-}
+        // Make sure keywords do not get squashed together, then trim.
+        $text = str_replace(array("<br />", "<br>", "\\r", "\\n", "&nbsp;"), " ", $text);
+        $text = trim($text);
 
-if (!function_exists("i18n_get_translations")) {
-function i18n_get_translations($value)
-    {
-    # For a string in the language format, return all translations as an associative array
-    # E.g. "en"->"English translation";
-    # "fr"->"French translation"
-    global $defaultlanguage;
-    if (strpos($value,"~")===false) {return array($defaultlanguage=>$value);}
-    $s=explode("~",$value);
-    $return=array();
-    for ($n=1;$n<count($s);$n++)
-    {
-    $e=explode(":",$s[$n]);
-    if (count($e)==2) {$return[$e[0]]=$e[1];}
-    }
-    return $return;
-    }
-}
+        // Remove i18n strings, which should not be in the keywords.
+        $text = preg_replace('/~(.*?):/', ',', $text);
 
+        // For multiple keywords, parse each keyword.
+        if(substr($text, 0, 1) != "," && (strpos($text, ",") !== false) && (strpos($text, "~") !== false))
+            {
+            $s = explode(",", $text);
+            $out = "";
+            $s_count = count($s);
+            for($n = 0; $n < $s_count; $n++)
+                {
+                if($n > 0)
+                    {
+                    $out .= ",";
+                    }
+            $out .= i18n_get_indexable(trim($s[$n]));
+                }
+
+            return $out;
+            }
+
+        // Split.
+        $s=explode("~",$text);
+        $s_count = count($s);
+
+        // Not a translatable field?
+        if($s_count < 2)
+            {
+            return $text;
+            }
+
+        $out = "";
+        for($n = 1; $n < $s_count; $n++)
+            {
+            if(substr($s[$n], 2, 1) != ":")
+                {
+                return $text;
+                }
+            if($out != "")
+                {
+                $out .= ",";
+                }
+            $out .= substr($s[$n],3);
+            }
+
+        return $out;
+        }
+    }
+
+
+// For a string in the language format, return all translations as an associative array.  E.g. "en"->"English
+// translation";  "fr"->"French translation"
+if(!function_exists("i18n_get_translations"))
+    {
+    function i18n_get_translations($value)
+        {
+        global $defaultlanguage;
+        if(strpos($value, "~") === false)
+            {
+            return array($defaultlanguage => $value);
+            }
+        $s = explode("~", $value);
+        $s_count = count($s);
+        $return = array();
+        for($n = 1; $n < $s_count; $n++)
+            {
+            $e = explode(":", $s[$n]);
+            if(count($e) == 2)
+                {
+                $return[$e[0]] = $e[1];
+                }
+            }
+
+        return $return;
+        }
+    }
+
+
+/* Returns a string with all occurrences of the $mixedplaceholder in $subject replaced with the $mixedreplace. If
+ * $mixedplaceholder is a string but $mixedreplace is an array, the $mixedreplace is imploded to a string using
+ * $separator.  The replace values are formatted according to the formatting of the placeholders.  The placeholders
+ * may be written in UPPERCASE, lowercase or Uppercasefirst.  Each placeholder will be replaced by the replace value,
+ * written with the same case as the placeholder.  It is possible to also include "?" as a placeholder for legacy
+ * reasons.
+ *
+ * Example #1:
+ *   str_replace_formatted_placeholder("%extension", $resource["file_extension"], $lang["originalfileoftype"], true)
+ *   will search for the three words "%EXTENSION", "%extension" and "%Extension" and also the char "?" in the string
+ *   $lang["originalfileoftype"]. If the found placeholder is %extension, it will be replaced by the value of
+ *   $resource["file_extension"], written in lowercase. If the found placeholder instead would have been "?" the value
+ *   would have been written in UPPERCASE.
+ *
+ * Example #2:
+ *   str_replace_formatted_placeholder("%resourcetypes%", $searched_resource_types_names_array,
+ *   $lang["resourcetypes-collections"], false, $lang["resourcetypes_separator"]) will search for the three words
+ *   "%RESOURCETYPES%", "%resourcetypes%" and "%Resourcetypes%" in the string $lang["resourcetypes-collections"]. If
+ *   the found placeholder is %resourcetypes% all elements in $searched_resource_types_names_array will be written in
+ *   lowercase and separated by $lang["resourcetypes_separator"] before the resulting string will replace the
+ *   placeholder.
+ */
 function str_replace_formatted_placeholder($mixedplaceholder, $mixedreplace, $subject, $question_mark = false, $separator = ", ")
     {
-    # Returns a string with all occurrences of the $mixedplaceholder in $subject replaced with the $mixedreplace. If $mixedplaceholder is a string but $mixedreplace is an array, the $mixedreplace is imploded to a string using $separator.
-    # The replace values are formatted according to the formatting of the placeholders.
-    # The placeholders may be written in UPPERCASE, lowercase or Uppercasefirst.
-    # Each placeholder will be replaced by the replace value,
-    # written with the same case as the placeholder.
-    # It's possible to also include "?" as a placeholder for legacy reasons.
 
-    # Example #1:
-    # str_replace_formatted_placeholder("%extension", $resource["file_extension"], $lang["originalfileoftype"], true)
-    # will search for the three words "%EXTENSION", "%extension" and "%Extension" and also the char "?"
-    # in the string $lang["originalfileoftype"]. If the found placeholder is %extension
-    # it will be replaced by the value of $resource["file_extension"],
-    # written in lowercase. If the found placeholder instead would have been "?" the value
-    # would have been written in UPPERCASE.
-    #
-    # Example #2:
-    # str_replace_formatted_placeholder("%resourcetypes%", $searched_resource_types_names_array, $lang["resourcetypes-collections"], false, $lang["resourcetypes_separator"])
-    # will search for the three words "%RESOURCETYPES%", "%resourcetypes%" and "%Resourcetypes%"
-    # in the string $lang["resourcetypes-collections"]. If the found placeholder is %resourcetypes%
-    # all elements in $searched_resource_types_names_array will be written in lowercase and separated by $lang["resourcetypes_separator"] before the resulting string will replace the placeholder.
-
-    # Creates a multi-dimensional array of the placeholders written in different case styles.
+    // Creates a multi-dimensional array of the placeholders written in different case styles.
     $array_placeholder = array();
-    if (is_array($mixedplaceholder)) {$placeholder = $mixedplaceholder;}
-    else {$placeholder = array($mixedplaceholder);}
-    for ($n = 0;$n<count($placeholder);$n++)
+    if(is_array($mixedplaceholder))
+        {
+        $placeholder = $mixedplaceholder;
+        }
+    else
+        {
+        $placeholder = array($mixedplaceholder);
+        }
+
+    $placeholder_count = count($placeholder);
+    for($n = 0; $n < $placeholder_count; $n++)
         {
         $array_placeholder[$n] = array(strtoupper($placeholder[$n]), strtolower($placeholder[$n]), ucfirstletter($placeholder[$n]));
         }
 
-    # Creates a multi-dimensional array of the replace values written in different case styles.
-    if (is_array($mixedreplace)) {$replace = $mixedreplace;}
-    else {$replace = array($mixedreplace);}
-    for ($n = 0;$n<count($replace);$n++)
+    // Creates a multi-dimensional array of the replace values written in different case styles.
+    if(is_array($mixedreplace))
+        {
+        $replace = $mixedreplace;
+        }
+    else
+        {
+        $replace = array($mixedreplace);
+        }
+
+    $replace_count = count($replace);
+    for($n = 0; $n < $replace_count; $n++)
         {
         $array_replace[$n] = array(strtoupper($replace[$n]), strtolower($replace[$n]), ucfirst(strtolower($replace[$n])));
         }
 
-    # Adds "?" to the arrays if required.
-    if ($question_mark)
+    // Adds "?" to the arrays if required.
+    if($question_mark)
         {
         $array_placeholder[] = "?";
         $array_replace[] = strtoupper($replace[0]);
         }
 
-    # Replaces the placeholders with the replace values and returns the new string.
+    // Replaces the placeholders with the replace values and returns the new string.
     $result = $subject;
-    if (count($placeholder)==1 && count($replace)>1)
+    $placeholder_count = count($placeholder);
+    if($placeholder_count == 1 && $replace_count > 1)
         {
-        # The placeholder shall be replaced by an imploded array.
-        $array_replace_strings = array(implode($separator, array_map(create_function('$column','return $column[0];'), $array_replace)), implode($separator, array_map(create_function('$column','return $column[1];'), $array_replace)), implode($separator, array_map(create_function('$column','return $column[2];'), $array_replace)));
+        // The placeholder shall be replaced by an imploded array.
+        $array_replace_strings = array(implode($separator, array_map(create_function('$column', 'return $column[0];'), $array_replace)), implode($separator, array_map(create_function('$column', 'return $column[1];'), $array_replace)), implode($separator, array_map(create_function('$column', 'return $column[2];'), $array_replace)));
         $result = str_replace($array_placeholder[0], $array_replace_strings, $result);
         }
     else
         {
-        for ($n=0;$n<count($placeholder);$n++)
+
+        for($n = 0; $n < $placeholder_count; $n++)
             {
-            if (!isset($array_replace[$n][0])) {break;}
+            if(!isset($array_replace[$n][0]))
+                {
+                break;
+                }
             else
                 {
                 $result = str_replace($array_placeholder[$n], $array_replace[$n], $result);
                 }
             }
         }
+
     return $result;
     }
 
+
+/* Returns a string with the first LETTER of $string capitalized.  Compare with ucfirst($string) which returns a
+ * string with first CHAR of $string capitalized:
+ *    ucfirstletter("abc") / ucfirstletter("%abc") returns "Abc" / "%Abc"
+ *    ucfirst("abc") / ucfirst("%abc") returns "Abc" / "%abc"
+ *
+ * Search for the first letter ([a-zA-Z]), which may or may not be followed by other characters (.*).  Replaces the
+ * found substring ('$0') with the same substring but now with the first character capitalized, using ucfirst().
+ * Note the /e modifier: If this modifier is set, preg_replace() does normal substitution of backreferences in the
+ * replacement string, evaluates it as PHP code, and uses the result for replacing the search string.
+ */
 function ucfirstletter($string)
     {
-    # Returns a string with the first LETTER of $string capitalized.
-    # Compare with ucfirst($string) which returns a string with first CHAR of $string capitalized:
-    # ucfirstletter("abc") / ucfirstletter("%abc") returns "Abc" / "%Abc"
-    # ucfirst("abc") / ucfirst("%abc") returns "Abc" / "%abc"
-
-    # Search for the first letter ([a-zA-Z]), which may or may not be followed by other characters (.*).
-    # Replaces the found substring ('$0') with the same substring but now with the first character capitalized, using ucfirst().
-    # Note the /e modifier: If this modifier is set, preg_replace() does normal substitution of backreferences in the replacement string, evaluates it as PHP code, and uses the result for replacing the search string.  
     return preg_replace_callback("/[a-zA-Z].*/", "ucfirstletter_callback", $string);
-
     }
-function ucfirstletter_callback($matches){
-	return ucfirst($matches[0]);
-}
 
+
+function ucfirstletter_callback($matches)
+    {
+    return ucfirst($matches[0]);
+    }
+
+
+//Normalize the text if function available.
 function normalize_keyword($keyword)
-	{
-	global $normalize_keywords, $keywords_remove_diacritics;
-	//Normalize the text if function available
-	if($normalize_keywords && function_exists('normalizer_normalize'))
-		{
-		$keyword=normalizer_normalize($keyword);
-		}
-		
-	if($keywords_remove_diacritics)
-		{
-		$keyword=remove_accents($keyword);
-		}
-	return $keyword;
-	}
+    {
+    global $normalize_keywords, $keywords_remove_diacritics;
 
-function remove_accents($string) {
-    /**
-    * This function and seems_utf8 are reused from WordPress. See documentation/licenses/wordpress.txt for license information
-    *
-    * Converts all accent characters to ASCII characters.
-    *
-    * If there are no accent characters, then the string given is just returned.
-    *
-    * @param string $string Text that might have accent characters
-    * @return string Filtered string with replaced "nice" characters.
-    */
-    
-    if ( !preg_match('/[\x80-\xff]/', $string) )
+    if($normalize_keywords && function_exists('normalizer_normalize'))
+        {
+        $keyword = normalizer_normalize($keyword);
+        }
+
+    if($keywords_remove_diacritics)
+        {
+        $keyword = remove_accents($keyword);
+        }
+    return $keyword;
+    }
+
+
+/**
+* This function and seems_utf8 are reused from WordPress. See documentation/licenses/wordpress.txt for license
+* information.  Converts all accent characters to ASCII characters.  If there are no accent characters, then the
+* string given is just returned.
+*
+* @param string $string Text that might have accent characters
+* @return string Filtered string with replaced "nice" characters.
+*/
+function remove_accents($string)
+    {
+    if(!preg_match('/[\x80-\xff]/', $string))
+        {
         return $string;
+        }
 
-    if (seems_utf8($string)) {
+    if(seems_utf8($string))
+        {
         $chars = array(
-        // Decompositions for Latin-1 Supplement
+        // Decompositions for Latin-1 Supplement.
         chr(195).chr(128) => 'A', chr(195).chr(129) => 'A',
         chr(195).chr(130) => 'A', chr(195).chr(131) => 'A',
         chr(195).chr(132) => 'A', chr(195).chr(133) => 'A',
@@ -342,7 +473,7 @@ function remove_accents($string) {
         chr(195).chr(186) => 'u', chr(195).chr(187) => 'u',
         chr(195).chr(188) => 'u', chr(195).chr(189) => 'y',
         chr(195).chr(191) => 'y',
-        // Decompositions for Latin Extended-A
+        // Decompositions for Latin Extended-A.
         chr(196).chr(128) => 'A', chr(196).chr(129) => 'a',
         chr(196).chr(130) => 'A', chr(196).chr(131) => 'a',
         chr(196).chr(132) => 'A', chr(196).chr(133) => 'a',
@@ -383,7 +514,7 @@ function remove_accents($string) {
         chr(197).chr(138) => 'n', chr(197).chr(139) => 'N',
         chr(197).chr(140) => 'O', chr(197).chr(141) => 'o',
         chr(197).chr(142) => 'O', chr(197).chr(143) => 'o',
-        chr(197).chr(144) => 'O', chr(197).chr(145) => 'o',		
+        chr(197).chr(144) => 'O', chr(197).chr(145) => 'o',
         chr(197).chr(146) => 'OE',chr(197).chr(147) => 'oe',
         chr(197).chr(148) => 'R',chr(197).chr(149) => 'r',
         chr(197).chr(150) => 'R',chr(197).chr(151) => 'r',
@@ -407,14 +538,16 @@ function remove_accents($string) {
         chr(197).chr(186) => 'z', chr(197).chr(187) => 'Z',
         chr(197).chr(188) => 'z', chr(197).chr(189) => 'Z',
         chr(197).chr(190) => 'z', chr(197).chr(191) => 's',
-        // Euro Sign
+        // Euro sign.
         chr(226).chr(130).chr(172) => 'E',
-        // GBP (Pound) Sign
+        // GBP (Pound) sign.
         chr(194).chr(163) => '');
 
         $string = strtr($string, $chars);
-    } else {
-        // Assume ISO-8859-1 if not UTF-8
+        }
+    else
+        {
+        // Assume ISO-8859-1, if not UTF-8.
         $chars['in'] = chr(128).chr(131).chr(138).chr(142).chr(154).chr(158)
             .chr(159).chr(162).chr(165).chr(181).chr(192).chr(193).chr(194)
             .chr(195).chr(196).chr(197).chr(199).chr(200).chr(201).chr(202)
@@ -432,26 +565,55 @@ function remove_accents($string) {
         $double_chars['in'] = array(chr(140), chr(156), chr(198), chr(208), chr(222), chr(223), chr(230), chr(240), chr(254));
         $double_chars['out'] = array('OE', 'oe', 'AE', 'DH', 'TH', 'ss', 'ae', 'dh', 'th');
         $string = str_replace($double_chars['in'], $double_chars['out'], $string);
-    }
+        }
 
     return $string;
-}
+    }
 
-function seems_utf8($str) {
-	$length = strlen($str);
-	for ($i=0; $i < $length; $i++) {
-		$c = ord($str[$i]);
-		if ($c < 0x80) $n = 0; # 0bbbbbbb
-		elseif (($c & 0xE0) == 0xC0) $n=1; # 110bbbbb
-		elseif (($c & 0xF0) == 0xE0) $n=2; # 1110bbbb
-		elseif (($c & 0xF8) == 0xF0) $n=3; # 11110bbb
-		elseif (($c & 0xFC) == 0xF8) $n=4; # 111110bb
-		elseif (($c & 0xFE) == 0xFC) $n=5; # 1111110b
-		else return false; # Does not match any model
-		for ($j=0; $j<$n; $j++) { # n bytes matching 10bbbbbb follow ?
-			if ((++$i == $length) || ((ord($str[$i]) & 0xC0) != 0x80))
-				return false;
-		}
-	}
-	return true;
-}
+
+function seems_utf8($str)
+    {
+    $length = strlen($str);
+    for($i = 0; $i < $length; $i++)
+        {
+        $c = ord($str[$i]);
+        if($c < 0x80) // 0bbbbbbb
+            {
+            $n = 0;
+            }
+        elseif(($c & 0xE0) == 0xC0) // 110bbbbb
+            {
+            $n = 1;
+            }
+        elseif(($c & 0xF0) == 0xE0) // 1110bbbb
+            {
+            $n = 2;
+            }
+        elseif(($c & 0xF8) == 0xF0) // 11110bbb
+            {
+            $n = 3;
+            }
+        elseif(($c & 0xFC) == 0xF8) // 111110bb
+            {
+            $n = 4;
+            }
+        elseif(($c & 0xFE) == 0xFC) // 1111110b
+            {
+            $n = 5;
+            }
+        else // Does not match any model.
+            {
+            return false;
+            }
+
+        // n bytes matching 10bbbbbb follow ?
+        for($j = 0; $j < $n; $j++)
+            {
+            if((++$i == $length) || ((ord($str[$i]) & 0xC0) != 0x80))
+                {
+                return false;
+                }
+            }
+        }
+    return true;
+    }

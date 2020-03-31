@@ -1,11 +1,12 @@
 <?php
+// Facial Recognition Functions
+
 /**
 * Initialize facial recognition functionality.
-* 
-* IMPORTANT: only one field can be setup for the annotation side and it also MUST be a dynamic keywords list
-* 
+* IMPORTANT: only one field can be setup for the annotation side and it also MUST be a dynamic keywords list.
+*
 * @uses sql_value()
-* 
+*
 * @return boolean
 */
 function initFacialRecognition()
@@ -44,12 +45,11 @@ function initFacialRecognition()
 
 /**
 * Crops out a selected area of an image and makes it ready to be used by FaceRecognizer.
-* 
 * Note: The selected area should follow the normalized coordinate system.
-* 
+*
 * @uses get_utility_path()
 * @uses debug()
-* 
+*
 * @param string   $image_path           Path of the source image
 * @param string   $prepared_image_path  Path of the prepared image
 * @param float    $x                    X position
@@ -57,7 +57,7 @@ function initFacialRecognition()
 * @param float    $width                Width
 * @param float    $height               Height
 * @param boolean  $overwrite_existing   Set to TRUE to overwrite existing prepared image (if any exists)
-* 
+*
 * @return boolean
 */
 function prepareFaceImage($image_path, $prepared_image_path, $x, $y, $width, $height, $overwrite_existing = false)
@@ -68,13 +68,13 @@ function prepareFaceImage($image_path, $prepared_image_path, $x, $y, $width, $he
         return false;
         }
 
-    // Use existing prepared image if one is found
+    // Use existing prepared image if one is found.
     if(!$overwrite_existing && file_exists($prepared_image_path))
         {
         return true;
         }
 
-    // X, Y, width and height MUST be numeric
+    // X, Y, width, and height MUST be numeric.
     if(!is_numeric($x) || !is_numeric($y) || !is_numeric($width) || !is_numeric($height))
         {
         return false;
@@ -89,15 +89,15 @@ function prepareFaceImage($image_path, $prepared_image_path, $x, $y, $width, $he
 
     list($image_width, $image_height) = getimagesize($image_path);
 
-    $image_path_escaped          = escapeshellarg($image_path);
+    $image_path_escaped = escapeshellarg($image_path);
     $prepared_image_path_escaped = escapeshellarg($prepared_image_path);
 
-    $x      = escapeshellarg(round($x * $image_width, 0));
-    $y      = escapeshellarg(round($y * $image_height, 0));
-    $width  = escapeshellarg(round($width * $image_width, 0));
+    $x = escapeshellarg(round($x * $image_width, 0));
+    $y = escapeshellarg(round($y * $image_height, 0));
+    $width = escapeshellarg(round($width * $image_width, 0));
     $height = escapeshellarg(round($height * $image_height, 0));
 
-    $cmd  = $convert_fullpath;
+    $cmd = $convert_fullpath;
     $cmd .= " {$image_path_escaped} -colorspace gray -depth 8";
     $cmd .= " -crop {$width}x{$height}+{$x}+{$y}";
     $cmd .= " -resize 90x90\>";
@@ -113,12 +113,12 @@ function prepareFaceImage($image_path, $prepared_image_path, $x, $y, $width, $he
 
 
 /**
-* Use FaceRecognizer to predict the association between a face and a label (i.e person name)
-* 
-* @param string $model_file_path Path to the FaceRecognizer model state file
-* @param string $test_image_path Path to the prepared image we are testing
-* 
-* @return boolean|array  Return the label ID and probability on successful prediction or FALSE on error
+* Use FaceRecognizer to predict the association between a face and a label (i.e person name).
+*
+* @param string $model_file_path Path to the FaceRecognizer model state file.
+* @param string $test_image_path Path to the prepared image we are testing.
+*
+* @return boolean|array  Return the label ID and probability on successful prediction or FALSE on error.
 */
 function faceRecognizerPredict($model_file_path, $test_image_path)
     {
@@ -142,8 +142,8 @@ function faceRecognizerPredict($model_file_path, $test_image_path)
         }
 
     $faceRecognizer_path = __DIR__ . '/../lib/facial_recognition/faceRecognizer.py';
-    $model_file_path     = escapeshellarg($model_file_path);
-    $test_image_path     = escapeshellarg($test_image_path);
+    $model_file_path = escapeshellarg($model_file_path);
+    $test_image_path = escapeshellarg($test_image_path);
 
     $prediction = run_command("{$python_fullpath} {$faceRecognizer_path} {$model_file_path} {$test_image_path}");
     $prediction = json_decode($prediction);
