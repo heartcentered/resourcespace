@@ -2788,7 +2788,7 @@ $lang['see_log'] = "Please refer to the log below for more details on this uploa
 // Filter rules 
 $lang["filter_migration"]           = "Filter migration";
 $lang["filter_migrate_success"]     = "Filter has been successfully migrated.";
-$lang["filter_migrate_error"]       = "An error was encountered migrating a filter. Please check the search filter.";
+$lang["filter_migrate_error"]       = "An error was encountered migrating a filter. Please check the filter.";
 $lang["filter_delete_error"]        = "Filter is in use by the following users or groups";
 $lang["filter_manage"]              = "Manage filters";
 $lang["filter_edit"]                = "Edit filter";

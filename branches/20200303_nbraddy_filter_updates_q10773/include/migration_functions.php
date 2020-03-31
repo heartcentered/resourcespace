@@ -662,8 +662,9 @@ function get_export_tables($exportcollection=0)
     return $exporttables;
     }
 
-function edit_filter_to_restype_permission($filtertext, $usergroup, $existingperms)
+function edit_filter_to_restype_permission($filtertext, $usergroup, $existingperms, $updatecurrent = false)
     {
+    global $userpermissions;
     $addpermissions = array($filtertext);
     // Replace any resource type edit filter sections with new XE/XE-?/XE? permissions
     $filterrules = explode(";", $filtertext);
@@ -703,6 +704,11 @@ function edit_filter_to_restype_permission($filtertext, $usergroup, $existingper
         {
         sql_query("UPDATE usergroup SET permissions=CONCAT(permissions,'," . implode(",",$newperms) . "') WHERE ref='" . $usergroup . "'");
         }
+    if($updatecurrent)
+        {
+        $userpermissions = array_merge($userpermissions, $newperms);
+        }
+
     // Reconstruct filter text without this to create new filter
     $newfiltertext = implode(";",$cleanedrules);
     return $newfiltertext;

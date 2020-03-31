@@ -3591,7 +3591,7 @@ function get_resource_access($resource)
     global $customgroupaccess,$customuseraccess, $internal_share_access, $k,$uploader_view_override, $userref,
         $prevent_open_access_on_edit_for_active, $search_filter_nodes, $open_access_for_contributor,
         $userref,$usergroup, $usersearchfilter, $search_filter_strict, $search_all_workflow_states,
-        $userderestrictfilter;
+        $userderestrictfilter, $userdata;
 	# $resource may be a resource_data array from a search, in which case, many of the permissions checks are already done.	
 		
 	# Returns the access that the currently logged-in user has to $resource.
@@ -3742,7 +3742,12 @@ function get_resource_access($resource)
 	// Check for a derestrict filter, this allows exceptions for users without the 'g' permission who normally have restricted accesss to all available resources)
 	if ($access==1 && !checkperm("g") && !checkperm("rws{$resourcedata['archive']}") && !checkperm('X'.$resource_type) && trim($userderestrictfilter) != "")
 		{
-        if($search_filter_nodes && strlen(trim($userderestrictfilter)) > 0 && !is_numeric($userderestrictfilter) && $userderestrictfilter != 0)
+        if($search_filter_nodes 
+            && strlen(trim($userderestrictfilter)) > 0
+            && !is_numeric($userderestrictfilter)
+            && trim($userdata["derestrict_filter"]) != ""
+            && $userdata["derestrict_filter_id"] != -1
+        )
             {
             // Migrate unless marked not to due to failure (flag will be reset if group is edited)
             $migrateresult = migrate_filter($userderestrictfilter);
@@ -3759,7 +3764,7 @@ function get_resource_access($resource)
                 {
                 debug("FILTER MIGRATION: Error migrating filter: '" . $userderestrictfilter . "' - " . implode('\n' ,$migrateresult));
                 // Error - set flag so as not to reattempt migration and notify admins of failure
-                sql_query("UPDATE usergroup SET derestrict_filter_id='0' WHERE ref='" . $usergroup . "'");
+                sql_query("UPDATE usergroup SET derestrict_filter_id='-1' WHERE ref='" . $usergroup . "'");
                 message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl . "/pages/admin/admin_group_management_edit.php",array("ref"=>$usergroup)));
                 }
             }
@@ -3898,7 +3903,8 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
 	# For the provided resource and metadata, does the current user have edit access to this resource?
     # Checks the edit permissions (e0, e-1 etc.) and also the group edit filter which filters edit access based on resource metadata.
 	
-    global $userref,$usergroup, $usereditfilter,$edit_access_for_contributor, $search_filter_nodes;
+    global $userref,$usergroup, $usereditfilter,$edit_access_for_contributor,
+    $search_filter_nodes, $userpermissions, $lang, $baseurl;
     $plugincustomeditaccess = hook('customediteaccess','',array($resource,$status,$resourcedata));
 
     if($plugincustomeditaccess)
@@ -3943,12 +3949,12 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
 	
     $gotmatch=false;
 
-    if($search_filter_nodes && strlen(trim($usereditfilter)) > 0 && !is_numeric($usereditfilter) && $usereditfilter != 0)
+    if($search_filter_nodes && strlen(trim($usereditfilter)) > 0 && !is_numeric($usereditfilter) && $usereditfilter != -1)
         {
         // Migrate unless marked not to due to failure (flag will be reset if group is edited)
-        $migrateresult = migrate_filter($usereditfilter);
+        $migrateeditfilter = edit_filter_to_restype_permission($usereditfilter, $usergroup, $userpermissions, true);
+        $migrateresult = migrate_filter($migrateeditfilter); 
         $notification_users = get_notification_users();
-        global $userdata, $lang, $baseurl;
         if(is_numeric($migrateresult))
             {
             // Successfully migrated - now use the new filter

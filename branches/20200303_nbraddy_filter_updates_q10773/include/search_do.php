@@ -59,7 +59,8 @@ function do_search(
      global $sql, $order, $select, $sql_join, $sql_filter, $orig_order, $collections_omit_archived, 
            $search_sql_double_pass_mode, $usergroup, $userref, $search_filter_strict, $default_sort, 
            $superaggregationflag, $k, $FIXED_LIST_FIELD_TYPES,$DATE_FIELD_TYPES,$TEXT_FIELD_TYPES, $stemming,
-           $open_access_for_contributor;
+           $open_access_for_contributor, $usersearchfilter, $search_filter_nodes,$userpermissions, $usereditfilter,
+           $custom_access_overrides_search_filter, $userdata, $lang, $baseurl;
 		   
     $alternativeresults = hook("alternativeresults", "", array($go));
     if ($alternativeresults)
@@ -1040,20 +1041,19 @@ function do_search(
     //
     // *******************************************************************************
 
-    global $usersearchfilter;
-
-    // New search filter support
-    global $search_filter_nodes;
-    
-    # Option for custom access to override search filters.
-    global $custom_access_overrides_search_filter;
-    
-    if($search_filter_nodes && strlen($usersearchfilter) > 0 && intval($usersearchfilter) == 0)
+    if($search_filter_nodes 
+        && strlen(trim($usersearchfilter)) > 0
+        && !is_numeric($usersearchfilter)
+        && (
+            (trim($userdata[0]["search_filter_override"]) != "" && $userdata[0]["search_filter_o_id"] != -1)
+            || 
+            (trim($userdata[0]["search_filter"]) != "" && $userdata[0]["search_filter_id"] != -1)
+            )
+        )
         {
-        // Migrate unless marked not to due to failure (flag will be reset if group is edited)
+        // Migrate old style filter unless previously failed attempt
         $migrateresult = migrate_filter($usersearchfilter);
         $notification_users = get_notification_users();
-        global $userdata, $lang, $baseurl;
         if(is_numeric($migrateresult))
             {
             message_add(array_column($notification_users,"ref"), $lang["filter_migrate_success"] . ": '" . $usersearchfilter . "'",generateURL($baseurl . "/pages/admin/admin_group_management_edit.php",array("ref"=>$usergroup)));
@@ -1229,13 +1229,16 @@ function do_search(
 
     if ($editable_only)
 		{
-        global $usereditfilter;
-        if($search_filter_nodes && strlen(trim($usereditfilter)) > 0 && !is_numeric($usereditfilter))
+        if($search_filter_nodes 
+            && strlen(trim($usereditfilter)) > 0
+            && !is_numeric($usereditfilter)
+            && trim($userdata["edit_filter"]) != ""
+            && $userdata["edit_filter_id"] != -1
+        )
             {
             // Migrate unless marked not to due to failure
             $usereditfilter = edit_filter_to_restype_permission($usereditfilter, $usergroup, $userpermissions);
             $migrateresult = migrate_filter($usereditfilter);
-            $notification_users = get_notification_users();
             global $userdata, $lang, $baseurl;
             if(is_numeric($migrateresult))
                 {
@@ -1249,7 +1252,8 @@ function do_search(
                 {
                 debug("FILTER MIGRATION: Error migrating filter: '" . $usersearchfilter . "' - " . implode('\n' ,$migrateresult));
                 // Error - set flag so as not to reattempt migration and notify admins of failure
-                sql_query("UPDATE usergroup SET edit_filter_id='0' WHERE ref='" . $usergroup . "'");
+                sql_query("UPDATE usergroup SET edit_filter_id='-1' WHERE ref='" . $usergroup . "'");
+                $notification_users = get_notification_users();
                 message_add(array_column($notification_users,"ref"), $lang["filter_migration"] . " - " . $lang["filter_migrate_error"] . ": <br />" . implode('\n' ,$migrateresult),generateURL($baseurl . "/pages/admin/admin_group_management_edit.php",array("ref"=>$usergroup)));
                 }
             }
