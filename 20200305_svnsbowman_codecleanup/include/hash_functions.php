@@ -1,39 +1,30 @@
 <?php
 /*
- * Transparent SHA-256 Implementation for PHP 4 and PHP 5
+ * Transparent SHA-256 Implementation for PHP 4 and 5
  *
  * Author: Perry McGee (pmcgee@nanolink.ca)
  * Website: http://www.nanolink.ca/pub/sha256
- *
  * Copyright (C) 2006,2007,2008,2009 Nanolink Solutions
- *
  * Created: Feb 11, 2006
  *
- *    This library is free software; you can redistribute it and/or
- *    modify it under the terms of the GNU Lesser General Public
- *    License as published by the Free Software Foundation; either
- *    version 2.1 of the License, or (at your option) any later version.
+ *    This library is free software; you can redistribute it and/or modify it under the terms of the GNU Lesser
+ *    General Public License as published by the Free Software Foundation; either version 2.1 of the License, or (at
+ *    your option) any later version.
  *
- *    This library is distributed in the hope that it will be useful,
- *    but WITHOUT ANY WARRANTY; without even the implied warranty of
- *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- *    Lesser General Public License for more details.
+ *    This library is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+ *    implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
+ *    License for more details.
 
- *    You should have received a copy of the GNU Lesser General Public
- *    License along with this library; if not, write to the Free Software
- *    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ *    You should have received a copy of the GNU Lesser General Public License along with this library; if not, write
+ *    to the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  *    or see <http://www.gnu.org/licenses/>.
  *
  *  Include:
- *
  *   require_once("[path/]sha256.inc.php");
  *
  *  Usage Options:
- *
  *   1) $shaStr = hash('sha256', $string_to_hash);
- *
  *   2) $shaStr = sha256($string_to_hash[, bool ignore_php5_hash = false]);
- *
  *   3) $obj = new nanoSha2([bool $upper_case_output = false]);
  *      $shaStr = $obj->hash($string_to_hash[, bool $ignore_php5_hash = false]);
  *
@@ -44,36 +35,33 @@
  * 2009-06-23: Created abstraction of hash() routine
  * 2009-07-23: Added detection of 32 vs 64bit platform, and patches.
  *             Ability to define "_NANO_SHA2_UPPER" to yeild upper case hashes.
- * 2009-08-01: Added ability to attempt to use mhash() prior to running pure
- *             php code.
+ * 2009-08-01: Added ability to attempt to use mhash() prior to running pure php code.
  *
- * NOTE: Some sporadic versions of PHP do not handle integer overflows the
- *       same as the majority of builds.  If you get hash results of:
- *        7fffffff7fffffff7fffffff7fffffff7fffffff7fffffff7fffffff7fffffff
+ * NOTE: Some sporadic versions of PHP do not handle integer overflows the same as the majority of builds.  If you
+ *    get hash results of: 7fffffff7fffffff7fffffff7fffffff7fffffff7fffffff7fffffff7fffffff
  *
- *       If you do not have permissions to change PHP versions (if you did
- *       you'd probably upgrade to PHP 5 anyway) it is advised you install a
- *       module that will allow you to use their hashing routines, examples are:
+ *       If you do not have permissions to change PHP versions (if you did you'd probably upgrade to PHP 5 anyway) it
+ *       is advised you install a module that will allow you to use their hashing routines, examples are:
  *       - mhash module : http://ca3.php.net/mhash
  *       - Suhosin : http://www.hardened-php.net/suhosin/
  *
- *       If you install the Suhosin module, this script will transparently
- *       use their routine and define the PHP routine as _nano_sha256().
+ *       If you install the Suhosin module, this script will transparently use their routine and define the PHP
+ *       routine as _nano_sha256().
  *
- *       If the mhash module is present, and $ignore_php5_hash = false the
- *       script will attempt to use the output from mhash prior to running
- *       the PHP code.
+ *       If the mhash module is present, and $ignore_php5_hash = false the script will attempt to use the output from
+ *       mhash prior to running the PHP code.
  */
 if (!class_exists('nanoSha2'))
-{
-    class nanoSha2
     {
-        // php 4 - 5 compatable class properties
-        var     $toUpper;
-        var     $platform;
+    class nanoSha2
+        {
+        // PHP 4-5 compatable class properties.
+        var $toUpper;
+        var $platform;
 
-        // Php 4 - 6 compatable constructor
-        function nanoSha2($toUpper = false) {
+        // PHP 4-6 compatable constructor.
+        function nanoSha2($toUpper = false) 
+            {
             // Determine if the caller wants upper case or not.
             $this->toUpper = is_bool($toUpper)
                            ? $toUpper
@@ -82,118 +70,152 @@ if (!class_exists('nanoSha2'))
             // Deteremine if the system is 32 or 64 bit.
             $tmpInt = (int)4294967295;
             $this->platform = ($tmpInt > 0) ? 64 : 32;
-        }
-
-        // Do the SHA-256 Padding routine (make input a multiple of 512 bits)
-        function char_pad($str)
-        {
-            $tmpStr = $str;
-
-            $l = strlen($tmpStr)*8;     // # of bits from input string
-
-            $tmpStr .= "\x80";          // append the "1" bit followed by 7 0's
-
-            $k = (512 - (($l + 8 + 64) % 512)) / 8;   // # of 0 bytes to append
-            $k += 4;    // PHP Strings will never exceed (2^31)-1, 1st 32bits of
-                        // the 64-bit value representing $l can be all 0's
-
-            for ($x = 0; $x < $k; $x++) {
-                $tmpStr .= "\0";
             }
 
-            // append the 32-bits representing # of bits from input string ($l)
+        // Do the SHA-256 padding routine (make input a multiple of 512 bits).
+        function char_pad($str)
+            {
+            $tmpStr = $str;
+
+            // # of bits from input string.
+            $l = strlen($tmpStr) * 8;     
+
+            // Append the "1" bit followed by 7 0's/
+            $tmpStr .= "\x80";          
+
+            // # of 0 bytes to append.
+            $k = (512 - (($l + 8 + 64) % 512)) / 8;   
+            $k += 4;    // PHP strings will never exceed (2^31)-1, 1st 32bits of the 64-bit value representing $l can be all 0's.
+
+            for ($x = 0; $x < $k; $x++)     
+                {
+                $tmpStr .= "\0";
+                }
+
+            // Append the 32-bits representing # of bits from input string ($l).
             $tmpStr .= chr((($l>>24) & 0xFF));
             $tmpStr .= chr((($l>>16) & 0xFF));
             $tmpStr .= chr((($l>>8) & 0xFF));
             $tmpStr .= chr(($l & 0xFF));
 
             return $tmpStr;
-        }
+            }
 
-        // Here are the bitwise and functions as defined in FIPS180-2 Standard
-        function addmod2n($x, $y, $n = 4294967296)      // Z = (X + Y) mod 2^32
-        {
+        // Here are the bitwise and functions as defined in FIPS180-2 standard.
+        function addmod2n($x, $y, $n = 4294967296) # Z = (X + Y) mod 2^32
+            {
             $mask = 0x80000000;
 
-            if ($x < 0) {
+            if ($x < 0) 
+                {
                 $x &= 0x7FFFFFFF;
                 $x = (float)$x + $mask;
-            }
+                }
 
-            if ($y < 0) {
+            if ($y < 0) 
+                {
                 $y &= 0x7FFFFFFF;
                 $y = (float)$y + $mask;
-            }
+                }
 
             $r = $x + $y;
-
-            if ($r >= $n) {
-                while ($r >= $n) {
+            if ($r >= $n)
+                {
+                while ($r >= $n) 
+                    {
                     $r -= $n;
+                    }
                 }
-            }
 
             return (int)$r;
         }
 
-        // Logical bitwise right shift (PHP default is arithmetic shift)
-        function SHR($x, $n)        // x >> n
-        {
-            if ($n >= 32) {      // impose some limits to keep it 32-bit
+        // Logical bitwise right shift (PHP default is arithmetic shift).
+        function SHR($x, $n) # x >> n
+            {
+            // Impose some limits to keep it 32-bit.
+            if ($n >= 32)
+                {      
                 return (int)0;
-            }
+                }
 
-            if ($n <= 0) {
+            if ($n <= 0)
+                {
                 return (int)$x;
-            }
+                }
 
             $mask = 0x40000000;
-
-            if ($x < 0) {
+            if ($x < 0) 
+                {
                 $x &= 0x7FFFFFFF;
                 $mask = $mask >> ($n-1);
                 return ($x >> $n) | $mask;
-            }
+                }
 
             return (int)$x >> (int)$n;
         }
 
-        function ROTR($x, $n) { return (int)(($this->SHR($x, $n) | ($x << (32-$n)) & 0xFFFFFFFF)); }
-        function Ch($x, $y, $z) { return ($x & $y) ^ ((~$x) & $z); }
-        function Maj($x, $y, $z) { return ($x & $y) ^ ($x & $z) ^ ($y & $z); }
-        function Sigma0($x) { return (int) ($this->ROTR($x, 2)^$this->ROTR($x, 13)^$this->ROTR($x, 22)); }
-        function Sigma1($x) { return (int) ($this->ROTR($x, 6)^$this->ROTR($x, 11)^$this->ROTR($x, 25)); }
-        function sigma_0($x) { return (int) ($this->ROTR($x, 7)^$this->ROTR($x, 18)^$this->SHR($x, 3)); }
-        function sigma_1($x) { return (int) ($this->ROTR($x, 17)^$this->ROTR($x, 19)^$this->SHR($x, 10)); }
+        function ROTR($x, $n) 
+            {
+            return (int)(($this->SHR($x, $n) | ($x << (32-$n)) & 0xFFFFFFFF)); 
+            }
+            
+        function Ch($x, $y, $z) 
+            {
+            return ($x & $y) ^ ((~$x) & $z); 
+            }
+            
+        function Maj($x, $y, $z) 
+            {
+            return ($x & $y) ^ ($x & $z) ^ ($y & $z);
+            }
+            
+        function Sigma0($x) 
+            {
+            return (int) ($this->ROTR($x, 2)^$this->ROTR($x, 13)^$this->ROTR($x, 22)); 
+            }
+            
+        function Sigma1($x) 
+            {
+            return (int) ($this->ROTR($x, 6)^$this->ROTR($x, 11)^$this->ROTR($x, 25));
+            }
+            
+        function sigma_0($x) 
+            {
+            return (int) ($this->ROTR($x, 7)^$this->ROTR($x, 18)^$this->SHR($x, 3)); 
+            }
+            
+        function sigma_1($x) 
+            {
+            return (int) ($this->ROTR($x, 17)^$this->ROTR($x, 19)^$this->SHR($x, 10)); 
+            }
 
-        /*
-         * Custom functions to provide PHP support
-         */
-        // split a byte-string into integer array values
+        // Custom functions to provide PHP support to split a byte-string into integer array values.
         function int_split($input)
-        {
+            {
             $l = strlen($input);
-
-            if ($l <= 0) {
+            if ($l <= 0) 
+                {
                 return (int)0;
-            }
+                }
 
-            if (($l % 4) != 0) { // invalid input
+            // invalid input.
+            if (($l % 4) != 0)
+                { 
                 return false;
-            }
+                }
 
             for ($i = 0; $i < $l; $i += 4)
-            {
+                {
                 $int_build  = (ord($input[$i]) << 24);
                 $int_build += (ord($input[$i+1]) << 16);
                 $int_build += (ord($input[$i+2]) << 8);
                 $int_build += (ord($input[$i+3]));
-
                 $result[] = $int_build;
-            }
+                }
 
             return $result;
-        }
+            }
 
         /**
          * Process and return the hash.
@@ -203,24 +225,27 @@ if (!class_exists('nanoSha2'))
          * @return string Hexadecimal representation of the message digest
          */
         function hash($str, $ig_func = false)
-        {
-            unset($binStr);     // binary representation of input string
-            unset($hexStr);     // 256-bit message digest in readable hex format
+            {
+            unset($binStr); # Binary representation of input string.
+            unset($hexStr); # 256-bit message digest in readable hexadecimal format.
 
-            // check for php's internal sha256 function, ignore if ig_func==true
-            if ($ig_func == false) {
-                if (version_compare(PHP_VERSION,'5.1.2','>=')) {
+            // Check for php's internal sha256 function, ignore if ig_func==true.
+            if ($ig_func == false) 
+                {
+                if (version_compare(PHP_VERSION,'5.1.2', '>='))
+                    {
                     return hash("sha256", $str, false);
-                } else if (function_exists('mhash') && defined('MHASH_SHA256')) {
+                    }
+                elseif(function_exists('mhash') && defined('MHASH_SHA256')) 
+                    {
                     return base64_encode(bin2hex(mhash(MHASH_SHA256, $str)));
+                    }
                 }
-            }
 
             /*
              * SHA-256 Constants
-             *  Sequence of sixty-four constant 32-bit words representing the
-             *  first thirty-two bits of the fractional parts of the cube roots
-             *  of the first sixtyfour prime numbers.
+             *  Sequence of sixty-four constant 32-bit words representing the first thirty-two bits of the fractional
+             *  parts of the cube roots of the first sixtyfour prime numbers.
              */
             $K = array((int)0x428a2f98, (int)0x71374491, (int)0xb5c0fbcf,
                        (int)0xe9b5dba5, (int)0x3956c25b, (int)0x59f111f1,
@@ -245,13 +270,13 @@ if (!class_exists('nanoSha2'))
                        (int)0x90befffa, (int)0xa4506ceb, (int)0xbef9a3f7,
                        (int)0xc67178f2);
 
-            // Pre-processing: Padding the string
+            // Pre-processing: Padding the string.
             $binStr = $this->char_pad($str);
 
-            // Parsing the Padded Message (Break into N 512-bit blocks)
+            // Parsing the padded message (Break into N 512-bit blocks).
             $M = str_split($binStr, 64);
 
-            // Set the initial hash values
+            // Set the initial hash values.
             $h[0] = (int)0x6a09e667;
             $h[1] = (int)0xbb67ae85;
             $h[2] = (int)0x3c6ef372;
@@ -261,14 +286,14 @@ if (!class_exists('nanoSha2'))
             $h[6] = (int)0x1f83d9ab;
             $h[7] = (int)0x5be0cd19;
 
-            // loop through message blocks and compute hash. ( For i=1 to N : )
+            // Loop through message blocks and compute hash. (For i=1 to N : )
             $N = count($M);
             for ($i = 0; $i < $N; $i++)
-            {
-                // Break input block into 16 32bit words (message schedule prep)
+                {
+                // Break input block into 16 32-bit words (message schedule prep).
                 $MI = $this->int_split($M[$i]);
 
-                // Initialize working variables
+                // Initialize working variables.
                 $_a = (int)$h[0];
                 $_b = (int)$h[1];
                 $_c = (int)$h[2];
@@ -283,24 +308,24 @@ if (!class_exists('nanoSha2'))
                 unset($_T2);
                 $W = array();
 
-                // Compute the hash and update
+                // Compute the hash and update.
                 for ($t = 0; $t < 16; $t++)
-                {
-                    // Prepare the first 16 message schedule values as we loop
+                    {
+                    // Prepare the first 16 message schedule values as we loop.
                     $W[$t] = $MI[$t];
 
-                    // Compute hash
+                    // Compute hash.
                     $_T1 = $this->addmod2n($this->addmod2n($this->addmod2n($this->addmod2n($_h, $this->Sigma1($_e)), $this->Ch($_e, $_f, $_g)), $K[$t]), $W[$t]);
                     $_T2 = $this->addmod2n($this->Sigma0($_a), $this->Maj($_a, $_b, $_c));
 
-                    // Update working variables
+                    // Update working variables.
                     $_h = $_g; $_g = $_f; $_f = $_e; $_e = $this->addmod2n($_d, $_T1);
                     $_d = $_c; $_c = $_b; $_b = $_a; $_a = $this->addmod2n($_T1, $_T2);
-                }
+                    }
 
                 for (; $t < 64; $t++)
-                {
-                    // Continue building the message schedule as we loop
+                    {
+                    // Continue building the message schedule as we loop.
                     $_s0 = $W[($t+1)&0x0F];
                     $_s0 = $this->sigma_0($_s0);
                     $_s1 = $W[($t+14)&0x0F];
@@ -308,14 +333,14 @@ if (!class_exists('nanoSha2'))
 
                     $W[$t&0xF] = $this->addmod2n($this->addmod2n($this->addmod2n($W[$t&0xF], $_s0), $_s1), $W[($t+9)&0x0F]);
 
-                    // Compute hash
+                    // Compute hash.
                     $_T1 = $this->addmod2n($this->addmod2n($this->addmod2n($this->addmod2n($_h, $this->Sigma1($_e)), $this->Ch($_e, $_f, $_g)), $K[$t]), $W[$t&0xF]);
                     $_T2 = $this->addmod2n($this->Sigma0($_a), $this->Maj($_a, $_b, $_c));
 
-                    // Update working variables
+                    // Update working variables.
                     $_h = $_g; $_g = $_f; $_f = $_e; $_e = $this->addmod2n($_d, $_T1);
                     $_d = $_c; $_c = $_b; $_b = $_a; $_a = $this->addmod2n($_T1, $_T2);
-                }
+                    }
 
                 $h[0] = $this->addmod2n($h[0], $_a);
                 $h[1] = $this->addmod2n($h[1], $_b);
@@ -325,7 +350,7 @@ if (!class_exists('nanoSha2'))
                 $h[5] = $this->addmod2n($h[5], $_f);
                 $h[6] = $this->addmod2n($h[6], $_g);
                 $h[7] = $this->addmod2n($h[7], $_h);
-            }
+                }
 
             // Convert the 32-bit words into human readable hexadecimal format.
             $hexStr = sprintf("%08x%08x%08x%08x%08x%08x%08x%08x", $h[0], $h[1], $h[2], $h[3], $h[4], $h[5], $h[6], $h[7]);
@@ -336,27 +361,30 @@ if (!class_exists('nanoSha2'))
     }
 }
 
+
+// Splits a string into an array of strings with specified length., compatabile with older verions of PHP.
 if (!function_exists('str_split'))
-{
-    /**
-     * Splits a string into an array of strings with specified length.
-     * Compatability with older verions of PHP
-     */
-    function str_split($string, $split_length = 1)
     {
+    function str_split($string, $split_length = 1)
+        {
         $sign = ($split_length < 0) ? -1 : 1;
         $strlen = strlen($string);
         $split_length = abs($split_length);
 
-        if (($split_length == 0) || ($strlen == 0)) {
+        if (($split_length == 0) || ($strlen == 0)) 
+            {
             $result = false;
-        } elseif ($split_length >= $strlen) {
+            } 
+        elseif ($split_length >= $strlen) 
+            {
             $result[] = $string;
-        } else {
+            } 
+        else 
+            {
             $length = $split_length;
 
             for ($i = 0; $i < $strlen; $i++)
-            {
+                {
                 $i = (($sign < 0) ? $i + $length : $i);
                 $result[] = substr($string, $sign*$i, $length);
                 $i--;
@@ -365,12 +393,13 @@ if (!function_exists('str_split'))
                 $length = (($i + $split_length) > $strlen)
                           ? ($strlen - ($i + 1))
                           : $split_length;
+                }
             }
-        }
 
-        return $result;
+            return $result;
+        }
     }
-}
+
 
 /**
  * Main routine called from an application using this include.
@@ -379,34 +408,39 @@ if (!function_exists('str_split'))
  *   require_once('sha256.inc.php');
  *   $hashstr = sha256('abc');
  *
- * Note:
- * PHP Strings are limitd to (2^31)-1, so it is not worth it to
- * check for input strings > 2^64 as the FIPS180-2 defines.
+ * Note: PHP Strings are limitd to (2^31)-1, so it is not worth it to check for input strings > 2^64 as the FIPS180-2 defines.
+ * 2009-07-23: Added check for function as the Suhosin plugin adds this routine.
  */
-// 2009-07-23: Added check for function as the Suhosin plugin adds this routine.
-if (!function_exists('sha256')) {
-    function sha256($str, $ig_func = false) {
-        $obj = new nanoSha2((defined('_NANO_SHA2_UPPER')) ? true : false);
-        return $obj->hash($str, $ig_func);
-    }
-} else {
-    function _nano_sha256($str, $ig_func = false) {
-        $obj = new nanoSha2((defined('_NANO_SHA2_UPPER')) ? true : false);
-        return $obj->hash($str, $ig_func);
-    }
-}
-
-// support to give php4 the hash() routine which abstracts this code.
-if (!function_exists('hash'))
-{
-    function hash($algo, $data)
+if (!function_exists('sha256')) 
     {
-        if (empty($algo) || !is_string($algo) || !is_string($data)) {
-            return false;
+    function sha256($str, $ig_func = false) 
+        {
+        $obj = new nanoSha2((defined('_NANO_SHA2_UPPER')) ? true : false);
+        return $obj->hash($str, $ig_func);
         }
-
-        if (function_exists($algo)) {
-            return $algo($data);
+    } 
+else 
+    {
+    function _nano_sha256($str, $ig_func = false) 
+        {
+        $obj = new nanoSha2((defined('_NANO_SHA2_UPPER')) ? true : false);
+        return $obj->hash($str, $ig_func);
         }
     }
-}
+
+// Support to give PHP4 the hash() routine which abstracts this code.        <--- Is this function needed anymore?
+if (!function_exists('hash'))
+    {
+    function hash($algo, $data)
+        {
+        if (empty($algo) || !is_string($algo) || !is_string($data)) 
+            {
+            return false;
+            }
+
+        if (function_exists($algo))
+            {
+            return $algo($data);
+            }
+        }
+    }

@@ -1,22 +1,23 @@
 <?php
-// called by node_field_options_override function to migrate comma separated options to nodes
-include_once 'migration_functions.php';
+// Node Functions
 
+// Called by node_field_options_override function to migrate comma separated options to nodes.
+include_once 'migration_functions.php';
 
 /**
 * Set node - Used for both creating and saving a node in the database.
 * Use NULL for ref if you just want to insert a new record.
 *
-* @param  integer  $ref                   ID of the node. To insert new record ID should be NULL
-* @param  integer  $resource_type_field   ID of the metadata field
-* @param  string   $name                  Node name to be used (international)
-* @param  integer  $parent                ID of the parent of this node (null for non trees)
-* @param  integer  $order_by              Value of the order in the list (e.g. 10)
-* @param  boolean  $returnexisting        Return an existing node if a match is found for this field. Duplicate nodes may be required for category trees but are not desirable for non-fixed list fields
+* @param  integer  $ref                   ID of the node. To insert new record ID should be NULL.
+* @param  integer  $resource_type_field   ID of the metadata field.
+* @param  string   $name                  Node name to be used (international).
+* @param  integer  $parent                ID of the parent of this node (null for non trees).
+* @param  integer  $order_by              Value of the order in the list (e.g. 10).
+* @param  boolean  $returnexisting        Return an existing node if a match is found for this field. Duplicate nodes may be required for category trees but are not desirable for non-fixed list fields.
 *
 * @return boolean|integer
 */
-function set_node($ref, $resource_type_field, $name, $parent, $order_by,$returnexisting=false)
+function set_node($ref, $resource_type_field, $name, $parent, $order_by, $returnexisting = false)
     {
     if(!is_null($name))
         {
@@ -40,29 +41,27 @@ function set_node($ref, $resource_type_field, $name, $parent, $order_by,$returne
         escape_check($order_by)
     );
 
-    // Check if we only need to save the record
+    // Check if we only need to save the record.
     $current_node = array();
     if(get_node($ref, $current_node))
         {
-        // If nothing has changed, just return true, otherwise continue and update record
+        // If nothing has changed, just return true; otherwise, continue and update record.
         if($resource_type_field === $current_node['resource_type_field'] &&
-            $name === $current_node['name'] &&
-            $parent === $current_node['parent'] &&
-            $order_by === $current_node['order_by']
-            )
+            $name === $current_node['name'] && $parent === $current_node['parent'] &&
+            $order_by === $current_node['order_by'])
             {
             return $ref;
             }
 
-        // When changing parent we need to make sure order by is changed as well
-        // to reflect the fact that the node has just been added (ie. at the end of the list)
+        // When changing parent, we need to make sure order by is changed as well to reflect the fact that the node
+        // has just been added (ie. at the end of the list).
         if($parent !== $current_node['parent'])
             {
             $order_by = get_node_order_by($resource_type_field, true, $parent);
             }
 
-        // Order by can be changed asynchronously, so when we save a node we can pass null or an empty
-        // order_by value and this will mean we can use the current order
+        // Order by can be changed asynchronously, so when we save a node we can pass null or an empty order_by value
+        // and this will mean we can use the current order.
         if(!is_null($ref) && '' == $order_by)
             {
             $order_by = $current_node['order_by'];
@@ -83,24 +82,26 @@ function set_node($ref, $resource_type_field, $name, $parent, $order_by,$returne
             escape_check($ref)
         );
 
-        // Handle node indexing for existing nodes
+        // Handle node indexing for existing nodes.
         remove_node_keyword_mappings(array('ref' => $current_node['ref'], 'resource_type_field' => $current_node['resource_type_field'], 'name' => $current_node['name']), NULL);
         add_node_keyword_mappings(array('ref' => $ref, 'resource_type_field' => $resource_type_field, 'name' => $name), NULL);
         }
 
+    // Check for an existing match.
     if($returnexisting)
         {
-        // Check for an existing match
-        $existingnode=sql_value("SELECT ref value FROM node WHERE resource_type_field ='" . escape_check($resource_type_field) . "' AND name ='" . escape_check($name) . "'",0);
+        $existingnode = sql_value("SELECT ref value FROM node WHERE resource_type_field ='" . escape_check($resource_type_field) . "' AND name ='" . escape_check($name) . "'",0);
         if($existingnode > 0)
-            {return $existingnode;}
+            {
+            return $existingnode;
+            }
         }
 
     sql_query($query);
     $new_ref = sql_insert_id();
-    if ($new_ref == 0 || $new_ref === false)
+    if($new_ref == 0 || $new_ref === false)
         {
-        if ($ref == null)
+        if($ref == null)
             {
             return sql_value("SELECT `ref` AS 'value' FROM `node` WHERE `resource_type_field`='" . escape_check($resource_type_field) . "' AND `name`='" . escape_check($name) . "'",0);
             }
@@ -113,25 +114,24 @@ function set_node($ref, $resource_type_field, $name, $parent, $order_by,$returne
         {
         log_activity("Set metadata field option for field {$resource_type_field}", LOG_CODE_CREATED, $name, 'node', 'name');
 
-        // Handle node indexing for new nodes
+        // Handle node indexing for new nodes.
         add_node_keyword_mappings(array('ref' => $new_ref, 'resource_type_field' => $resource_type_field, 'name' => $name), NULL);
 
         return $new_ref;
         }
-
     }
 
 
 /**
-* Delete node
+* Delete node.
 *
-* @param  integer  $ref  ID of the node
+* @param  integer  $ref  ID of the node.
 *
 * @return void
 */
 function delete_node($ref)
     {
-    // TODO: if node is parent then don't delete it for now
+    // TODO: if node is parent, then do not delete it for now.
     if(is_parent_node($ref))
         {
         return;
@@ -139,7 +139,6 @@ function delete_node($ref)
 
     $query = "DELETE FROM node WHERE ref = '" . escape_check($ref) . "';";
     sql_query($query);
-
     remove_all_node_keyword_mappings($ref);
 
     return;
@@ -147,9 +146,9 @@ function delete_node($ref)
 
 
 /**
-* Delete all nodes for a resource type field
+* Delete all nodes for a resource type field.
 *
-* @param  integer  $resource_type_field  ID of the resource type field
+* @param  integer  $resource_type_field  ID of the resource type field.
 *
 * @return void
 */
@@ -167,11 +166,11 @@ function delete_nodes_for_resource_type_field($ref)
 
 
 /**
-* Get a specific node by ref
-* 
-* @param  integer  $ref              ID of the node
-* @param  array    $returned_node    If a value does exist it will be returned through
-*                                    this parameter which is passed by reference
+* Get a specific node by ref.
+*
+* @param  integer  $ref              ID of the node.
+* @param  array    $returned_node    If a value does exist it will be returned through this parameter which is passed
+*                                     by reference.
 * @return boolean
 */
 function get_node($ref, array &$returned_node)
@@ -182,9 +181,9 @@ function get_node($ref, array &$returned_node)
         }
 
     $query = "SELECT * FROM node WHERE ref = '" . escape_check($ref) . "';";
-    $node  = sql_query($query);
+    $node = sql_query($query);
 
-    if(count($node)==0)
+    if(count($node) == 0)
         {
         return false;
         }
@@ -197,82 +196,86 @@ function get_node($ref, array &$returned_node)
 
 /**
 * Get all nodes from database for a specific metadata field or parent.
-* Use $parent = NULL and recursive = TRUE to get all nodes for a field
-* 
+* Use $parent = NULL and recursive = TRUE to get all nodes for a field.
 * Use $offset and $rows only when returning a subset.
-* 
-* @param  integer  $resource_type_field         ID of the metadata field
-* @param  integer  $parent                      ID of parent node
+*
+* @param  integer  $resource_type_field         ID of the metadata field.
+* @param  integer  $parent                      ID of parent node.
 * @param  boolean  $recursive                   Set to true to get children nodes as well.
-*                                               IMPORTANT: this should be used only with category trees
-* @param  integer  $offset                      Specifies the offset of the first row to return
-* @param  integer  $rows                        Specifies the maximum number of rows to return
-* @param  string   $name                        Filter by name of node
-* @param  boolean  $use_count                   Show how many resources use a particular node in the node properties
-* @param  boolean  $order_by_translated_name    Flag to order by translated names rather then the order_by column
-* 
+*                                               IMPORTANT: this should be used only with category trees.
+* @param  integer  $offset                      Specifies the offset of the first row to return.
+* @param  integer  $rows                        Specifies the maximum number of rows to return.
+* @param  string   $name                        Filter by name of node.
+* @param  boolean  $use_count                   Show how many resources use a particular node in the node properties.
+* @param  boolean  $order_by_translated_name    Flag to order by translated names rather then the order_by column.
+*
 * @return array
 */
-function get_nodes($resource_type_field, $parent = NULL, $recursive = FALSE, $offset = NULL, $rows = NULL, $name = '', 
+function get_nodes($resource_type_field, $parent = null, $recursive = false, $offset = null, $rows = null, $name = '',
     $use_count = false, $order_by_translated_name = false)
     {
     debug_function_call("get_nodes", func_get_args());
-    global $language,$defaultlanguage;
-    $asdefaultlanguage=$defaultlanguage;
+    global $language, $defaultlanguage;
 
-    if (!isset($asdefaultlanguage))
-        $asdefaultlanguage='en';
+    $asdefaultlanguage = $defaultlanguage;
 
-    // Use langauge specified if not use default
-    isset($language)?$language_in_use = $language:$language_in_use = $defaultlanguage;
+    if(!isset($asdefaultlanguage))
+        {
+        $asdefaultlanguage = 'en';
+        }
 
+    // Use langauge specified, if not use default.
+    isset($language) ? $language_in_use = $language : $language_in_use = $defaultlanguage;
     $return_nodes = array();
 
-    // Check if limiting is required
+    // Check if limiting is required.
     $limit = '';
 
-    if(!is_null($offset) && is_int($offset)) # Offset specified
+    // Offset specified.
+    if(!is_null($offset) && is_int($offset))
         {
-        if(!is_null($rows) && is_int($rows)) # Row limit specified
+        // Row limit specified.
+        if(!is_null($rows) && is_int($rows))
             {
             $limit = "LIMIT {$offset},{$rows}";
             }
-        else # Row limit absent
+        else // Row limit absent.
             {
-            $limit = "LIMIT {$offset},999999999"; # Use a large arbitrary limit
+            $limit = "LIMIT {$offset},999999999"; # Use a large arbitrary limit.
             }
         }
-    else # Offset not specified
+    else // Offset not specified.
         {
-        if(!is_null($rows) && is_int($rows)) # Row limit specified
+        // Row limit specified.
+        if(!is_null($rows) && is_int($rows))
             {
             $limit = "LIMIT {$rows}";
             }
         }
 
-    // Filter by name if required
+    // Filter by name if required.
     $filter_by_name = '';
     if('' != $name)
         {
         $filter_by_name = " AND `name` LIKE '%" . escape_check($name) . "%'";
         }
 
-    // Option to include a usage count alongside each node
-    $use_count_sql="";
+    // Option to include a usage count alongside each node.
+    $use_count_sql = "";
     if($use_count)
         {
         $use_count_sql = ",(SELECT count(resource) FROM resource_node WHERE resource_node.resource > 0 AND resource_node.node = node.ref) AS use_count";
         }
 
-    // Order by translated_name or order_by based on flag
+    // Order by translated_name or order_by based on flag.
     $order_by = $order_by_translated_name ? "translated_name" : "order_by";
-    
-    // Get length of language string + 2 (for ~ and :) for usuage in SQL below
+
+    // Get length of language string + 2 (for ~ and :) for usuage in SQL below.
     $language_string_length = (strlen($language_in_use) + 2);
 
-    $parent_sql = (trim($parent)=="") ? "parent IS NULL" : "parent = '" . escape_check($parent) . "'";
+    $parent_sql = (trim($parent) == "") ? "parent IS NULL" : "parent = '" . escape_check($parent) . "'";
     $query = "
-        SELECT 
+        SELECT
             *,
             CASE
                 WHEN
@@ -294,7 +297,7 @@ function get_nodes($resource_type_field, $parent = NULL, $recursive = FALSE, $of
                 ELSE TRIM(name)
             END AS translated_name
             " . $use_count_sql . "
-        FROM node 
+        FROM node
         WHERE resource_type_field = " . escape_check($resource_type_field) . "
         " . $filter_by_name . "
         AND " . $parent_sql . "
@@ -302,7 +305,6 @@ function get_nodes($resource_type_field, $parent = NULL, $recursive = FALSE, $of
         " . $limit;
 
     $nodes = sql_query($query);
-
     foreach($nodes as $node)
         {
         array_push($return_nodes, $node);
@@ -320,9 +322,9 @@ function get_nodes($resource_type_field, $parent = NULL, $recursive = FALSE, $of
 
 
 /**
-* Checks whether a node is parent to other nodes or not
+* Checks whether a node is parent to other nodes or not.
 *
-* @param  integer    $ref    Node ref
+* @param  integer    $ref    Node ref.
 *
 * @return boolean
 */
@@ -346,12 +348,11 @@ function is_parent_node($ref)
 
 
 /**
-* Determine how many level deep a node is. Useful for knowing how much
-* indent a node
+* Determine how many level deep a node is. Useful for knowing how much to indent a node.
 *
-* @param  integer    $ref    Node ref
+* @param  integer    $ref    Node ref.
 *
-* @return integer            The depth value of a tree node
+* @return integer            The depth value of a tree node.
 */
 function get_tree_node_level($ref)
     {
@@ -360,25 +361,23 @@ function get_tree_node_level($ref)
         trigger_error('Node ID should be set AND NOT NULL');
         }
 
-    $parent      = escape_check($ref);
+    $parent = escape_check($ref);
     $depth_level = -1;
 
     do
         {
-        $query  = "SELECT parent AS value FROM node WHERE ref = '" . $parent . "';";
+        $query = "SELECT parent AS value FROM node WHERE ref = '" . $parent . "';";
         $parent = sql_value($query, 0);
-
-        $depth_level++;
+        ++$depth_level;
         }
-    while('' != trim($parent) && $parent!=0);
+    while('' != trim($parent) && $parent != 0);
 
     return $depth_level;
     }
 
 
 /**
-* Find node ID of the root parent when searching by one
-* of the leaves ID
+* Find node ID of the root parent when searching by one of the leaves ID.
 * Example:
 * 1
 * 2
@@ -390,15 +389,15 @@ function get_tree_node_level($ref)
 * 2.3
 * 3
 * Searching by "2.2.1" ID will give us the ID of node "2"
-* 
-* @param integer $ref   Node ID of tree leaf
-* @param integer $level Node depth level (as returned by get_tree_node_level())
-* 
+*
+* @param integer $ref   Node ID of tree leaf.
+* @param integer $level Node depth level (as returned by get_tree_node_level()).
+*
 * @return integer|boolean
 */
 function get_root_node_by_leaf($ref, $level)
     {
-    $ref   = escape_check($ref);
+    $ref = escape_check($ref);
     $level = escape_check($level);
 
     if(!is_numeric($level) && 0 >= $level)
@@ -407,9 +406,8 @@ function get_root_node_by_leaf($ref, $level)
         }
 
     $query = "SELECT n0.ref AS `value` FROM node AS n{$level}";
-
     $from_level = $level;
-    $level--;
+    --$level;
 
     while(0 <= $level)
         {
@@ -420,11 +418,10 @@ function get_root_node_by_leaf($ref, $level)
             $query .= " WHERE n{$from_level}.ref = '{$ref}'";
             }
 
-        $level--;
+        --$level;
         }
-        
-    $root_node = sql_value($query, '');
 
+    $root_node = sql_value($query, '');
     if('' == $root_node)
         {
         $root_node = 0;
@@ -435,9 +432,9 @@ function get_root_node_by_leaf($ref, $level)
 
 
 /**
-* Function used to reorder nodes based on an array with nodes in the new order
+* Function used to reorder nodes based on an array with nodes in the new order.
 *
-* @param  array  $nodes_new_order  Array of nodes 
+* @param  array  $nodes_new_order  Array of nodes.
 *
 * @return void
 */
@@ -449,42 +446,38 @@ function reorder_node(array $nodes_new_order)
         }
 
     $order_by = 10;
-
     $query = 'UPDATE node SET order_by = (CASE ref ';
     foreach($nodes_new_order as $node_ref)
         {
-        $query    .= 'WHEN \'' . $node_ref . '\' THEN \'' . $order_by . '\' ';
+        $query .= 'WHEN \'' . $node_ref . '\' THEN \'' . $order_by . '\' ';
         $order_by += 10;
         }
     $query .= 'ELSE order_by END);';
-
     sql_query($query);
 
     return;
     }
 
 /**
-* Virtually re-order nodes
-* 
-* Temporarily re-order nodes (mostly) for display purposes
-* 
-* 
-* @param array $unordered_nodes Original nodes array
-* 
+* Virtually re-order nodes/temporarily re-order nodes (mostly) for display purposes.
+*
+
+* @param array $unordered_nodes Original nodes array.
+*
 * @return array
 */
 function reorder_nodes(array $unordered_nodes)
     {
-    // Put $auto_order_checkbox and $auto_order_checkbox_case_insensitive as global 
-    // to future proof function for when we will drop globals for easier refactoring
+    // Put $auto_order_checkbox and $auto_order_checkbox_case_insensitive as global to future proof function for when
+    // we will drop globals for easier refactoring.
     global $auto_order_checkbox, $auto_order_checkbox_case_insensitive;
 
     $reordered_options = array();
-    $use_index_key     = array();
+    $use_index_key = array();
     foreach($unordered_nodes as $unordered_node_index => $node)
         {
         $reordered_options[$node['ref']] = i18n_get_translated($node['name']);
-        $use_index_key[$node['ref']]     = ($unordered_node_index == $node['ref']);
+        $use_index_key[$node['ref']] = ($unordered_node_index == $node['ref']);
         }
 
     if(isset($auto_order_checkbox) && $auto_order_checkbox && $auto_order_checkbox_case_insensitive)
@@ -514,19 +507,20 @@ function reorder_nodes(array $unordered_nodes)
 
 
 /**
-* Renders HTML for adding a new node record in the database
+* Renders HTML for adding a new node record in the database.
 *
-* @param  string   $form_action          Set the action path of the form
-* @param  boolean  $is_tree              Set to TRUE if the field is category tree type
-* @param  integer  $parent               ID of the parent of this node
-* @param  integer  $node_depth_level     When rendering for trees, we need to know how many levels deep we need to render it
-* @param  array    $parent_node_options  Array of node options to be used as parent for new records
+* @param  string   $form_action          Set the action path of the form.
+* @param  boolean  $is_tree              Set to TRUE if the field is category tree type.
+* @param  integer  $parent               ID of the parent of this node.
+* @param  integer  $node_depth_level     When rendering for trees, we need to know how many levels deep we need to. render it
+* @param  array    $parent_node_options  Array of node options to be used as parent for new records.
 *
 * @return void
 */
 function render_new_node_record($form_action, $is_tree, $parent = 0, $node_depth_level = 0, array $parent_node_options = array())
     {
     global $baseurl_short, $lang;
+
     if(!isset($is_tree))
         {
         trigger_error('$is_tree param for render_new_node_record() must be set to either TRUE or FALSE!');
@@ -537,10 +531,9 @@ function render_new_node_record($form_action, $is_tree, $parent = 0, $node_depth
         trigger_error('$form_action param for render_new_node_record() must be set and not be an empty string!');
         }
 
-    // Render normal fields first then go to tree type
+    // Render normal fields first, then go to tree type.
     if(!$is_tree)
-        {
-        ?>
+        { ?>
         <tr id="new_node_<?php echo $parent; ?>_children">
             <td>
                 <input type="text" class="stdwidth" name="new_option_name" form="new_option" value="">
@@ -560,17 +553,17 @@ function render_new_node_record($form_action, $is_tree, $parent = 0, $node_depth
         return;
         }
 
-    // Trees only
+    // Trees only.
     ?>
     <table id="new_node_<?php echo $parent; ?>_children" cellspacing="0" cellpadding="5">
         <tbody>
             <tr>
             <?php
-            // Indent node to the correct depth level
+            // Indent node to the correct depth level.
             $i = $node_depth_level;
             while(0 < $i)
                 {
-                $i--;
+                --$i;
                 ?>
                 <td class="backline" width="10">
                     <img width="11" height="11" hspace="4" src="<?php echo $baseurl_short; ?>gfx/interface/sp.gif">
@@ -591,7 +584,7 @@ function render_new_node_record($form_action, $is_tree, $parent = 0, $node_depth
                     foreach($parent_node_options as $node)
                         {
                         $selected = '';
-                        if(!(trim($parent)=="") && $node['ref'] == $parent)
+                        if(!(trim($parent) == "") && $node['ref'] == $parent)
                             {
                             $selected = ' selected';
                             }
@@ -620,19 +613,19 @@ function render_new_node_record($form_action, $is_tree, $parent = 0, $node_depth
 
 
 /**
-* Calculate the next order by for a new record
+* Calculate the next order by for a new record.
 *
-* @param  integer  $resource_type_field   ID of the metadata field
-* @param  boolean  $is_tree               Param to flag whether this is for a tree node
-* @param  integer  $parent                ID of the parent of this node
+* @param  integer  $resource_type_field   ID of the metadata field.
+* @param  boolean  $is_tree               Param to flag whether this is for a tree node.
+* @param  integer  $parent                ID of the parent of this node.
 *
-* @return integer  $order_by  
+* @return integer  $order_by
 */
-function get_node_order_by($resource_type_field, $is_tree = FALSE, $parent = NULL)
+function get_node_order_by($resource_type_field, $is_tree = false, $parent = null)
     {
     $order_by = 10;
 
-    $query         = "SELECT COUNT(*) AS value FROM node WHERE resource_type_field = '" . escape_check($resource_type_field) . "' ORDER BY order_by ASC;";
+    $query = "SELECT COUNT(*) AS value FROM node WHERE resource_type_field = '" . escape_check($resource_type_field) . "' ORDER BY order_by ASC;";
     $nodes_counter = sql_value($query, 0);
 
     if($is_tree)
@@ -655,53 +648,52 @@ function get_node_order_by($resource_type_field, $is_tree = FALSE, $parent = NUL
 
 
 /**
-* Renders HTML for a tree node
+* Renders HTML for a tree node.
 *
-* @param  integer  $ref                   ID of the node
-* @param  integer  $resource_type_field   ID of the metadata field
-* @param  string   $name                  Node name to be used (international)
-* @param  integer  $parent                ID of the parent of this node
-* @param  integer  $order_by              Value of the order in the list (e.g. 10)
-* @param  boolean  $last_node             Set to true to allow to insert new records after last node in each level
-* @param  integer  $use_count             Counter of how many resources use a particular node
+* @param  integer  $ref                   ID of the node.
+* @param  integer  $resource_type_field   ID of the metadata field.
+* @param  string   $name                  Node name to be used (international).
+* @param  integer  $parent                ID of the parent of this node.
+* @param  integer  $order_by              Value of the order in the list (e.g. 10).
+* @param  boolean  $last_node             Set to true to allow to insert new records after last node in each level.
+* @param  integer  $use_count             Counter of how many resources use a particular node.
 *
 * @return boolean
 */
 function draw_tree_node_table($ref, $resource_type_field, $name, $parent, $order_by, $last_node = false, $use_count = 0)
     {
     global $baseurl_short, $lang;
-
     static $resource_type_field_last = 0;
-    static $all_nodes = array();    
+    static $all_nodes = array();
 
-    if(is_null($ref) || (trim($ref)==""))
+    if(is_null($ref) || (trim($ref) == ""))
         {
         return false;
         }
 
     $toggle_node_mode = '';
-    $spacer_filename  = 'sp.gif';
-    $onClick          = '';
+    $spacer_filename = 'sp.gif';
+    $onClick = '';
     $node_index = $order_by / 10;
 
     if(is_parent_node($ref))
         {
         $toggle_node_mode = 'unex';
-        $spacer_filename  = 'node_unex.gif';
-        $onClick          = sprintf('ToggleTreeNode(%s, %s);', $ref, $resource_type_field);
+        $spacer_filename = 'node_unex.gif';
+        $onClick = sprintf('ToggleTreeNode(%s, %s);', $ref, $resource_type_field);
         }
 
-    // Determine Node depth
+    // Determine node depth.
     $node_depth_level = get_tree_node_level($ref);
 
-    // Fetch all nodes on change of resource type field
+    // Fetch all nodes on change of resource type field.
     if($resource_type_field !== $resource_type_field_last)
         {
-        $all_nodes = get_nodes($resource_type_field, NULL, TRUE, NULL, NULL, '', TRUE);
-        $resource_type_field_last = $resource_type_field;    
+        $all_nodes = get_nodes($resource_type_field, null, true, null, null, '', true);
+        $resource_type_field_last = $resource_type_field;
         }
 
-    // We remove the current node from the list of parents for it( a node should not add to itself)
+    // We remove the current node from the list of parents for it (a node should not add to itself).
     $nodes = $all_nodes;
     $nodes_index_to_remove = array_search($ref, array_column($nodes, 'ref'));
     unset($nodes[$nodes_index_to_remove]);
@@ -711,11 +703,11 @@ function draw_tree_node_table($ref, $resource_type_field, $name, $parent, $order
         <tbody>
             <tr>
             <?php
-            // Indent node to the correct depth level
+            // Indent node to the correct depth level.
             $i = $node_depth_level;
             while(0 < $i)
                 {
-                $i--;
+                --$i;
                 ?>
                 <td class="backline" width="10">
                     <img width="11" height="11" hspace="4" src="<?php echo $baseurl_short; ?>gfx/interface/sp.gif">
@@ -736,7 +728,7 @@ function draw_tree_node_table($ref, $resource_type_field, $name, $parent, $order
                     foreach($nodes as $node)
                         {
                         $selected = '';
-                        if(!(trim($parent)=="") && $node['ref'] == $parent)
+                        if(!(trim($parent) == "") && $node['ref'] == $parent)
                             {
                             $selected = ' selected';
                             }
@@ -752,27 +744,27 @@ function draw_tree_node_table($ref, $resource_type_field, $name, $parent, $order
                     <div class="ListTools">
                         <form id="option_<?php echo $ref; ?>" method="post" action="/pages/admin/admin_manage_field_options.php?field=<?php echo $resource_type_field; ?>">
                             <input type="hidden" name="option_order_by" value="<?php echo $order_by; ?>">
-                            <input 
+                            <input
                                     type="number"
-                                    name="node_order_by" 
-                                    value="<?php echo $node_index; ?>" 
-                                    id="option_<?php echo $ref; ?>_order_by" 
+                                    name="node_order_by"
+                                    value="<?php echo $node_index; ?>"
+                                    id="option_<?php echo $ref; ?>_order_by"
                                     readonly='true'
                                     min='1'
                                 >
                             </td>
                             <td> <!-- Buttons for changing order -->
-                                <button 
+                                <button
                                     type="button"
                                     id="option_<?php echo $ref; ?>_move_to"
                                     onclick="
                                         EnableMoveTo(<?php echo $ref; ?>);
-                                        
+
                                         return false;
                                     ">
                                     <?php echo $lang['action-move-to']; ?>
                                 </button>
-                                <button 
+                                <button
                                     type="submit"
                                     id="option_<?php echo $ref; ?>_order_by_apply"
                                     onclick="
@@ -792,11 +784,11 @@ function draw_tree_node_table($ref, $resource_type_field, $name, $parent, $order
                             if(!is_parent_node($ref))
                                 {?>
                             <button type="submit" onclick="DeleteNode(<?php echo $ref; ?>); return false;"><?php echo $lang['action-delete']; ?></button>
-                                <?php 
+                                <?php
                                 }
                             ?>
                         </td>
-                            
+
                         <?php generateFormToken("option_{$ref}"); ?>
                         </form>
                     </div>
@@ -807,14 +799,14 @@ function draw_tree_node_table($ref, $resource_type_field, $name, $parent, $order
     <div id="node_<?php echo $ref; ?>_children"></div>
 
     <?php
-    // Add a way of inserting new records after the last node of each level
+    // Add a way of inserting new records after the last node of each level.
     if($last_node)
         {
-        if(trim($parent)=="")
+        if(trim($parent) == "")
             {
             $parent = 0;
             }
-        render_new_node_record('/pages/admin/admin_manage_field_options.php?field=' . $resource_type_field, TRUE, $parent, $node_depth_level, $all_nodes);
+        render_new_node_record('/pages/admin/admin_manage_field_options.php?field=' . $resource_type_field, true, $parent, $node_depth_level, $all_nodes);
         }
 
     return true;
@@ -825,17 +817,20 @@ function draw_tree_node_table($ref, $resource_type_field, $name, $parent, $order
  * Overrides either a field[options] array structure or a flat option array with values derived from nodes.
  * If a field, then will also add field=>nodes[] sub array ready for field rendering.
  *
- * @param  mixed    $field                 Either field array structure or flat options list array
- * @param  integer  $resource_type_field   ID of the metadata field, if specified will treat as flat options list
+ * @param  mixed    $field                 Either field array structure or flat options list array.
+ * @param  integer  $resource_type_field   ID of the metadata field, if specified will treat as flat options list.
  *
  * @return boolean
  */
-function node_field_options_override(&$field,$resource_type_field=null)
+function node_field_options_override(&$field, $resource_type_field = null)
     {
-    if (!is_null($resource_type_field))     // we are dealing with a single specified resource type so simply return array of options
+    // We are dealing with a single specified resource type so simply return array of options.
+    if(!is_null($resource_type_field))
         {
         $options = get_nodes($resource_type_field);
-        if(count($options) > 0)     // only override if field options found within nodes
+
+        // Only override if field options found within nodes.
+        if(count($options) > 0)
             {
             $field = array();
             foreach ($options as $option)
@@ -846,24 +841,25 @@ function node_field_options_override(&$field,$resource_type_field=null)
         return true;
         }
 
-    if (
-        !isset($field['ref']) ||
-        !isset($field['type']) ||
-        !in_array($field['type'], array(2, 3, 7, 9, 12))
-    )
+    // Get out of here if not a node supported field type.
+    if(!isset($field['ref']) || !isset($field['type']) || !in_array($field['type'], array(2, 3, 7, 9, 12)))
         {
-        return false;       // get out of here if not a node supported field type
+        return false;
         }
 
     migrate_resource_type_field_check($field);
 
-    $field['nodes'] = array();          // setup new nodes associate array to be used by node-aware field renderers
-    $field['node_options'] = array();   // setup new node options list for render of flat fields such as drop down lists (saves another iteration through nodes to grab names)
+    // Setup new nodes associate array to be used by node-aware field renderers.
+    $field['nodes'] = array();
 
-    if ($field['type'] == 7)        // category tree
+    // Setup new node options list for render of flat fields such as drop down lists (saves another iteration through nodes to grab names).
+    $field['node_options'] = array();
+
+    // Category tree.
+    if($field['type'] == 7)
         {
         $category_tree_nodes = get_nodes($field['ref'], null, false);
-        if (count($category_tree_nodes) > 0)
+        if(count($category_tree_nodes) > 0)
             {
             foreach ($category_tree_nodes as $node)
                 {
@@ -871,15 +867,15 @@ function node_field_options_override(&$field,$resource_type_field=null)
                 }
             }
         }
-    else        // normal comma separated options used for checkboxes, selects, etc.
+    else // Normal comma separated options used for checkboxes, selects, etc.
         {
-        $nodes = get_nodes($field['ref'],null,false,null,null,null,null,(bool)$field['automatic_nodes_ordering']);
-        if (count($nodes) > 0)
+        $nodes = get_nodes($field['ref'], null, false, null, null, null, null, (bool)$field['automatic_nodes_ordering']);
+        if(count($nodes) > 0)
             {
             foreach ($nodes as $node)
                 {
-                $field['nodes'][$node['ref']]=$node;
-                array_push($field['node_options'],$node['name']);
+                $field['nodes'][$node['ref']] = $node;
+                array_push($field['node_options'], $node['name']);
                 }
             }
         }
@@ -888,52 +884,54 @@ function node_field_options_override(&$field,$resource_type_field=null)
 
 
 /**
-* Adds node keyword for indexing purposes
+* Adds node keyword for indexing purposes.
 *
-* @param  integer  $node        ID of the node (from node table) the keyword should be linked to
-* @param  string   $keyword     Keyword to index
-* @param  integer  $position    The position of the keyword in the string that was indexed
-* @param  boolean  $normalized  If this keyword is normalized by the time we add it, set as true
-*  
+* @param  integer  $node        ID of the node (from node table) the keyword should be linked to.
+* @param  string   $keyword     Keyword to index.
+* @param  integer  $position    The position of the keyword in the string that was indexed.
+* @param  boolean  $normalized  If this keyword is normalized by the time we add it, set as TRUE.
+*
 * @return boolean
 */
 function add_node_keyword($node, $keyword, $position, $normalize = true, $stem = true)
     {
     global $unnormalized_index, $noadd, $stemming;
 
-    debug("add_node_keyword: node:" . $node . ", keyword: " . $keyword . ", position: " . $position . ", normalize:" . ($normalize?"TRUE":"FALSE") . ", stem:" . ($stem?"TRUE":"FALSE"));
+    debug("add_node_keyword: node:" . $node . ", keyword: " . $keyword . ", position: " . $position . ", normalize:" . ($normalize ? "TRUE" : "FALSE") . ", stem:" . ($stem ? "TRUE" : "FALSE"));
     if($normalize)
         {
         $original_keyword = $keyword;
-        $kworig          = normalize_keyword($keyword);
-        // if $keyword has changed after normalizing it, then index the original value as well
+        $kworig = normalize_keyword($keyword);
+
+        // If $keyword has changed after normalizing it, then index the original value as well.
         if($keyword != $kworig && $unnormalized_index)
             {
             add_node_keyword($node, $kworig, $position, false, $stem);
             }
         }
-        
-     if ($stem && $stemming && function_exists("GetStem"))
+
+     if($stem && $stemming && function_exists("GetStem"))
         {
-        $unstemmed=$keyword;
-        $keyword=GetStem($keyword);
-        if($keyword!=$unstemmed)
+        $unstemmed = $keyword;
+        $keyword = GetStem($keyword);
+
+        // $keyword has been changed by stemming, also index the original value.
+        if($keyword != $unstemmed)
             {
-            // $keyword has been changed by stemming, also index the original value
             debug("add_node_keyword - adding unstemmed: " . $unstemmed);
-            add_node_keyword($node, $unstemmed, $position, $normalize,false);
+            add_node_keyword($node, $unstemmed, $position, $normalize, false);
             }
         }
-        
-        
-    // $keyword should not be indexed if it can be found in the $noadd array, no need to continue
+
+    // $keyword should not be indexed if it can be found in the $noadd array, no need to continue.
     if(in_array($keyword, $noadd))
         {
         debug('Ignored keyword "' . $keyword . '" as it is in the $noadd array. Triggered in ' . __FUNCTION__ . '() on line ' . __LINE__);
         return false;
         }
 
-    $keyword_ref = resolve_keyword($keyword, true,$normalize,false); // We have already stemmed
+    // We have already stemmed.
+    $keyword_ref = resolve_keyword($keyword, true, $normalize, false);
 
     sql_query("INSERT INTO node_keyword (node, keyword, position) VALUES ('" . escape_check($node) . "', '" . escape_check($keyword_ref) . "', '" . escape_check($position) . "')");
     sql_query("UPDATE keyword SET hit_count = hit_count + 1 WHERE ref = '" . escape_check($keyword_ref) . "'");
@@ -945,13 +943,13 @@ function add_node_keyword($node, $keyword, $position, $normalize = true, $stem =
 
 
 /**
-* Removes node keyword for indexing purposes
+* Removes node keyword for indexing purposes.
 *
-* @param  integer  $node        ID of the node (from node table) the keyword should be linked to
-* @param  string   $keyword     Keyword to index
-* @param  integer  $position    The position of the keyword in the string that was indexed
-* @param  boolean  $normalized  If this keyword is normalized by the time we add it, set as true
-*  
+* @param  integer  $node        ID of the node (from node table) the keyword should be linked to.
+* @param  string   $keyword     Keyword to index.
+* @param  integer  $position    The position of the keyword in the string that was indexed.
+* @param  boolean  $normalized  If this keyword is normalized by the time we add it, set as TRUE.
+*
 * @return void
 */
 function remove_node_keyword($node, $keyword, $position, $normalized = false)
@@ -961,9 +959,9 @@ function remove_node_keyword($node, $keyword, $position, $normalized = false)
     if(!$normalized)
         {
         $original_keyword = $keyword;
-        $keyword          = normalize_keyword($keyword);
+        $keyword = normalize_keyword($keyword);
 
-        // if $keyword has changed after normalizing it, then remove the original value as well
+        // If $keyword has changed after normalizing it, then remove the original value as well.
         if($keyword != $original_keyword && $unnormalized_index)
             {
             remove_node_keyword($node, $original_keyword, $position, true);
@@ -971,7 +969,6 @@ function remove_node_keyword($node, $keyword, $position, $normalized = false)
         }
 
     $keyword_ref = resolve_keyword($keyword, true);
-
     $position_sql = '';
     if('' != trim($position))
         {
@@ -988,10 +985,10 @@ function remove_node_keyword($node, $keyword, $position, $normalized = false)
 
 
 /**
-* Removes all indexed keywords for a specific node ID
+* Removes all indexed keywords for a specific node ID.
 *
-* @param  integer  $node  Node ID
-*  
+* @param  integer  $node  Node ID.
+*
 * @return void
 */
 function remove_all_node_keyword_mappings($node)
@@ -1003,11 +1000,11 @@ function remove_all_node_keyword_mappings($node)
 
 
 /**
-* Function used to check if a fields' node needs (re-)indexing
+* Function used to check if a fields' node needs (re-)indexing.
 *
-* @param  array    $node           Individual node for a field ( as returned by get_nodes() )
-* @param  boolean  $partial_index  Partially index flag for node keywords
-*  
+* @param  array    $node           Individual node for a field [as returned by get_nodes()].
+* @param  boolean  $partial_index  Partially index flag for node keywords.
+*
 * @return void
 */
 function check_node_indexed(array $node, $partial_index = false)
@@ -1018,15 +1015,15 @@ function check_node_indexed(array $node, $partial_index = false)
         }
 
     $count_indexed_node_keywords = sql_value("SELECT count(node) AS 'value' FROM node_keyword WHERE node = '" . escape_check($node['ref']) . "'", 0);
-    $keywords                    = split_keywords($node['name'], true, $partial_index);
+    $keywords = split_keywords($node['name'], true, $partial_index);
 
+    // Node has already been indexed.
     if($count_indexed_node_keywords == count($keywords))
         {
-        // node has already been indexed
         return;
         }
 
-    // (re-)index node
+    // (re-)index node.
     remove_all_node_keyword_mappings($node['ref']);
     add_node_keyword_mappings($node, $partial_index);
 
@@ -1035,12 +1032,12 @@ function check_node_indexed(array $node, $partial_index = false)
 
 
 /**
-* Function used to index node keywords
+* Function used to index node keywords.
 *
-* @param  array         $node           Individual node for a field ( as returned by get_nodes() )
-* @param  boolean|null  $partial_index  Partially index flag for node keywords. Use NULL if code doesn't
-*                                       have access to the fields' data
-*  
+* @param  array         $node           Individual node for a field [as returned by get_nodes()].
+* @param  boolean|null  $partial_index  Partially index flag for node keywords. Use NULL if code does not
+*                                       have access to the fields' data.
+*
 * @return boolean
 */
 function add_node_keyword_mappings(array $node, $partial_index = false)
@@ -1050,7 +1047,7 @@ function add_node_keyword_mappings(array $node, $partial_index = false)
         return false;
         }
 
-    // Client code does not know whether field is partially indexed or not
+    // Client code does not know whether field is partially indexed or not.
     if(is_null($partial_index))
         {
         $field_data = get_field($node['resource_type_field']);
@@ -1065,14 +1062,15 @@ function add_node_keyword_mappings(array $node, $partial_index = false)
     add_verbatim_keywords($keywords, $node['name'], $node['resource_type_field']);
 
     db_begin_transaction("add_node_keyword_mappings");
-    for($n = 0; $n < count($keywords); $n++)
+    $keywords_count = count($keywords);
+    for($n = 0; $n < $keywords_count; $n++)
         {
         unset($keyword_position);
 
         if(is_array($keywords[$n]))
             {
             $keyword_position = $keywords[$n]['position'];
-            $keywords[$n]     = $keywords[$n]['keyword'];
+            $keywords[$n] = $keywords[$n]['keyword'];
             }
 
         if(!isset($keyword_position))
@@ -1089,12 +1087,12 @@ function add_node_keyword_mappings(array $node, $partial_index = false)
 
 
 /**
-* Function used to un-index node keywords
+* Function used to un-index node keywords.
 *
-* @param  array         $node           Individual node for a field ( as returned by get_nodes() )
-* @param  boolean|null  $partial_index  Partially index flag for node keywords. Use NULL if code doesn't
-*                                       have access to the fields' data
-*  
+* @param  array         $node           Individual node for a field [as returned by get_nodes()].
+* @param  boolean|null  $partial_index  Partially index flag for node keywords. Use NULL if code does not
+*                                       have access to the fields' data.
+*
 * @return boolean
 */
 function remove_node_keyword_mappings(array $node, $partial_index = false)
@@ -1104,7 +1102,7 @@ function remove_node_keyword_mappings(array $node, $partial_index = false)
         return false;
         }
 
-    // Client code does not know whether field is partially indexed or not
+    // Client code does not know whether field is partially indexed or not.
     if(is_null($partial_index))
         {
         $field_data = get_field($node['resource_type_field']);
@@ -1118,14 +1116,15 @@ function remove_node_keyword_mappings(array $node, $partial_index = false)
     $keywords = split_keywords($node['name'], true, $partial_index);
     add_verbatim_keywords($keywords, $node['name'], $node['resource_type_field']);
 
-    for($n = 0; $n < count($keywords); $n++)
+    $keywords_count = count($keywords);
+    for($n = 0; $n < $keywords_count; $n++)
         {
         unset($keyword_position);
 
         if(is_array($keywords[$n]))
             {
             $keyword_position = $keywords[$n]['position'];
-            $keywords[$n]     = $keywords[$n]['keyword'];
+            $keywords[$n] = $keywords[$n]['keyword'];
             }
 
         if(!isset($keyword_position))
@@ -1141,99 +1140,118 @@ function remove_node_keyword_mappings(array $node, $partial_index = false)
 
 
 /**
-* Add nodes in array to resource
+* Add nodes in array to resource.
 *
-* @param  integer      $resourceid         Resource ID to add nodes to
-* @param  array        $nodes              Array of node IDs to add
-* @param  boolean      $checkperms         Check permissions before adding? 
-*  
+* @param  integer      $resourceid         Resource ID to add nodes to.
+* @param  array        $nodes              Array of node IDs to add.
+* @param  boolean      $checkperms         Check permissions before adding?
+*
 * @return boolean
-*/        
-function add_resource_nodes($resourceid,$nodes=array(), $checkperms = true)
+*/
+function add_resource_nodes($resourceid, $nodes = array(), $checkperms = true)
     {
     if(!is_array($nodes) && (string)(int)$nodes != $nodes)
-        {return false;}
+        {
+        return false;
+        }
 
+    // Need to check user has permissions to add nodes (unless running from any CLI script other than unit tests).
     if($checkperms && (PHP_SAPI != 'cli' || defined("RS_TEST_MODE")))
         {
-        // Need to check user has permissions to add nodes (unless running from any CLI script other than unit tests)
         $resourcedata = get_resource_data($resourceid);
-        $access = get_edit_access($resourceid,$resourcedata["archive"],false,$resourcedata);
+        $access = get_edit_access($resourceid, $resourcedata["archive"], false, $resourcedata);
         if(!$access)
-            {return false;}
+            {
+            return false;
+            }
         }
-    if(!is_array($nodes))
-        {$nodes=array($nodes);}
 
-    sql_query("insert into resource_node (resource, node) values ('" . escape_check($resourceid) . "','" . implode("'),('" . escape_check($resourceid) . "','",$nodes) . "') ON DUPLICATE KEY UPDATE hit_count=hit_count");
+    if(!is_array($nodes))
+        {
+        $nodes = array($nodes);
+        }
+
+    sql_query("INSERT INTO resource_node (resource, node) values ('" . escape_check($resourceid) . "','" . implode("'),('" . escape_check($resourceid) . "','",$nodes) . "') ON DUPLICATE KEY UPDATE hit_count=hit_count");
 
     $field_nodes_arr = array();
-    foreach ($nodes as $node)
+    foreach($nodes as $node)
         {
         $nodedata = array();
         get_node($node, $nodedata);
         $field_nodes_arr[$nodedata["resource_type_field"]][] = $nodedata["name"];
         }
 
-    foreach ($field_nodes_arr as $key => $value)
+    foreach($field_nodes_arr as $key => $value)
         {
-        resource_log($resourceid,"e",$key,"","","," . implode(",",$value));
+        resource_log($resourceid, "e", $key, "", "", "," . implode(",", $value));
         }
 
     return true;
     }
 
+
 /**
-* Add nodes in array to multiple resources
+* Add nodes in array to multiple resources.
 *
-* @param  array        $resources           Array of resource IDs to add nodes to
-* @param  array        $nodes               Array of node IDs to add
+* @param  array        $resources           Array of resource IDs to add nodes to.
+* @param  array        $nodes               Array of node IDs to add.
 * @param  boolean      $checkperms          Check permissions before adding?
-* 
+*
 * @return boolean
 */
-function add_resource_nodes_multi($resources=array(),$nodes=array(), $checkperms = true)
+function add_resource_nodes_multi($resources = array(), $nodes = array(), $checkperms = true)
     {
     if((!is_array($resources) && (string)(int)$resources != $resources) || (!is_array($nodes) && (string)(int)$nodes != $nodes))
-        {return false;}
-    
+        {
+        return false;
+        }
+
+     // Need to check user has permissions to add nodes.
     if($checkperms)
         {
-        // Need to check user has permissions to add nodes
         foreach($resources as $resourceid)
             {
             $resourcedata = get_resource_data($resourceid);
-            $access = get_edit_access($resourceid,$resourcedata["archive"],false,$resourcedata);
+            $access = get_edit_access($resourceid, $resourcedata["archive"], false, $resourcedata);
             if(!$access)
-                {return false;}
+                {
+                return false;
+                }
             }
         }
 
     if(!is_array($nodes))
-        {$nodes=array($nodes);}
+        {
+        $nodes = array($nodes);
+        }
 
     $nodes_escaped = escape_check_array_values($nodes);
 
-    $sql = "insert into resource_node (resource, node) values ";
+    $sql = "INSERT INTO resource_node (resource, node) values ";
     $nodesql = "";
     foreach($resources as $resource)
         {
-        if($nodesql!=""){$nodesql .= ",";}
+        if($nodesql != "")
+            {
+            $nodesql .= ",";
+            }
         $nodesql .= " ('" . escape_check($resource) . "','" . implode("'),('" . escape_check($resource) . "','",$nodes_escaped) . "') ";
         }
-    $sql = "insert into resource_node (resource, node) values " . $nodesql . "  ON DUPLICATE KEY UPDATE hit_count=hit_count";
+    $sql = "INSERT INTO resource_node (resource, node) values " . $nodesql . "  ON DUPLICATE KEY UPDATE hit_count=hit_count";
     sql_query($sql);
+
     return true;
     }
 
+
 /**
-* Get nodes associated with a particular resource for all / a specific field (optionally)
-* 
+* Get nodes associated with a particular resource for all or a specific field (optionally).
+*
 * @param integer $resource
 * @param integer $resource_type_field
-* @param boolean $detailed             Set to true to return full node details (as get_node() does)
+* @param boolean $detailed             Set to true to return full node details (as get_node() does).
 * @param boolean $node_sort            Set to SORT_ASC to sort nodes ascending, SORT_DESC sort nodes descending, null means do not sort
-* 
+*
 * @return array
 */
 function get_resource_nodes($resource, $resource_type_field = null, $detailed = false, $node_sort = null)
@@ -1273,11 +1291,13 @@ function get_resource_nodes($resource, $resource_type_field = null, $detailed = 
     }
 
 
-function delete_resource_nodes($resourceid,$nodes=array())
+function delete_resource_nodes($resourceid, $nodes = array())
     {
     if(!is_array($nodes))
-        {$nodes=array($nodes);}
-    sql_query("DELETE FROM resource_node WHERE resource ='$resourceid' AND node in ('" . implode("','",$nodes) . "')"); 
+        {
+        $nodes = array($nodes);
+        }
+    sql_query("DELETE FROM resource_node WHERE resource ='$resourceid' AND node in ('" . implode("','",$nodes) . "')");
 
     $field_nodes_arr = array();
     foreach ($nodes as $node)
@@ -1297,41 +1317,44 @@ function delete_resource_nodes($resourceid,$nodes=array())
 function delete_resource_nodes_multi($resources=array(),$nodes=array())
     {
     if(!is_array($nodes))
-        {$nodes=array($nodes);}
-        
-    $sql = "DELETE FROM resource_node WHERE resource in ('" . implode("','",$resources) . "') AND node in ('" . implode("','",$nodes) . "')";
+        {
+        $nodes = array($nodes);
+        }
+
+    $sql = "DELETE FROM resource_node WHERE resource in ('" . implode("','",$resources) . "') AND node in ('" . implode("','", $nodes) . "')";
     sql_query($sql);
     }
 
+
 function delete_all_resource_nodes($resourceid)
     {
-    sql_query("DELETE FROM resource_node WHERE resource ='$resourceid';");  
+    sql_query("DELETE FROM resource_node WHERE resource ='$resourceid';");
     }
 
 
 /**
-* Copy resource nodes from one resource to another
-* 
+* Copy resource nodes from one resource to another.
+*
 * @uses escape_check()
 * @uses sql_array()
 * @uses sql_query()
-* 
-* @param integer $resourcefrom Resource we are copying data from
-* @param integer $resourceto   Resource we are copying data to
-* 
+*
+* @param integer $resourcefrom Resource we are copying data from.
+* @param integer $resourceto   Resource we are copying data to.
+*
 * @return void
 */
 function copy_resource_nodes($resourcefrom, $resourceto)
     {
-    $resourcefrom    = escape_check($resourcefrom);
-    $resourceto      = escape_check($resourceto);
+    $resourcefrom = escape_check($resourcefrom);
+    $resourceto = escape_check($resourceto);
     $omit_fields_sql = '';
 
-    // When copying normal resources from one to another, check for fields that should be excluded
-    // NOTE: this does not apply to user template resources (negative ID resource)
+    // When copying normal resources from one to another, check for fields that should be excluded.
+    // NOTE: this does not apply to user template resources (negative ID resource).
     if($resourcefrom > 0)
         {
-        $omitfields      = sql_array("SELECT ref AS `value` FROM resource_type_field WHERE omit_when_copying = 1", 0);
+        $omitfields = sql_array("SELECT ref AS `value` FROM resource_type_field WHERE omit_when_copying = 1", 0);
         $omit_fields_sql = "AND n.resource_type_field NOT IN ('" . implode("','", $omitfields) . "')";
         }
 
@@ -1348,34 +1371,45 @@ function copy_resource_nodes($resourcefrom, $resourceto)
     return;
     }
 
-function get_nodes_from_keywords($keywords=array())
+
+function get_nodes_from_keywords($keywords = array())
     {
-    if(!is_array($keywords)){$keywords=array($keywords);}
-    return sql_array("select node value FROM node_keyword WHERE keyword in (" . implode(",",$keywords) . ");"); 
+    if(!is_array($keywords))
+        {
+        $keywords = array($keywords);
+        }
+
+    return sql_array("SELECT node value FROM node_keyword WHERE keyword in (" . implode(",",$keywords) . ");");
     }
 
-function update_resource_node_hitcount($resource,$nodes)
+
+// For the specified $resource, increment the hitcount for each node in array.
+function update_resource_node_hitcount($resource, $nodes)
     {
-    # For the specified $resource, increment the hitcount for each node in array
-    if(!is_array($nodes)){$nodes=array($nodes);}
-    if (count($nodes)>0) {sql_query("update resource_node set new_hit_count=new_hit_count+1 WHERE resource='$resource' AND node in (" . implode(",",$nodes) . ")",false,-1,true,0);}
+    if(!is_array($nodes))
+        {
+        $nodes = array($nodes);
+        }
+    if(count($nodes) > 0)
+        {
+        sql_query("UPDATE resource_node SET new_hit_count=new_hit_count+1 WHERE resource='$resource' AND node in (" . implode(",", $nodes) . ")", false, -1, true, 0);
+        }
     }
 
 
 /**
-* Copy all nodes from one metadata field to another one.
-* Used mostly with copy field functionality
-* 
-* @param integer $from resource_type_field ID FROM which we copy
-* @param integer $to   resource_type_field ID TO which we copy
-* 
+* Copy all nodes from one metadata field to another one.  Used mostly with copy field functionality.
+*
+* @param integer $from resource_type_field ID FROM which we copy.
+* @param integer $to   resource_type_field ID TO which we copy.
+*
 * @return boolean
 */
 function copy_resource_type_field_nodes($from, $to)
     {
     global $FIXED_LIST_FIELD_TYPES;
 
-    // Since field has been copied, they are both the same, so we only need to check the from field
+    // Since field has been copied, they are both the same, so we only need to check the from field.
     $type = sql_value("SELECT `type` AS `value` FROM resource_type_field WHERE ref = '{$from}'", 0);
 
     if(!in_array($type, $FIXED_LIST_FIELD_TYPES))
@@ -1385,7 +1419,7 @@ function copy_resource_type_field_nodes($from, $to)
 
     $nodes = get_nodes($from, null, true);
 
-    // Handle category trees
+    // Handle category trees.
     if(7 == $type)
         {
         // array(from_ref => new_ref)
@@ -1400,20 +1434,20 @@ function copy_resource_type_field_nodes($from, $to)
 
             $parent = $node['parent'];
 
-            // Child nodes need to have their parent set to the new parent ID
+            // Child nodes need to have their parent set to the new parent ID.
             if('' != trim($parent))
                 {
                 $parent = $processed_nodes[$parent];
                 }
 
-            $new_node_id                   = set_node(null, $to, $node['name'], $parent, $node['order_by']);
+            $new_node_id = set_node(null, $to, $node['name'], $parent, $node['order_by']);
             $processed_nodes[$node['ref']] = $new_node_id;
             }
 
         return true;
         }
 
-    // Default handle for types different than category trees
+    // Default handle for types different than category trees.
     foreach($nodes as $node)
         {
         set_node(null, $to, $node['name'], $node['parent'], $node['order_by']);
@@ -1422,33 +1456,36 @@ function copy_resource_type_field_nodes($from, $to)
     return true;
     }
 
+
 function get_parent_nodes($noderef)
     {
-    $parent_nodes=array();
-    $topnode=false;
+    $parent_nodes = array();
+    $topnode = false;
     do
         {
-        $node=sql_query("select n.parent, pn.name from node n join node pn on pn.ref=n.parent where n.ref='" . escape_check($noderef) . "' ");
+        $node = sql_query("SELECT n.parent, pn.name FROM node n join node pn on pn.ref=n.parent WHERE n.ref='" . escape_check($noderef) . "' ");
         if(empty($node[0]["parent"]))
             {
-            $topnode=true;
+            $topnode = true;
             }
         else
             {
-            $parent_nodes[$node[0]["parent"]]=$node[0]["name"];
-            $noderef=$node[0]["parent"];
+            $parent_nodes[$node[0]["parent"]] = $node[0]["name"];
+            $noderef = $node[0]["parent"];
             }
         }
-    while (!$topnode);
+    while(!$topnode);
+
     return $parent_nodes;
     }
 
+
 /**
-* Get the total number of nodes for a specific field
-* 
-* @param integer $resource_type_field ID of the metadata field
-* @param string  $name                Filter by name of node
-* 
+* Get the total number of nodes for a specific field.
+*
+* @param integer $resource_type_field ID of the metadata field.
+* @param string  $name                Filter by name of node.
+*
 * @return integer
 */
 function get_nodes_count($resource_type_field, $name = '')
@@ -1463,13 +1500,14 @@ function get_nodes_count($resource_type_field, $name = '')
     return (int) sql_value("SELECT count(ref) AS `value` FROM node WHERE resource_type_field = '{$resource_type_field}'{$filter_by_name}", 0);
     }
 
+
 /**
 * Extract option names (in raw form if desired) from a nodes array.
-* 
-* @param  array    $nodes               Array of nodes as returned by get_nodes()
-* @param  boolean  $i18n                Set to false if you don't need to translate the option name
-* @param  boolean  $index_with_node_id  Set to false if you don't want a map between node ID and its name
-* 
+*
+* @param  array    $nodes               Array of nodes as returned by get_nodes().
+* @param  boolean  $i18n                Set to FALSE if you do nOt need to translate the option name.
+* @param  boolean  $index_with_node_id  Set to FALSE if you do nOt want a map between node ID and its name.
+*
 * @return array
 */
 function extract_node_options(array $nodes, $i18n = true, $index_with_node_id = true)
@@ -1493,7 +1531,6 @@ function extract_node_options(array $nodes, $i18n = true, $index_with_node_id = 
         if($index_with_node_id)
             {
             $return[$node['ref']] = $value;
-
             continue;
             }
 
@@ -1505,17 +1542,15 @@ function extract_node_options(array $nodes, $i18n = true, $index_with_node_id = 
 
 
 /**
-* Search an array of nodes by name
-* 
-* Useful to avoid querying the database multiple times 
-* if we already have a full detail array of nodes
-* 
+* Search an array of nodes by name.  Useful to avoid querying the database multiple times Uf we already have a full
+* detail array of nodes.
+*
 * @uses i18n_get_translated()
-* 
-* @param array   $nodes Nodes array as returned by get_nodes()
-* @param string  $name  Filter by name of node
+*
+* @param array   $nodes Nodes array as returned by get_nodes().
+* @param string  $name  Filter by name of node.
 * @param boolean $i18n  Use the translated option value?
-* 
+*
 * @return array
 */
 function get_node_by_name(array $nodes, $name, $i18n = true)
@@ -1547,18 +1582,18 @@ function get_node_by_name(array $nodes, $name, $i18n = true)
 
 
 /**
-* Return a node ID for a given string
+* Return a node ID for a given string.
 *
-* @param  string    $value                  The node name to return
-* @param  integer   $resource_type_field    The field to search
-*  
+* @param  string    $value                  The node name to return.
+* @param  integer   $resource_type_field    The field to search.
+*
 * @return           false = not found
 *                   integer = node ID of matching keyword.
 */
-function get_node_id($value,$resource_type_field)
+function get_node_id($value, $resource_type_field)
     {
-    $node=sql_query("select ref from node where resource_type_field='" . escape_check($resource_type_field) . "' and name='" . escape_check($value) . "'");
-    if (count($node)>0)
+    $node = sql_query("SELECT ref FROM node WHERE resource_type_field='" . escape_check($resource_type_field) . "' and name='" . escape_check($value) . "'");
+    if (count($node) > 0)
         {
         return $node[0]["ref"];
         }
@@ -1569,13 +1604,12 @@ function get_node_id($value,$resource_type_field)
     }
 
 
-
 /**
-* Comparator function for uasort to allow sorting of node array by name
-* 
-* @param array   $n1 Node one to compare
-* @param string  $n2 Node two to compare
-* 
+* Comparator function for uasort to allow sorting of node array by name.
+*
+* @param array   $n1 Node one to compare.
+* @param string  $n2 Node two to compare.
+*
 * @return        0 means $n1 equals $n2
 *               <0 means $n1 less than $n2
 *               >0 means $n1 greater than $n2
@@ -1585,12 +1619,13 @@ function node_name_comparator($n1, $n2)
     return strcmp($n1["name"], $n2["name"]);
     }
 
+
 /**
-* Comparator function for uasort to allow sorting of node array by order_by field
-* 
-* @param array   $n1 Node one to compare
-* @param string  $n2 Node two to compare
-* 
+* Comparator function for uasort to allow sorting of node array by order_by field.
+*
+* @param array   $n1 Node one to compare.
+* @param string  $n2 Node two to compare.
+*
 * @return        0 means $n1 equals $n2
 *               <0 means $n1 less than $n2
 *               >0 means $n1 greater than $n2
@@ -1600,56 +1635,58 @@ function node_orderby_comparator($n1, $n2)
     return $n1["order_by"] - $n2["order_by"];
     }
 
-	
+
 /**
- * 
- * This function returns an array containing list of values for a selected field, identified by $field_label, in the multidimensional array $nodes
- * 
- * @param array $nodes - node tree to parse
- * @param string $field_label - node field to retrieve value of and add to array $node_values
- * @param array $node_values  - list of values for a selected field in the node tree
- * 
+ * Returns an array containing list of values for a selected field, identified by $field_label, in the
+ * multidimensional array $nodes.
+ *
+ * @param array $nodes        Node tree to parse.
+ * @param string $field_label Node field to retrieve value of and add to array $node_values.
+ * @param array $node_values  List of values for a selected field in the node tree.
+ *
  * @return array $node_values
  */
 
 function get_node_elements(array $node_values, array $nodes, $field_label)
-	{    
-	if(isset($nodes[0]))
-		{
-		foreach ($nodes as $node)
-			{
-			if (isset($node["name"])) array_push($node_values, $node[$field_label]) ;      
-			$node_values =  (isset($node["children"])) ? get_node_elements($node_values, $node["children"], $field_label)  :  get_node_elements($node_values, $node, $field_label); 
-			}
-		}
-	return $node_values;
-	}
+    {
+    if(isset($nodes[0]))
+        {
+        foreach ($nodes as $node)
+            {
+            if(isset($node["name"])) array_push($node_values, $node[$field_label]) ;
+            $node_values = (isset($node["children"])) ? get_node_elements($node_values, $node["children"], $field_label)  :  get_node_elements($node_values, $node, $field_label);
+            }
+        }
+    return $node_values;
+    }
+
 
 /**
- * This function returns a multidimensional array with hierarchy that reflects category tree field hierarchy, using parent and order_by fields
- * 
- * @param string $parentId - elements at top of tree do not have a value for "parent" field, so default value is empty string, otherwise it is the value of the parent element in tree
- * @param array $nodes - node tree to parse and order
- * 
- * @return array $tree - multidimension array containing nodes in correct hierarchical order
- * 
+ * Returns a multidimensional array with hierarchy that reflects category tree field hierarchy, using parent and
+ * order_by fields.
+ *
+ * @param string $parentId  Elements at top of tree do not have a value for "parent" field, so default value is empty
+ *                           string, otherwise it is the value of the parent element in tree.
+ * @param array $nodes      Node tree to parse and order.
+ *
+ * @return array $tree      Multidimension array containing nodes in correct hierarchical order.
+ *
  */
-
 function get_node_tree($parentId = "", array $nodes)
-	{
-	$tree = array();
-	foreach ($nodes as $node) 
-		{
-		if($node["parent"] == $parentId)
-			{
-        	$children = get_node_tree($node["ref"] , $nodes);
-			if ($children)
-				{
-                uasort($children,"node_orderby_comparator"); 
+    {
+    $tree = array();
+    foreach ($nodes as $node)
+        {
+        if($node["parent"] == $parentId)
+            {
+            $children = get_node_tree($node["ref"], $nodes);
+            if ($children)
+                {
+                uasort($children, "node_orderby_comparator");
                 $node["children"] = $children;
-            	}
+                }
             $tree[] = $node;
-        	}
-    	}
+            }
+        }
     return $tree;
-	}
+    }

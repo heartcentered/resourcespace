@@ -1,14 +1,16 @@
 <?php
+// File Functions
+
 /**
  * Ensures the filename cannot leave the directory set.
+ * Returns a file name stripped of all non alphanumeric values.
  *
  * @param string $name
  * @return string
  */
 function safe_file_name($name)
     {
-    // Returns a file name stripped of all non alphanumeric values
-    // Spaces are replaced with underscores
+    // Spaces are replaced with underscores.
     $alphanum = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-';
     $name = str_replace(' ', '_', $name);
     $newname = '';
@@ -29,10 +31,10 @@ function safe_file_name($name)
 
 
 /**
-* Generate a UID for filnames that can be different from user to user (e.g. contact sheets)
-* 
+* Generate a UID for filnames that can be different from user to user (e.g. contact sheets).
+*
 * @param integer $user_id
-* 
+*
 * @return string
 */
 function generateUserFilenameUID($user_id)
@@ -59,12 +61,12 @@ function generateUserFilenameUID($user_id)
 
 /**
 * Checks if a path is part of a whitelisted list of paths. This applies to both folders and files.
-* 
-* Note: the function is not supposed to check/ validate the syntax of the path (ie. UNIX/ Windows)
-* 
-* @param  string  $path               Path which is going to be checked against whitelisted paths
-* @param  array   $whitelisted_paths  List of whitelisted paths
-* 
+*
+* Note: the function is not supposed to check/validate the syntax of the path (ie. UNIX/Windows)
+*
+* @param  string  $path               Path which is going to be checked against whitelisted paths.
+* @param  array   $whitelisted_paths  List of whitelisted paths.
+*
 * @return boolean
 */
 function isPathWhitelisted($path, array $whitelisted_paths)
@@ -83,9 +85,9 @@ function isPathWhitelisted($path, array $whitelisted_paths)
 
 /**
 * Return a checksum for the given file path.
-* 
-* @param  string  $path     Path to file
-* 
+*
+* @param  string  $path     Path to file.
+*
 * @return string
 */
 function get_checksum($path)
@@ -93,19 +95,19 @@ function get_checksum($path)
     global $file_checksums_50k;
     if (!is_readable($path))
         {
-        return false;    
+        return false;
         }
 
-    # Generate the ID
+    // Generate the ID.
     if ($file_checksums_50k)
         {
-        # Fetch the string used to generate the unique ID
-        $use=filesize_unlimited($path) . "_" . file_get_contents($path,null,null,0,50000);
-        $checksum=md5($use);
+        // Fetch the string used to generate the unique ID.
+        $use = filesize_unlimited($path) . "_" . file_get_contents($path, null, null, 0, 50000);
+        $checksum = md5($use);
         }
     else
         {
-        $checksum=md5_file($path);
+        $checksum = md5_file($path);
         }
     return $checksum;
     }

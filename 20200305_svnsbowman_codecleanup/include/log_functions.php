@@ -1,69 +1,71 @@
 <?php
+// Logging Functions
 
-include_once __DIR__ . '/definitions.php';		// includes log code definitions for resource_log() callers.
+include_once __DIR__ . '/definitions.php'; // Includes log code definitions for resource_log() callers.
 
-function log_activity($note=null, $log_code=LOG_CODE_UNSPECIFIED, $value_new=null, $remote_table=null, $remote_column=null, $remote_ref=null, $ref_column_override=null, $value_old=null, $user=null, $generate_diff=false)
-	{
+function log_activity($note = null, $log_code = LOG_CODE_UNSPECIFIED, $value_new = null, $remote_table = null, $remote_column = null, $remote_ref = null, $ref_column_override = null, $value_old = null, $user = null, $generate_diff = false)
+    {
+    if(is_null($log_code))
+        {
+        $log_code == LOG_CODE_UNSPECIFIED;
+        }
 
-	if (is_null($log_code))
-		{
-		$log_code == LOG_CODE_UNSPECIFIED;
-		}
+    if(!function_exists('log_diff'))
+        {
+        include_once(__DIR__ . '/resource_functions.php');
+        }
 
-	if(!function_exists('log_diff'))
-		{
-		include_once(__DIR__ . '/resource_functions.php');
-		}
+    if(is_null($user))
+        {
+        global $userref;
+        $user = isset($userref) && !is_null($userref) ? (int) $userref : 0;
+        }
 
-	if (is_null($user))
-		{
-		global $userref;
-		$user = isset($userref) && !is_null($userref) ? (int) $userref : 0;
-		}
+    // Only try and get the old value if not explicitly set and we have table details.
+    if(is_null($value_old) && !is_null($remote_table) && !is_null($remote_column) && !is_null($remote_ref))
+        {
+        $row = sql_query("SELECT * FROM `{$remote_table}` WHERE `" . (is_null($ref_column_override) ? 'ref' : escape_check($ref_column_override)) . "`='{$remote_ref}'");
+        if(isset($row[0][$remote_column]))
+            {
+            $value_old = $row[0][$remote_column];
+            $log_code = $log_code == LOG_CODE_UNSPECIFIED ? LOG_CODE_EDITED : $log_code;
+            }
+        else
+            {
+            $log_code = $log_code == LOG_CODE_UNSPECIFIED ? LOG_CODE_CREATED : $log_code;
+            }
+        }
 
-	if (is_null($value_old) && !is_null($remote_table) && !is_null($remote_column) && !is_null($remote_ref))	// only try and get the old value if not explicitly set and we have table details
-		{
-		$row = sql_query("SELECT * FROM `{$remote_table}` WHERE `" . (is_null($ref_column_override) ? 'ref' : escape_check($ref_column_override)) . "`='{$remote_ref}'");
-		if (isset($row[0][$remote_column]))
-			{
-			$value_old = $row[0][$remote_column];
-			$log_code = $log_code==LOG_CODE_UNSPECIFIED ? LOG_CODE_EDITED : $log_code;
-			}
-		else
-			{
-			$log_code = $log_code==LOG_CODE_UNSPECIFIED ? LOG_CODE_CREATED : $log_code;
-			}
-		}
+    // Return if the value has not changed.
+    if($value_old == $value_new && ($log_code == LOG_CODE_EDITED || $log_code == LOG_CODE_COPIED))
+        {
+        return;
+        }
 
-	if ($value_old == $value_new && ($log_code == LOG_CODE_EDITED || $log_code == LOG_CODE_COPIED))	// return if the value has not changed
-		{
-		return;
-		}
-
-	sql_query("INSERT INTO `activity_log` (`logged`,`user`,`log_code`,`note`,`value_old`,`value_new`,`value_diff`,`remote_table`,`remote_column`,`remote_ref`) VALUES (" .
-		"NOW()," .
-		"'{$user}'," .
-		"'" . (!LOG_CODE_validate($log_code) ? LOG_CODE_UNSPECIFIED : $log_code) . "'," .
-		"'" . (is_null($note) ? '' : escape_check($note)) . "'," .
-		"'" . (is_null($value_old) ? '' : escape_check($value_old)) . "'," .
-		"'" . (is_null($value_new) ? '' : escape_check($value_new)) . "'," .
-		"'" . (!is_null($value_old) && !is_null($value_new) && $generate_diff ? escape_check(log_diff($value_old,$value_new)) : '') . "'," .
-		"'" . (is_null($remote_table) ? '' : escape_check($remote_table)) . "'," .
-		"'" . (is_null($remote_column) ? '' : escape_check($remote_column)) . "'," .
-		"'" . (is_null($remote_ref) ? '' : escape_check($remote_ref)) . "'" .
-		")");
-	}
+    sql_query("INSERT INTO `activity_log` (`logged`,`user`,`log_code`,`note`,`value_old`,`value_new`,`value_diff`,`remote_table`,`remote_column`,`remote_ref`) VALUES (" .
+        "NOW()," .
+        "'{$user}'," .
+        "'" . (!LOG_CODE_validate($log_code) ? LOG_CODE_UNSPECIFIED : $log_code) . "'," .
+        "'" . (is_null($note) ? '' : escape_check($note)) . "'," .
+        "'" . (is_null($value_old) ? '' : escape_check($value_old)) . "'," .
+        "'" . (is_null($value_new) ? '' : escape_check($value_new)) . "'," .
+        "'" . (!is_null($value_old) && !is_null($value_new) && $generate_diff ? escape_check(log_diff($value_old,$value_new)) : '') . "'," .
+        "'" . (is_null($remote_table) ? '' : escape_check($remote_table)) . "'," .
+        "'" . (is_null($remote_column) ? '' : escape_check($remote_column)) . "'," .
+        "'" . (is_null($remote_ref) ? '' : escape_check($remote_ref)) . "'" .
+        ")");
+    }
 
 
 /**
-* Log script messages on screen and optionally in a file. If debug_log is enabled, it will also write the message in the 
+* Log script messages on screen and optionally in a file. If debug_log is enabled, it will also write the message in the
 * debug log file.
-* 
+*
 * @uses debug()
-* 
+*
 * @param string   $message
 * @param resource $file
-* 
+*
 * @return void
 */
 function logScript($message, $file = null)
@@ -75,14 +77,15 @@ function logScript($message, $file = null)
         echo "{$date_time} {$message}" . PHP_EOL;
         }
 
-    // Log in debug as well, with extended information to show the backtrace
+    // Log in debug as well, with extended information to show the backtrace.
     global $debug_extended_info;
+
     $orig_debug_extended_info = $debug_extended_info;
     $debug_extended_info = true;
     debug($message);
     $debug_extended_info = $orig_debug_extended_info;
 
-    // If a file resource has been passed, then write to that file as well
+    // If a file resource has been passed, then write to that file as well.
     if(!is_null($file) && (is_resource($file) && 'file' == get_resource_type($file) || 'stream' == get_resource_type($file)))
         {
         fwrite($file, "{$date_time} {$message}" . PHP_EOL);
@@ -90,23 +93,24 @@ function logScript($message, $file = null)
 
     return;
     }
- 
+
+
 /**
-* Retrieve entries from resource log based on date or references
-* 
-* @param integer   $minref      (Optional) Minimum ref of resource log entry to return (default 0)
-* @param integer   $days       (Optional) Number of days to return. e.g 3 = all results for today, yesterday and the day before. Default = 7 (ignored if minref supplied)
-* @param integer   $maxrecords  (Optional) Maximum number of records to return. Default = all rows (0)
-* 
+* Retrieve entries from resource log based on date or references.
+*
+* @param integer   $minref     (Optional) Minimum ref of resource log entry to return (default 0).
+* @param integer   $days       (Optional) Number of days to return. e.g 3 = all results for today, yesterday and the day before. Default = 7 (ignored if minref supplied).
+* @param integer   $maxrecords (Optional) Maximum number of records to return. Default = all rows (0).
+*
 * @return array
-*/   
+*/
  function resource_log_last_rows($minref = 0, $days = 7, $maxrecords = 0)
     {
     if(!checkperm('v'))
         {
         return array();
         }
-        
+
     $sql = "SELECT date, ref, resource, type, resource_type_field AS field, user, notes, diff, usageoption FROM resource_log WHERE type not in ('l', 't')";
     if($minref > 0)
         {
@@ -116,24 +120,25 @@ function logScript($message, $file = null)
         {
         $sql .= " AND datediff(now(),date)<'" . (int)$days . "'";
         }
-        
+
     if($maxrecords > 0)
         {
         $sql .= " LIMIT " . (int)$maxrecords;
         }
-        
+
     $results = sql_query($sql);
     return $results;
     }
- 
+
+
 /**
-* Get activity log entries from log tables (e.g activity_log, resource_log and collection_log)
-* 
+* Get activity log entries from log tables (e.g activity_log, resource_log and collection_log).
+*
 * @uses sql_query()
-* 
-* @param  string  $search  Search text to filter down results using fuzzy searching
-* @param  integer $offset  Specifies the offset of the first row to return
-* @param  integer $rows  Specifies the maximum number of rows to return
+*
+* @param  string  $search  Search text to filter down results using fuzzy searching.
+* @param  integer $offset  Specifies the offset of the first row to return.
+* @param  integer $rows    Specifies the maximum number of rows to return.
 * @param  array   $where_statements  Where statements for log tables
 *                                    Example of where statements:
 *                                    $where_statements = array(
@@ -141,10 +146,10 @@ function logScript($message, $file = null)
 *                                        'resource_log' => "`resource_log`.`user`='{$actasuser}' AND ",
 *                                        'collection_log' => "`collection_log`.`user`='{$actasuser}' AND ",
 *                                    );
-* @param  string $table  Table name (e.g resource_type_field, user, resource)
-* @param  integer $table_reference  ID of the record in the referred table
-* @param  boolean $count  Switch for if the result should be a single count or the result set
-* 
+* @param  string $table  Table name (e.g resource_type_field, user, resource).
+* @param  integer $table_reference  ID of the record in the referred table.
+* @param  boolean $count  Switch for if the result should be a single count or the result set.
+*
 * @return array
 */
 function get_activity_log($search, $offset, $rows, array $where_statements, $table, $table_reference, $count = false)
@@ -152,12 +157,11 @@ function get_activity_log($search, $offset, $rows, array $where_statements, $tab
     foreach($where_statements as $ws_table => $where_statement)
         {
         $where_var = "where_{$ws_table}_statement";
-
-        $$where_var = $where_statement;
+        $$where_var = $where_statement;                           // <----- Is the double $ correct?
         }
 
     $log_codes = array_values(LOG_CODE_get_all());
-    $when_statements  = "";
+    $when_statements = "";
     foreach($log_codes as $log_code)
         {
         $log_code_escaped = escape_check($log_code);
@@ -171,14 +175,11 @@ function get_activity_log($search, $offset, $rows, array $where_statements, $tab
                 }
 
             $log_code_description = escape_check($GLOBALS['lang']["collectionlog-{$log_code}"]);
-
             $when_statements .= " WHEN ASCII('{$log_code_escaped}') THEN '{$log_code_description}'";
-
             continue;
             }
 
         $log_code_description = escape_check($GLOBALS['lang']["log_code_{$log_code}"]);
-
         $when_statements .= " WHEN ASCII('{$log_code_escaped}') THEN '{$log_code_description}'";
         }
 
@@ -310,22 +311,23 @@ function get_activity_log($search, $offset, $rows, array $where_statements, $tab
         }
     }
 
+
 /**
-* Use resource log to obtain a count of resources downloaded by the specified user in the last X days
-* 
-* @param integer  $userref                        User reference
-* @param integer  $user_dl_days                   The number of days to check the resource log for 
-* 
+* Use resource log to obtain a count of resources downloaded by the specified user in the last X days.
+*
+* @param integer  $userref        User reference.
+* @param integer  $user_dl_days   The number of days to check the resource log for.
+*
 * @return integer  download count
 */
 function get_user_downloads($userref,$user_dl_days)
     {
     $daylimit = (int)$user_dl_days != 0 ? (int)$user_dl_days : 99999;
-    $count = sql_value("SELECT COUNT(DISTINCT resource) value 
+    $count = sql_value("SELECT COUNT(DISTINCT resource) value
         FROM resource_log rl
         WHERE rl.type='d'
         AND rl.user = '" . (int)$userref . "'
         AND TIMESTAMPDIFF(SECOND,date,now()) <=" . $daylimit*60*60*24,0);
-        
+
     return $count;
     }

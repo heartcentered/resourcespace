@@ -1,17 +1,17 @@
 <?php
 /**
  * Helper and rendering function for the configuration pages in the team center
- * 
+ *
  * @package ResourceSpace
  * @subpackage Includes
  */
 
 /**
  * Validate the given field.
- * 
+ *
  * If the field validates, this function will store it in the provided configuration
  * module and key.
- * 
+ *
  * @param string $fieldname Name of field (provided to the render functions)
  * @param string $modulename Module name to store the field in.
  * @param string $modulekey Module key
@@ -20,161 +20,183 @@
  * @param string $pattern If $type is 'regex' the regex pattern to use.
  * @return bool Returns true if the field was stored in the config database.
  */
-function validate_field($fieldname, $modulename, $modulekey, $type, $required=true, $pattern=''){
+function validate_field($fieldname, $modulename, $modulekey, $type, $required = true, $pattern = '')
+    {
     global $errorfields, $lang;
     $value = getvalescaped($fieldname, '');
-    if ($value=='' && $required==true){
-        $errorfields[$fieldname]=$lang['cfg-err-fieldrequired'];
+    if($value == '' && $required == true)
+        {
+        $errorfields[$fieldname] = $lang['cfg-err-fieldrequired'];
         return false;
-    }
-    elseif ($value=='' && $required==false){
-        set_module_config_key($modulename, $modulekey, $value); 
-    }
-    else {
-        switch ($type){
+        }
+    elseif($value == '' && $required == false)
+        {
+        set_module_config_key($modulename, $modulekey, $value);
+        }
+    else
+        {
+        switch ($type)
+            {
             case 'safe':
-                if (!preg_match('/^.+$/', $value)){
+                if (!preg_match('/^.+$/', $value))
+                    {
                     $errorfields[$fieldname] = $lang['cfg-err-fieldsafe'];
                     return false;
-                }
+                    }
                 break;
             case 'float':
-                if (!preg_match('/^[\d]+(\.[\d]*)?$/', $value)){
+                if (!preg_match('/^[\d]+(\.[\d]*)?$/', $value))
+                    {
                     $errorfields[$fieldname] = $lang['cfg-err-fieldnumeric'];
                     return false;
-                }
+                    }
                 break;
             case 'int':
-                if (!preg_match('/^[\d]+$/', $value)){
+                if (!preg_match('/^[\d]+$/', $value))
+                    {
                     $errorfields[$fieldname] = $lang['cfg-err-fieldnumeric'];
                     return false;
-                }
+                    }
                 break;
             case 'email':
-                if (!preg_match('/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i', $value)){
+                if (!preg_match('/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i', $value))
+                    {
                     $errorfields[$fieldname] = $lang['cfg-err-fieldemail'];
                     return false;
-                }
+                    }
                 break;
             case 'regex':
-                if (!preg_match($pattern, $value)){
+                if (!preg_match($pattern, $value))
+                    {
                     $errorfields[$fieldname] = $lang['cfg-err-fieldsafe'];
                     return false;
-                }
+                    }
                 break;
             case 'bool':
-                if (strtolower($value)=='true')
-                    $value=true;
-                elseif (strtolower($value)=='false')
-                    $value=false;
-                else {
+                if (strtolower($value) == 'true')
+                    $value = true;
+                elseif (strtolower($value) == 'false')
+                    $value = false;
+                else
+                    {
                     $errorfields[$fieldname] = $lang['cfg-err-fieldsafe'];
                     return false;
-                }
+                    }
                 break;
+            }
+        set_module_config_key($modulename, $modulekey, $value);
+
+        return true;
         }
-       set_module_config_key($modulename, $modulekey, $value);
-       return true;             
     }
-}
+
+
 /**
  * Renders a select element.
- * 
- * Takes an array of options (as returned from sql_query and returns a valid 
- * select element.  The query must have a column aliased as value and label.  
- * Option groups can be created as well with the optional $groupby parameter.
- * This function retrieves a language field in the form of 
- * $lang['cfg-<fieldname>'] to use for the element label.
- * 
+ *
+ * Takes an array of options (as returned from sql_query and returns a valid select element.  The query must have a
+ * column aliased as value and label.  Option groups can be created as well with the optional $groupby parameter.
+ * This function retrieves a language field in the form of $lang['cfg-<fieldname>'] to use for the element label.
+ *
  * <code>
  * $options = sql_select("SELECT name as label, ref as value FROM resource_types");
- * 
  * render_select_option('myfield', $options, 18);
  * </code>
- * 
+ *
  * @param string $fieldname Name to use for the field.
  * @param string $opt_array Array of options to fill the select with
  * @param mixed $selected If matches value the option is marked as selected
  * @param string $groupby Column to group by
  * @return string HTML output.
  */
-function render_select_option($fieldname, $opt_array, $selected, $groupby=''){
+function render_select_option($fieldname, $opt_array, $selected, $groupby = '')
+    {
     global $errorfields, $lang;
     $output = '';
-    $output .= "<tr><th><label for=\"$fieldname\">".$lang['cfg-'.$fieldname]."</label></th>";
+    $output .= "<tr><th><label for=\"$fieldname\">" . $lang['cfg-' . $fieldname] . "</label></th>";
     $output .= "<td><select name=\"$fieldname\">";
-    if ($groupby!=''){
+    if ($groupby != '')
+        {
         $cur_group = $opt_array[0][$groupby];
         $output .= "<optgroup label=\"$cur_group\">";
-    }
-    foreach ($opt_array as $option){
-        if ($groupby!='' && $cur_group!=$option[$groupby]){
-          $cur_group = $option[$groupby];
-          $output .= "</optgroup><optgroup label=\"$cur_group\">";            
         }
+
+    foreach ($opt_array as $option)
+        {
+        if ($groupby != '' && $cur_group != $option[$groupby])
+            {
+            $cur_group = $option[$groupby];
+            $output .= "</optgroup><optgroup label=\"$cur_group\">";
+            }
         $output .= "<option ";
-        $output .= $option['value']==$selected?'selected="selected" ':'';
+        $output .= $option['value'] == $selected ? 'selected="selected" ' : '';
         $output .= "value=\"{$option['value']}\">{$option['label']}</option>";
-    }
+        }
+
     $output .= '</optgroup>';
-    $output .= isset($errorfields[$fieldname])?'<span class="error">* '.$errorfields[$fieldname].'</span>':'';
+    $output .= isset($errorfields[$fieldname]) ? '<span class="error">* ' . $errorfields[$fieldname] . '</span>' : '';
     $output .= '</td></tr>';
     return $output;
-}
+    }
+
 
 /**
  * Render a yes/no field with the given fieldname.
- * 
+ *
  * This function will use $lang['cfg-<fieldname>'] as the text label for the
  * element.
  * @param string $fieldname Name of field.
  * @param bool $value Current field value
  * @return string HTML Output
  */
-function render_bool_option($fieldname, $value){
+function render_bool_option($fieldname, $value)
+    {
     global $errorfields, $lang;
     $output = '';
-    $output .= "<tr><th><label for=\"$fieldname\">".$lang['cfg-'.$fieldname]."</label></th>";
+    $output .= "<tr><th><label for=\"$fieldname\">" . $lang['cfg-' . $fieldname] . "</label></th>";
     $output .= "<td><select name=\"$fieldname\">";
     $output .= "<option value='true' ";
-    $output .= $value?'selected':'';
+    $output .= $value ? 'selected' : '';
     $output .= ">Yes</option>";
     $output .= "<option value='false' ";
-    $output .= !$value?'selected':'';
+    $output .= !$value ? 'selected' : '';
     $output .= ">No</option></select>";
-    $output .= isset($errorfields[$fieldname])?'<span class="error">* '.$errorfields[$fieldname].'</span>':'';
+    $output .= isset($errorfields[$fieldname]) ? '<span class="error">* ' . $errorfields[$fieldname] . '</span>' : '';
     $output .= "</td></tr>";
     return $output;
-}
+    }
+
 
 /**
  * Renders a text field for a given field name.
- * 
+ *
  * Uses $lang['cfg-<fieldname>'] as the field label.
- * 
+ *
  * @param string $fieldname Name of field
  * @param string $value Current field value
  * @param int $size Size of text field, optional, defaults to 20
  * @param string $units Optional units parameter. Displays to right of text field.
  * @return string HTML Output
  */
-function render_text_option($fieldname, $value, $size=20, $units=''){
+function render_text_option($fieldname, $value, $size = 20, $units = '')
+    {
     global $errorfields, $lang;
+
     if (isset($errorfields[$fieldname]) && isset($_POST[$fieldname]))
         $value = $_POST[$fieldname];
     $output = '';
-    $output .= "<tr><th><label for=\"$fieldname\">".$lang['cfg-'.$fieldname]."</label></th>";
+    $output .= "<tr><th><label for=\"$fieldname\">" . $lang['cfg-' . $fieldname] . "</label></th>";
     $output .= "<td><input type=\"text\" value=\"$value\" size=\"$size\" name=\"$fieldname\"/> $units ";
-    $output .= isset($errorfields[$fieldname])?'<span class="error">* '.$errorfields[$fieldname].'</span>':'';
+    $output .= isset($errorfields[$fieldname]) ? '<span class="error">* ' . $errorfields[$fieldname] . '</span>' : '';
     $output .= "</td></tr>";
     return $output;
 }
 
 
 /**
-* Save/ Update config option
+* Save/Update config option.
 *
-* @param  integer  $user_id      Current user ID. Use NULL for system wide config options
+* @param  integer  $user_id      Current user ID. Use NULL for system wide config options.
 * @param  string   $param_name   Parameter name
 * @param  string   $param_value  Parameter value
 *
@@ -182,32 +204,33 @@ function render_text_option($fieldname, $value, $size=20, $units=''){
 */
 function set_config_option($user_id, $param_name, $param_value)
     {
-    // We do allow for param values to be empty strings or 0 (zero)
+    // We do allow for param values to be empty strings or 0 (zero).
     if(empty($param_name) || is_null($param_value))
         {
         return false;
         }
 
-    // Prepare the value before inserting it
+    // Prepare the value before inserting it.
     $param_value = config_clean($param_value);
     $param_value = escape_check($param_value);
 
     $query = sprintf('
             INSERT INTO user_preferences (
-                                             user,
-                                             parameter,
-                                             `value`
+                                        user,
+                                        parameter,
+                                        `value`
                                          )
                  VALUES (
-                            %s,     # user
-                            \'%s\', # parameter
-                            \'%s\'  # value
+                        %s,     # user
+                        \'%s\', # parameter
+                        \'%s\'  # value
                         );
         ',
         is_null($user_id) ? 'NULL' : '\'' . escape_check($user_id) . '\'',
         escape_check($param_name),
         $param_value
     );
+
     $current_param_value = null;
     if(get_config_option($user_id, $param_name, $current_param_value))
         {
@@ -227,12 +250,13 @@ function set_config_option($user_id, $param_name, $param_value)
             escape_check($param_name)
         );
 
-		if (is_null($user_id))		// only log activity for system changes, i.e. when user not specified
-			{
-			log_activity(null, LOG_CODE_EDITED, $param_value, 'user_preferences', 'value', "parameter='" . escape_check($param_name) . "'", null, $current_param_value);
-			}
+        // Only log activity for system changes, i.e. when user not specified.
+        if (is_null($user_id))
+            {
+            log_activity(null, LOG_CODE_EDITED, $param_value, 'user_preferences', 'value', "parameter='" . escape_check($param_name) . "'", null, $current_param_value);
+            }
 
-		}
+        }
 
     sql_query($query);
 
@@ -241,14 +265,14 @@ function set_config_option($user_id, $param_name, $param_value)
 
 
 /**
-* Get config option from database
-* 
+* Get config option from database.
+*
 * @param  integer  $user_id         Current user ID
 * @param  string   $name            Parameter name
-* @param  string   $returned_value  If a value does exist it will be returned through
-*                                   this parameter which is passed by reference
-* @param  mixed    $default         Optionally used to set a default that may not be the current
-*                                   global setting e.g. for checking admin resource preferences
+* @param  string   $returned_value  If a value does exist it will be returned through this parameter which is passed
+*                                    by reference.
+* @param  mixed    $default         Optionally used to set a default that may not be the current global setting e.g.
+*                                    for checking admin resource preferences.
 *
 * @return boolean
 */
@@ -285,27 +309,28 @@ function get_config_option($user_id, $name, &$returned_value, $default = null)
     return true;
     }
 
-	
+
 /**
-* Get all user refs with a specific configuration option set from database
-* 
-* @param  string  $option         	Parameter name
-* @param  string  $value         	Parameter value
+* Get all user refs with a specific configuration option set from database.
 *
-* @return array 					Array of user  references
+* @param  string  $option     Parameter name
+* @param  string  $value      Parameter value
+*
+* @return array               Array of user  references
 */
-function get_config_option_users($option,$value)
+function get_config_option_users($option, $value)
     {
     $users = sql_array("SELECT user value FROM user_preferences WHERE parameter = '" . escape_check($option). "' AND value='" . escape_check($value) . "'");
-    return $users;   
+    return $users;
     }
+
 
 /**
 * Get config option from database for a specific user or system wide
-* 
-* @param  integer  $user_id           Current user ID. Can also be null to retrieve system wide config options
-* @param  array    $returned_options  If a value does exist it will be returned through
-*                                     this parameter which is passed by reference
+*
+* @param  integer  $user_id           Current user ID. Can also be null to retrieve system wide config options.
+* @param  array    $returned_options  If a value does exist it will be returned through this parameter which is passed
+*                                      by reference.
 * @return boolean
 */
 function get_config_options($user_id, array &$returned_options)
@@ -332,9 +357,7 @@ function get_config_options($user_id, array &$returned_options)
 
 
 /**
-* Process configuration options from database
-* either system wide or user specific by setting
-* the global variable
+* Process configuration options from database either system wide or user specific by setting the global variable.
 *
 * @param int $user_id
 *
@@ -344,7 +367,7 @@ function process_config_options($user_id = null)
     {
     global $user_preferences;
 
-    // If the user doesn't have the ability to set his/her own preferences, then don't load it either
+    // If the user doesn't have the ability to set his/her own preferences, then do not load it either.
     if(!is_null($user_id) && !$user_preferences)
         {
         return;
@@ -358,7 +381,7 @@ function process_config_options($user_id = null)
             {
             $param_value = $config_option['value'];
 
-            // Prepare the value since everything is stored as a string
+            // Prepare the value since everything is stored as a string.
             if((is_numeric($param_value) && '' !== $param_value))
                 {
                 $param_value = (int) $param_value;
@@ -374,10 +397,9 @@ function process_config_options($user_id = null)
 
 /**
  * Utility function to "clean" the passed $config. Cleaning consists of two parts:
- *  *    Suppressing really simple XSS attacks by refusing to allow strings
- *       containing the characters "<script" in upper, lower or mixed case.
- *  *    Unescaping instances of "'" and '"' that have been escaped by the
- *       lovely magic_quotes_gpc facility, if it's on.
+ *  1-Suppressing really simple XSS attacks by refusing to allow strings containing the characters "<script" in upper,
+ *      lower or mixed case.
+ *  2-Unescaping instances of "'" and '"' that have been escaped by the magic_quotes_gpc facility, if it is on.
  *
  * @param $config mixed thing to be cleaned.
  * @return a cleaned version of $config.
@@ -393,7 +415,7 @@ function config_clean($config)
         }
     elseif (is_string($config))
         {
-        if (strpos(strtolower($config),"<script") !== false)
+        if (strpos(strtolower($config), "<script") !== false)
             {
             $config = '';
             }
@@ -403,9 +425,9 @@ function config_clean($config)
 
 
 /**
- * Generate arbitrary html
+ * Generate arbitrary HTML.
  *
- * @param string $content arbitrary HTML 
+ * @param string $content arbitrary HTML
  */
 function config_html($content)
     {
@@ -414,8 +436,7 @@ function config_html($content)
 
 
 /**
- * Return a data structure that will instruct the configuration page generator functions to add
- * arbitrary HTML
+ * Return a data structure that will instruct the configuration page generator functions to add arbitrary HTML.
  *
  * @param string $content
  */
@@ -426,7 +447,7 @@ function config_add_html($content)
 
 
  /**
- * Generate an html text entry or password block
+ * Generate an HTML text entry or password block.
  *
  * @param string $name the name of the text block. Usually the name of the config variable being set.
  * @param string $label the user text displayed to label the text block. Usually a $lang string.
@@ -450,17 +471,14 @@ function config_text_input($name, $label, $current, $password = false, $width = 
         <label for="<?php echo $name; ?>" title="<?php echo $title; ?>"><?php echo $label; ?></label>
     <?php
     if($autosave)
-        {
-        ?>
+        { ?>
         <div class="AutoSaveStatus">
             <span id="AutoSaveStatus-<?php echo $name; ?>" style="display:none;"></span>
-        </div>
-        <?php
+        </div> <?php
         }
 
     if($textarea == false)
-        {
-        ?>
+        { ?>
         <input id="<?php echo $name; ?>"
                name="<?php echo $name; ?>"
                type="<?php echo $password ? 'password' : 'text'; ?>"
@@ -470,8 +488,7 @@ function config_text_input($name, $label, $current, $password = false, $width = 
         <?php
         }
     else
-        {
-        ?>
+        { ?>
         <textarea id="<?php echo $name; ?>" name="<?php echo $name; ?>" style="width:<?php echo $width; ?>px"><?php echo htmlspecialchars($current, ENT_QUOTES); ?></textarea>
         <?php
         }
@@ -481,6 +498,7 @@ function config_text_input($name, $label, $current, $password = false, $width = 
 
     <?php
     }
+
 
 /**
  * Return a data structure that will instruct the configuration page generator functions to
@@ -499,23 +517,23 @@ function config_add_text_input($config_var, $label, $password = false, $width = 
 
 
 /**
-* Generate an HTML input file with its own form
+* Generate an HTML input file with its own form.
 *
 * @param string $name        HTML input file name attribute
 * @param string $label
-* @param string $form_action URL where the form should post to
+* @param string $form_action URL where the form should post to.
 * @param int    $width       Wdidth of the input file HTML tag. Default - 420
 */
 function config_file_input($name, $label, $current, $form_action, $width = 420)
     {
     global $lang,$storagedir;
-    
-    if($current !=='')
-		{ 
-		$missing_file = str_replace('[storage_url]', $storagedir, $current);
-		$pathparts=explode("/",$current);
-		}
-		
+
+    if($current !== '')
+        {
+        $missing_file = str_replace('[storage_url]', $storagedir, $current);
+        $pathparts = explode("/", $current);
+        }
+
     ?>
     <div class="Question" id="question_<?php echo $name; ?>">
         <form method="POST" action="<?php echo $form_action; ?>" enctype="multipart/form-data">
@@ -525,22 +543,19 @@ function config_file_input($name, $label, $current, $form_action, $width = 420)
             </div>
         <?php
         if($current !== '' && $pathparts[1]=="system" && !file_exists($missing_file))
-			{
-			?>
+            { ?>
             <span><?php echo $lang['applogo_does_not_exists']; ?></span>
             <input type="submit" name="clear_<?php echo $name; ?>" value="<?php echo $lang["clearbutton"]; ?>">
             <?php
-			}
+            }
         elseif('' === $current || !get_config_option(null, $name, $current_option) || $current_option === '')
-            {
-            ?>
+            { ?>
             <input type="file" name="<?php echo $name; ?>" style="width:<?php echo $width; ?>px">
             <input type="submit" name="upload_<?php echo $name; ?>" value="<?php echo $lang['upload']; ?>">
             <?php
             }
         else
-            {
-            ?>
+            { ?>
             <span><?php echo htmlspecialchars(str_replace('[storage_url]/', '', $current), ENT_QUOTES); ?></span>
             <input type="submit" name="delete_<?php echo $name; ?>" value="<?php echo $lang['action-delete']; ?>">
             <?php
@@ -553,8 +568,9 @@ function config_file_input($name, $label, $current, $form_action, $width = 420)
     <?php
     }
 
+
 /**
- * Generate colour picker input
+ * Generate colour picker input.
  *
  * @param string $name          HTML input name attribute
  * @param string $label
@@ -564,13 +580,15 @@ function config_file_input($name, $label, $current, $form_action, $width = 420)
  * @param boolean $autosave     Automatically save the value on change
  * @param string on_change_js   JavaScript run onchange of value (useful for "live" previewing of changes)
  */
-function config_colouroverride_input($name, $label, $current, $default, $title=null, $autosave=false, $on_change_js=null, $hidden=false)
+function config_colouroverride_input($name, $label, $current, $default, $title = null, $autosave = false, $on_change_js = null, $hidden = false)
     {
     global $lang;
-    $checked=$current && $current!=$default;
+
+    $checked = $current && $current != $default;
+
+    // This is how it was used on plugins setup page. Makes sense for developers when trying to debug and not much for non-technical users.
     if (is_null($title))
         {
-        // This is how it was used on plugins setup page. Makes sense for developers when trying to debug and not much for non-technical users
         $title = str_replace('%cvn', $name, $lang['plugins-configvar']);
         }
     ?><div class="Question" style="min-height: 1.5em;" id="question_<?php echo $name; ?>" <?php if ($hidden){echo "style=\"display:none;\"";} ?> >
@@ -618,27 +636,27 @@ function config_colouroverride_input($name, $label, $current, $default, $title=n
         </div>
         <div class="clearerleft"></div>
         </div>
-        
+
     <?php
     }
 
+
 /**
-* Return a data structure that will be used to generate the HTML for
-* uploading a file
+* Return a data structure that will be used to generate the HTML for uploading a file.
 *
-* @param string $name        HTML input file name attribute
+* @param string $name        HTML input file name attribute.
 * @param string $label
-* @param string $form_action URL where the form should post to
+* @param string $form_action URL where the form should post to.
 * @param int    $width       Width of the input file HTML tag. Default - 420
 */
 function config_add_file_input($config_var, $label, $form_action, $width = 420)
-    {   
+    {
     return array('file_input', $config_var, $label, $form_action, $width);
     }
 
 
 /**
- * Generate an html single-select + options block
+ * Generate an html single-select + options block.
  *
  * @param string        $name      The name of the select block. Usually the name of the config variable being set.
  * @param string        $label     The user text displayed to label the select block. Usually a $lang string.
@@ -654,13 +672,13 @@ function config_add_file_input($config_var, $label, $form_action, $width = 420)
  * @param boolean       $autosave  Flag to say whether the there should be an auto save message feedback through JS. Default: false
  *                                 Note: onChange event will call AutoSaveConfigOption([option name])
  */
-function config_single_select($name, $label, $current, $choices, $usekeys = true, $width = 420, $title = null, $autosave = false, $on_change_js=null,$hidden=false)
+function config_single_select($name, $label, $current, $choices, $usekeys = true, $width = 420, $title = null, $autosave = false, $on_change_js = null, $hidden = false)
     {
     global $lang;
-    
+
+    // This is how it was used on plugins setup page. Makes sense for developers when trying to debug and not much for non-technical users.
     if(is_null($title))
         {
-        // This is how it was used on plugins setup page. Makes sense for developers when trying to debug and not much for non-technical users
         $title = str_replace('%cvn', $name, $lang['plugins-configvar']);
         }
     ?>
@@ -668,8 +686,7 @@ function config_single_select($name, $label, $current, $choices, $usekeys = true
         <label for="<?php echo $name; ?>" title="<?php echo $title; ?>"><?php echo $label; ?></label>
         <?php
         if($autosave)
-            {
-            ?>
+            { ?>
             <div class="AutoSaveStatus">
                 <span id="AutoSaveStatus-<?php echo $name; ?>" style="display:none;"></span>
             </div>
@@ -695,8 +712,8 @@ function config_single_select($name, $label, $current, $choices, $usekeys = true
 
 
 /**
- * Return a data structure that will instruct the configuration page generator functions to
- * add a single select configuration variable to the setup page.
+ * Return a data structure that will instruct the configuration page generator functions to add a single select
+ *  configuration variable to the setup page.
  *
  * @param string $config_var the name of the configuration variable to be added.
  * @param string $label the user text displayed to label the select block. Usually a $lang string.
@@ -715,7 +732,7 @@ function config_add_single_select($config_var, $label, $choices = '', $usekeys =
 
 
 /**
- * Generate an html boolean select block
+ * Generate an HTML boolean select block.
  *
  * @param string        $name      The name of the select block. Usually the name of the config variable being set.
  * @param string        $label     The user text displayed to label the select block. Usually a $lang string.
@@ -727,7 +744,7 @@ function config_add_single_select($config_var, $label, $choices = '', $usekeys =
  * @param boolean       $autosave  Flag to say whether the there should be an auto save message feedback through JS. Default: false
  *                                 Note: onChange event will call AutoSaveConfigOption([option name])
  */
-function config_boolean_select($name, $label, $current, $choices = '', $width = 420, $title = null, $autosave = false, $on_change_js=null, $hidden=false)
+function config_boolean_select($name, $label, $current, $choices = '', $width = 420, $title = null, $autosave = false, $on_change_js = null, $hidden = false)
     {
     global $lang;
 
@@ -736,9 +753,9 @@ function config_boolean_select($name, $label, $current, $choices = '', $width = 
         $choices = $lang['false-true'];
         }
 
+    // This is how it was used on plugins setup page. Makes sense for developers when trying to debug and not much for non-technical users.
     if(is_null($title))
         {
-        // This is how it was used on plugins setup page. Makes sense for developers when trying to debug and not much for non-technical users
         $title = str_replace('%cvn', $name, $lang['plugins-configvar']);
         }
     ?>
@@ -747,8 +764,7 @@ function config_boolean_select($name, $label, $current, $choices = '', $width = 
 
         <?php
         if($autosave)
-            {
-            ?>
+            { ?>
             <div class="AutoSaveStatus">
                 <span id="AutoSaveStatus-<?php echo $name; ?>" style="display:none;"></span>
             </div>
@@ -769,8 +785,8 @@ function config_boolean_select($name, $label, $current, $choices = '', $width = 
 
 
 /**
- * Return a data structure that will instruct the configuration page generator functions to
- * add a boolean configuration variable to the setup page.
+ * Return a data structure that will instruct the configuration page generator functions to add a boolean
+ *  configuration variable to the setup page.
  *
  * @param string $config_var the name of the configuration variable to be added.
  * @param string $label the user text displayed to label the select block. Usually a $lang string.
@@ -778,52 +794,52 @@ function config_boolean_select($name, $label, $current, $choices = '', $width = 
  *          to array('False', 'True') in the local language.
  * @param integer $width the width of the input field in pixels. Default: 420.
  */
-function config_add_boolean_select($config_var, $label, $choices = '', $width = 420, $title = null, $autosave = false,$on_change_js=null, $hidden=false)
+function config_add_boolean_select($config_var, $label, $choices = '', $width = 420, $title = null, $autosave = false,$on_change_js = null, $hidden = false)
     {
-    return array('boolean_select', $config_var, $label, $choices, $width, $title, $autosave,$on_change_js,$hidden);
+    return array('boolean_select', $config_var, $label, $choices, $width, $title, $autosave, $on_change_js, $hidden);
     }
-	
+
 /**
- * Generate an html checkbox options block
+ * Generate an HTML checkbox options block.
  *
  * @param string $name the name of the checkbox block.
  * @param string $label the user text displayed to label the checkbox block. Usually a $lang string.
  * @param string array $current the current array of selected values for the config variable being set.
  * @param string array $choices the array of choices -- the list of checkboxes. The keys are
  *          used to generate the values of the checkbox, and the values are the checkbox labels the user sees. (But see
- *          $usekeys, below.) 
+ *          $usekeys, below.)
  * @param boolean $usekeys tells whether to use the keys from $choices as the values of the options.
  *          If set to false the values from $choices will be used for both the values of the options
  *          and the text the user sees. Defaulted to true.
- * @param integer $width the width of the input field in pixels. Default: 300. 
- * @param integer $columns the number of columns to use 
+ * @param integer $width the width of the input field in pixels. Default: 300.
+ * @param integer $columns the number of columns to use
  */
-function config_checkbox_select($name, $label, $current, $choices, $usekeys=true, $width=300, $columns=1, $autosave = false,$on_change_js=null, $hidden=false)
+function config_checkbox_select($name, $label, $current, $choices, $usekeys = true, $width = 300, $columns = 1, $autosave = false,$on_change_js = null, $hidden = false)
     {
     global $lang;
-    $currentvalues=explode(",",$current);
-	$wrap = 0;
-	?>
-	<div class="Question" id="question_<?php echo $name; ?>" <?php if ($hidden){echo "style=\"display:none;\"";} ?> >
-	<label for="<?php echo htmlspecialchars($name)?>" ><?php echo htmlspecialchars($label)?></label>
-		<?php
+
+    $currentvalues = explode(",", $current);
+    $wrap = 0;
+    ?>
+    <div class="Question" id="question_<?php echo $name; ?>" <?php if ($hidden){echo "style=\"display:none;\"";} ?> >
+    <label for="<?php echo htmlspecialchars($name)?>" ><?php echo htmlspecialchars($label)?></label>
+        <?php
         if($autosave)
-            {
-            ?>
+            { ?>
             <div class="AutoSaveStatus">
                 <span id="AutoSaveStatus-<?php echo $name; ?>" style="display:none;"></span>
             </div>
             <?php
             }
         ?>
-     
+
         <table cellpadding=2 cellspacing=0>
             <tr>
         <?php
         foreach($choices as $key => $choice)
-			{
-			$value=$usekeys?$key:$choice;
-            $wrap++;
+            {
+            $value = $usekeys ? $key : $choice;
+            ++$wrap;
             if($wrap > $columns)
                 {
                 $wrap = 1;
@@ -838,14 +854,14 @@ function config_checkbox_select($name, $label, $current, $choices, $usekeys=true
                        name="<?php echo $name; ?>"
                        value="<?php echo $value; ?>"
                     <?php
-					if($autosave) { ?> onChange="<?php echo $on_change_js; ?>AutoSaveConfigOption('<?php echo $name; ?>');"<?php }
+                    if($autosave) { ?> onChange="<?php echo $on_change_js; ?>AutoSaveConfigOption('<?php echo $name; ?>');"<?php }
                     if(in_array($value, $currentvalues))
                         {
                         ?>
                         checked
                         <?php
-                        }?>
-					>
+                        } ?>
+                    >
             </td>
             <td><?php echo htmlspecialchars(i18n_get_translated($choice)); ?>&nbsp;</td>
             <?php
@@ -854,9 +870,9 @@ function config_checkbox_select($name, $label, $current, $choices, $usekeys=true
             </tr>
         </table>
         <div class="clearerleft"></div>
-  </div>
-  
-<?php
+    </div>
+
+    <?php
     }
 
 /**
@@ -873,17 +889,18 @@ function config_checkbox_select($name, $label, $current, $choices, $usekeys=true
  *          and the text the user sees. Defaulted to true.
  * @param integer $width the width of the input field in pixels. Default: 300.
  */
-function config_add_checkbox_select($config_var, $label, $choices, $usekeys=true, $width=300, $columns=1, $autosave = false, $on_change_js=null, $hidden=false)
+function config_add_checkbox_select($config_var, $label, $choices, $usekeys=true, $width = 300, $columns = 1, $autosave = false, $on_change_js = null, $hidden = false)
     {
     return array('checkbox_select', $config_var, $label, $choices, $usekeys, $width, $columns, $autosave, $on_change_js, $hidden);
     }
 
 
-function config_add_colouroverride_input($config_var, $label='', $default='', $title='', $autosave=false, $on_change_js=null, $hidden=false)
+function config_add_colouroverride_input($config_var, $label = '', $default = '', $title = '', $autosave = false, $on_change_js = null, $hidden = false)
     {
     return array('colouroverride_input', $config_var, $label, $default, $title, $autosave, $on_change_js, $hidden);
     }
-    
+
+
 /**
  * Return a data structure that will instruct the configuration page generator functions to
  * add a single RS field-type select configuration variable to the setup page.
@@ -891,17 +908,17 @@ function config_add_colouroverride_input($config_var, $label='', $default='', $t
  * @param string $config_var the name of the configuration variable to be added.
  * @param string $label the user text displayed to label the select block. Usually a $lang string.
  * @param integer $width the width of the input field in pixels. Default: 300.
- * @param integer $rtype optional to specify a resource type to get fields for 
+ * @param integer $rtype optional to specify a resource type to get fields for
  * @param integer array $ftypes an array of field types e.g. (4,6,10) will return only fields of a date type
  */
-function config_add_single_ftype_select($config_var, $label, $width=300, $rtype=false, $ftypes=array(),$autosave=false)
+function config_add_single_ftype_select($config_var, $label, $width = 300, $rtype = false, $ftypes = array(),$autosave = false)
     {
     return array('single_ftype_select', $config_var, $label, $width, $rtype, $ftypes,$autosave);
     }
-    
+
 
 /**
- * Generate an html single-select + options block for selecting one of the RS field types. The
+ * Generate an HTML single-select + options block for selecting one of the RS field types. The
  * selected field type is posted as the value of the "ref" column of the selected field type.
  *
  * @param string $name the name of the select block. Usually the name of the config variable being set.
@@ -909,108 +926,109 @@ function config_add_single_ftype_select($config_var, $label, $width=300, $rtype=
  * @param integer $current the current value of the config variable being set
  * @param integer $width the width of the input field in pixels. Default: 300.
  */
-function config_single_ftype_select($name, $label, $current, $width=300, $rtype=false, $ftypes=array(), $autosave = false)
+function config_single_ftype_select($name, $label, $current, $width=300, $rtype = false, $ftypes = array(), $autosave = false)
     {
     global $lang;
-	$fieldtypefilter="";
-	if(count($ftypes)>0)
-		{
-		$fieldtypefilter = " type in ('" . implode("','", $ftypes) . "')";
-		}
-		
-    if($rtype===false){
-    	$fields=sql_query('select * from resource_type_field ' .  (($fieldtypefilter=="")?'':' where ' . $fieldtypefilter) . ' order by title, name');
-    }
-    else{
-    	$fields=sql_query("select * from resource_type_field where resource_type='$rtype' " .  (($fieldtypefilter=="")?"":" and " . $fieldtypefilter) . "order by title, name");
-    }
-?>
-  <div class="Question">
-    <label for="<?php echo $name?>" title="<?php echo str_replace('%cvn', $name, $lang['plugins-configvar'])?>"><?php echo $label?></label>
-    
-     <?php
-    if($autosave)
+
+    $fieldtypefilter = "";
+    if(count($ftypes) > 0)
         {
-        ?>
-        <div class="AutoSaveStatus">
-            <span id="AutoSaveStatus-<?php echo $name; ?>" style="display:none;"></span>
-        </div>
+        $fieldtypefilter = " type in ('" . implode("','", $ftypes) . "')";
+        }
+
+    if($rtype === false)
+        {
+        $fields = sql_query('SELECT * FROM resource_type_field ' .  (($fieldtypefilter=="")?'':' WHERE ' . $fieldtypefilter) . ' ORDER BY title, name');
+        }
+    else
+        {
+        $fields = sql_query("SELECT * FROM resource_type_field WHERE resource_type='$rtype' " .  (($fieldtypefilter=="")?"":" AND " . $fieldtypefilter) . "ORDER BY title, name");
+        }
+    ?>
+    <div class="Question">
+        <label for="<?php echo $name?>" title="<?php echo str_replace('%cvn', $name, $lang['plugins-configvar'])?>"><?php echo $label?></label>
+
         <?php
-        }
-        ?>
-    <select name="<?php echo $name?>" id="<?php echo $name?>" style="width:<?php echo $width ?>px"
-    <?php if($autosave) { ?> onChange="AutoSaveConfigOption('<?php echo $name; ?>');"<?php } ?>>
-    <option value="" <?php echo (($current=="")?' selected':'') ?>></option>
-<?php
-    foreach($fields as $field)
-        {
-        echo '    <option value="'. $field['ref'] . '"' . (($current==$field['ref'])?' selected':'') . '>' . lang_or_i18n_get_translated($field['title'],'fieldtitle-') . '</option>';
-        }
-?>
-    </select>
-  <div class="clearerleft"></div>
-  </div>
+        if($autosave)
+            { ?>
+            <div class="AutoSaveStatus">
+                <span id="AutoSaveStatus-<?php echo $name; ?>" style="display:none;"></span>
+            </div>
+            <?php
+            }
+            ?>
+        <select name="<?php echo $name?>" id="<?php echo $name?>" style="width:<?php echo $width ?>px"
+        <?php if($autosave) { ?> onChange="AutoSaveConfigOption('<?php echo $name; ?>');"<?php } ?>>
+            <option value="" <?php echo (($current=="")?' selected':'') ?>></option>
+            <?php
+            foreach($fields as $field)
+                {
+                echo '    <option value="'. $field['ref'] . '"' . (($current==$field['ref'])?' selected':'') . '>' . lang_or_i18n_get_translated($field['title'],'fieldtitle-') . '</option>';
+                }
+            ?>
+            </select>
+        <div class="clearerleft"></div>
+    </div>
 <?php
     }
 
+
 /**
-* Generate Javascript function used for auto saving individual config options
+* Generate JavaScript function used for auto saving individual config options.
 *
-* @param string $post_url URL to where the data will be posted
+* @param string $post_url URL to where the data will be posted.
 */
 function config_generate_AutoSaveConfigOption_function($post_url)
     {
     global $lang;
     ?>
-    
     <script>
-    function AutoSaveConfigOption(option_name)
-        {
-        jQuery('#AutoSaveStatus-' + option_name).html('<?php echo $lang["saving"]; ?>');
-        jQuery('#AutoSaveStatus-' + option_name).show();
+        function AutoSaveConfigOption(option_name)
+            {
+            jQuery('#AutoSaveStatus-' + option_name).html('<?php echo $lang["saving"]; ?>');
+            jQuery('#AutoSaveStatus-' + option_name).show();
 
-        if (jQuery('input[name=' + option_name + ']').is(':checkbox')) {
-            var option_value = jQuery('input[name=' + option_name + ']:checked').map(function(){
-            return jQuery(this).val();
-          }).get().toString();
-        
-        }
-        
-        else {
-            var option_value = jQuery('#' + option_name).val();
-        }
-        
-        var post_url  = '<?php echo $post_url; ?>';
-        var post_data = {
-            ajax: true,
-            autosave: true,
-            autosave_option_name: option_name,
-            autosave_option_value: option_value,
-            <?php echo generateAjaxToken($post_url); ?>
-        };
+            if (jQuery('input[name=' + option_name + ']').is(':checkbox')) {
+                var option_value = jQuery('input[name=' + option_name + ']:checked').map(function(){
+                return jQuery(this).val();
+              }).get().toString();
 
-        jQuery.post(post_url, post_data, function(response) {
+            }
 
-            if(response.success === true)
-                {
-                jQuery('#AutoSaveStatus-' + option_name).html('<?php echo $lang["saved"]; ?>');
-                jQuery('#AutoSaveStatus-' + option_name).fadeOut('slow');
-                }
-            else if(response.success === false && response.message && response.message.length > 0)
-                {
-                jQuery('#AutoSaveStatus-' + option_name).html('<?php echo $lang["save-error"]; ?> ' + response.message);
-                }
-            else
-                {
-                jQuery('#AutoSaveStatus-' + option_name).html('<?php echo $lang["save-error"]; ?>');
-                }
+            else {
+                var option_value = jQuery('#' + option_name).val();
+            }
 
-        }, 'json');
+            var post_url  = '<?php echo $post_url; ?>';
+            var post_data = {
+                ajax: true,
+                autosave: true,
+                autosave_option_name: option_name,
+                autosave_option_value: option_value,
+                <?php echo generateAjaxToken($post_url); ?>
+            };
 
-        return true;
-        }
+            jQuery.post(post_url, post_data, function(response) {
+
+                if(response.success === true)
+                    {
+                    jQuery('#AutoSaveStatus-' + option_name).html('<?php echo $lang["saved"]; ?>');
+                    jQuery('#AutoSaveStatus-' + option_name).fadeOut('slow');
+                    }
+                else if(response.success === false && response.message && response.message.length > 0)
+                    {
+                    jQuery('#AutoSaveStatus-' + option_name).html('<?php echo $lang["save-error"]; ?> ' + response.message);
+                    }
+                else
+                    {
+                    jQuery('#AutoSaveStatus-' + option_name).html('<?php echo $lang["save-error"]; ?>');
+                    }
+
+            }, 'json');
+
+            return true;
+            }
     </script>
-    
     <?php
     }
 
@@ -1021,7 +1039,7 @@ function config_process_file_input(array $page_def, $file_location, $redirect_lo
 
     $file_server_location = $storagedir . '/' . $file_location;
 
-    // Make sure there is a target location
+    // Make sure there is a target location.
     if(!(file_exists($file_server_location) && is_dir($file_server_location)))
         {
         mkdir($file_server_location, 0777, true);
@@ -1048,38 +1066,39 @@ function config_process_file_input(array $page_def, $file_location, $redirect_lo
                 if(file_exists($delete_filename))
                     {
                     unlink($delete_filename);
-                    hook("configdeletefilesuccess",'',array($delete_filename));
+                    hook("configdeletefilesuccess", '', array($delete_filename));
                     }
                 set_config_option(null, $config_name, '');
                 $redirect = true;
                 }
             }
+
         // CLEAR
         if(getval('clear_' . $config_name, '') !== '' && enforcePostRequest(false))
-			{
-			if(get_config_option(null, $config_name, $missing_file))
+            {
+            if(get_config_option(null, $config_name, $missing_file))
                 {
-				$missing_file = str_replace('[storage_url]' . '/' . $file_location, $file_server_location, $missing_file);
-				 if(!file_exists($missing_file))
-					{
-					set_config_option(null, $config_name, '');
+                $missing_file = str_replace('[storage_url]' . '/' . $file_location, $file_server_location, $missing_file);
+                 if(!file_exists($missing_file))
+                    {
+                    set_config_option(null, $config_name, '');
 
-					$redirect = true;
-					}
-				}
-			}
+                    $redirect = true;
+                    }
+                }
+            }
 
         // UPLOAD
         if(getval('upload_' . $config_name, '') !== '' && enforcePostRequest(false))
             {
             if(isset($_FILES[$config_name]['tmp_name']) && is_uploaded_file($_FILES[$config_name]['tmp_name']))
                 {
-                $uploaded_file_pathinfo  = pathinfo($_FILES[$config_name]['name']);
+                $uploaded_file_pathinfo = pathinfo($_FILES[$config_name]['name']);
                 $uploaded_file_extension = $uploaded_file_pathinfo['extension'];
-                $uploaded_filename       = sprintf('%s/%s.%s', $file_server_location, $config_name, $uploaded_file_extension);
-                // We add a placeholder for storage_url so we can reach the file easily 
-                // without storing the full path in the database
-                $saved_filename          = sprintf('[storage_url]/%s/%s.%s', $file_location, $config_name, $uploaded_file_extension);
+                $uploaded_filename = sprintf('%s/%s.%s', $file_server_location, $config_name, $uploaded_file_extension);
+                // We add a placeholder for storage_url so we can reach the file easily without storing the full path
+                // in the database.
+                $saved_filename = sprintf('[storage_url]/%s/%s.%s', $file_location, $config_name, $uploaded_file_extension);
 
                 if(in_array($uploaded_file_extension, $banned_extensions))
                     {
@@ -1095,7 +1114,7 @@ function config_process_file_input(array $page_def, $file_location, $redirect_lo
             if(isset($uploaded_filename) && set_config_option(null, $config_name, $saved_filename))
                 {
                 $redirect = true;
-                hook("configuploadfilesuccess",'',array($uploaded_filename));
+                hook("configuploadfilesuccess", '', array($uploaded_filename));
                 }
             }
         }
@@ -1108,44 +1127,43 @@ function config_process_file_input(array $page_def, $file_location, $redirect_lo
 
 
 /**
-* Generates HTML foreach element found in the page definition
-* 
-* @param array $page_def Array of all elements for which we need to generate HTML
+* Generates HTML foreach element found in the page definition.
+*
+* @param array $page_def Array of all elements for which we need to generate HTML.
 */
 function config_generate_html(array $page_def)
     {
-    global $lang,$baseurl;
-    $included_colour_picker_library=false;
+    global $lang, $baseurl;
+
+    $included_colour_picker_library = false;
 
     foreach($page_def as $def)
         {
-        if(!isset($def[0])){continue;}
+        if(!isset($def[0]))
+            {
+            continue;
+            }
+
         switch($def[0])
             {
             case 'html':
                 config_html($def[1]);
                 break;
-
             case 'text_input':
                 config_text_input($def[1], $def[2], $GLOBALS[$def[1]], $def[3], $def[4], $def[5], $def[6], $def[7], $def[8]);
                 break;
-
             case 'file_input':
                 config_file_input($def[1], $def[2], $GLOBALS[$def[1]], $def[3], $def[4]);
                 break;
-
             case 'boolean_select':
                 config_boolean_select($def[1], $def[2], $GLOBALS[$def[1]], $def[3], $def[4], $def[5], $def[6], $def[7], $def[8]);
                 break;
-
             case 'single_select':
                 config_single_select($def[1], $def[2], $GLOBALS[$def[1]], $def[3], $def[4], $def[5], $def[6], $def[7], $def[8], $def[9]);
                 break;
-			
-			 case 'checkbox_select':
+            case 'checkbox_select':
                 config_checkbox_select($def[1], $def[2], $GLOBALS[$def[1]], $def[3], $def[4], $def[5], $def[6], $def[7], $def[8], $def[9]);
                 break;
-
             case 'colouroverride_input':
                 if (!$included_colour_picker_library)
                     {
@@ -1168,13 +1186,13 @@ function config_generate_html(array $page_def)
 
 
 /**
-* Merge all non image configurations
+* Merge all non image configurations.
 *
 * @return array Returns merged array of non image configurations.
 */
 function config_merge_non_image_types()
     {
-    global $non_image_types,$ffmpeg_supported_extensions,$unoconv_extensions,$ghostscript_extensions;
+    global $non_image_types, $ffmpeg_supported_extensions, $unoconv_extensions, $ghostscript_extensions;
 
     return array_unique(
         array_map(
@@ -1185,6 +1203,7 @@ function config_merge_non_image_types()
                 $unoconv_extensions,
                 $ghostscript_extensions)));
     }
+
 
 function get_header_image($full = false)
     {
@@ -1198,13 +1217,12 @@ function get_header_image($full = false)
             // Set via System Config page?
             if (substr($header_img_src, 0, 13) == '[storage_url]')
                 {
-                // Parse and replace the storage URL
+                // Parse and replace the storage URL.
                 $header_img_src = str_replace('[storage_url]', $storageurl, $header_img_src);
                 }
             else
                 {
-                // Set via config.php
-                // if image source already has the baseurl short, then remove it and add it here
+                // Set via config.php, if image source already has the baseurl short, then remove it and add it here.
                 if(substr($header_img_src, 0, 1) === '/')
                     {
                     $header_img_src = substr($header_img_src, 1);
@@ -1218,33 +1236,34 @@ function get_header_image($full = false)
                 }
             }
         }
-    else 
+    else
         {
         $header_img_src = $baseurl.'/gfx/titles/title.svg';
         }
-        
+
     return $header_img_src;
     }
 
+
 /**
-* Used to block deletion of 'core' fields. Any variable added to the $corefields array will be checked before a field is deleted and if the field is referenced by one of these core variables the deletion will be blocked
-* 
+* Used to block deletion of 'core' fields. Any variable added to the $corefields array will be checked before a field is deleted and if the field is referenced by one of these core variables the deletion will be blocked.
+*
 * @param string $source Optional origin of variables e.g. 'Transform plugin'
 * @param array $varnames Array of variable names
 *
 * @return void
 */
-function config_register_core_fieldvars($source="BASE", $varnames=array())
+function config_register_core_fieldvars($source = "BASE", $varnames = array())
     {
     global $corefields;
     if(!isset($corefields[$source]))
         {
         $corefields[$source] = array();
-        }    
-    
+        }
+
     foreach($varnames as $varname)
         {
-        if(preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/',$varname))
+        if(preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $varname))
             {
             $corefields[$source][] = $varname;
             }

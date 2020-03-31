@@ -1,9 +1,11 @@
 <?php
+// Annotation Functions
+
 /**
-* Get annotation by ID
-* 
+* Get annotation by ID.
+*
 * @param integer $ref Annotation ID
-* 
+*
 * @return array
 */
 function getAnnotation($ref)
@@ -14,7 +16,6 @@ function getAnnotation($ref)
         }
 
     $ref = escape_check($ref);
-
     $return = sql_query("SELECT * FROM annotation WHERE ref = '{$ref}'");
 
     if(0 < count($return))
@@ -27,16 +28,16 @@ function getAnnotation($ref)
 
 
 /**
-* General annotations search functionality
-* 
+* General annotations search functionality.
+*
 * @uses escape_check()
 * @uses sql_query()
-* 
+*
 * @param integer $resource
 * @param integer $resource_type_field
 * @param integer $user
 * @param integer $page
-* 
+*
 * @return array
 */
 function getAnnotations($resource = 0, $resource_type_field = 0, $user = 0, $page = 0)
@@ -46,11 +47,11 @@ function getAnnotations($resource = 0, $resource_type_field = 0, $user = 0, $pag
         return array();
         }
 
-    $resource            = escape_check($resource);
+    $resource = escape_check($resource);
     $resource_type_field = escape_check($resource_type_field);
-    $user                = escape_check($user);
-    $page                = escape_check($page);
-    $sql_where_clause    = '';
+    $user = escape_check($user);
+    $page = escape_check($page);
+    $sql_where_clause = '';
 
     if(0 < $resource)
         {
@@ -98,14 +99,14 @@ function getAnnotations($resource = 0, $resource_type_field = 0, $user = 0, $pag
 
 /**
 * Get number of annotations available for a resource.
-* 
-* Note: multi page resources will show the total number (ie. all pages)
-* 
+*
+* Note: multi page resources will show the total number (ie. all pages).
+*
 * @uses escape_check()
 * @uses sql_value()
-* 
+*
 * @param integer $resource Resource ID
-* 
+*
 * @return integer
 */
 function getResourceAnnotationsCount($resource)
@@ -122,11 +123,11 @@ function getResourceAnnotationsCount($resource)
 
 
 /**
-* Get annotations for a specific resource
-* 
+* Get annotations for a specific resource.
+*
 * @param integer $resource Resource ID
 * @param integer $page     Page number of a document. Non documents will have 0
-* 
+*
 * @return array
 */
 function getResourceAnnotations($resource, $page = 0)
@@ -137,7 +138,7 @@ function getResourceAnnotations($resource, $page = 0)
         }
 
     $resource = escape_check($resource);
-    $page     = escape_check($page);
+    $page = escape_check($page);
 
     $sql_page_filter = 'AND `page` IS NULL';
     if(0 < $page)
@@ -150,12 +151,11 @@ function getResourceAnnotations($resource, $page = 0)
 
 
 /**
-* Create an array of Annotorious annotation objects which can be JSON encoded and passed 
-* directly to Annotorious
-* 
+* Create an array of Annotorious annotation objects which can be JSON encoded and passed directly to Annotorious.
+*
 * @param integer $resource Resource ID
 * @param integer $page     Page number of a document
-* 
+*
 * @return array
 */
 function getAnnotoriousResourceAnnotations($resource, $page = 0)
@@ -165,37 +165,31 @@ function getAnnotoriousResourceAnnotations($resource, $page = 0)
     $annotations = array();
 
     /*
-    Build an annotations array of Annotorious annotation objects
-
+    Build an annotations array of Annotorious annotation objects.
     IMPORTANT: until ResourceSpace will have text fields implemented as nodes, text should be left blank.
-    
-    NOTE: src attribute is generated per resource (dummy source) to avoid issues when source is
-    loaded from download.php
+    NOTE: src attribute is generated per resource (dummy source) to avoid issues when source is loaded from download.php
     */
     foreach(getResourceAnnotations($resource, $page) as $annotation)
         {
         $annotations[] = array(
-                'src'    => "{$baseurl}/annotation/resource/{$resource}",
-                'text'   => '',
-                'shapes' => array(
-                    array(
-                        'type'     => 'rect',
-                        'geometry' => array(
-                            'x'      => (float) $annotation['x'],
-                            'y'      => (float) $annotation['y'],
-                            'width'  => (float) $annotation['width'],
-                            'height' => (float) $annotation['height'],
-                        )
-                    )
-                ),
-                'editable' => annotationEditable($annotation),
+            'src' => "{$baseurl}/annotation/resource/{$resource}",
+            'text' => '',
+            'shapes' => array(array(
+            'type' => 'rect',
+            'geometry' => array(
+                'x' => (float) $annotation['x'],
+                'y' => (float) $annotation['y'],
+                    'width' => (float) $annotation['width'],
+                    'height' => (float) $annotation['height'],
+                ))),
+            'editable' => annotationEditable($annotation),
 
-                // Custom ResourceSpace properties for Annotation object
-                'ref'                 => (int) $annotation['ref'],
-                'resource'            => (int) $annotation['resource'],
-                'resource_type_field' => (int) $annotation['resource_type_field'],
-                'page'                => (int) $annotation['page'],
-                'tags'                => getAnnotationTags($annotation),
+            // Custom ResourceSpace properties for Annotation object.
+            'ref' => (int) $annotation['ref'],
+            'resource' => (int) $annotation['resource'],
+            'resource_type_field' => (int) $annotation['resource_type_field'],
+            'page' => (int) $annotation['page'],
+            'tags' => getAnnotationTags($annotation),
             );
         }
 
@@ -204,12 +198,12 @@ function getAnnotoriousResourceAnnotations($resource, $page = 0)
 
 
 /**
-* Check if an annotation can be editable (add/ edit/ remove) by the user
-* 
+* Check if an annotation can be editable (add/edit/remove) by the user.
+*
 * @uses checkPermission_anonymoususer()
-* 
+*
 * @param array $annotation
-* 
+*
 * @return boolean
 */
 function annotationEditable(array $annotation)
@@ -221,7 +215,7 @@ function annotationEditable(array $annotation)
         return false;
         }
 
-    // Anonymous users cannot edit by default. They can only edit if they are allowed CRUD operations
+    // Anonymous users cannot edit by default. They can only edit if they are allowed CRUD operations.
     if(checkPermission_anonymoususer())
         {
         return $annotate_crud_anonymous && $userref == $annotation['user'];
@@ -232,41 +226,40 @@ function annotationEditable(array $annotation)
 
 
 /**
-* Get all tags of an annotation. Checks if a tag is attached to the resource,
-* allowing the user to search by it which is represented by the virtual column
-* "tag_searchable"
-* 
+* Get all tags of an annotation. Checks if a tag is attached to the resource, allowing the user to search by it which
+* is represented by the virtual column "tag_searchable".
+*
 * @param array $annotation
-* 
+*
 * @return array
 */
 function getAnnotationTags(array $annotation)
     {
-    $resource_ref   = escape_check($annotation['resource']);
+    $resource_ref = escape_check($annotation['resource']);
     $annotation_ref = escape_check($annotation['ref']);
 
     return sql_query("
-            SELECT *,
-                   (SELECT 'yes' FROM resource_node WHERE resource = '{$resource_ref}' AND node = ref) AS tag_searchable
-              FROM node AS n
-             WHERE ref IN (SELECT node FROM annotation_node WHERE annotation = '{$annotation_ref}');
-        ");
+        SELECT *,
+            (SELECT 'yes' FROM resource_node WHERE resource = '{$resource_ref}' AND node = ref) AS tag_searchable
+        FROM node AS n
+        WHERE ref IN (SELECT node FROM annotation_node WHERE annotation = '{$annotation_ref}');
+    ");
     }
 
 
 /**
-* Delete annotation
-* 
+* Delete annotation.
+*
 * @see getAnnotation()
-* 
+*
 * @uses annotationEditable()
 * @uses getAnnotationTags()
 * @uses delete_resource_nodes()
 * @uses db_begin_transaction()
 * @uses db_end_transaction()
-* 
+*
 * @param array $annotation Annotation array as returned by getAnnotation()
-* 
+*
 * @return boolean
 */
 function deleteAnnotation(array $annotation)
@@ -293,7 +286,6 @@ function deleteAnnotation(array $annotation)
 
     sql_query("DELETE FROM annotation_node WHERE annotation = '{$annotation_ref}'");
     sql_query("DELETE FROM annotation WHERE ref = '{$annotation_ref}'");
-
     db_end_transaction("deleteAnnotation");
 
     return true;
@@ -301,12 +293,11 @@ function deleteAnnotation(array $annotation)
 
 
 /**
-* Create new annotations based on Annotorious annotation
-* 
+* Create new annotations based on Annotorious annotation.
 * NOTE: Annotorious annotation shape is an array but at the moment they use only the first shape found
-* 
+*
 * @param array $annotation
-* 
+*
 * @return boolean|integer Returns false on failure OR the ref of the newly created annotation
 */
 function createAnnotation(array $annotation)
@@ -318,17 +309,17 @@ function createAnnotation(array $annotation)
         return false;
         }
 
-    // Annotorious annotation
-    $x      = escape_check($annotation['shapes'][0]['geometry']['x']);
-    $y      = escape_check($annotation['shapes'][0]['geometry']['y']);
+    // Annotorious annotation.
+    $x = escape_check($annotation['shapes'][0]['geometry']['x']);
+    $y = escape_check($annotation['shapes'][0]['geometry']['y']);
     $width  = escape_check($annotation['shapes'][0]['geometry']['width']);
     $height = escape_check($annotation['shapes'][0]['geometry']['height']);
 
-    // ResourceSpace specific properties
-    $resource            = escape_check($annotation['resource']);
+    // ResourceSpace specific properties.
+    $resource = escape_check($annotation['resource']);
     $resource_type_field = escape_check($annotation['resource_type_field']);
-    $tags                = (isset($annotation['tags']) ? $annotation['tags'] : array());
-    $page                = (isset($annotation['page']) && 0 < $annotation['page'] ? '\'' . escape_check($annotation['page']) . '\'' : 'NULL');
+    $tags = (isset($annotation['tags']) ? $annotation['tags'] : array());
+    $page = (isset($annotation['page']) && 0 < $annotation['page'] ? '\'' . escape_check($annotation['page']) . '\'' : 'NULL');
 
     $query = "INSERT INTO annotation (resource, resource_type_field, user, x, y, width, height, page)
                    VALUES ('{$resource}', '{$resource_type_field}', '{$userref}', '{$x}', '{$y}', '{$width}', '{$height}', {$page})";
@@ -341,11 +332,10 @@ function createAnnotation(array $annotation)
         return false;
         }
 
-    // Prepare tags before association by adding new nodes to 
-    // dynamic keywords list (if permissions allow it)
+    // Prepare tags before association by adding new nodes to dynamic keywords list if permissions allow it.
     $prepared_tags = prepareTags($tags);
 
-    // Add any tags associated with it
+    // Add any tags associated with it.
     if(0 < count($tags))
         {
         addAnnotationNodes($annotation_ref, $prepared_tags);
@@ -357,8 +347,8 @@ function createAnnotation(array $annotation)
 
 
 /**
-* Update annotation and its tags if needed
-* 
+* Update annotation and its tags if needed.
+*
 * @uses annotationEditable()
 * @uses getAnnotationTags()
 * @uses delete_resource_nodes()
@@ -366,9 +356,9 @@ function createAnnotation(array $annotation)
 * @uses add_resource_nodes()
 * @uses db_begin_transaction()
 * @uses db_end_transaction()
-* 
+*
 * @param array $annotation
-* 
+*
 * @return boolean
 */
 function updateAnnotation(array $annotation)
@@ -380,18 +370,18 @@ function updateAnnotation(array $annotation)
 
     global $userref;
 
-    // Annotorious annotation
-    $x                   = escape_check($annotation['shapes'][0]['geometry']['x']);
-    $y                   = escape_check($annotation['shapes'][0]['geometry']['y']);
-    $width               = escape_check($annotation['shapes'][0]['geometry']['width']);
-    $height              = escape_check($annotation['shapes'][0]['geometry']['height']);
+    // Annotorious annotation.
+    $x = escape_check($annotation['shapes'][0]['geometry']['x']);
+    $y = escape_check($annotation['shapes'][0]['geometry']['y']);
+    $width = escape_check($annotation['shapes'][0]['geometry']['width']);
+    $height = escape_check($annotation['shapes'][0]['geometry']['height']);
 
-    // ResourceSpace specific properties
-    $annotation_ref      = escape_check($annotation['ref']);
-    $resource            = escape_check($annotation['resource']);
+    // ResourceSpace specific properties.
+    $annotation_ref = escape_check($annotation['ref']);
+    $resource = escape_check($annotation['resource']);
     $resource_type_field = escape_check($annotation['resource_type_field']);
-    $tags                = (isset($annotation['tags']) ? $annotation['tags'] : array());
-    $page                = (isset($annotation['page']) && 0 < $annotation['page'] ? '\'' . escape_check($annotation['page']) . '\'' : 'NULL');
+    $tags = (isset($annotation['tags']) ? $annotation['tags'] : array());
+    $page = (isset($annotation['page']) && 0 < $annotation['page'] ? '\'' . escape_check($annotation['page']) . '\'' : 'NULL');
 
     $update_query = "
         UPDATE annotation
@@ -406,7 +396,7 @@ function updateAnnotation(array $annotation)
          WHERE ref = '{$annotation_ref}'";
     sql_query($update_query);
 
-    // Delete existing associations
+    // Delete existing associations.
     $nodes_to_remove = array();
     foreach(getAnnotationTags($annotation) as $tag)
         {
@@ -421,14 +411,13 @@ function updateAnnotation(array $annotation)
         }
     sql_query("DELETE FROM annotation_node WHERE annotation = '{$annotation_ref}'");
 
-    // Add any tags associated with this annotation
+    // Add any tags associated with this annotation.
     if(0 < count($tags))
         {
-        // Prepare tags before association by adding new nodes to 
-        // dynamic keywords list (if permissions allow it)
+        // Prepare tags before association by adding new nodes to dynamic keywords list if permissions allow it.
         $prepared_tags = prepareTags($tags);
 
-        // Add new associations
+        // Add new associations.
         addAnnotationNodes($annotation_ref, $prepared_tags);
         add_resource_nodes($resource, array_column($prepared_tags, 'ref'), false);
         }
@@ -440,11 +429,11 @@ function updateAnnotation(array $annotation)
 
 
 /**
-* Add relations between annotation and nodes
-* 
+* Add relations between annotation and nodes.
+*
 * @param integer $annotation_ref
 * @param array   $nodes
-* 
+*
 * @return boolean
 */
 function addAnnotationNodes($annotation_ref, array $nodes)
@@ -468,17 +457,17 @@ function addAnnotationNodes($annotation_ref, array $nodes)
 
 
 /**
-* Utility function which allows annotation tags to be prepared (i.e make sure they are all valid nodes)
-* before creating associations between annotations and tags
-* 
+* Utility function which allows annotation tags to be prepared (i.e make sure they are all valid nodes) before
+* creating associations between annotations and tags.
+*
 * @uses checkperm()
 * @uses get_resource_type_field()
 * @uses set_node()
 * @uses get_node()
-* 
+*
 * @param array $dirty_tags Original array of tags. These can be (in)valid tags/ new tags.
-*                          IMPORTANT: a tag should have the same structure as a node
-* 
+*                          IMPORTANT: A tag should have the same structure as a node.
+*
 * @return array
 */
 function prepareTags(array $dirty_tags)
@@ -494,11 +483,9 @@ function prepareTags(array $dirty_tags)
 
     foreach($dirty_tags as $dirty_tag)
         {
-        // Check minimum required information for a node
-        if(!isset($dirty_tag['resource_type_field'])
-            || 0 >= $dirty_tag['resource_type_field']
-            || !in_array($dirty_tag['resource_type_field'], $annotate_fields)
-        )
+        // Check minimum required information for a node.
+        if(!isset($dirty_tag['resource_type_field']) || 0 >= $dirty_tag['resource_type_field']
+            || !in_array($dirty_tag['resource_type_field'], $annotate_fields))
             {
             continue;
             }
@@ -508,7 +495,7 @@ function prepareTags(array $dirty_tags)
             continue;
             }
 
-        // No access to field? Next...
+        // No access to field? Next.
         if(!metadata_field_view_access($dirty_tag['resource_type_field']))
             {
             continue;
@@ -519,30 +506,24 @@ function prepareTags(array $dirty_tags)
             {
             $dirty_field_data = get_resource_type_field($dirty_tag['resource_type_field']);
 
-            // Only dynamic keywords lists are allowed to create new options from annotations if permission allows it
-            if(
-                !(
-                    FIELD_TYPE_DYNAMIC_KEYWORDS_LIST == $dirty_field_data['type'] 
-                    && !checkperm("bdk{$dirty_tag['resource_type_field']}")
-                )
-            )
+            // Only dynamic keywords lists are allowed to create new options from annotations if permission allows it.
+            if(!(FIELD_TYPE_DYNAMIC_KEYWORDS_LIST == $dirty_field_data['type'] && !checkperm("bdk{$dirty_tag['resource_type_field']}")))
                 {
                 continue;
                 }
 
-            // Create new node but avoid duplicates
+            // Create new node but avoid duplicates.
             $new_node_id = set_node(null, $dirty_tag['resource_type_field'], $dirty_tag['name'], null, null, true);
             if(false !== $new_node_id && is_numeric($new_node_id))
                 {
                 $dirty_tag['ref'] = $new_node_id;
-
                 $clean_tags[] = $dirty_tag;
                 }
 
             continue;
             }
 
-        // Existing tags
+        // Existing tags.
         $found_node = array();
         if(get_node((int) $dirty_tag['ref'], $found_node))
             {
