@@ -2333,6 +2333,14 @@ function resource_log($resource, $type, $field, $notes="", $fromvalue="", $toval
         }
 	}
 
+/**
+ * Get resource log records
+ *
+ * @param  int   $resource    Resource ID
+ * @param  int   $fetchrows
+ * 
+ * @return array
+ */
 function get_resource_log($resource, $fetchrows = -1)
     {
     // Logs can sometimes contain confidential information and the user 

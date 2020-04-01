@@ -9,11 +9,18 @@ include_once "../include/collections_functions.php";
 $ref=getvalescaped("ref","",true);
 $k=getvalescaped("k","");
 
-// Logs can sometimes contain confidential information and the user looking at them must have admin permissions set
-if(!checkperm('v'))
-{
-	die($lang['log-adminpermissionsrequired']);
-}
+$filter_by_type = getval("filter_by_type", "");
+$filter_by_usageoption = getval("filter_by_usageoption", null, true);
+
+// Logs can sometimes contain confidential information and the user looking at them must have admin permissions set.
+// Some log records can be viewed by all users. Ensure access control by allowing only white listed log codes to bypass 
+// permissions checks.
+$safe_log_codes = array(LOG_CODE_DOWNLOADED);
+$bypass_permission_check = in_array($filter_by_type, $safe_log_codes);
+if(!checkperm('v') && !$bypass_permission_check)
+    {
+    die($lang['log-adminpermissionsrequired']);
+    }
 
 # fetch the current search (for finding simlar matches)
 $search=getvalescaped("search","");
@@ -97,8 +104,8 @@ if ($k=="") { ?>
 </div>
 
 <?php
-# Fetch the log.
-$log=get_resource_log($ref);
+// todo: limit logs to download records only
+$log = ($bypass_permission_check ? bypass_permissions(array("v"), "get_resource_log", array($ref)) : get_resource_log($ref));
 
 # Calculate pager vars.
 $results=count($log);
