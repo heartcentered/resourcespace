@@ -176,7 +176,7 @@ function save_request($request)
     # Set user that approved or declined the request
     if ($approved_declined)
         {
-        sql_query("update request set approved_declined_by='$userref' where ref='$request'");
+        sql_query("update request set approved_declined_by='" . escape_check($userref) . "' where ref='" . escape_check($request) . "'");
         }
 
     if (getval("delete","")!="")
