@@ -4829,15 +4829,36 @@ function mb_basename($file)
  * @access public
  * @return string Return the file name without the extension part.
  */
-function strip_extension($name)
+function strip_extension($name,$use_ext_list=false)
     {
-    $ext = strrchr($name, '.');
-    if($ext !== false)
-        {
-        $name = substr($name, 0, -strlen($ext));
-        }
-    return $name;
-    } // strip_extension()
+         $ext = strrchr($name, '.');
+         if ($use_ext_list != false)
+         {
+            // Use list of specified extensions if requested.
+             global $download_filename_strip_extensions;
+             $fn_extension=substr(strrchr($name, '.'),1);
+             if ($use_ext_list == true && isset($download_filename_strip_extensions) && in_array(strtolower($fn_extension),$download_filename_strip_extensions))
+                 {
+                 $filename_new = substr($name, 0, -strlen(".".$fn_extension));
+                 return $filename_new;
+                 }
+             // The extension specified was not in config $download_filename_strip_extensions. Just return the original value.
+             return $name;
+         }
+         else
+         {
+             // Attempt to remove file extension from string where download_filename_strip_extensions is not available.
+             if($ext !== false)
+                {
+                    $name = substr($name, 0, -strlen($ext));
+                }
+             return $name;     
+         }
+    }
+ // strip_extension()
+
+
+
 
 
 
@@ -6754,11 +6775,11 @@ function get_download_filename($ref,$size,$alternative,$ext)
             # append preview size to base name if not the original
             if($size != '' && !$download_filenames_without_size)
                 {
-                $filename = strip_extension(mb_basename($origfile)) . '-' . $size . '.' . $ext;
+                    $filename = strip_extension(mb_basename($origfile),true) . '-' . $size . '.' . $ext;
                 }
             else
                 {
-                $filename = strip_extension(mb_basename($origfile)) . '.' . $ext;
+                    $filename = strip_extension(mb_basename($origfile),true) . '.' . $ext;
                 }
 
             if($prefix_resource_id_to_filename)
@@ -6791,11 +6812,11 @@ function get_download_filename($ref,$size,$alternative,$ext)
             $filename = trim(nl2br(strip_tags($newfilename)));
             if($size != "" && !$download_filenames_without_size)
                 {
-                $filename = mb_basename(substr($filename, 0, 200)) . '-' . $size . '.' . $ext;
+                    $filename = strip_extension(mb_basename(substr($filename, 0, 200)),true) . '-' . $size . '.' . $ext;
                 }
             else
                 {
-                $filename = mb_basename(substr($filename, 0, 200)) . '.' . $ext;
+                    $filename = strip_extension(mb_basename(substr($filename, 0, 200)),true) . '.' . $ext;
                 }
 
             if($prefix_resource_id_to_filename)
@@ -6984,7 +7005,7 @@ function generateSecureKey($length = 64)
  * @param  string               $spamcode The antispam hash to check against
  * @param  string               $usercode The antispam code the user entered
  * @param  string               $spamtime The antispam timestamp
- * @return boolean              Returnd tru if the code was successfully validated, otherwise false
+ * @return boolean              Return true if the code was successfully validated, otherwise false
  */ 
 function verify_antispam($spamcode="",$usercode="",$spamtime=0)
     {
@@ -8017,6 +8038,8 @@ function delete_resource_type_field($ref)
 
     
     $fieldinfo = get_resource_type_field($ref);
+
+    $ref = escape_check($ref);
     
     // Delete the resource type field
     sql_query("DELETE FROM resource_type_field WHERE ref='$ref'");
@@ -8024,10 +8047,9 @@ function delete_resource_type_field($ref)
     // Remove all data	    
     sql_query("DELETE FROM resource_data WHERE resource_type_field='$ref'");
 
-    // Remove all resource nodes	    
+    // Remove all nodes and keywords or resources. Always remove nodes last otherwise foreign keys will not work
     sql_query("DELETE rn.* FROM resource_node rn LEFT JOIN node n ON n.ref=rn.node WHERE n.resource_type_field='$ref'");
-
-    // Remove all nodes	    
+    sql_query("DELETE nk.* FROM node_keyword AS nk LEFT JOIN node AS n ON n.ref = nk.node WHERE n.resource_type_field = '$ref'");
     sql_query("DELETE FROM node WHERE resource_type_field='$ref'");
 
     // Remove all keywords	    
@@ -8151,9 +8173,9 @@ function search_array_by_keyvalue($array2search, $search_key, $search_value, $re
 * $log = bypass_permissions(array("v"), "get_resource_log", array($ref));
 * 
 * 
-* @param array $perms Permission list to be bypassed
-* @param callable $f  Callable that we need to bypas permissions for
-* @param array    $p  Parameters to be passed to the callable if required
+* @param array     $perms  Permission list to be bypassed
+* @param callable  $f      Callable that we need to bypas permissions for
+* @param array     $p      Parameters to be passed to the callable if required
 * 
 * @return
 */
