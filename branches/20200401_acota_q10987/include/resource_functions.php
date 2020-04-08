@@ -2400,6 +2400,11 @@ function get_resource_log($resource, $fetchrows = -1, array $filters = array())
 
     for($n = 0; $n < count($log); $n++)
         {
+        if($fetchrows != -1 && $log[$n] == 0)
+            {
+            continue;
+            }
+
         $log[$n]['title'] = lang_or_i18n_get_translated($log[$n]['title'], 'fieldtitle-');
         }
 

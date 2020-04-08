@@ -35,9 +35,11 @@ if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
 
 $offset=getvalescaped("offset",0);
-$per_page=getvalescaped("per_page_list",15);rs_setcookie('per_page_list', $per_page);
+$per_page=getvalescaped("per_page_list", $default_perpage_list);rs_setcookie('per_page_list', $per_page);
 
-
+// When filtering by download records only the table output will be slightly different, showing only the following columns:
+// date, user, usage option and usage reason
+$filter_dld_records_only = ($filter_by_type == LOG_CODE_DOWNLOADED);
 
 # next / previous resource browsing
 $go=getval("search_go","");
@@ -147,14 +149,27 @@ $url=$baseurl_short."pages/log.php?ref=" . urlencode($ref) . "&search=" . urlenc
 <table border="0" cellspacing="0" cellpadding="0" class="ListviewStyle">
 <!--Title row-->	
 <tr class="ListviewTitleStyle">
-<td width="10%"><?php echo $lang["date"]?></td>
-<td width="10%"><?php echo $lang["user"]?></td>
-<td width="10%"><?php echo $lang["action"]?></td>
-<td width="10%"><?php echo $lang["field"]?></td>
-<td><?php echo $lang["difference"]?></td>
-<?php hook("log_extra_columns_header") ?>
+    <td width="10%"><?php echo $lang["date"]?></td>
+    <td width="10%"><?php echo $lang["user"]?></td>
+    <?php
+    if($filter_dld_records_only)
+        {
+        ?>
+        <td width="20%"><?php echo $lang["indicateusagemedium"]; ?></td>
+        <td><?php echo $lang["usage"]; ?></td>
+        <?php
+        }
+    else
+        {
+        ?>
+        <td width="10%"><?php echo $lang["action"]; ?></td>
+        <td width="10%"><?php echo $lang["field"]; ?></td>
+        <td><?php echo $lang["difference"]; ?></td>
+        <?php
+        hook("log_extra_columns_header");
+        }
+        ?>
 </tr>
-
 <?php
 for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
 	{
@@ -164,7 +179,24 @@ for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
 	<tr>
 	<td nowrap><?php echo nicedate($log[$n]["date"],true,true, true)?></td>
 	<td nowrap><?php echo (hook("userdisplay","",array($log[$n]))?"":($log[$n]["access_key"]!=""?$lang["externalusersharing"] . ": " . $log[$n]["access_key"] . " " . $lang["viauser"] . " " . $log[$n]["shared_by"]:$log[$n]["fullname"])) ?></td>
-	<td><?php echo $lang["log-" . $log[$n]["type"]]." ".$log[$n]["notes"]?></td>
+	
+    <?php
+    if($filter_dld_records_only)
+        {
+        ?>
+        <td><?php
+        if(isset($download_usage_options[$log[$n]["usageoption"]]) && $log[$n]["usageoption"] != -1 && $log[$n]["usageoption"] > 0)
+            {
+            echo nl2br(htmlspecialchars($download_usage_options[$log[$n]["usageoption"]]));
+            }
+        ?></td>
+        <td><?php echo htmlspecialchars($log[$n]["notes"]); ?></td>
+        </tr>
+        <?php
+        continue;
+        }
+    ?>
+    <td><?php echo $lang["log-" . $log[$n]["type"]]." ".$log[$n]["notes"]?></td>
 	<td><?php echo htmlspecialchars($log[$n]["title"])?></td>
 	<td><?php
     if($log[$n]["diff"]!=="")
@@ -221,4 +253,3 @@ for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
 
 <?php
 include "../include/footer.php";
-?>
