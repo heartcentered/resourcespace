@@ -2821,15 +2821,17 @@ function write_metadata($path, $ref, $uniqid="")
     }
 
 function delete_exif_tmpfile($tmpfile)
-{
-	if(file_exists($tmpfile)){unlink ($tmpfile);}
-}
+    {
+    if(file_exists($tmpfile)){unlink ($tmpfile);}
+    }
 
 function update_resource($r, $path, $type, $title, $ingest=false, $createPreviews=true, $extension='',$after_upload_processing=false)
-	{
-	# Update the resource with the file at the given path
+    {
+    # Update the resource with the file at the given path
 	# Note that the file will be used at it's present location and will not be copied.
-	global $syncdir, $staticsync_prefer_embedded_title, $view_title_field, $filename_field, $upload_then_process, $offline_job_queue;
+    global $syncdir, $staticsync_prefer_embedded_title, $view_title_field, $filename_field, $upload_then_process, $offline_job_queue, $lang,
+        $extracted_text_field, $offline_job_queue, $offline_job_in_progress, $autorotate_ingest, $enable_thumbnail_creation_on_upload,
+        $userref, $lang, $upload_then_process_holding_state;
 
     if($upload_then_process && !$offline_job_queue)
         {
@@ -2841,7 +2843,7 @@ function update_resource($r, $path, $type, $title, $ingest=false, $createPreview
 		{
 		$extension=pathinfo($path, PATHINFO_EXTENSION);
 		}
-	
+
     if($extension!=='')
     	{
     	$extension=trim(strtolower($extension));
@@ -2861,7 +2863,6 @@ function update_resource($r, $path, $type, $title, $ingest=false, $createPreview
         if (!$ingest)
             {
             # This file remains in situ; store the full path in file_path to indicate that the file is stored remotely.
-            global $filename_field;
             if (isset($filename_field))
                 {
 
@@ -2877,7 +2878,6 @@ function update_resource($r, $path, $type, $title, $ingest=false, $createPreview
             $s=explode("/",$path);
             $filename=end($s);
 
-            global $filename_field;
             if (isset($filename_field))
                 {
                 update_field($r,$filename_field,$filename);
@@ -2886,7 +2886,6 @@ function update_resource($r, $path, $type, $title, $ingest=false, $createPreview
             # Move the file
             if(!hook('update_resource_replace_ingest','',array($r, $path, $extension)))
                 {
-                global $syncdir;
                 $destination=get_resource_path($r,true,"",true,$extension);
                 $result=rename($syncdir . "/" . $path,$destination);
                 if ($result===false)
@@ -2923,10 +2922,8 @@ function update_resource($r, $path, $type, $title, $ingest=false, $createPreview
             }
 		
         # Extract text from documents (e.g. PDF, DOC)
-        global $extracted_text_field;
         if (isset($extracted_text_field) && !(isset($unoconv_path) && in_array($extension,$unoconv_extensions))) 
             {
-            global $offline_job_queue, $offline_job_in_progress;
             if($offline_job_queue && !$offline_job_in_progress)
                 {
                 $extract_text_job_data = array(
@@ -2948,10 +2945,8 @@ function update_resource($r, $path, $type, $title, $ingest=false, $createPreview
         if ($createPreviews)
             {
             # Attempt autorotation
-            global $autorotate_ingest;
             if($ingest && $autorotate_ingest){AutoRotateImage($destination);}
             # Generate previews/thumbnails (if configured i.e if not completed by offline process 'create_previews.php')
-            global $enable_thumbnail_creation_on_upload;
             if($enable_thumbnail_creation_on_upload)
                 {
                 create_previews($r, false, $extension, false, false, -1, false, $ingest);
@@ -2978,16 +2973,13 @@ function update_resource($r, $path, $type, $title, $ingest=false, $createPreview
         
         if($upload_then_process && !$after_upload_processing)
             {
-            # Add this to the job queue for offline processing
-            global $userref, $lang;
-            
+            # Add this to the job queue for offline processing            
             $job_data=array();
             $job_data["r"]=$r;
             $job_data["title"]=$title;
             $job_data["ingest"]=$ingest;
             $job_data["createPreviews"]=$createPreviews;
         
-            global $upload_then_process_holding_state;
             if(isset($upload_then_process_holding_state))
                 {
                 $job_data["archive"]=sql_value("SELECT archive value from resource where ref={$ref}", "");
@@ -4113,16 +4105,26 @@ function download_summary($resource)
 	# Returns a summary of downloads by usage type
 	return sql_query("select usageoption,count(*) c from resource_log where resource='$resource' and type='D' group by usageoption order by usageoption");
 	}
-	
-function check_use_watermark(){
-	# This function checks whether or not to use watermarks
-	# Note that access status must be available prior to calls to this function
 
-    global $access,$k,$watermark,$watermark_open,$pagename,$watermark_open_search;
+/*
+* Check if watermark is required. 
+*
+* @param string $download_key  Optional - download key used when $terms_download and $watermark_open are enabled
+* @param string $resource      Optional - resource ID to check download key is valid for
+* 
+* * @return boolean
+*/
+function check_use_watermark($download_key = "", $resource="")
+    {
+    debug_function_call("check_use_watermark", func_get_args());
+	# This function checks whether or not to use watermarks
+    # Note that access status must be available prior to calls to this function    
+
+    global $access,$k,$watermark,$watermark_open,$pagename,$watermark_open_search, $terms_download;
 
     # Cannot watermark without a watermark
     if(!isset($watermark))
-        { 
+        {
         return false; 
         }
 
@@ -4140,11 +4142,12 @@ function check_use_watermark(){
         return true; 
         }
 
-    # Watermark if open override is present    
+    # Watermark if open override is present 
     if(    $watermark_open  
         && (    ($pagename == "preview") 
              || ($pagename == "view") 
              || ($pagename == "search" && $watermark_open_search)
+             || ($pagename == "download" && $terms_download && !download_link_check_key($download_key, $resource))
            ) )
         { 
         return true; 
@@ -5867,4 +5870,47 @@ function sanitize_date_field_input($date, $validate=false)
         }
 
     return $val;
+    }
+
+/**
+* Create a temporary download key for a specific user or key and resource combination
+* Used when both $watermark_open and $terms_download are enabled 
+*
+* @param string $id                 Key identifier e.g. user ID or external access key
+* @param integer $resource          Resource ID
+* 
+* @return string
+*/
+function download_link_generate_key($id,$resource)
+    {
+    global $scramble_key, $usersession;
+    $remote_ip = get_ip();
+    return $id . ":" . hash('sha256',$id . $usersession . $scramble_key . $resource . $remote_ip);
+    }
+
+/**
+* Check the download key for a specific user/resource combination
+* 
+* @param string  $download_key      Download key
+* @param integer $resource          Resource ID
+* 
+* @return string
+*/
+function download_link_check_key($download_key, $resource)
+    {
+    $download_link_parts = explode(":", $download_key);
+
+    if(count($download_link_parts) != 2)
+        {
+        return false;
+        }
+    
+    $download_link_id   = $download_link_parts[0];
+    $keycheck = download_link_generate_key($download_link_id,$resource);
+    if($keycheck != $download_key)
+        {
+        return false;
+        }
+
+    return true;
     }
