@@ -9,7 +9,7 @@ include_once "../include/collections_functions.php";
 $ref=getvalescaped("ref","",true);
 $k=getvalescaped("k","");
 
-$filter_by_type = getval("filter_by_type", "");
+$filter_by_type = trim(getval("filter_by_type", ""));
 $filter_by_usageoption = getval("filter_by_usageoption", null, true);
 
 // Logs can sometimes contain confidential information and the user looking at them must have admin permissions set.
@@ -104,8 +104,26 @@ if ($k=="") { ?>
 </div>
 
 <?php
-// todo: limit logs to download records only
-$log = ($bypass_permission_check ? bypass_permissions(array("v"), "get_resource_log", array($ref)) : get_resource_log($ref));
+$fetchrows = $offset + $per_page;
+
+$filters = array();
+if($filter_by_type != "")
+    {
+    $filters["r.type"] = $filter_by_type;
+    }
+if(!is_null($filter_by_usageoption) && $filter_by_usageoption > 0)
+    {
+    $filters["r.usageoption"] = $filter_by_usageoption;
+    }
+
+if($bypass_permission_check)
+    {
+    $log = bypass_permissions(array("v"), "get_resource_log", array($ref, $fetchrows, $filters));
+    }
+else
+    {
+    $log = get_resource_log($ref, $fetchrows, $filters);
+    }
 
 # Calculate pager vars.
 $results=count($log);
