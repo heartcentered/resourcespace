@@ -2334,14 +2334,16 @@ function resource_log($resource, $type, $field, $notes="", $fromvalue="", $toval
 	}
 
 /**
- * Get resource log records
+ * Get resource log records. The standard field titles are translated using $lang. Custom field titles are i18n translated.
  *
- * @param  int   $resource    Resource ID
- * @param  int   $fetchrows
+ * @param  int    $resource    Resource ID
+ * @param  int    $fetchrows   If $fetchrows is set we don't have to loop through all the returned rows. @see sql_query()
+ * @param  array  $filters     List of filters to include in the where clause. The key of the array is linked to the 
+ *                             available columns in the sql statement so they must match!
  * 
  * @return array
  */
-function get_resource_log($resource, $fetchrows = -1)
+function get_resource_log($resource, $fetchrows = -1, array $filters = array())
     {
     // Logs can sometimes contain confidential information and the user 
     // looking at them must have admin permissions set
@@ -2350,14 +2352,21 @@ function get_resource_log($resource, $fetchrows = -1)
         return array();
         }
 
-    // Returns the log for a given resource.
-    // The standard field titles are translated using $lang. Custom field titles are i18n translated.
     $extrafields = hook('get_resource_log_extra_fields');
-
     if(!$extrafields)
         {
         $extrafields = '';
         }
+
+    $sql_filters = "";
+    foreach($filters as $column => $filter_value)
+        {
+        $sql_filters .= sprintf(" AND %s = '%s'",
+            escape_check($column),
+            escape_check($filter_value)
+        );
+        }
+    $sql_filters = ltrim($sql_filters);
 
     $log = sql_query(
                 "SELECT r.ref,
@@ -2383,6 +2392,7 @@ function get_resource_log($resource, $fetchrows = -1)
               LEFT JOIN preview_size AS ps ON r.purchase_size = ps.id
         LEFT OUTER JOIN resource_type_field AS rtf ON r.resource_type_field = rtf.ref
                   WHERE r.resource = '{$resource}'
+                        {$sql_filters}
                GROUP BY r.ref
                ORDER BY r.ref DESC",
         false,
