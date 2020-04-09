@@ -55,7 +55,7 @@ function errorhandler($errno, $errstr, $errfile, $errline)
             {
             echo $error_info;
             }
-            
+
         echo PHP_EOL;
         }
     else
@@ -79,7 +79,7 @@ function errorhandler($errno, $errstr, $errfile, $errline)
     if($email_errors)
         {
         global $email_notify, $email_from, $email_errors_address, $applicationname;
-        
+
         if($email_errors_address == "")
             {
             $email_errors_address = $email_notify;
@@ -95,7 +95,7 @@ set_error_handler("errorhandler");
 
 // *** LOAD CONFIGURATION FILE ***
 // Load the default config first, if it exists, so any new settings are present even if missing from config.php.
-if(file_exists(dirname(__FILE__) . "/config.default.php")) 
+if(file_exists(dirname(__FILE__) . "/config.default.php"))
     {
     include dirname(__FILE__) . "/config.default.php";
     }
@@ -158,7 +158,7 @@ if(isset($remote_config_url) && (isset($_SERVER["HTTP_HOST"]) || getenv("RESOURC
             }
         set_sysvar("remote_config-exp" .  $hostmd, time() + (600)); # Load again (or try again if failed) in 10 minutes (60*10).
         }
-    
+
     // Load and use the configuration.
     eval($remote_config);
     }
@@ -313,7 +313,7 @@ function sql_connect()
         db_set_connection_mode($db_connection_mode);
         sql_query("SET SESSION group_concat_max_len = 32767", false, -1, false, 0);
 
-        if ($mysql_force_strict_mode)
+        if($mysql_force_strict_mode)
             {
             db_set_connection_mode($db_connection_mode);
             sql_query("SET SESSION sql_mode='STRICT_ALL_TABLES'", false, -1, false, 0);
@@ -484,19 +484,19 @@ if($CSRF_enabled && PHP_SAPI != 'cli' && !$suppress_headers && !in_array($pagena
     /* Based on OWASP: General Recommendations For Automated CSRF Defense
     (https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet)
     ==================================================================
-    # Verifying Same Origin with Standard Headers
+    Verifying Same Origin with Standard Headers
     There are two steps to this check:
     1. Determining the origin the request is coming from (source origin)
     2. Determining the origin the request is going to (target origin)
 
-    # What to do when Both Origin and Referer Headers Aren't Present
-    If neither of these headers is present, which should be VERY rare, you can either accept or block the request. 
-    We recommend blocking, particularly if you aren't using a random CSRF token as your second check. You might want to 
+    What to do when Both Origin and Referer Headers are not Present
+    If neither of these headers is present, which should be VERY rare, you can either accept or block the request.
+    We recommend blocking, particularly if you aren't using a random CSRF token as your second check. You might want to
     log when this happens for a while and if you basically never see it, start blocking such requests.
 
-    # Verifying the Two Origins Match
+    Verifying the Two Origins Match
     Once you've identified the source origin (from either the Origin or Referer header), and you've determined the target
-    origin, however you choose to do so, then you can simply compare the two values and if they don't match you know you 
+    origin, however you choose to do so, then you can simply compare the two values and if they don't match you know you
     have a cross-origin request.  */
     $CSRF_source_origin = '';
     $CSRF_target_origin = parse_url($baseurl, PHP_URL_SCHEME) . '://' . parse_url($baseurl, PHP_URL_HOST);
@@ -709,7 +709,7 @@ function hook($name, $pagename = "", $params = array(), $last_hook_value_wins = 
             // The function did not return a value, so skip to next hook call.
             if($function_return_value === null)
                 {
-                continue;   
+                continue;
                 }
 
             if(!$last_hook_value_wins && !$empty_global_return_value &&
@@ -1101,10 +1101,16 @@ function sql_query($sql, $cache = false, $fetchrows = -1, $dbstruct = true, $log
     $query_returned_row_count = mysqli_num_rows($result);
     mysqli_free_result($result);
 
-    // If short, then pad out.
     if($return_row_count < $query_returned_row_count)
         {
-        $return_rows = array_pad($return_rows,$query_returned_row_count,0);
+        // array_pad has a hardcoded limit of 1,692,439 elements. If we need to pad the results more than that, we do
+        //  it in 1,000,000 elements batches.
+        while(count($return_rows) < $query_returned_row_count)
+            {
+            $padding_required = $query_returned_row_count - count($return_rows);
+            $pad_by = ($padding_required > 1000000 ? 1000000 : $query_returned_row_count);
+            $return_rows = array_pad($return_rows, $pad_by, 0);
+            }
         }
 
     return $return_rows;
@@ -1744,7 +1750,7 @@ function http_get_preferred_language($strict_mode = false)
     $current_lang = false;
     $current_quality = 0;
     $language_map = array();
-    
+
     foreach($languages as $key => $value)
         $language_map[strtolower($key)] = $key;
 
@@ -1833,11 +1839,11 @@ function setLanguage()
             return $language;
             }
         }
-    if(($disable_languages || $language === "") && isset($defaultlanguage)) 
+    if(($disable_languages || $language === "") && isset($defaultlanguage))
         {
         return $defaultlanguage;
         }
-    
+
     // Final case.
     return 'en';
     }
@@ -1881,7 +1887,7 @@ function checkperm_user_edit($user)
         {
         return true;
         }
-        
+
     // Get all the groups that the logged in user can manage.
     global $U_perm_strict, $usergroup;
     $validgroups = sql_array("SELECT `ref` AS 'value' FROM `usergroup` WHERE " .
@@ -1900,7 +1906,7 @@ function pagename()
         {
         return $name;
         }
-        
+
     $url = str_replace("\\", "/", $_SERVER["PHP_SELF"]); // To work with Windows command line scripts.
     $urlparts = explode("/", $url);
     $url = $urlparts[count($urlparts) - 1];
@@ -2017,7 +2023,7 @@ function resolve_user_agent($agent)
             break;
             }
         }
-        
+
     return $os . " / " . $b;
     }
 
@@ -2029,7 +2035,7 @@ function get_ip()
 
     if($ip_forwarded_for)
         {
-        if (isset($_SERVER) && array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER))
+        if(isset($_SERVER) && array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER))
             {
             return $_SERVER["HTTP_X_FORWARDED_FOR"];
             }
@@ -2128,7 +2134,7 @@ function include_plugin_config($plugin_name, $config = "", $config_json = "")
             {
             foreach($config_json as $key => $value)
                 {
-                $$key = $value; #------------- Is the double $ correct?
+                $$key = $value;
                 }
             }
         }
@@ -2136,7 +2142,7 @@ function include_plugin_config($plugin_name, $config = "", $config_json = "")
         {
         $config = unserialize(base64_decode($config));
         foreach($config as $key => $value)
-            $$key = $value; #------------- Is the double $ correct?
+            $$key = $value;
         }
 
     // Copy config variables to global scope.
@@ -2145,7 +2151,7 @@ function include_plugin_config($plugin_name, $config = "", $config_json = "")
     foreach($vars as $name => $value)
         {
         global $$name;
-        $$name = $value; #------------ Is the double $ correct?
+        $$name = $value;
         }
     }
 
@@ -2266,7 +2272,7 @@ function rcRmdir ($path)
         }
     $success = @rmdir($path);
     debug("rcRmdir: " . $path . " - " . ($success ? "SUCCESS" : "FAILED"));
-    
+
     return $success;
     }
 
@@ -2303,7 +2309,7 @@ function get_resource_table_joins()
             ++$n;
             }
         }
-        
+
     return $return;
     }
 
@@ -2379,7 +2385,7 @@ function debug($text, $resource_log_resource_ref = NULL, $resource_log_code = LO
 
     fwrite($f, date("Y-m-d H:i:s") . " " . $extendedtext . $text . "\n");
     fclose ($f);
-    
+
     return true;
     }
 
@@ -2449,7 +2455,7 @@ function show_pagetime()
 function checkPermission_anonymoususer()
     {
     global $baseurl, $anonymous_login, $anonymous_autouser_group, $username, $usergroup;
-    
+
     return ((isset($anonymous_login) && ((is_string($anonymous_login) && '' != $anonymous_login && $anonymous_login == $username) || (is_array($anonymous_login) && array_key_exists($baseurl, $anonymous_login)
     && $anonymous_login[$baseurl] == $username)))
     || (isset($anonymous_autouser_group) && $usergroup == $anonymous_autouser_group));
@@ -2473,7 +2479,7 @@ function checkPermission_dashuser()
 function checkPermission_dashmanage()
     {
     global $managed_home_dash,$unmanaged_home_dash_admins, $anonymous_default_dash;
-    
+
     return (!checkPermission_anonymoususer() || !$anonymous_default_dash) && ((!$managed_home_dash && (checkPermission_dashuser() || checkPermission_dashadmin()))
     || ($unmanaged_home_dash_admins && checkPermission_dashadmin()));
     }
@@ -2483,8 +2489,8 @@ function checkPermission_dashmanage()
 function checkPermission_dashcreate()
     {
     global $managed_home_dash,$unmanaged_home_dash_admins;
-    
-    return !checkPermission_anonymoususer() && ((!$managed_home_dash && (checkPermission_dashuser() 
+
+    return !checkPermission_anonymoususer() && ((!$managed_home_dash && (checkPermission_dashuser()
     || checkPermission_dashadmin())) || ($managed_home_dash && checkPermission_dashadmin())
     || ($unmanaged_home_dash_admins && checkPermission_dashadmin()));
     }

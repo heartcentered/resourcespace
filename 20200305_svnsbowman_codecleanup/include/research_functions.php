@@ -227,7 +227,7 @@ if(!function_exists("get_research_request_collection"))
     function get_research_request_collection($ref)
         {
         $return = sql_value("SELECT collection value FROM research_request WHERE ref='$ref'", 0);
-        if(($return == 0) || (strlen($return == 0))
+        if(($return == 0) || (strlen($return == 0)))
             {
             return false;
             }

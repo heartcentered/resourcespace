@@ -48,13 +48,13 @@ function do_search($search, $restypes = '', $order_by = 'relevance', $archive = 
     $open_access_for_contributor;
 
     $alternativeresults = hook("alternativeresults", "", array($go));
-    if ($alternativeresults)
+    if($alternativeresults)
         {
         return $alternativeresults;
         }
 
     $modifyfetchrows = hook("modifyfetchrows", "", array($fetchrows));
-    if ($modifyfetchrows)
+    if($modifyfetchrows)
         {
         $fetchrows = $modifyfetchrows;
         }
@@ -101,7 +101,7 @@ function do_search($search, $restypes = '', $order_by = 'relevance', $archive = 
     // Append order by field to the above array if absent and if named "fieldn" (where n is one or more digits).
     if(!in_array($order_by, $order) && (substr($order_by, 0, 5) == "field"))
         {
-        if (!is_numeric(str_replace("field", "", $order_by)))
+        if(!is_numeric(str_replace("field", "", $order_by)))
             {
             exit("Order field incorrect.");
             }
@@ -160,7 +160,7 @@ function do_search($search, $restypes = '', $order_by = 'relevance', $archive = 
     $keywords = split_keywords($search_params, false, false, false, false, true);
 
     // Add any regex matched verbatim keywords for those indexed resource type fields.
-    foreach (get_indexed_resource_type_fields() as $resource_type_field)
+    foreach(get_indexed_resource_type_fields() as $resource_type_field)
         {
         add_verbatim_keywords($keywords,$search, $resource_type_field, true);
         }
@@ -692,7 +692,7 @@ function do_search($search, $restypes = '', $order_by = 'relevance', $archive = 
                                 if($omit)
                                     {
                                     // Exclude matching resources from query (omit feature).
-                                    if ($sql_filter != "")
+                                    if($sql_filter != "")
                                         {
                                         $sql_filter .= " AND ";
                                         }
@@ -983,7 +983,7 @@ function do_search($search, $restypes = '', $order_by = 'relevance', $archive = 
         ++$rn;
         }
 
-    if ($node_hitcount != "")
+    if($node_hitcount != "")
         {
         $sql_hitcount_select = "(SUM(" . $sql_hitcount_select . ") + SUM(" . $node_hitcount . ")) ";
         }
@@ -1559,7 +1559,7 @@ function do_search($search, $restypes = '', $order_by = 'relevance', $archive = 
 
         if(!empty($allowed_themes))
             {
-            $collection_join .= "AND jc.ref IN (" . implode($allowed_themes, ', ') . ") ";
+            $collection_join .= "AND jc.ref IN (" . implode(', ', $allowed_themes) . ") ";
             }
         else // Can only see public collections but not allowed to see any public collections.
             {

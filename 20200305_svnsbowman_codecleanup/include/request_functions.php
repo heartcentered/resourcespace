@@ -33,7 +33,7 @@ function get_user_requests($excludecompleted = false, $returnsql = false)
 // Use the posted form to update the request.
 function save_request($request)
     {
-    global $applicationname, $baseurl, $lang, $request_senduserupdates, $admin_resource_access_notifications;
+    global $applicationname, $baseurl, $lang, $request_senduserupdates, $admin_resource_access_notifications, $userref;
 
     $status = getvalescaped("status", "", true);
     $expires = getvalescaped("expires", "");
@@ -42,6 +42,7 @@ function save_request($request)
     $assigned_to = getvalescaped("assigned_to", "");
     $reason = getvalescaped("reason", "");
     $reasonapproved = getvalescaped("reasonapproved", "");
+    $approved_declined = false;
 
     // User Assignment
     // Process an assignment change if this user can assign requests to other users.
@@ -97,6 +98,7 @@ function save_request($request)
         {
         // APPROVED, send approval e-mail.
         // $reasonapproved=str_replace(array("\\r","\\n"),"\n",$reasonapproved);$reasonapproved=str_replace("\n\n","\n",$reasonapproved); # Fix line breaks.
+        $approved_declined = true;
         $reasonapproved = unescape($reasonapproved);
         $message = $lang["requestapprovedmail"] . "\n\n" . $lang["approvalreason"]. ": " . $reasonapproved . "\n\n" ;
         $message .= "$baseurl/?c=" . $currentrequest["collection"] . "\n";
@@ -133,7 +135,7 @@ function save_request($request)
         {
         $reason = unescape($reason);
         $message = $lang["requestdeclinedmail"] . "\n\n" . $lang["declinereason"] . ": ". $reason . "\n\n$baseurl/?c=" . $currentrequest["collection"] . "\n";
-
+        $approved_declined = true;
         get_config_option($currentrequest["user"], 'email_user_notifications', $send_email);
         if($send_email && filter_var($currentrequest["email"], FILTER_VALIDATE_EMAIL))
             {
@@ -170,10 +172,16 @@ function save_request($request)
     // Save status.
     sql_query("UPDATE request SET status='$status',expires=" . ($expires == "" ? "null" : "'$expires'") . ",reason='$reason',reasonapproved='$reasonapproved' WHERE ref='$request'");
 
+    // Set user that approved or declined the request.
+    if($approved_declined)
+        {
+        sql_query("UPDATE request SET approved_declined_by='" . escape_check($userref) . "' WHERE ref='" . escape_check($request) . "'");
+        }
+
     if(getval("delete", "") != "")
         {
-        // Delete the request, this is done AFTER any e-mails have been sent out so this can be used on approval.
-        sql_query("delete from request where ref='$request'");
+        // Delete the request, this is done AFTER any emails have been sent out so this can be used on approval.
+        sql_query("DELETE FROM request WHERE ref='$request'");
 
         // Clear any outstanding notifications about this request that may have been sent to other admins.
         message_remove_related(MANAGED_REQUEST, $request);
@@ -1075,11 +1083,11 @@ function email_resource_request($ref, $details)
             }
         else
             {
-            $sender = (!empty($useremail)) ? $useremail : (!empty($templatevars["formemail"])) ? $templatevars["formemail"] : "";
+            $sender =  (!empty($useremail)) ? $useremail : ((!empty($templatevars["formemail"]))? $templatevars["formemail"] : "");
 
             if($sender != "" && filter_var($sender, FILTER_VALIDATE_EMAIL))
                 {
-                send_mail($sender, $applicationname . ": " . $lang["requestsent"] . " - $ref", $userconfirmmessage, $email_from, $email_notify, "emailuserresourcerequest", $templatevars);
+                send_mail($sender, $applicationname . ": " . $lang["requestsent"] . " - $ref", $userconfirmmessage,$email_from, $email_notify, "emailuserresourcerequest", $templatevars);
                 }
             }
         }
