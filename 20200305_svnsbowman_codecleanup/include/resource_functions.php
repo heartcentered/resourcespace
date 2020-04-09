@@ -2989,21 +2989,6 @@ function delete_exif_tmpfile($tmpfile)
     }
 
 
-function update_resource($r, $path, $type, $title, $ingest=false, $createPreviews=true, $extension='',$after_upload_processing=false)
-    {
-    # Update the resource with the file at the given path
-    # Note that the file will be used at it's present location and will not be copied.
-    global $syncdir, $staticsync_prefer_embedded_title, $view_title_field, $filename_field, $upload_then_process, $offline_job_queue;
-=======
-function update_resource($r, $path, $type, $title, $ingest=false, $createPreviews=true, $extension='',$after_upload_processing=false)
-    {
-    # Update the resource with the file at the given path
-    # Note that the file will be used at it's present location and will not be copied.
-    global $syncdir, $staticsync_prefer_embedded_title, $view_title_field, $filename_field, $upload_then_process, $offline_job_queue, $lang,
-        $extracted_text_field, $offline_job_queue, $offline_job_in_progress, $autorotate_ingest, $enable_thumbnail_creation_on_upload,
-        $userref, $lang, $upload_then_process_holding_state;
->>>>>>> .merge-right.r14682
-
 // Update the resource with the file at the given path.  Note that the file will be used at it's present location and will not be copied.
 function update_resource($r, $path, $type, $title, $ingest = false, $createPreviews = true, $extension = '',$after_upload_processing = false)
     {
