@@ -570,13 +570,12 @@ if(!function_exists('get_resource_field_data'))
               LEFT JOIN resource_data d
                      ON d.resource_type_field = f1.ref AND d.resource = '" . escape_check($ref) . "'
                   WHERE (
-                                f1.active=1 and
-                                f1.type NOT IN ({$node_fields_list})
-                            AND (" . ($multi ? "1 = 1" : "f1.resource_type = 0 OR f1.resource_type = 999 OR f1.resource_type = '{$rtype}'") . ")
+                        f1.active=1 and
+                        f1.type NOT IN ({$node_fields_list})
+                        AND (" . ($multi ? "1 = 1" : "f1.resource_type = 0 OR f1.resource_type = 999 OR f1.resource_type = '{$rtype}'") . ")
                         )
 
                   UNION
-
                  SELECT group_concat(if(rn.resource = '" . escape_check($ref) . "', n.name, NULL)) AS `value`,
                         f2.ref resource_type_field,
                         f2.*,
@@ -590,9 +589,9 @@ if(!function_exists('get_resource_field_data'))
               LEFT JOIN node AS n ON n.resource_type_field = f2.ref
               LEFT JOIN resource_node AS rn ON rn.node = n.ref AND rn.resource = '" . escape_check($ref) . "'
                   WHERE (
-                                f2.active=1 and
-                                f2.type IN ({$node_fields_list})
-                            AND (" . ($multi ? "1 = 1" : "f2.resource_type = 0 OR f2.resource_type = 999 OR f2.resource_type = '{$rtype}'") . ")
+                        f2.active=1 and
+                        f2.type IN ({$node_fields_list})
+                        AND (" . ($multi ? "1 = 1" : "f2.resource_type = 0 OR f2.resource_type = 999 OR f2.resource_type = '{$rtype}'") . ")
                         )
                GROUP BY ref
                ORDER BY {$order_by_sql}
@@ -3022,7 +3021,7 @@ function bulk_mail($userlist, $subject, $text, $html = false, $message_type = ME
     $templatevars['text'] = stripslashes(str_replace("\\r\\n", "\n", $text));
     $body=$templatevars['text'];
 
-    if($message_type == MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL || $message_type == (MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL | MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN))
+    if($message_type == MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL || $message_type == (MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL || MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN))
         {
         $emails = resolve_user_emails($ulist);
 
@@ -4729,14 +4728,12 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                 {
                 /*
                 Example of $scriptcondition:
-                Array
-                    (
+                array(
                     [field] => 73
                     [type] => 2
-                    [valid] => Array
-                        (
-                            [0] => 267
-                            [1] => 266
+                    [valid] => array(
+                        [0] => 267
+                        [1] => 266
                         )
                     )
                 */
@@ -5514,15 +5511,35 @@ function mb_basename($file)
  * @access public
  * @return string Return the file name without the extension part.
  */
-function strip_extension($name)
+function strip_extension($name, $use_ext_list = false)
     {
     $ext = strrchr($name, '.');
-    if($ext !== false)
+    if($use_ext_list != false)
         {
-        $name = substr($name, 0, -strlen($ext));
+        // Use list of specified extensions if requested.
+        global $download_filename_strip_extensions;
+        $fn_extension = substr(strrchr($name, '.'), 1);
+        if($use_ext_list == true && isset($download_filename_strip_extensions) && in_array(strtolower($fn_extension),$download_filename_strip_extensions))
+             {
+             $filename_new = substr($name, 0, -strlen("." . $fn_extension));
+             return $filename_new;
+             }
+
+         // The extension specified was not in config $download_filename_strip_extensions. Just return the original value.
+         return $name;
         }
-    return $name;
+     else
+        {
+        // Attempt to remove file extension from string where download_filename_strip_extensions is not available.
+        if($ext !== false)
+            {
+            $name = substr($name, 0, -strlen($ext));
+            }
+
+        return $name;
+        }
     }
+    // strip_extension()
 
 
 /**
@@ -7636,11 +7653,11 @@ function get_download_filename($ref, $size, $alternative, $ext)
             // is used), and append preview size to base name if not the original.
             if($size != '' && !$download_filenames_without_size)
                 {
-                $filename = strip_extension(mb_basename($origfile)) . '-' . $size . '.' . $ext;
+                    $filename = strip_extension(mb_basename($origfile),true) . '-' . $size . '.' . $ext;
                 }
             else
                 {
-                $filename = strip_extension(mb_basename($origfile)) . '.' . $ext;
+                    $filename = strip_extension(mb_basename($origfile),true) . '.' . $ext;
                 }
 
             if($prefix_resource_id_to_filename)
@@ -7676,11 +7693,11 @@ function get_download_filename($ref, $size, $alternative, $ext)
             $filename = trim(nl2br(strip_tags($newfilename)));
             if($size != "" && !$download_filenames_without_size)
                 {
-                $filename = mb_basename(substr($filename, 0, 200)) . '-' . $size . '.' . $ext;
+                    $filename = strip_extension(mb_basename(substr($filename, 0, 200)),true) . '-' . $size . '.' . $ext;
                 }
             else
                 {
-                $filename = mb_basename(substr($filename, 0, 200)) . '.' . $ext;
+                    $filename = strip_extension(mb_basename(substr($filename, 0, 200)),true) . '.' . $ext;
                 }
 
             if($prefix_resource_id_to_filename)
@@ -7919,15 +7936,14 @@ function generateSecureKey($length = 64)
 /**
  * Validates the user entered antispam code.
  *
- * @param  string    $spamcode  The antispam hash to check against.
- * @param  string    $usercode  The antispam code the user entered.
- * @param  string    $spamtime  The antispam timestamp.
- * @return boolean              Return TRUE if the code was successfully validated; otherwise, false.
+ * @param  string    $spamcode    The antispam hash to check against.
+ * @param  string    $usercode    The antispam code the user entered.
+ * @param  string    $spamtime    The antispam timestamp.
+ * @return boolean                Return TRUE if the code was successfully validated; otherwise, FALSE.
  */
 function verify_antispam($spamcode = "", $usercode = "", $spamtime = 0)
     {
     global $scramble_key, $password_brute_force_delay;
-
     if($usercode == "" || $spamcode == "" || $spamtime == 0)
         {
         debug("antispam failed");
@@ -7939,7 +7955,6 @@ function verify_antispam($spamcode = "", $usercode = "", $spamtime = 0)
         sleep($password_brute_force_delay);
         return false;
         }
-
     $prevhashes = sql_array("SELECT unique_hash value FROM user WHERE unique_hash IS NOT null", "");
     if(in_array(md5($usercode . $spamtime), $prevhashes))
         {
@@ -8515,7 +8530,6 @@ function is_resourcespace_upgrade_available()
 
 /**
 * Utility to get all workflow states available in the system.
-*
 * IMPORTANT: No permissions are being honoured on purpose! If you need to honour permissions @see get_editable_states().
 *
 * @uses global additional_archive_states
@@ -8967,6 +8981,7 @@ function delete_resource_type_field($ref)
 
 
     $fieldinfo = get_resource_type_field($ref);
+    $ref = escape_check($ref);
 
     // Delete the resource type field.
     sql_query("DELETE FROM resource_type_field WHERE ref='$ref'");
@@ -8974,10 +8989,9 @@ function delete_resource_type_field($ref)
     // Remove all data.
     sql_query("DELETE FROM resource_data WHERE resource_type_field='$ref'");
 
-    // Remove all resource nodes.
+    // Remove all nodes and keywords or resources. Always remove nodes last; otherwise, foreign keys will not work.
     sql_query("DELETE rn.* FROM resource_node rn LEFT JOIN node n ON n.ref=rn.node WHERE n.resource_type_field='$ref'");
-
-    // Remove all nodes.
+    sql_query("DELETE nk.* FROM node_keyword AS nk LEFT JOIN node AS n ON n.ref = nk.node WHERE n.resource_type_field = '$ref'");
     sql_query("DELETE FROM node WHERE resource_type_field='$ref'");
 
     // Remove all keywords.

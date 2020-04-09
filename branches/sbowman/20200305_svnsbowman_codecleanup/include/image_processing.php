@@ -1,15 +1,15 @@
 <?php
 /**
  * Image Processing Functions to Allow Upload and Resizing of Images
- * 
+ *
  * @package ResourceSpace
  * @subpackage Includes
  * @todo Document
  */
 include_once 'metadata_functions.php';
 
-if (!function_exists("upload_file"))
-        {
+if(!function_exists("upload_file"))
+    {
     function upload_file($ref, $no_exif = false, $revert = false,$autorotate = false, $file_path = "", $after_upload_processing = false, $deletesource = true)
         {
         debug("upload_file(ref = $ref, no_exif = " . ($no_exif ? "TRUE" : "FALSE")  . ",revert = " . ($revert ? "TRUE" : "FALSE")  . ", autorotate = " . ($autorotate ? "TRUE" : "FALSE")  . ", file_path = $file_path, after_upload_processing = " . ($after_upload_processing ? "TRUE" : "FALSE")  . ")");
@@ -26,12 +26,12 @@ if (!function_exists("upload_file"))
             }
 
         global $lang, $upload_then_process, $offline_job_queue;
-        
+
         if($upload_then_process && !$offline_job_queue)
             {
             $upload_then_process = false;
             }
-        
+
         if(!$after_upload_processing)
             {
             resource_log($ref, LOG_CODE_TRANSFORMED, '', '', '', $lang['upload_file']);
@@ -39,56 +39,56 @@ if (!function_exists("upload_file"))
             $exiftool_fullpath = get_utility_path("exiftool");
 
             // Process file upload for resource $ref.
-            if ($revert == true)
+            if($revert == true)
                 {
                 global $filename_field;
-                
+
                 $original_filename = get_data_by_field($ref, $filename_field);
-        
+
                 // Field 8 is used in a special way for staticsync, do not overwrite.
                 $test_for_staticsync = get_resource_data($ref);
-                if ($test_for_staticsync['file_path'] != "")
+                if($test_for_staticsync['file_path'] != "")
                     {
                     $staticsync_mod = " and resource_type_field != 8";
                     }
-                else 
+                else
                     {
                     $staticsync_mod = "";
                     }
-        
+
                 sql_query("DELETE FROM resource_data WHERE resource='" . escape_check($ref) . "' $staticsync_mod");
                 sql_query("DELETE FROM resource_keyword WHERE resource='" . escape_check($ref) . "' $staticsync_mod");
-                
+
                 // Clear 'joined' display fields which are based on metadata that is being deleted in a revert (original filename is reinserted later)
                 $display_fields = get_resource_table_joins();
-                if ($staticsync_mod != "")
+                if($staticsync_mod != "")
                     {
                     $display_fields_new = array();
                     $display_fields_count = count($display_fields);
                     for($n = 0; $n < $display_fields_count; $n++)
                         {
-                        if ($display_fields[$n] != 8)
+                        if($display_fields[$n] != 8)
                             {
                             $display_fields_new[] = $display_fields[$n];
                             }
                         }
-                        
+
                     $display_fields = $display_fields_new;
                     }
-                    
+
                 $clear_fields = "";
                 $display_fields_count = count($display_fields);
                 for($x = 0; $x < $display_fields_count; $x++)
-                    { 
+                    {
                     $clear_fields .= "field".$display_fields[$x]."=''";
-                    if ($x < $display_fields_count - 1)
+                    if($x < $display_fields_count - 1)
                         {
                         $clear_fields .= ",";
                         }
-                    }   
-                    
+                    }
+
                 sql_query("UPDATE resource SET ".$clear_fields." WHERE ref=$ref");
-                
+
                 // Also add the ref back into keywords.
                 add_keyword_mappings($ref, $ref , -1);
                 $extension = sql_value("SELECT file_extension value FROM resource WHERE ref='" . escape_check($ref) . "'","");
@@ -98,14 +98,14 @@ if (!function_exists("upload_file"))
             else
                 {
                 // Work out which file has been posted.
-                if (isset($_FILES['userfile']))
+                if(isset($_FILES['userfile']))
                     {
                     $processfile = $_FILES['userfile']; # At least, single upload needs this.
-                    } 
-                elseif(isset($_FILES['Filedata'])) 
+                    }
+                elseif(isset($_FILES['Filedata']))
                     {
                     $processfile = $_FILES['Filedata']; # At least, Java upload needs this.
-                    } 
+                    }
 
                 // Work out the filename.
                 if(isset($_REQUEST['name']))
@@ -114,26 +114,26 @@ if (!function_exists("upload_file"))
                     }
                 elseif($file_path != "") // The file path was provided.
                     {
-                    $filename = basename(urldecode($file_path)); 
+                    $filename = basename(urldecode($file_path));
                     }
                 else // Standard uploads.
                     {
-                    $filename = $processfile['name']; 
+                    $filename = $processfile['name'];
                     }
 
                 global $filename_field;
-                if($no_exif && isset($filename_field)) 
+                if($no_exif && isset($filename_field))
                     {
                     $user_set_filename = get_data_by_field($ref, $filename_field);
                     $user_set_filename_path_parts = pathinfo($user_set_filename);
 
                     // $user_set_filename is for an already existing resource or when original filename is a visible field
                     // on the upload form.
-                    if(trim($user_set_filename) != '') 
+                    if(trim($user_set_filename) != '')
                         {
                         // Get extension of file just in case the user did not provide one.
                         $path_parts = pathinfo($filename);
-                    
+
                         if(isset($path_parts['extension']))
                             {
                             $uploaded_extension = $path_parts['extension'];
@@ -146,7 +146,7 @@ if (!function_exists("upload_file"))
 
                         // If the user filename does not have an extension add the original one.
                         $path_parts = pathinfo($filename);
-                        if(!isset($path_parts['extension']) && $original_extension != "") 
+                        if(!isset($path_parts['extension']) && $original_extension != "")
                             {
                             $filename .= '.' . $uploaded_extension;
                             }
@@ -155,14 +155,14 @@ if (!function_exists("upload_file"))
                 }
 
             // Work out extension.
-            if (!isset($extension))
+            if(!isset($extension))
                 {
                 // First try to get it from the filename.
                 $extension=  explode(".", $filename);
                 if(count($extension) > 1)
                     {
                     $extension = escape_check(trim(strtolower($extension[count($extension) - 1])));
-                    } 
+                    }
                 // If not, try Exiftool.
                 elseif($exiftool_fullpath != false)
                     {
@@ -176,7 +176,7 @@ if (!function_exists("upload_file"))
                         $cmd = $exiftool_fullpath . " -filetype -s -s -s ".escapeshellarg($processfile['tmp_name']);
                         $file_type_by_exiftool=run_command($cmd);
                         }
-                    
+
                     if(strlen($file_type_by_exiftool) > 0)
                         {
                         $extension = str_replace(" ", "_", trim(strtolower($file_type_by_exiftool)));
@@ -187,33 +187,33 @@ if (!function_exists("upload_file"))
                         return false;
                         }
                     }
-                    
-                // If no clue of extension by now, return FALSE.      
-                else 
+
+                // If no clue of extension by now, return FALSE.
+                else
                     {
                     return false;
-                    }   
+                    }
                 }
 
             // Banned extension?
             global $banned_extensions;
-            if(in_array($extension, $banned_extensions)) 
+            if(in_array($extension, $banned_extensions))
                 {
                 return false;
                 }
 
             $filepath = get_resource_path($ref, true, "", true, $extension);
 
-            if (!$revert)
-                { 
+            if(!$revert)
+                {
                 // Remove existing file, if present.
                 hook("beforeremoveexistingfile", "", array("resourceId" => $ref));
 
-                $old_extension = sql_value("SELECT file_extension value FROM resource WHERE ref='" . escape_check($ref) . "'","");
-                if ($old_extension != "") 
+                $old_extension = sql_value("SELECT file_extension value FROM resource WHERE ref='" . escape_check($ref) . "'", "");
+                if($old_extension != "")
                     {
                     $old_path = get_resource_path($ref, true," ", true, $old_extension);
-                    if(file_exists($old_path)) 
+                    if(file_exists($old_path))
                         {
                         unlink($old_path);
                         }
@@ -221,32 +221,32 @@ if (!function_exists("upload_file"))
 
                 // Also remove any existing extracted ICC profiles.
                 $icc_path = get_resource_path($ref, true, '', false, 'icc');
-                if (file_exists($icc_path)) 
+                if (file_exists($icc_path))
                     {
                     unlink($icc_path);
                     }
-        
+
                 // If there is a -0.icc page, run through and delete as many as necessary.
                 global $pdf_pages;
-                
-                $iccx = 0; 
+
+                $iccx = 0;
                 $finished = false;
                 $badicc_path = str_replace(".icc", "-$iccx.icc", $icc_path);
-        
+
                 while (!$finished)
                     {
-                    if (file_exists($badicc_path))
+                    if(file_exists($badicc_path))
                         {
                         unlink($badicc_path);
                         ++$iccx;
                         $badicc_path = str_replace(".icc", "-$iccx.icc", $icc_path);
                         }
-                    else 
+                    else
                         {
                         $finished = true;
                         }
                     }
-                    
+
                 $iccx = 0;
                 }
             }
@@ -266,15 +266,15 @@ if (!function_exists("upload_file"))
                 if(!$after_upload_processing)
                     {
                     global $replace_batch_existing;
-                    
+
                     if($file_path != "" && ($replace_batch_existing || !$deletesource))
                         {
-                        $result = copy($file_path, $filepath);    
+                        $result = copy($file_path, $filepath);
                         }
                     elseif(!$replace_batch_existing && $file_path != "") // File path has been specified, let's use that directly.
                         {
                         $result = rename($file_path, $filepath);
-                        } 
+                        }
                     else // Standard upload.
                         {
                         if (!$revert)
@@ -286,20 +286,20 @@ if (!function_exists("upload_file"))
                             $result = true;
                             }
                         }
-                
-                    if ($result == false)
+
+                    if($result == false)
                         {
                         return false;
                         }
                     }
-            
+
                 if(!$upload_then_process || $after_upload_processing)
                     {
                     global $camera_autorotation, $ffmpeg_audio_extensions;
-                    
-                    if ($camera_autorotation)
+
+                    if($camera_autorotation)
                         {
-                        if ($autorotate && (!in_array($extension,$ffmpeg_audio_extensions)))
+                        if($autorotate && (!in_array($extension,$ffmpeg_audio_extensions)))
                             {
                             AutoRotateImage($filepath);
                             }
@@ -307,40 +307,40 @@ if (!function_exists("upload_file"))
                     chmod($filepath, 0777);
 
                     global $icc_extraction, $ffmpeg_supported_extensions;
-                    if ($icc_extraction && $extension != "pdf" && !in_array($extension, $ffmpeg_supported_extensions))
+                    if($icc_extraction && $extension != "pdf" && !in_array($extension, $ffmpeg_supported_extensions))
                         {
                         extract_icc_profile($ref, $extension);
                         }
                     }
                 }
-            }   
-        
+            }
+
         // Store extension in the database and update file modified time.
-        if ($revert)
+        if($revert)
             {
             $has_image = "";
             }
-        else 
+        else
             {
             $has_image = ",has_image=0";
             }
-            
+
         sql_query("UPDATE resource SET file_extension='$extension',preview_extension='jpg',file_modified=now() $has_image WHERE ref='" . escape_check($ref) . "'");
-        
+
         if(!$upload_then_process || $after_upload_processing)
             {
             // Delete existing resource_dimensions.
             sql_query("DELETE FROM resource_dimensions WHERE resource='" . escape_check($ref) . "'");
-            
+
             // Get file metadata.
-            if(!$no_exif) 
+            if(!$no_exif)
                 {
                 extract_exif_comment($ref, $extension);
                 }
             else
                 {
                 global $merge_filename_with_title, $merge_filename_with_title_default, $lang;
-                
+
                 if($merge_filename_with_title && isset($processfile))
                     {
                     $merge_filename_with_title_option = urlencode(getval('merge_filename_with_title_option', $merge_filename_with_title_default));
@@ -348,7 +348,7 @@ if (!function_exists("upload_file"))
                     $merge_filename_with_title_spacer = urlencode(getval('merge_filename_with_title_spacer', ''));
 
                     $original_filename = '';
-                    if(isset($_REQUEST['name'])) 
+                    if(isset($_REQUEST['name']))
                         {
                         $original_filename = $_REQUEST['name'];
                         }
@@ -357,11 +357,11 @@ if (!function_exists("upload_file"))
                         $original_filename = $processfile['name'];
                         }
 
-                    if($merge_filename_with_title_include_extensions == 'yes') 
+                    if($merge_filename_with_title_include_extensions == 'yes')
                         {
                         $merged_filename = $original_filename;
-                        } 
-                    else 
+                        }
+                    else
                         {
                         $merged_filename = strip_extension($original_filename);
                         }
@@ -371,18 +371,18 @@ if (!function_exists("upload_file"))
                     $read_from = get_exiftool_fields($resource['resource_type']);
                     $read_from_count = count($read_from);
 
-                    for($i = 0; $i < $read_from_count; $i++) 
+                    for($i = 0; $i < $read_from_count; $i++)
                         {
-                        if($read_from[$i]['name'] == 'title') 
+                        if($read_from[$i]['name'] == 'title')
                             {
                             $oldval = get_data_by_field($ref, $read_from[$i]['ref']);
 
-                            if(strpos($oldval, $merged_filename) !== false) 
+                            if(strpos($oldval, $merged_filename) !== false)
                                 {
                                 continue;
                                 }
-                        
-                            switch (strtolower($merge_filename_with_title_option)) 
+
+                            switch (strtolower($merge_filename_with_title_option))
                                 {
                                 // Do nothing, since the user does not want to use this feature.
                                 case strtolower($lang['merge_filename_title_do_not_use']):
@@ -392,14 +392,14 @@ if (!function_exists("upload_file"))
                                     break;
                                 case strtolower($lang['merge_filename_title_prefix']):
                                     $newval = $merged_filename . $merge_filename_with_title_spacer . $oldval;
-                                    if($oldval == '') 
+                                    if($oldval == '')
                                         {
                                         $newval = $merged_filename;
                                         }
                                     break;
                                 case strtolower($lang['merge_filename_title_suffix']):
                                     $newval = $oldval . $merge_filename_with_title_spacer . $merged_filename;
-                                    if($oldval == '') 
+                                    if($oldval == '')
                                         {
                                         $newval = $merged_filename;
                                         }
@@ -417,13 +417,13 @@ if (!function_exists("upload_file"))
                         }
                     }
                 }
-        
+
             // Extract text from documents (e.g. PDF, DOC).
             global $extracted_text_field;
 
-            // We need to make sure we do not spin off a new offline job for this when upload_file() is being used in 
+            // We need to make sure we do not spin off a new offline job for this when upload_file() is being used in
             // upload_processing job handler.
-            if (isset($extracted_text_field) && !(isset($unoconv_path) && in_array($extension, $unoconv_extensions))) 
+            if(isset($extracted_text_field) && !(isset($unoconv_path) && in_array($extension, $unoconv_extensions)))
                 {
                 global $offline_job_queue, $offline_job_in_progress;
                 if($offline_job_queue && !$offline_job_in_progress)
@@ -441,7 +441,7 @@ if (!function_exists("upload_file"))
                     }
                 }
             }
-        
+
         // Store original filename in field, if set.
         global $filename_field, $amended_filename;
         if(isset($filename_field))
@@ -454,67 +454,67 @@ if (!function_exists("upload_file"))
                 {
                 update_field($ref, $filename_field, $filename);
                 }
-            else 
+            else
                 {
                 update_field($ref, $filename_field, $original_filename);
-                }       
+                }
             }
-            
+
         if(!$upload_then_process || $after_upload_processing)
             {
-            if (!$revert)
+            if(!$revert)
                 {
                 // Clear any existing FLV file or multi-page previews.
                 global $pdf_pages;
-                
+
                 for($n = 2; $n <= $pdf_pages; $n++)
                     {
                     // Remove preview page.
                     $path = get_resource_path($ref, true, "scr", false, "jpg", -1, $n, false);
-                    if(file_exists($path)) 
+                    if(file_exists($path))
                         {
                         unlink($path);
                         }
-                        
+
                     // Also try the watermarked version.
                     $path = get_resource_path($ref, true, "scr", false, "jpg", -1, $n, true);
-                    if(file_exists($path)) 
+                    if(file_exists($path))
                         {
                         unlink($path);
                         }
                     }
-            
+
                 // Remove any FLV video preview, except if the actual resource is an FLV file.
                 global $ffmpeg_preview_extension;
-                
+
                 if($extension != $ffmpeg_preview_extension)
                     {
                     $path = get_resource_path($ref, true, "", false, $ffmpeg_preview_extension);
-                    if(file_exists($path)) 
+                    if(file_exists($path))
                         {
                         unlink($path);
                         }
                     }
-                    
+
                 // Remove any FLV preview-only file
                 $path = get_resource_path($ref, true, "pre", false, $ffmpeg_preview_extension);
-                if(file_exists($path)) 
+                if(file_exists($path))
                     {
                     unlink($path);
                     }
-            
+
                 // Remove any MP3, except if the actual resource is an MP3 file.
                 if($extension != "mp3")
                     {
                     $path = get_resource_path($ref, true, "", false, "mp3");
-                    if(file_exists($path)) 
+                    if(file_exists($path))
                         {
                         unlink($path);
                         }
-                    }   
+                    }
 
                 global $enable_thumbnail_creation_on_upload, $file_upload_block_duplicates, $checksum, $file_checksums_offline;
-                
+
                 $checksum_required = true;
                 if($file_upload_block_duplicates && !$file_checksums_offline && generate_file_checksum($ref, $extension, false))
                     {
@@ -522,7 +522,7 @@ if (!function_exists("upload_file"))
                     }
 
                 if($enable_thumbnail_creation_on_upload)
-                    { 
+                    {
                     create_previews($ref,false,$extension,false,false,-1,false,false,$checksum_required);
                     }
                 elseif(!$enable_thumbnail_creation_on_upload && $offline_job_queue)
@@ -543,38 +543,38 @@ if (!function_exists("upload_file"))
                     sql_query("UPDATE resource SET has_image=0 WHERE ref='" . escape_check($ref) . "'");
                     }
                 }
-        
+
             // Update file dimensions.
             get_original_imagesize($ref, $filepath, $extension);
             }
-        
+
         // Add this to the job queue for offline processing.
         if($upload_then_process && !$after_upload_processing)
             {
             global $userref;
-            
+
             $job_data = array();
             $job_data["resource"] = $ref;
             $job_data["extract"] = ($no_exif);
             $job_data["revert"] = $revert;
             $job_data["autorotate"] = $autorotate;
-            
+
             global $upload_then_process_holding_state;
-            
+
             if(isset($upload_then_process_holding_state))
                 {
                 $job_data["archive"] = sql_value("SELECT archive value FROM resource WHERE ref='" . escape_check($ref) . "'", "");
                 update_archive_status($ref, $upload_then_process_holding_state);
                 }
-            
+
             $job_code = $ref . md5($job_data["resource"] . strtotime('now'));
             $job_success_lang = "upload processing success " . str_replace(array('%ref', '%title'),array($ref, $filename), $lang["ref-title"]);
             $job_failure_lang = "upload processing fail " . ": " . str_replace(array('%ref', '%title'), array($ref, $filename), $lang["ref-title"]);
-            $jobadded = job_queue_add("upload_processing", $job_data, $userref, '', $job_success_lang, $job_failure_lang, $job_code);             
+            $jobadded = job_queue_add("upload_processing", $job_data, $userref, '', $job_success_lang, $job_failure_lang, $job_code);
             }
-        
+
         hook("uploadfilesuccess", "", array("resourceId" => $ref));
-        
+
         // Update disk usage.
         update_disk_usage($ref);
         if(!$upload_then_process || !$after_upload_processing)
@@ -583,7 +583,7 @@ if (!function_exists("upload_file"))
             $log_ref = resource_log($ref, "u", 0);
             hook("upload_image_after_log_write", "", array($ref, $log_ref));
             }
-        
+
         return true;
         }
     }
@@ -593,28 +593,28 @@ if (!function_exists("upload_file"))
 function extract_exif_comment($ref, $extension = "")
     {
     // This may have been set to a non-standard value if allowing per field selection.
-    $exifoption = getval("no_exif", ""); 
-    
+    $exifoption = getval("no_exif", "");
+
     // Sounds odd but previously was no_exif, so logic reversed.
     if($exifoption == "yes")
         {
         $exifoption = "no";
-        }     
-                            
+        }
+
     if($exifoption == "")
         {
         $exifoption = "yes";
         }
-    
+
     $image = get_resource_path($ref, true, "", false, $extension);
-    if(!file_exists($image)) 
+    if(!file_exists($image))
         {
         return false;
         }
     hook("pdfsearch");
 
     global $exif_comment, $exiftool_no_process, $exiftool_resolution_calc, $disable_geocoding, $embedded_data_user_select_fields, $filename_field, $lang;
-    
+
     resource_log($ref, LOG_CODE_TRANSFORMED, '', '', '', $lang['exiftooltag']);
 
     $exiftool_fullpath = get_utility_path("exiftool");
@@ -622,49 +622,49 @@ function extract_exif_comment($ref, $extension = "")
         {
         $resource = get_resource_data($ref);
         hook("beforeexiftoolextraction");
-        
-        // See if we can use Exiftool to get resolution/units and dimensions here.  Dimensions are normally extracted 
-        // once from the view page, but for the original file, it should be done here if possible, and Exiftool can 
+
+        // See if we can use Exiftool to get resolution/units and dimensions here.  Dimensions are normally extracted
+        // once from the view page, but for the original file, it should be done here if possible, and Exiftool can
         // provide more data.
         if($exiftool_resolution_calc)
             {
             $command = $exiftool_fullpath . " -s -s -s -t -composite:imagesize -xresolution -resolutionunit " . escapeshellarg($image);
             $dimensions_resolution_unit = explode("\t", run_command($command));
 
-            // If dimensions resolution and unit could be extracted, add them to the database. They can be used in 
+            // If dimensions resolution and unit could be extracted, add them to the database. They can be used in
             // view.php to give more accurate data.
             if(count($dimensions_resolution_unit) == 3)
                 {
                 $dru = $dimensions_resolution_unit;
-                $filesize = filesize_unlimited($image); 
+                $filesize = filesize_unlimited($image);
                 $wh = explode("x", $dru[0]);
                 $width = $wh[0];
                 $height = $wh[1];
                 $resolution = $dru[1];
                 $unit = $dru[2];
-                sql_query("INSERT INTO resource_dimensions (resource, width, height, resolution, unit, file_size) values ('$ref', '$width', '$height', '$resolution', '$unit', '$filesize')");  
+                sql_query("INSERT INTO resource_dimensions (resource, width, height, resolution, unit, file_size) values ('$ref', '$width', '$height', '$resolution', '$unit', '$filesize')");
                 }
             }
-        
+
         $read_from = get_exiftool_fields($resource['resource_type']);
 
-        // Run Exiftool to get all the valid fields. Use -s -s option so that the command result is not printed in 
+        // Run Exiftool to get all the valid fields. Use -s -s option so that the command result is not printed in
         // columns, which will help in parsing. We then split the lines in the result into an array.
         $command = $exiftool_fullpath . " -s -s -f -m -d \"%Y-%m-%d %H:%M:%S\" -G " . escapeshellarg($image);
         $output = run_command($command);
         $metalines = explode("\n", $output);
-        
+
         // An associative array to hold metadata field/value pairs.
-        $metadata = array(); 
-        
-        if (!$disable_geocoding)
+        $metadata = array();
+
+        if(!$disable_geocoding)
             {
             // Set vars.
             $dec_long = 0;
             $dec_lat = 0;
             }
-        
-        // Go through each line and split field/value using the first occurrance of ": ".  The keys in the associative 
+
+        // Go through each line and split field/value using the first occurrance of ": ".  The keys in the associative
         // array is converted into uppercase for easier lookup later.
         foreach($metalines as $metaline)
             {
@@ -679,10 +679,10 @@ function extract_exif_comment($ref, $extension = "")
                 }
 
             // Get position of first ": ", return FALSE if does not exist.
-            if($pos) 
+            if($pos)
                 {
                 // Add to the associative array, also clean up leading/trailing space and single quote (on Windows sometimes).
-                
+
                 // Extract group name and tag name.
                 $s = explode("]", substr($metaline, 0, $pos));
                 $s_count = count($s);
@@ -690,7 +690,7 @@ function extract_exif_comment($ref, $extension = "")
                     {
                     // Extract value.
                     $value = strip_tags(trim(substr($metaline, $pos + 2)));
-                    
+
                     // Replace '..' with line feed - either Exiftool itself or Adobe Bridge replaces line feeds with '..'
                     $value = str_replace('....', '\n\n', $value); # Two new line feeds in ExifPro are replaced with 4 dots '....'
                     $value = str_replace('...', '.\n', $value); # Three dots together is interpreted as a full stop then line feed, not the other way round.
@@ -705,33 +705,33 @@ function extract_exif_comment($ref, $extension = "")
 
                         debug("extract_exif_comment: Converted value: " . $value);
                         }
-                    
+
                     // Extract group name and tag name.
                     $groupname = strtoupper(substr($s[0], 1));
                     $tagname = strtoupper(trim($s[1]));
-                    
-                    if (!$disable_geocoding)
+
+                    if(!$disable_geocoding)
                         {
                         if($tagname == 'GPSLATITUDE' && preg_match("/^(?<degrees>\d+) deg (?<minutes>\d+)' (?<seconds>\d+\.?\d*)\"/", $value, $latitude))
                             {
                             $dec_lat = $latitude['degrees'] + ($latitude['minutes'] / 60) + ($latitude['seconds'] / (3600)); # 60*60
-                            if (strpos($value, 'S') !== false)
+                            if(strpos($value, 'S') !== false)
                                 {
                                 $dec_lat = -1 * $dec_lat;
-                                }   
+                                }
                             }
                         elseif($tagname == 'GPSLONGITUDE' && preg_match("/^(?<degrees>\d+) deg (?<minutes>\d+)' (?<seconds>\d+\.?\d*)\"/", $value, $longitude))
                             {
                             $dec_long = $longitude['degrees'] + ($longitude['minutes'] / 60) + ($longitude['seconds'] / (3600)); # 60*60
-                            if (strpos($value, 'W') !== false) 
+                            if(strpos($value, 'W') !== false)
                                 {
                                 $dec_long = -1 * $dec_long;
                                 }
                             }
                         }
                     debug("Exiftool: extracted field before escape check '$groupname:$tagname', value is '" . $value ."'");
-                    
-                    // Store both tag data under both tagname and groupname:tagname, to support both formats when mapping fields. 
+
+                    // Store both tag data under both tagname and groupname:tagname, to support both formats when mapping fields.
                     $metadata[$tagname] = escape_check($value);
                     $metadata[$groupname . ":" . $tagname] = escape_check($value);
 
@@ -751,7 +751,7 @@ function extract_exif_comment($ref, $extension = "")
                 }
             }
 
-        if(isset($metadata['FILENAME'])) 
+        if(isset($metadata['FILENAME']))
             {
             $metadata['STRIPPEDFILENAME'] = strip_extension($metadata['FILENAME']);
             }
@@ -761,30 +761,30 @@ function extract_exif_comment($ref, $extension = "")
             {
             sql_query("UPDATE resource SET geo_long='" . escape_check($dec_long) . "',geo_lat='" . escape_check($dec_lat) . "' WHERE ref='$ref'");
             }
-        
+
         // Update portrait_landscape_field (when reverting metadata this was getting lost).
         update_portrait_landscape_field($ref);
-        
+
         // Now we lookup fields from the database to see if a corresponding value exists in the uploaded file.
         $exif_updated_fields = array();
         $read_from_count = count($read_from);
         for($i = 0; $i < $read_from_count; $i++)
             {
             $field = explode(",", $read_from[$i]['exiftool_field']);
-            foreach ($field as $subfield)
+            foreach($field as $subfield)
                 {
                 $subfield = strtoupper($subfield); // Convert to upper case for easier comparision.
-                if (in_array($subfield, array_keys($metadata)) && $metadata[$subfield] != "-" && trim($metadata[$subfield]) != "")
+                if(in_array($subfield, array_keys($metadata)) && $metadata[$subfield] != "-" && trim($metadata[$subfield]) != "")
                     {
                     $read = true;
                     $value = $metadata[$subfield];
-                    
+
                     // Dropdown box or checkbox list?
-                    if (in_array($read_from[$i]["type"], array(FIELD_TYPE_CHECK_BOX_LIST, FIELD_TYPE_DROP_DOWN_LIST, FIELD_TYPE_RADIO_BUTTONS)))
+                    if(in_array($read_from[$i]["type"], array(FIELD_TYPE_CHECK_BOX_LIST, FIELD_TYPE_DROP_DOWN_LIST, FIELD_TYPE_RADIO_BUTTONS)))
                         {
                         // Check that the value is one of the options and only insert if it is an exact match.  The use
                         // of safe_file_name and strtolower ensures matching takes place on alphanumeric characters only and ignores case.
-                        
+
                         // First fetch all options in all languages.
                         $options = trim_array(explode(",", strtolower($read_from[$i]["options"])));
                         $options_count = count($options);
@@ -802,34 +802,34 @@ function extract_exif_comment($ref, $extension = "")
                             if(trim($s[0]) != "" && (in_array(strtolower($s[$n]), $options)))
                                 {
                                 $value .= "," . $s[$n];
-                                }                             
+                                }
                             }
                         }
-                    
-                    // Read the data.                
-                    if ($read)
+
+                    // Read the data.
+                    if($read)
                         {
                         $plugin = dirname(__FILE__) . "/../plugins/exiftool_filter_" . $read_from[$i]['name'] . ".php";
                         if($read_from[$i]['exiftool_filter'] != "")
                             {
                             eval($read_from[$i]['exiftool_filter']);
                             }
-                            
+
                         if(file_exists($plugin))
                             {
                             include $plugin;
                             }
-        
+
                         $exiffieldoption = $exifoption;
-                        
+
                         if($exifoption == "custom"  || (isset($embedded_data_user_select_fields)  && in_array($read_from[$i]['ref'], $embedded_data_user_select_fields)))
-                            {                                   
+                            {
                             debug ("EXIF - custom option for field " . $read_from[$i]['ref'] . " : " . $exifoption);
-                            $exiffieldoption = getval("exif_option_" . $read_from[$i]['ref'], $exifoption);    
+                            $exiffieldoption = getval("exif_option_" . $read_from[$i]['ref'], $exifoption);
                             }
-                        
+
                         debug("EXIF - option for field " . $read_from[$i]['ref'] . " : " . $exiffieldoption);
-                        
+
                         if($exiffieldoption == "no")
                             {
                             continue;
@@ -842,7 +842,7 @@ function extract_exif_comment($ref, $extension = "")
                                 {
                                 continue;
                                 }
-                            $newval = $oldval . $spacechar . iptc_return_utf8($value) ;                                    
+                            $newval = $oldval . $spacechar . iptc_return_utf8($value) ;
                             }
                         elseif($exiffieldoption=="prepend")
                             {
@@ -853,31 +853,31 @@ function extract_exif_comment($ref, $extension = "")
                                 continue;
                                 }
                             $newval = iptc_return_utf8($value) . $spacechar . $oldval;
-                            }                           
+                            }
                         else
                             {
-                            $newval = iptc_return_utf8($value);    
+                            $newval = iptc_return_utf8($value);
                             }
 
                         global $merge_filename_with_title, $merge_filename_with_title_default, $lang, $view_title_field;
-                        
-                        if($merge_filename_with_title && $read_from[$i]['ref'] == $view_title_field) 
+
+                        if($merge_filename_with_title && $read_from[$i]['ref'] == $view_title_field)
                             {
                             $merge_filename_with_title_option = urldecode(getval('merge_filename_with_title_option', $merge_filename_with_title_default));
                             $merge_filename_with_title_include_extensions = urldecode(getval('merge_filename_with_title_include_extensions', ''));
                             $merge_filename_with_title_spacer = urldecode(getval('merge_filename_with_title_spacer', ''));
 
                             $original_filename = '';
-                            if(isset($_REQUEST['name'])) 
+                            if(isset($_REQUEST['name']))
                                 {
                                 $original_filename = $_REQUEST['name'];
                                 }
-                            else 
+                            else
                                 {
                                 $original_filename = $processfile['name'];
                                 }
 
-                            if($merge_filename_with_title_include_extensions == 'yes') 
+                            if($merge_filename_with_title_include_extensions == 'yes')
                                 {
                                 $merged_filename = $original_filename;
                                 }
@@ -887,12 +887,12 @@ function extract_exif_comment($ref, $extension = "")
                                 }
 
                             $oldval = get_data_by_field($ref, $read_from[$i]['ref']);
-                            if($value == "" || strpos($oldval, $value) !== FALSE) 
+                            if($value == "" || strpos($oldval, $value) !== FALSE)
                                 {
                                 continue;
                                 }
-                            
-                            switch (strtolower($merge_filename_with_title_option)) 
+
+                            switch (strtolower($merge_filename_with_title_option))
                                 {
                                 case strtolower($lang['merge_filename_title_do_not_use']):
                                     $newval = $oldval;
@@ -902,14 +902,14 @@ function extract_exif_comment($ref, $extension = "")
                                     break;
                                 case strtolower($lang['merge_filename_title_prefix']):
                                     $newval = $merged_filename . $merge_filename_with_title_spacer . $oldval;
-                                    if($oldval == '') 
+                                    if($oldval == '')
                                         {
                                         $newval = $merged_filename;
                                         }
                                     break;
                                 case strtolower($lang['merge_filename_title_suffix']):
                                     $newval = $oldval . $merge_filename_with_title_spacer . $merged_filename;
-                                    if($oldval == '') 
+                                    if($oldval == '')
                                         {
                                         $newval = $merged_filename;
                                         }
@@ -919,55 +919,55 @@ function extract_exif_comment($ref, $extension = "")
                                     break;
                                 }
                             }
-                            
+
                             if(isset($newval))
                                 {
                                 update_field($ref, $read_from[$i]['ref'], $newval);
                                 }
                             $exif_updated_fields[] = $read_from[$i]['ref'];
-                            
+
                             hook("metadata_extract_addition", "all", array($ref, $newval, $read_from, $i));
 
                             // newval needs to be unset in order to avoid carrying over the value from one EXIF field to  another.
                             unset($newval);
                             }
-                        }   
+                        }
                     else // Process if no embedded title is found.
                         {
                         global $merge_filename_with_title, $merge_filename_with_title_default, $lang, $view_title_field;
-                        
-                        if($merge_filename_with_title && $read_from[$i]['ref'] == $view_title_field) 
+
+                        if($merge_filename_with_title && $read_from[$i]['ref'] == $view_title_field)
                             {
                             $merge_filename_with_title_option = urlencode(getval('merge_filename_with_title_option', $merge_filename_with_title_default));
                             $merge_filename_with_title_include_extensions = urlencode(getval('merge_filename_with_title_include_extensions', ''));
                             $merge_filename_with_title_spacer = urlencode(getval('merge_filename_with_title_spacer', ''));
 
                             $original_filename = '';
-                            if(isset($_REQUEST['name'])) 
+                            if(isset($_REQUEST['name']))
                                 {
                                 $original_filename = $_REQUEST['name'];
                                 }
-                            else 
+                            else
                                 {
                                 $original_filename = $processfile['name'];
                                 }
 
-                            if($merge_filename_with_title_include_extensions == 'yes') 
+                            if($merge_filename_with_title_include_extensions == 'yes')
                                 {
                                 $merged_filename = $original_filename;
                                 }
-                            else 
+                            else
                                 {
                                 $merged_filename = strip_extension($original_filename);
                                 }
 
                             $oldval = get_data_by_field($ref, $read_from[$i]['ref']);
-                            if(strpos($oldval, $value) !== FALSE) 
+                            if(strpos($oldval, $value) !== FALSE)
                                 {
                                 continue;
                                 }
-                            
-                            switch (strtolower($merge_filename_with_title_option)) 
+
+                            switch (strtolower($merge_filename_with_title_option))
                                 {
                                 // Do nothing, since the user does not want to use this feature.
                                 case strtolower($lang['merge_filename_title_do_not_use']):
@@ -977,14 +977,14 @@ function extract_exif_comment($ref, $extension = "")
                                     break;
                                 case strtolower($lang['merge_filename_title_prefix']):
                                     $newval = $merged_filename . $merge_filename_with_title_spacer . $oldval;
-                                    if($oldval == '') 
+                                    if($oldval == '')
                                         {
                                         $newval = $merged_filename;
                                         }
                                     break;
                                 case strtolower($lang['merge_filename_title_suffix']):
                                     $newval = $oldval . $merge_filename_with_title_spacer . $merged_filename;
-                                    if($oldval == '') 
+                                    if($oldval == '')
                                         {
                                         $newval = $merged_filename;
                                         }
@@ -993,7 +993,7 @@ function extract_exif_comment($ref, $extension = "")
                                 default:
                                     break;
                                 }
-                            
+
                             if(isset($newval))
                                 {
                                 update_field($ref, $read_from[$i]['ref'], $newval);
@@ -1003,33 +1003,33 @@ function extract_exif_comment($ref, $extension = "")
                     }
                 }
             }
-        
+
         // We have not found an embedded value for this field so we need to modify the $filename variable which will be used to set the data later in the upload_file function.
-        if(!in_array($filename_field, $exif_updated_fields)) 
+        if(!in_array($filename_field, $exif_updated_fields))
             {
-            $exiffilenameoption = getval("exif_option_" . $filename_field, $exifoption);           
+            $exiffilenameoption = getval("exif_option_" . $filename_field, $exifoption);
             debug ("EXIF - custom option for filename field " . $filename_field . " : " . $exiffilenameoption);
-            
+
             // We are not using the extracted filename as usual.
-            if ($exiffilenameoption != "yes") 
+            if($exiffilenameoption != "yes")
                 {
                 $uploadedfilename = isset($_REQUEST['name']) ? $_REQUEST['name'] : $processfile['name'];
                 global $userref, $amended_filename;
-                
+
                 $entered_filename = get_data_by_field(-$userref, $filename_field);
                 debug("EXIF - got entered file name " . $entered_filename);
-                
+
                 // Use the entered value.
-                if($exiffilenameoption == "no") 
+                if($exiffilenameoption == "no")
                     {
                     $amended_filename = $entered_filename;
 
-                    if(trim($amended_filename) == '') 
+                    if(trim($amended_filename) == '')
                         {
                         $amended_filename = $uploadedfilename;
                         }
 
-                    if(strpos($amended_filename, $extension) === FALSE) 
+                    if(strpos($amended_filename, $extension) === FALSE)
                         {
                         $amended_filename .= '.' . $extension;
                         }
@@ -1040,16 +1040,16 @@ function extract_exif_comment($ref, $extension = "")
                     $amended_filename =  $entered_filename . $uploadedfilename;
                     }
                 elseif($exiffilenameoption == "prepend")
-                    {                   
+                    {
                     $amended_filename =  strip_extension($uploadedfilename) . $entered_filename . "." . $extension;
                     }
                 debug("EXIF - created new file name " . $amended_filename);
                 }
             }
         }
-    elseif (isset($exif_comment)) // Exiftool is not installed. As a fallback, we grab some predefined basic fields using the PHP function exif_read_data().
+    elseif(isset($exif_comment)) // Exiftool is not installed. As a fallback, we grab some predefined basic fields using the PHP function exif_read_data().
         {
-        if (function_exists("exif_read_data"))
+        if(function_exists("exif_read_data"))
             {
             $data = @exif_read_data($image);
             }
@@ -1057,13 +1057,13 @@ function extract_exif_comment($ref, $extension = "")
             {
             $data = false;
             }
-        
+
         if($data !== false)
             {
             $comment = "";
             // echo "<pre>EXIF\n";print_r($data);exit();
 
-            if(isset($data["ImageDescription"])) 
+            if(isset($data["ImageDescription"]))
                 {
                 $comment = $data["ImageDescription"];
                 }
@@ -1075,34 +1075,34 @@ function extract_exif_comment($ref, $extension = "")
                 {
                 // Convert to UTF-8.
                 $comment = iptc_return_utf8($comment);
-                
+
                 // Save comment.
                 global $exif_comment;
                 update_field($ref, $exif_comment, $comment);
                 }
-            
+
             //  Save camera make/model.
-            if (isset($data["Model"]))
+            if(isset($data["Model"]))
                 {
                 global $exif_model;
                 update_field($ref, $exif_model, $data["Model"]);
                 }
-            
+
             // Save camera date/time.
-            if (isset($data["DateTimeOriginal"]))
+            if(isset($data["DateTimeOriginal"]))
                 {
                 global $exif_date;
                 $date = $data["DateTimeOriginal"];
-                
+
                 // Reformat date to ISO standard.
                 $date = substr($date, 0, 4) . "-" . substr($date, 5, 2) . "-" . substr($date, 8, 11);
                 update_field($ref, $exif_date, $date);
                 }
             }
-            
+
         // Try IPTC headers.
         $size = @getimagesize($image, $info);
-        if (isset($info["APP13"]))
+        if(isset($info["APP13"]))
             {
             $iptc = iptcparse($info["APP13"]);
             // echo "<pre>IPTC\n";print_r($iptc);exit();
@@ -1134,20 +1134,20 @@ function extract_exif_comment($ref, $extension = "")
                         {
                         $value = $iptc[$iptc_equiv][0];
                         }
-                        
+
                     $value = iptc_return_utf8($value);
-                    
+
                     // Date parsing.
                     if($fields[$n]["type"] == 4)
                         {
                         $value = substr($value, 0, 4) . "-" . substr($value, 4, 2) . "-" . substr($value, 6, 2);
                         }
-                    
+
                     if(trim($value) != "")
                         {
                         update_field($ref, $fields[$n]["ref"], $value);
                         }
-                    }           
+                    }
                 }
             }
         }
@@ -1164,19 +1164,19 @@ function extract_exif_comment($ref, $extension = "")
 function iptc_return_utf8($text)
     {
     global $iptc_expectedchars, $mysql_charset;
-    
+
     // No inconv library? Return text as-is.
-    if(!function_exists("iconv")) 
+    if(!function_exists("iconv"))
         {
         return $text;
         }
-    
+
     // No expected characters set? Return as is.
     if($iptc_expectedchars == "" || $mysql_charset == "utf8")
         {
         return $text;
         }
-    
+
     $try = array("UTF-8", "ISO-8859-1", "Macintosh", "Windows-1252");
     $try_count = count($try);
     for($n = 0; $n < $try_count; $n++)
@@ -1189,7 +1189,7 @@ function iptc_return_utf8($text)
             {
             $trans = @iconv($try[$n], "UTF-8", $text);
             }
-        
+
         $iptc_expectedchars_strlen = strlen($iptc_expectedchars);
         for($m = 0; $m < $iptc_expectedchars_strlen; $m++)
             {
@@ -1218,12 +1218,10 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
     // keep_for_hpr will be set to TRUE if necessary in preview_preprocessing.php to indicate that an intermediate JPG
     // can serve as the HPR; otherwise, when the file extension is a JPG, it is assumed no HPR is needed.
     resource_log($ref, LOG_CODE_TRANSFORMED, '', '', '', $lang['createpreviews']);
-
-    // Debug.
-    debug("create_previews(ref = {$ref}, thumbonly = {$thumbonly}, extension = {$extension}, previewonly = {$previewonly}, previewbased = {$previewbased}, alternative = {$alternative}, ignoremaxsize = {$ignoremaxsize}, ingested = {$ingested}, checksum_required = {$checksum_required})");
+    debug_function_call("create_previews", func_get_args());
 
     // Make sure the extension is the same as the original so checksums are not done for previews.
-    if(!$previewonly) 
+    if(!$previewonly)
         {
         $o_ext = sql_value("SELECT file_extension value FROM resource WHERE ref='{$ref}'","");
         if($extension == $o_ext && $checksum_required)
@@ -1232,7 +1230,7 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
             generate_file_checksum($ref, $extension);
             }
         }
-        
+
     // First reset preview tweaks to 0.
     sql_query("UPDATE resource SET preview_tweaks = '0|1' WHERE ref = '$ref'");
 
@@ -1248,13 +1246,13 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
     // previews (i.e. for watermarks).
     if($previewbased || ($autorotate_no_ingest && !$ingested))
         {
-        $file = get_resource_path($ref, true, "lpr", false, "jpg", -1, 1, false, "", $alternative);    
-        if (!file_exists($file))
+        $file = get_resource_path($ref, true, "lpr", false, "jpg", -1, 1, false, "", $alternative);
+        if(!file_exists($file))
             {
-            $file = get_resource_path($ref, true, "scr", false, "jpg", -1, 1, false, "", $alternative);        
-            if (!file_exists($file))
+            $file = get_resource_path($ref, true, "scr", false, "jpg", -1, 1, false, "", $alternative);
+            if(!file_exists($file))
                 {
-                $file = get_resource_path($ref, true, "pre", false, "jpg", -1 , 1, false, "", $alternative);        
+                $file = get_resource_path($ref, true, "pre", false, "jpg", -1 , 1, false, "", $alternative);
                 if(!file_exists($file) && $autorotate_no_ingest && !$ingested)
                     {
                     $file = get_resource_path($ref, true, "", false, $extension, -1, 1, false, "", $alternative);
@@ -1268,28 +1266,28 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
         }
     else //  We are generating based on a new preview (SCR) image.
         {
-        $file = get_resource_path($ref, true, "tmp", false, "jpg");   
+        $file = get_resource_path($ref, true, "tmp", false, "jpg");
         }
 
     debug("File source is $file");
 
     // Make sure the file exists, if not update preview_attempts so that we do not keep trying to generate a preview.
-    if (!file_exists($file)) 
+    if(!file_exists($file))
         {
         sql_query("UPDATE resource SET preview_attempts=ifnull(preview_attempts,0) + 1 WHERE ref='$ref'");
         return false;
         }
-    
+
     // If configured, make sure the file is within the size limit for preview generation.
     if(isset($preview_generate_max_file_size) && !$ignoremaxsize)
         {
         $filesize = filesize_unlimited($file) / (10408576); # Get filesize in MB (1024*1024).
-        if($filesize > $preview_generate_max_file_size) 
+        if($filesize > $preview_generate_max_file_size)
             {
             return false;
             }
         }
-    
+
     // Locate Imagemagick.
     $convert_fullpath = get_utility_path("im-convert");
     if($convert_fullpath == false)
@@ -1300,14 +1298,14 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
 
     // Handle alternative image file generation.
     global $image_alternatives;
-    
+
     if(isset($image_alternatives) && $alternative == -1)
         {
         $image_alternatives_count = count($image_alternatives);
         for($n = 0; $n < $image_alternatives_count; $n++)
             {
             // Remove any existing alternative file(s) with this name.
-            $exts = explode(',', $image_alternatives[$n]['source_extensions']);            
+            $exts = explode(',', $image_alternatives[$n]['source_extensions']);
             if(in_array($extension, $exts))
                 {
                 $existing = sql_query("SELECT ref FROM resource_alt_files WHERE resource = '$ref' AND name = '" . escape_check($image_alternatives[$n]['name']) . "'");
@@ -1326,7 +1324,7 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
                     {
                     $iccpath = get_resource_path($ref, true, '', false, 'icc');
                     global $icc_extraction, $ffmpeg_supported_extensions;
-                    
+
                     // Extracted profile does not exist, try extracting.
                     if(!file_exists($iccpath) && $extension != 'pdf' && !in_array($extension, $ffmpeg_supported_extensions))
                         {
@@ -1347,7 +1345,7 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
 
                 // Process the image.
                 $version = get_imagemagick_version();
-                
+
                 // Use the new Imagemagick command syntax (file then parameters).
                 if($version[0] > 5 || ($version[0] == 5 && $version[1] > 5) || ($version[0] == 5 && $version[1] == 5 && $version[2] > 7 ))
                     {
@@ -1367,7 +1365,7 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
                     }
                 }
             }
-        }   
+        }
 
     // Create image previews for built-in supported file types only (JPEG, PNG, GIF).
     if(($extension == "jpg") || ($extension == "jpeg") || ($extension == "png") || ($extension == "gif"))
@@ -1380,7 +1378,7 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
         else //  Use the GD library to perform the resize.
             {
             // For resource $ref, (re)create the various preview sizes listed in the table preview_sizes.  Only create
-            // previews where the target size IS LESS THAN OR EQUAL TO the source size. Set thumbonly=true to 
+            // previews where the target size IS LESS THAN OR EQUAL TO the source size. Set thumbonly=true to
             // (re)generate thumbnails only.
 
             $sizes = "";
@@ -1398,7 +1396,7 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
                     {
                     return ctype_lower($v);
                     });
-                $sizes = " where id in ('" . implode("','", $onlysizes) . "')";   
+                $sizes = " where id in ('" . implode("','", $onlysizes) . "')";
                 }
 
             // Fetch source image size, if we fail, exit this function as file not an image, or file not a valid JPG, PNG, or GIF).
@@ -1406,7 +1404,7 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
                 {
                 return false;
                 }
-        
+
             $ps = sql_query("SELECT * FROM preview_size $sizes");
             $ps_count = count($ps);
             for($n = 0; $n < $ps_count; $n++)
@@ -1415,40 +1413,40 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
                 $tw = $ps[$n]["width"];
                 $th = $ps[$n]["height"];
                 $id = $ps[$n]["id"];
-            
+
                 // Find the target path.
                 $path = get_resource_path($ref, true, $ps[$n]["id"], false, "jpg", -1, 1, false, "", $alternative);
-                if (file_exists($path) && !$previewbased) 
+                if(file_exists($path) && !$previewbased)
                     {
                     unlink($path);
                     }
-                    
+
                 // Also try the watermarked version.
                 $wpath = get_resource_path($ref, true, $ps[$n]["id"], false, "jpg", -1, 1, true, "", $alternative);
-                if (file_exists($wpath)) 
+                if(file_exists($wpath))
                     {
                     unlink($wpath);
                     }
 
-            // Only create previews where the target size IS LESS THAN OR EQUAL TO the source size or when producing a 
+            // Only create previews where the target size IS LESS THAN OR EQUAL TO the source size or when producing a
             // small thumbnail (to make sure we have that as a minimum).
-            if ($previews_allow_enlarge || $sw > $tw || $sh > $th || $id == "thm" || $id == "col")
+            if($previews_allow_enlarge || $sw > $tw || $sh > $th || $id == "thm" || $id == "col")
                     {
                     // Calculate width and height.
-                    if ($sw > $sh) // Landscape
+                    if($sw > $sh) // Landscape
                         {
                         $ratio = ($tw / $sw);
-                        } 
+                        }
                     else // Portrait
                         {
                         $ratio = ($th / $sh);
-                        } 
+                        }
                     $tw = floor($sw * $ratio);
                     $th = floor($sh * $ratio);
 
                     // Use the GD library to perform the resize.
                     $target = imagecreatetruecolor($tw, $th);
-                
+
                     if($extension == "png")
                         {
                         $source = @imagecreatefrompng($file);
@@ -1460,7 +1458,7 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
                     elseif($extension == "gif")
                         {
                         $source = @imagecreatefromgif($file);
-                        if($source === false) 
+                        if($source === false)
                             {
                             return false;
                             }
@@ -1473,46 +1471,46 @@ function create_previews($ref, $thumbonly = false, $extension = "jpg", $previewo
                             return false;
                             }
                         }
-                    
+
                     imagecopyresampled($target, $source, 0, 0, 0, 0, $tw, $th, $sw, $sh);
                     imagejpeg($target, $path, 90);
 
-                    if($ps[$n]["id"] == "thm") 
+                    if($ps[$n]["id"] == "thm")
                         {
                         extract_mean_colour($target, $ref);
                         }
                     imagedestroy($target);
                     }
                 // If the source is smaller than the PRE/THM/COL, we still need these sizes; just copy the file.
-                elseif(($id == "pre") || ($id == "thm") || ($id == "col"))   
+                elseif(($id == "pre") || ($id == "thm") || ($id == "col"))
                     {
                     copy($file, get_resource_path($ref, true, $id, false, $extension, -1, 1, false, "", $alternative));
-                    if($id == "thm") 
+                    if($id == "thm")
                         {
                         sql_query("UPDATE resource SET thumb_width='$sw',thumb_height='$sh' WHERE ref='$ref'");
                         }
                     }
                 }
-                
+
             // Flag database so a thumbnail appears on the site, but not for alternatives.
-            if ($alternative == -1) 
+            if ($alternative == -1)
                 {
                 sql_query("UPDATE resource SET has_image=1,preview_extension='jpg',preview_attempts=0,file_modified=now() WHERE ref='$ref'");
                 }
             }
         }
-    // If using ImageMagick, call preview_preprocessing.php which makes use of ImageMagick and other tools to attempt to 
+    // If using ImageMagick, call preview_preprocessing.php which makes use of ImageMagick and other tools to attempt to
     // extract a preview.
     else
         {
         global $no_preview_extensions;
-        
-        if (isset($imagemagick_path) && !in_array(strtolower($extension), $no_preview_extensions))
+
+        if(isset($imagemagick_path) && !in_array(strtolower($extension), $no_preview_extensions))
             {
             include(dirname(__FILE__) . "/preview_preprocessing.php");
             }
         }
-        
+
     hook('afterpreviewcreation', '', array($ref, $alternative));
     return true;
     }
@@ -1530,19 +1528,19 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
     $icc_transform_complete = false;
     debug("create_previews_using_im(ref=$ref,thumbonly=$thumbonly,extension=$extension,previewonly=$previewonly,previewbased=$previewbased,alternative=$alternative,ingested=$ingested)");
 
-    // Use ImageMagick to perform the resize.  For resource $ref, (re)create the various preview sizes listed in the 
+    // Use ImageMagick to perform the resize.  For resource $ref, (re)create the various preview sizes listed in the
     // table preview_sizes.  Set thumbonly=true to (re)generate thumbnails only.
     if(isset($imagemagick_path))
         {
         if($previewbased || ($autorotate_no_ingest && !$ingested))
             {
-            $file = get_resource_path($ref, true, "lpr", false, "jpg", -1, 1, false, "", -1, 1, false, "", $alternative); 
-            if (!file_exists($file))
+            $file = get_resource_path($ref, true, "lpr", false, "jpg", -1, 1, false, "", -1, 1, false, "", $alternative);
+            if(!file_exists($file))
                 {
-                $file = get_resource_path($ref, true, "scr", false, "jpg", -1,1,false,"",-1,1,false,"",$alternative);      
-                if (!file_exists($file))
+                $file = get_resource_path($ref, true, "scr", false, "jpg", -1,1,false,"",-1,1,false,"",$alternative);
+                if(!file_exists($file))
                     {
-                    $file = get_resource_path($ref, true, "pre", false, "jpg", -1, 1, false, "", -1, 1, false, "", $alternative);      
+                    $file = get_resource_path($ref, true, "pre", false, "jpg", -1, 1, false, "", -1, 1, false, "", $alternative);
                     /* staged, but not needed in testing
                     if(!file_exists($file) && $autorotate_no_ingest && !$ingested)
                         {
@@ -1550,7 +1548,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         }*/
                     }
                 }
-            
+
             // Extra check for !previewonly should there also be ingested resources in the system.
             if ($autorotate_no_ingest && !$ingested && !$previewonly)
                 {
@@ -1563,34 +1561,34 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
             }
         else // We are generating based on a new preview (SCR) image.
             {
-            $file = get_resource_path($ref, true, "tmp", false, "jpg");   
+            $file = get_resource_path($ref, true, "tmp", false, "jpg");
             }
         $origfile = $file;
-        
-        $hpr_path = get_resource_path($ref, true, "hpr", false, "jpg", -1, 1, false, "", $alternative);    
+
+        $hpr_path = get_resource_path($ref, true, "hpr", false, "jpg", -1, 1, false, "", $alternative);
         if(file_exists($hpr_path) && !$previewbased)
             {
             unlink($hpr_path);
             }
-              
-        $lpr_path = get_resource_path($ref, true, "lpr", false, "jpg", -1, 1, false, "", $alternative);    
+
+        $lpr_path = get_resource_path($ref, true, "lpr", false, "jpg", -1, 1, false, "", $alternative);
         if(file_exists($lpr_path) && !$previewbased)
             {
             unlink($lpr_path);
             }
-             
-        $scr_path = get_resource_path($ref, true, "scr", false, "jpg", -1, 1, false, "", $alternative);    
-        if(file_exists($scr_path) && !$previewbased) 
+
+        $scr_path = get_resource_path($ref, true, "scr", false, "jpg", -1, 1, false, "", $alternative);
+        if(file_exists($scr_path) && !$previewbased)
             {
             unlink($scr_path);
             }
-            
-        $scr_wm_path = get_resource_path($ref, true, "scr", false, "jpg", -1, 1, true, "", $alternative);  
-        if(file_exists($scr_wm_path) && !$previewbased) 
+
+        $scr_wm_path = get_resource_path($ref, true, "scr", false, "jpg", -1, 1, true, "", $alternative);
+        if(file_exists($scr_wm_path) && !$previewbased)
             {
             unlink($scr_wm_path);
             }
-        
+
         // Camera RAW images need prefix.
         $prefix = '';
         if (preg_match('/^(dng|nef|x3f|cr2|crw|mrw|orf|raf|dcr)$/i', $extension, $rawext))
@@ -1606,7 +1604,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
         $identify_fullpath = get_utility_path("im-identify");
         if($identify_fullpath == false)
             {
-            debug("ERROR: Could not find ImageMagick 'identify' utility at location '$imagemagick_path'."); 
+            debug("ERROR: Could not find ImageMagick 'identify' utility at location '$imagemagick_path'.");
             return false;
             }
 
@@ -1626,9 +1624,9 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                 $all_sizes = true;
                 }
             }
-        
+
         $sizes = "";
-        if ($thumbonly)
+        if($thumbonly)
             {
             $sizes = " where id='thm' or id='col'";
             }
@@ -1645,7 +1643,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
             $sizes = " where id in ('" . implode("','", $sizefilter) . "')";
             $all_sizes = false;
             }
-        
+
         $ps = sql_query("SELECT * FROM preview_size $sizes ORDER BY width desc, height desc");
         if($lean_preview_generation && $all_sizes)
             {
@@ -1667,14 +1665,14 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                     unset($ps[$s]);
                     }
                 }
-                
+
             $ps = array_values($ps);
             }
-            
+
         if((count($ps) > 0  && $preview_tiles && $preview_tiles_create_auto) || in_array("tiles", $onlysizes))
             {
             $o = count($ps);
-            
+
             // Ensure that scales are in order.
             natsort($preview_tile_scale_factors);
 
@@ -1690,8 +1688,8 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                     {
                     debug("create_previews scaled tile (" . $scale . ") too large for source. Tile region length: " . $tileregion );
                     continue;
-                    }                    
-                
+                    }
+
                 while($y < $sh)
                     {
                     $tileh = $tileregion;
@@ -1711,11 +1709,11 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         $tileid = (string)($x) . "_" . (string)($y) . "_" . (string)($tilew) . "_" . (string)($tileh);
                         debug("create_previews tiles scale: " . $scale . ", x: " . $x . ", y: " . $y);
                         debug("create_previews tiles id: " . $tileid);
-                        $ps[$o]['id'] = "tile_" . $tileid; 
+                        $ps[$o]['id'] = "tile_" . $tileid;
                         $ps[$o]['width'] = $preview_tile_size;
                         $ps[$o]["height"] = $preview_tile_size;
                         $ps[$o]["x"] = $x;
-                        $ps[$o]["y"] = $y;  
+                        $ps[$o]["y"] = $y;
                         $ps[$o]["w"] = $tilew;
                         $ps[$o]["h"] = $tileh;
                         $ps[$o]["type"] = "tile";
@@ -1730,34 +1728,34 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                     }
                 }
             }
-        
+
         if(count($onlysizes) == 1 && substr($onlysizes[0], 0, 8) == "resized_")
             {
             $o = count($ps);
             $size_req = explode("_", substr($onlysizes[0], 8));
             $customx = $size_req[0];
             $customy = $size_req[1];
-    
+
             debug("create_previews - creating custom size width: " . $customx . " height: " . $customy);
-            $ps[$o]['id'] = $onlysizes[0]; 
+            $ps[$o]['id'] = $onlysizes[0];
             $ps[$o]['width'] = $customx;
             $ps[$o]["height"] = $customy;
             }
-            
+
         // Locate ImageMagick.
         $convert_fullpath = get_utility_path("im-convert");
         if($convert_fullpath == false)
             {
-            debug("ERROR: Could not find ImageMagick 'convert' utility at location '$imagemagick_path'."); 
+            debug("ERROR: Could not find ImageMagick 'convert' utility at location '$imagemagick_path'.");
             return false;
             }
-        
+
         $command_list = '';
         if($imagemagick_mpr)
             {
             // Need to check that we are using ImageMagick and not GraphicsMagick.
             $version = run_command($convert_fullpath . " -version");
-            if (strpos($version, "GraphicsMagick") !== false)
+            if(strpos($version, "GraphicsMagick") !== false)
                 {
                 $imagemagick_mpr = false;
                 }
@@ -1768,7 +1766,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                 $command_parts = array();
                 }
             }
-        
+
         $created_count = 0;
         $ps_count = count($ps);
         for($n = 0; $n < $ps_count; $n++)
@@ -1777,15 +1775,15 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                 {
                 $mpr_parts = array();
                 }
-            
+
             // If this is just a JPG resource, we avoid the HPR size because the resource itself is an original sized JPG.
-            // If preview_preprocessing indicates the intermediate JPG should be kept as the HPR image, do that. 
-            if ($keep_for_hpr && $ps[$n]['id'] == "hpr")
+            // If preview_preprocessing indicates the intermediate JPG should be kept as the HPR image, do that.
+            if($keep_for_hpr && $ps[$n]['id'] == "hpr")
                 {
                 rename($file, $hpr_path); // $keep_for_hpr is switched to FALSE below.
                 }
-            
-            // If we have already made the LPR or SCR, then use those for the remaining previews. As we start with the 
+
+            // If we have already made the LPR or SCR, then use those for the remaining previews. As we start with the
             // large and move to the small, this will speed things up.
             if($extension != "png" && $extension != "gif")
                 {
@@ -1801,8 +1799,8 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                     {
                     $file = $scr_path;
                     }
-                
-                // Check that source image dimensions are sufficient to create the required size. Unusually wide/tall 
+
+                // Check that source image dimensions are sufficient to create the required size. Unusually wide/tall
                 // images can mean that the height/width of the larger sizes is less than the required target height/width.
                 list($checkw, $checkh) = @getimagesize($file);
                 if((($checkw < $ps[$n]['width'] || $checkh < $ps[$n]['height']) || (isset($ps[$n]['type']) && $ps[$n]['type'] == "tile")) && $file != $hpr_path)
@@ -1822,14 +1820,14 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
             $convert_fullpath = get_utility_path("im-convert");
             if($convert_fullpath == false)
                 {
-                debug("ERROR: Could not find ImageMagick 'convert' utility at location '$imagemagick_path'."); 
+                debug("ERROR: Could not find ImageMagick 'convert' utility at location '$imagemagick_path'.");
                 return false;
                 }
 
-            if($prefix == "cr2:" || $prefix == "nef:" || $extension == "png" || $extension == "gif" || getval("noflatten", "") != "") 
+            if($prefix == "cr2:" || $prefix == "nef:" || $extension == "png" || $extension == "gif" || getval("noflatten", "") != "")
                 {
                 $flatten = "";
-                } 
+                }
             else
                 {
                 $flatten = "-flatten";
@@ -1837,7 +1835,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
 
             // Extensions for which the alpha/matte channel should not be set to Off (i.e. +matte option) *** '+matte' no longer exists but is the same as '-alpha off'.
             $extensions_no_alpha_off = array('png', 'gif', 'tif');
-            
+
             $preview_quality = get_preview_quality($ps[$n]['id']);
             if(!$imagemagick_mpr)
                 {
@@ -1848,7 +1846,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
             $tw = $ps[$n]["width"];
             $th = $ps[$n]["height"];
             $id = $ps[$n]["id"];
-            
+
             // Add crop if generating a tile.
             $crop = false;
             if(isset($ps[$n]['type']) && $ps[$n]['type'] == "tile")
@@ -1859,21 +1857,21 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                 $croph = $ps[$n]["h"];
                 $crop = true;
                 }
-                
+
             if($imagemagick_mpr)
                 {
                 $mpr_parts['id'] = $id;
                 $mpr_parts['quality'] = $preview_quality;
-                
+
                 // Might as well pass on the original dimension.
-                $mpr_parts['tw'] = ($id == 'hpr' && $tw == 999999 && isset($o_width) ? $o_width : $tw); 
-                $mpr_parts['th'] = ($id == 'hpr' && $th == 999999 && isset($o_height) ? $o_height : $th); 
-                
+                $mpr_parts['tw'] = ($id == 'hpr' && $tw == 999999 && isset($o_width) ? $o_width : $tw);
+                $mpr_parts['th'] = ($id == 'hpr' && $th == 999999 && isset($o_height) ? $o_height : $th);
+
                 // TODO: Add support for tiles.
                 $mpr_parts['flatten'] = ($flatten == '' ? false : true);
                 $mpr_parts['icc_transform_complete'] = $icc_transform_complete;
                 }
-          
+
             // Debug.
             debug("Contemplating " . $ps[$n]["id"] . " (sw=$sw, tw=$tw, sh=$sh, th=$th, extension=$extension)");
 
@@ -1882,76 +1880,76 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                 {
                 $target_ext = $extension;
                 }
-            else 
+            else
                 {
                 $target_ext = "jpg";
                 }
             $path = get_resource_path($ref, true, $ps[$n]["id"], ($imagemagick_mpr ? true : false), $target_ext, -1, 1, false, "", $alternative);
-            
+
             if($imagemagick_mpr)
                 {
                 $mpr_parts['targetpath'] = $path;
                 }
-            
-            // Delete any file at the target path. Unless using the previewbased option, in which case we need it.           
+
+            // Delete any file at the target path. Unless using the previewbased option, in which case we need it.
             if(!hook("imagepskipdel") && !$keep_for_hpr)
                 {
-                if (!$previewbased)
+                if(!$previewbased)
                     {
-                    if (file_exists($path))
+                    if(file_exists($path))
                         {
                         unlink($path);
                         }
                     }
                 }
-                
+
             if($keep_for_hpr)
                 {
                 $keep_for_hpr = false;
                 }
-                    
+
             // Also try the watermarked version.
             $wpath = get_resource_path($ref, true, $ps[$n]["id"], false, $target_ext, -1, 1, true, "", $alternative);
             if(file_exists($wpath))
                 {
                 unlink($wpath);
                 }
-            
-            // Always make a screen size for non-JPEG extensions regardless of actual image size. This is because the 
-            // original file itself is not suitable for full screen preview, as it is with JPG files. Always make preview 
+
+            // Always make a screen size for non-JPEG extensions regardless of actual image size. This is because the
+            // original file itself is not suitable for full screen preview, as it is with JPG files. Always make preview
             // sizes for smaller file sizes. Always make pre/thm/col sizes regardless of source image size.
             if(($id == "hpr" && !($extension == "jpg" || $extension == "jpeg")) || $previews_allow_enlarge || ($id == "scr" && !($extension == "jpg" || $extension == "jpeg")) || ($sw > $tw) || ($sh > $th) || ($id == "pre") || ($id == "thm") || ($id == "col") || in_array($id,$always_make_previews) || hook('force_preview_creation', '', array($ref, $ps, $n, $alternative)))
-                {           
+                {
                 // Debug,  log the size being created, but not the path.
-                resource_log(RESOURCE_LOG_APPEND_PREVIOUS, LOG_CODE_TRANSFORMED, '', '', '', "Generating preview size " . $ps[$n]["id"]); 
+                resource_log(RESOURCE_LOG_APPEND_PREVIOUS, LOG_CODE_TRANSFORMED, '', '', '', "Generating preview size " . $ps[$n]["id"]);
                 debug("Generating preview size " . $ps[$n]["id"] . " to " . $path);
-    
+
                 // EXPERIMENTAL CODE TO USE EXISTING ICC PROFILE IF PRESENT.
                 global $icc_extraction, $icc_preview_profile, $icc_preview_options, $ffmpeg_supported_extensions;
-                
+
                 if($icc_extraction)
                     {
                     $iccpath = get_resource_path($ref, true, '', false, 'icc', -1, 1, false, "", $alternative);
-                    
+
                     // Extracted profile does not exist, try extracting.
-                    if (!file_exists($iccpath) && !isset($iccfound) && $extension != "pdf" && !in_array($extension, $ffmpeg_supported_extensions)) 
+                    if (!file_exists($iccpath) && !isset($iccfound) && $extension != "pdf" && !in_array($extension, $ffmpeg_supported_extensions))
                         {
                         if(extract_icc_profile($ref, $extension, $alternative))
                             {
                             $iccfound = true;
                             }
-                        else 
+                        else
                             {
                             $iccfound = false;
                             }
                         }
                     }
-                
+
                 $profile = '';
                 if($icc_extraction && file_exists($iccpath) && !$icc_transform_complete && (!$imagemagick_mpr || ($imagemagick_mpr_preserve_profiles && ($id == "thm" || $id == "col" || $id == "pre" || $id == "scr"))))
                     {
                     global $icc_preview_profile_embed;
-                    
+
                     // We have an extracted ICC profile, so use it as source.
                     $targetprofile = dirname(__FILE__) . '/../iccprofiles/' . $icc_preview_profile;
                     if($imagemagick_mpr)
@@ -1967,7 +1965,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         $profile = " -strip -profile $iccpath $icc_preview_options -profile $targetprofile" . ($icc_preview_profile_embed ? " " : " -strip ");
                         }
                     // Consider ICC transformation complete, if one of the sizes has been rendered that will be used for the smaller sizes.
-                    if ($id == 'hpr' || $id == 'lpr' || $id == 'scr')
+                    if($id == 'hpr' || $id == 'lpr' || $id == 'scr')
                         {
                         $icc_transform_complete = true;
                         if($imagemagick_mpr)
@@ -2022,24 +2020,24 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                             }
                         }
                     }
-                
+
                     if(!$imagemagick_mpr)
                         {
                         $runcommand = $command ." ".(($extension!="png" && $extension!="gif")?" +matte $profile ":"");
-                        
+
                         // Add crop argument for tiling.
                         if($crop)
                             {
                             $runcommand .= " -crop " . $cropw . "x" . $croph . "+" . $cropx . "+" . $cropy;
                             }
-                        
+
                         $runcommand .= " -resize " . $tw . "x" . $th . (($previews_allow_enlarge && $id != "hpr") ? " " : "\">\" ") . escapeshellarg($path);
                         if(!hook("imagepskipthumb"))
                             {
                             $command_list .= $runcommand."\n";
                             $output = run_command($runcommand);
                             ++$created_count;
-                            
+
                             // If this is the first file generated for non-ingested resources check rotation.
                             if($autorotate_no_ingest && $created_count == 1 && !$ingested)
                                 {
@@ -2054,12 +2052,12 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                                     }
                                 }
                             }
-                    
+
                     // Checkerboard, this will have to be integrated into MPR.
                     if($extension == "png" || $extension == "gif")
                         {
                         global $transparency_background;
-                        
+
                         $transparencyreal = dirname(__FILE__) . "/../" . $transparency_background;
                         $cmd = str_replace("identify", "composite", $identify_fullpath) . "  -compose Dst_Over -tile " . escapeshellarg($transparencyreal) . " " . escapeshellarg($path) . " " . escapeshellarg(str_replace($extension, "jpg", $path));
                         $command_list .= $cmd . "\n";
@@ -2071,41 +2069,41 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                             }
                         $path = str_replace($extension, "jpg", $path);
                         }
-                    }           
+                    }
 
                 // Add a watermarked image too?
                 global $watermark, $watermark_single_image;
-                
+
                 if(!hook("replacewatermarkcreation", "", array($ref, $ps, $n, $alternative, $profile, $command)) && ($alternative == -1 || ($alternative !== -1 && $alternative_file_previews)) && isset($watermark) && ($ps[$n]["internal"] == 1 || $ps[$n]["allow_preview"] == 1))
                     {
                     $wmpath = get_resource_path($ref, true, $ps[$n]["id"], false, "jpg", -1, 1, true, '', $alternative);
-                    if(file_exists($wmpath)) 
+                    if(file_exists($wmpath))
                         {
                         unlink($wmpath);
                         }
-                    
+
                     $watermarkreal = dirname(__FILE__) . "/../" . $watermark;
-                    
+
                     if($imagemagick_mpr)
                         {
                         $mpr_parts['wmpath'] = $wmpath;
                         }
-                    
+
                     if(!($extension == "png" || $extension == "gif") && !isset($watermark_single_image))
                         {
-                        $runcommand = $command ." +matte $profile -resize " . $tw . "x" . $th . "\">\" -tile ".escapeshellarg($watermarkreal) . " -draw \"rectangle 0,0 $tw,$th\" " . escapeshellarg($wmpath); 
+                        $runcommand = $command ." +matte $profile -resize " . $tw . "x" . $th . "\">\" -tile ".escapeshellarg($watermarkreal) . " -draw \"rectangle 0,0 $tw,$th\" " . escapeshellarg($wmpath);
                         }
-                    
+
                     // Alternate command for PNG/GIF using the path from above, and omitting resizing.
                     if($extension == "png" || $extension == "gif")
                         {
-                        $runcommand = $convert_fullpath . ' ' . escapeshellarg($path) . (($extension != "png" && $extension != "gif") ? '[0] +matte ' : '') . $flatten . ' -quality ' . $preview_quality . " -tile ".escapeshellarg($watermarkreal) . " -draw \"rectangle 0,0 $tw,$th\" " . escapeshellarg($wmpath); 
+                        $runcommand = $convert_fullpath . ' ' . escapeshellarg($path) . (($extension != "png" && $extension != "gif") ? '[0] +matte ' : '') . $flatten . ' -quality ' . $preview_quality . " -tile ".escapeshellarg($watermarkreal) . " -draw \"rectangle 0,0 $tw,$th\" " . escapeshellarg($wmpath);
                         }
 
                     // Generate the command for a single watermark, instead of a tiled one.
                     if(isset($watermark_single_image))
                         {
-                        // Reverse them as the watermark geometry should be as big as the image itself.  HPR size is 
+                        // Reverse them as the watermark geometry should be as big as the image itself.  HPR size is
                         // 999999 width/height, the geometry would be huge even if we are scaling it for watermarks.
                         if($id == "hpr" && ($tw > $sw || $th > $sh))
                             {
@@ -2121,10 +2119,10 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                             debug("create_previews: reversed sw - sh with tw - th : $sw - $sh with $tw - $th");
                             }
 
-                        // Work out minimum of target dimensions, by calulating targets dimensions based on actual file 
+                        // Work out minimum of target dimensions, by calulating targets dimensions based on actual file
                         // ratio to get minimum dimension, essential to calulate correct values based on ratio of watermark
                         // Landscape.
-                        if ($sw > $sh)
+                        if($sw > $sh)
                             {
                             $tmin = min($tw * ($sh / $sw), $th);
                             }
@@ -2160,7 +2158,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                             {
                             $wm_scaled_width = $tmin * ($wm_scale / 100);
                             $wm_scaled_height = $tmin * ($wm_scale / 100);
-                            }                 
+                            }
 
                         // Command example: convert input.jpg watermark.png -gravity Center -geometry 40x40+0+0 -resize 1100x800 -composite wm_version.jpg
                         $runcommand = sprintf('%s %s %s -gravity %s -geometry %s -resize %s -composite %s',
@@ -2178,9 +2176,9 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         $command_list .= $runcommand."\n";
                         $output = run_command($runcommand);
                         }
-                    
+
                     } // End hook replacewatermarkcreation.
-                    
+
                 if($imagemagick_mpr)
                     {
                     // Need a watermark replacement here as the existing hook does not work.
@@ -2188,7 +2186,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                     if($modified_mpr_watermark != '')
                         {
                         $mpr_parts['wmpath'] = $modified_mpr_watermark;
-                        
+
                         // Need to convert the profile.
                         if($id != "thm" && $id != "col" && $id != "pre" && $id != "scr")
                             {
@@ -2197,10 +2195,10 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                             }
                         }
                     $command_parts[] = $mpr_parts;
-                    } 
+                    }
                 }
             }
-        
+
         // Run the mpr command if set.
         if($imagemagick_mpr)
             {
@@ -2210,17 +2208,17 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
             $unique_source_profile = false;
             $unique_strip_target = false;
             $unique_target_profile = false;
-            
+
             $cp_count = count($command_parts);
             $mpr_init_write = false;
             $mpr_icc_transform_complete = false;
             $mpr_wm_created = false;
-            
+
             for($p = 1; $p < $cp_count; $p++)
                 {
                 $force_mpr_write = false;
                 $skip_source_and_target_profiles = false;
-                
+
                 // We compare these with the previous.
                 if($command_parts[$p]['flatten'] !== $command_parts[$p-1]['flatten'] && !$unique_flatten)
                     {
@@ -2243,7 +2241,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                     $unique_target_profile = true;
                     }
                 }
-                
+
             // Time to build the command.
             $command = $convert_fullpath . ' ' . escapeshellarg((!$config_windows && strpos($file, ':') !== false ? $extension .':' : '') . $file) . (!in_array($extension, $extensions_no_alpha_off) ? '[0] -quiet -alpha off' : '[0] -quiet') . ' -depth ' . $imagemagick_mpr_depth;
             if(!$unique_flatten)
@@ -2262,28 +2260,28 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                 {
                 $command .= ($command_parts[0]['strip_target'] ? " -strip " : "");
                 }
-                
+
             // If the source is different, but the target is the same, we could get into trouble.
-            if(!$unique_source_profile && !$unique_target_profile && $command_parts[0]['targetprofile']!=='') 
+            if(!$unique_source_profile && !$unique_target_profile && $command_parts[0]['targetprofile']!=='')
                 {
                 $command .= " -profile " . $command_parts[0]['targetprofile'];
                 }
-                    
+
             if($autorotate_no_ingest)
                 {
                 $orientation = get_image_orientation($file);
-                if($orientation != 0) 
+                if($orientation != 0)
                     {
                     $command .= ' -rotate +' . $orientation;
                     }
                 }
-                
+
             $mpr_metadata_profiles = '';
             if(!empty($imagemagick_mpr_preserve_metadata_profiles))
                 {
-                $mpr_metadata_profiles = "!" . implode(",!", $imagemagick_mpr_preserve_metadata_profiles); 
-                }   
-            
+                $mpr_metadata_profiles = "!" . implode(",!", $imagemagick_mpr_preserve_metadata_profiles);
+                }
+
             for($p = 0; $p < $cp_count; $p++)
                 {
                 if($extension == "png" || $extension == "gif")
@@ -2295,7 +2293,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         }
                     }
                 $command .= ($p > 0 && $mpr_init_write ? ' mpr:' . $ref : '');
-                
+
                 // Convert to the target profile now. The source profile will only contain $icc_preview_options and needs to be included here as well.
                 if(isset($command_parts[$p]['icc_transform_complete']) && !$mpr_icc_transform_complete && $command_parts[$p]['icc_transform_complete'] && $command_parts[$p]['targetprofile'] !== '')
                     {
@@ -2304,7 +2302,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                     $force_mpr_write = true;
                     $skip_source_and_target_profiles = true;
                     }
-                    
+
                 if($command_parts[$p]['tw'] !== '' && $command_parts[$p]['th'] !== '')
                     {
                     $command .= " -resize " . $command_parts[$p]['tw'] . "x" . $command_parts[$p]['th'] . (($previews_allow_enlarge && $command_parts[$p]['id']!="hpr")?" ":"\">\"");
@@ -2313,7 +2311,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         $command .= " -write mpr:" . $ref ." -delete 1";
                         }
                     }
-                
+
                 if($unique_flatten || $unique_strip_source || $unique_source_profile || $unique_strip_target || $unique_target_profile)
                     {
                     // Make these changes.
@@ -2329,9 +2327,9 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         {
                         $command .= " -profile " . $command_parts[$p]['sourceprofile'];
                         }
-                    
+
                     // If the source is different, but the target is the same, we could get into trouble.
-                    if($unique_strip_target && !$skip_source_and_target_profiles && !$mpr_icc_transform_complete) 
+                    if($unique_strip_target && !$skip_source_and_target_profiles && !$mpr_icc_transform_complete)
                         {
                         $command .= ($command_parts[$p]['strip_target'] ? " -strip" : "");
                         }
@@ -2340,11 +2338,11 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         $command .= " -profile " . $command_parts[$p]['targetprofile'];
                         }
                     }
-                    
+
                 // Save out to file.
                 $command .= (($p === ($cp_count-1) && !isset($command_parts[$p]['wmpath'])) ? " " : " -quality " . $command_parts[$p]['quality'] . " -write "). escapeshellarg($command_parts[$p]['targetpath']) . ($mpr_wm_created && isset($command_parts[$p]['wmpath']) ? " +delete mpr:" . $ref : "" );
                 // $command.=" -write " . $command_parts[$p]['targetpath'];
-                
+
                 // Watermarks?
                 if(isset($command_parts[$p]['wmpath']))
                     {
@@ -2358,11 +2356,11 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                             // $force_mpr_write=true;
                             // $skip_source_and_target_profiles=true;
                             }
-                            
+
                         $TILESIZE = ($command_parts[$p]['th'] < $command_parts[$p]['tw'] ? $command_parts[$p]['th'] : $command_parts[$p]['tw']);
                         $TILESIZE = $TILESIZE / 3;
                         $TILEROLL = $TILESIZE / 4;
-                        
+
                         // Let's create the watermark and save as an MPR.
                         $command .= " \( " . escapeshellarg($watermarkreal) . " -resize x" . escapeshellarg($TILESIZE) . " -background none -write mpr:" . $ref . " +delete \)";
                         $command .= " \( -size " . escapeshellarg($command_parts[$p]['tw']) . "x" . escapeshellarg($command_parts[$p]['th']) . " -roll -" . escapeshellarg($TILEROLL) . "-" . escapeshellarg($TILEROLL) . " tile:mpr:" . $ref . " \) \( -clone 0 -clone 1 -compose dissolve -define compose:args=5 -composite \)";
@@ -2376,10 +2374,10 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                         $command .= " -delete 0" . ($p !== ($cp_count - 1) ? " -write " : " ") . escapeshellarg($command_parts[$p]['wmpath']);
                         }
                     }
-                    
+
                     $command .= ($p !== ($cp_count - 1) && $mpr_init_write ? " +delete" : "");
                 }
-                
+
             $modified_mpr_command = hook('modify_mpr_command', '', array($command, $ref, $extension));
             if($modified_mpr_command != '')
                 {
@@ -2387,15 +2385,15 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                 }
             $output = run_command($command);
             }
-            
+
         // For the thumbnail image, call extract_mean_colour() to save the colour/size information.
         $target = @imagecreatefromjpeg(get_resource_path($ref, true, "thm", false, "jpg", -1, 1, false, "", $alternative));
-        
+
         // Do not run for alternative uploads .
-        if($target && $alternative == -1) 
+        if($target && $alternative == -1)
             {
             extract_mean_colour($target, $ref);
-            
+
             // Flag database so a thumbnail appears on the site.
             sql_query("UPDATE resource SET has_image=1,preview_extension='jpg',preview_attempts=0,file_modified=now() WHERE ref='$ref'");
             }
@@ -2406,7 +2404,7 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
                 sql_query("UPDATE resource SET preview_attempts=ifnull(preview_attempts,0) + 1 WHERE ref='$ref'");
                 }
             }
-        
+
         hook('afterpreviewcreation', '', array($ref, $alternative));
         return true;
         }
@@ -2417,8 +2415,8 @@ function create_previews_using_im($ref, $thumbonly = false, $extension = "jpg", 
     }
 
 
-// For image $image, calculate the mean colour and update this to the image_red, image_green, image_blue tables in the 
-// resources table. Also, we insert the height and width of the thumbnail at this stage as all information is available 
+// For image $image, calculate the mean colour and update this to the image_red, image_green, image_blue tables in the
+// resources table. Also, we insert the height and width of the thumbnail at this stage as all information is available
 // and we are already performing an update on the resource record.
 function extract_mean_colour($image, $ref)
     {
@@ -2428,7 +2426,7 @@ function extract_mean_colour($image, $ref)
     $totalgreen = 0;
     $totalblue = 0;
     $total = 0;
-    
+
     for($y = 0; $y < 20; $y++)
         {
         for($x = 0; $x < 20; $x++)
@@ -2441,16 +2439,16 @@ function extract_mean_colour($image, $ref)
             // Calculate deltas (remove brightness factor).
             $cmax = max($red, $green, $blue);
             $cmin = min($red, $green, $blue);
-            
+
             // Avoid division errors.
             if($cmax == $cmin)
                 {
                 $cmax = 10;
                 $cmin = 0;
-                } 
-            
+                }
+
             // Ignore gray/white/black.
-            if(abs($cmax - $cmin) >= 20) 
+            if(abs($cmax - $cmin) >= 20)
                 {
                 $red = floor((($red - $cmin) / ($cmax - $cmin)) * 1000);
                 $green = floor((($green - $cmin) / ($cmax - $cmin)) * 1000);
@@ -2463,15 +2461,15 @@ function extract_mean_colour($image, $ref)
                 }
             }
         }
-        
-    if($total == 0) 
+
+    if($total == 0)
         {
         $total = 1;
         }
     $totalred = floor($totalred / $total);
     $totalgreen = floor($totalgreen / $total);
     $totalblue = floor($totalblue / $total);
-    
+
     $colkey = get_colour_key($image);
     update_portrait_landscape_field($ref,$image);
 
@@ -2483,27 +2481,27 @@ function extract_mean_colour($image, $ref)
 function update_portrait_landscape_field($ref, $image = null)
     {
     global $portrait_landscape_field, $lang;
-    
+
     if(isset($portrait_landscape_field))
         {
         if(!$image)
             {
             $thumbfile = get_resource_path($ref, true, "thm", false, "jpg");
             if(!file_exists($thumbfile))
-                { 
-                return; 
+                {
+                return;
                 }
             $image = @imagecreatefromjpeg($thumbfile);
             }
-        
+
         $width = imagesx($image);
         $height = imagesy($image);
-    
+
         // Write 'Portrait' or 'Landscape' to the appropriate field.
         if($width > $height)
             {
             $portland = $lang["landscape"];
-            } 
+            }
         elseif($height > $width)
             {
             $portland=$lang["portrait"];
@@ -2511,7 +2509,7 @@ function update_portrait_landscape_field($ref, $image = null)
         elseif($height == $width)
             {
             $portland = $lang["square"];
-            }   
+            }
         update_field($ref, $portrait_landscape_field, $portland);
         }
     }
@@ -2556,7 +2554,7 @@ function get_colour_key($image)
     "N" => array(180, 160, 130), # Pale Brown
     "N" => array(170, 140, 110), # Pale Brown
     );
-    
+
     $table = array();
     $depth = 50;
     for($y = 0; $y < $depth; $y++)
@@ -2567,7 +2565,7 @@ function get_colour_key($image)
             $red = ($rgb >> 16) & 0xFF;
             $green = ($rgb >> 8) & 0xFF;
             $blue = $rgb & 0xFF;
-            
+
             // Work out which colour this is.
             $bestdist = 99999;
             $bestkey = "";
@@ -2581,7 +2579,7 @@ function get_colour_key($image)
                     $bestkey = $key;
                     }
                 }
-                
+
             // Add this colour to the colour table.
             if(array_key_exists($bestkey, $table))
                 {
@@ -2593,7 +2591,7 @@ function get_colour_key($image)
                 }
             }
         }
-        
+
     asort($table);
     reset($table);
     $colkey = "";
@@ -2604,15 +2602,15 @@ function get_colour_key($image)
     $colkey = substr(strrev($colkey), 0, 5);
     return($colkey);
     }
-    
 
-// Tweak all preview images.  On the edit screen, preview images can be either rotated or gamma adjusted. We keep the 
-// high(original) and low resolution print versions intact as these would be adjusted professionally when in use in the 
+
+// Tweak all preview images.  On the edit screen, preview images can be either rotated or gamma adjusted. We keep the
+// high(original) and low resolution print versions intact as these would be adjusted professionally when in use in the
 // target application.  Use the screen resolution version for processing.
 function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $alternative = -1)
     {
     global $tweak_all_images;
-    
+
     if($tweak_all_images)
         {
         $file = get_resource_path($ref, true, "hpr", false, $extension, -1, 1, false, '', $alternative);
@@ -2633,24 +2631,24 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
                 }
             }
         }
-    else 
+    else
         {
         $file = get_resource_path($ref, true, "scr", false, $extension, -1, 1, false, '', $alternative);
         $top = "scr";
         // Some images may be too small to have a SCR, try PRE instead.
-        if(!file_exists($file)) 
+        if(!file_exists($file))
             {
             $file = get_resource_path($ref, true, "pre", false, $extension, -1, 1, false, '', $alternative);
             $top = "pre";
             }
         }
-    
+
     if(!file_exists($file))
         {
         return false;
         }
     $source = imagecreatefromjpeg($file);
-    
+
     // Apply tweaks.
     if($rotateangle != 0)
         {
@@ -2664,7 +2662,7 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
             $source = AltImageRotate($source, $rotateangle);
             }
         }
-        
+
     if($gamma != 0)
         {
         imagegammacorrect($source, 1.0, $gamma);
@@ -2672,8 +2670,8 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
 
     // Save source image and fetch new dimensions.
     imagejpeg($source, $file, 95);
-    list($tw, $th) = @getimagesize($file);   
-    
+    list($tw, $th) = @getimagesize($file);
+
     // Save all images.
     if($tweak_all_images)
         {
@@ -2683,12 +2681,12 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
         {
         $ps = sql_query("SELECT * FROM preview_size WHERE (internal=1 or allow_preview=1) AND id<>'$top'");
         }
-    
+
     $ps_count = count($ps);
     for($n = 0; $n < $ps_count; $n++)
         {
         // Fetch target width and height.
-        $file = get_resource_path($ref, true, $ps[$n]["id"], false, $extension, -1, 1, false, '', $alternative);       
+        $file = get_resource_path($ref, true, $ps[$n]["id"], false, $extension, -1, 1, false, '', $alternative);
         if(file_exists($file))
             {
             list($sw, $sh) = @getimagesize($file);
@@ -2698,7 +2696,7 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
                 $sw = $sh;
                 $sh = $temp;
                 }
-        
+
             // Rescale image.
             $target = imagecreatetruecolor($sw, $sh);
             imagecopyresampled($target, $source, 0, 0, 0, 0, $sw, $sh, $tw, $th);
@@ -2722,35 +2720,35 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
         {
         $ts = sql_query("SELECT thumb_width,thumb_height FROM resource WHERE ref='$ref'");
         sql_query("UPDATE resource SET thumb_width='" . $ts[0]["thumb_height"] . "',thumb_height='" . $ts[0]["thumb_width"] . "' WHERE ref='$ref'");
-        
+
         global $portrait_landscape_field, $lang;
-        
+
         if(isset($portrait_landscape_field))
             {
             // Write 'Portrait' or 'Landscape' to the appropriate field.
-            if($ts[0]["thumb_height"] >= $ts[0]["thumb_width"]) 
+            if($ts[0]["thumb_height"] >= $ts[0]["thumb_width"])
                 {
                 $portland = $lang["landscape"];
                 }
-            else 
-                { 
+            else
+                {
                 $portland = $lang["portrait"];
                 }
             update_field($ref, $portrait_landscape_field, $portland);
             }
         }
-    
+
     // Update the modified date to force the browser to reload the new thumbs.
     $current_preview_tweak = '';
     if($alternative == -1)
         {
         sql_query("UPDATE resource SET file_modified=now() WHERE ref='$ref'");
-    
-        // Record what was done so that we can reconstruct later if needed.  Current format is rotation|gamma. Additional 
+
+        // Record what was done so that we can reconstruct later if needed.  Current format is rotation|gamma. Additional
         // could be tacked on if more manipulation options are added.
         $current_preview_tweak = sql_value("SELECT preview_tweaks value FROM resource WHERE ref = '$ref'","");
         }
-    
+
     if(strlen($current_preview_tweak) == 0)
         {
         $oldrotate = 0;
@@ -2760,7 +2758,7 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
         {
         list($oldrotate, $oldgamma) = explode('|', $current_preview_tweak);
         }
-        
+
         $newrotate = $oldrotate + $rotateangle;
         if($newrotate > 360)
             {
@@ -2774,7 +2772,7 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
             {
             $newrotate = 0;
             }
-        
+
         if($gamma > 0)
             {
             $newgamma = $oldgamma +  $gamma -1;
@@ -2783,13 +2781,13 @@ function tweak_preview_images($ref, $rotateangle, $gamma, $extension = "jpg", $a
             {
             $newgamma = $oldgamma;
             }
-            
+
         global $watermark;
         if($watermark)
             {
             tweak_wm_preview_images($ref, $rotateangle, $gamma, "jpg", $alternative);
             }
-            
+
         if($alternative == -1)
             {
             sql_query("UPDATE resource SET preview_tweaks = '$newrotate|$newgamma' WHERE ref = $ref");
@@ -2810,7 +2808,7 @@ function tweak_wm_preview_images($ref, $rotateangle, $gamma, $extension = "jpg",
             }
         list($sw, $sh) = @getimagesize($wm_file);
         $wm_source = imagecreatefromjpeg($wm_file);
-        
+
         // Apply tweaks.
         if($rotateangle != 0)
             {
@@ -2824,12 +2822,12 @@ function tweak_wm_preview_images($ref, $rotateangle, $gamma, $extension = "jpg",
                 $wm_source = AltImageRotate($wm_source, $rotateangle);
                 }
             }
-            
-        if($gamma != 0) 
+
+        if($gamma != 0)
             {
             imagegammacorrect($wm_source, 1.0, $gamma);
             }
-            
+
         imagejpeg($wm_source, $wm_file, 95);
         list($tw, $th) = @getimagesize($wm_file);
         if($rotateangle != 0)
@@ -2838,7 +2836,7 @@ function tweak_wm_preview_images($ref, $rotateangle, $gamma, $extension = "jpg",
             $sw = $sh;
             $sh = $temp;
             }
-        
+
         // Rescale image.
         $wm_target = imagecreatetruecolor($sw, $sh);
         imagecopyresampled($wm_target, $wm_source, 0, 0, 0, 0, $sw, $sh, $tw, $th);
@@ -2847,75 +2845,89 @@ function tweak_wm_preview_images($ref, $rotateangle, $gamma, $extension = "jpg",
 }
 
 
-function AltImageRotate($src_img, $angle) {
-
-    if ($angle==270) {$angle=-90;}
+function AltImageRotate($src_img, $angle)
+    {
+    if($angle == 270)
+        {
+        $angle = -90;
+        }
 
     $src_x = imagesx($src_img);
     $src_y = imagesy($src_img);
-    if ($angle == 90 || $angle == -90) {
+    if($angle == 90 || $angle == -90)
+        {
         $dest_x = $src_y;
         $dest_y = $src_x;
-    } else {
+        }
+    else
+        {
         $dest_x = $src_x;
         $dest_y = $src_y;
-    }
+        }
 
-    $rotate=imagecreatetruecolor($dest_x,$dest_y);
+    $rotate = imagecreatetruecolor($dest_x, $dest_y);
     imagealphablending($rotate, false);
 
-    switch ($angle) {
+    switch($angle)
+        {
         case 90:
-            for ($y = 0; $y < ($src_y); $y++) {
-                for ($x = 0; $x < ($src_x); $x++) {
+            for($y = 0; $y < ($src_y); $y++)
+                {
+                for($x = 0; $x < ($src_x); $x++)
+                    {
                     $color = imagecolorat($src_img, $x, $y);
                     imagesetpixel($rotate, $dest_x - $y - 1, $x, $color);
+                    }
                 }
-            }
             break;
         case -90:
-            for ($y = 0; $y < ($src_y); $y++) {
-                for ($x = 0; $x < ($src_x); $x++) {
+            for($y = 0; $y < ($src_y); $y++)
+                {
+                for($x = 0; $x < ($src_x); $x++)
+                    {
                     $color = imagecolorat($src_img, $x, $y);
                     imagesetpixel($rotate, $y, $dest_y - $x - 1, $color);
+                    }
                 }
-            }
             break;
         case 180:
-            for ($y = 0; $y < ($src_y); $y++) {
-                for ($x = 0; $x < ($src_x); $x++) { 
-                    $color = imagecolorat($src_img, $x, $y); 
+            for($y = 0; $y < ($src_y); $y++)
+                {
+                for($x = 0; $x < ($src_x); $x++)
+                    {
+                    $color = imagecolorat($src_img, $x, $y);
                     imagesetpixel($rotate, $dest_x - $x - 1, $dest_y - $y - 1, $color);
+                    }
                 }
-            }
             break;
         default: $rotate = $src_img;
     };
+
     return $rotate;
-}
+    }
 
-function base64_to_jpeg( $imageData, $outputfile ) {
 
- $jpeg = fopen( $outputfile, "wb" ) or die ("can't open");
- fwrite( $jpeg, base64_decode( $imageData ) );
- fclose( $jpeg );
- 
-}
+function base64_to_jpeg( $imageData, $outputfile )
+    {
+    $jpeg = fopen($outputfile, "wb") or die ("can't open");
+    fwrite($jpeg, base64_decode($imageData ));
+    fclose($jpeg);
+    }
+
 
 /**
-* Extracts JPG previews from INDD files when these have been set with a preview
-* Note: it requires ExifTool >= 9.50
-* 
+* Extracts JPG previews from INDD files when these have been set with a preview, requires ExifTool >= 9.50.
+*
 * @param string $filename
-* 
+*
 * @return array|bool
 */
 function extract_indd_pages($filename)
     {
     $exiftool_fullpath = get_utility_path('exiftool');
-    if ($exiftool_fullpath)
+    if($exiftool_fullpath)
         {
-        $cmd=$exiftool_fullpath.' -b -j -pageimage ' . escapeshellarg($filename);
+        $cmd = $exiftool_fullpath . ' -b -j -pageimage ' . escapeshellarg($filename);
         $array = run_command($cmd);
         $array = json_decode($array);
         if(isset($array[0]->PageImage))
@@ -2934,7 +2946,8 @@ function extract_indd_pages($filename)
     return false;
     }
 
-function generate_file_checksum($resource,$extension,$anyway=false)
+
+function generate_file_checksum($resource, $extension, $anyway = false)
     {
     global $file_checksums;
     global $file_checksums_50k;
@@ -2943,12 +2956,11 @@ function generate_file_checksum($resource,$extension,$anyway=false)
 
     debug("generate_file_checksum(resource = $resource, extension = $extension, anyway = $anyway)");
 
-    if (($file_checksums && !$file_checksums_offline)||$anyway) // do it if file checksums are turned on, or if requestor said do it anyway
+    // Generates a unique checksum for the given file, based either on the first 50K and the file size or the full file.
+    if(($file_checksums && !$file_checksums_offline)||$anyway) # Do it if file checksums are turned on, or if requestor said do it anyway.
         {
-        # Generates a unique checksum for the given file, based either on the first 50K and the file size or the full file.
-
-        $path=get_resource_path($resource,true,"",false,$extension);
-        if (file_exists($path))
+        $path = get_resource_path($resource, true, "", false, $extension);
+        if(file_exists($path))
             {
             $checksum = get_checksum($path);
             sql_query(sprintf("UPDATE resource SET file_checksum = '%s', last_verified = NOW(), integrity_fail = 0 WHERE ref='%s'",
@@ -2958,252 +2970,293 @@ function generate_file_checksum($resource,$extension,$anyway=false)
             }
         }
 
-    if ($generated)
+    if($generated)
         {
         return true;
         }
+    // If we did not generate a new file checksum, clear any existing one so that it will not be incorrect. The lack
+    //   of checksum will also be used as the trigger for the offline process.
     else
         {
-        # if we didn't generate a new file checksum, clear any existing one so that it will not be incorrect
-        # The lack of checksum will also be used as the trigger for the offline process
         clear_file_checksum($resource);
         return false;
         }
     }
 
-function clear_file_checksum($resource){
-    if (strlen($resource) > 0 && is_numeric($resource)){
+
+function clear_file_checksum($resource)
+    {
+    if(strlen($resource) > 0 && is_numeric($resource))
+        {
         sql_query("UPDATE resource SET file_checksum='' WHERE ref='$resource'");
         return true;
-    } else {
-    return false;
+        }
+    else
+        {
+        return false;
+        }
     }
-}
 
-function check_duplicate_checksum($filepath,$replace_resource){
-    global $file_upload_block_duplicates,$file_checksums_50k;
+
+function check_duplicate_checksum($filepath, $replace_resource)
+    {
+    global $file_upload_block_duplicates, $file_checksums_50k;
     if($file_upload_block_duplicates)
         {
-        # Generate the ID
-        if ($file_checksums_50k)
+        // Generate the ID.
+        if($file_checksums_50k)
             {
-            # Fetch the string used to generate the unique ID
-            $use=filesize_unlimited($filepath) . "_" . file_get_contents($filepath,null,null,0,50000);
-            $checksum=md5($use);
+            // Fetch the string used to generate the unique ID.
+            $use = filesize_unlimited($filepath) . "_" . file_get_contents($filepath, null, null, 0, 50000);
+            $checksum = md5($use);
             }
         else
             {
-            $checksum=md5_file($filepath);
+            $checksum = md5_file($filepath);
             }
-        $duplicates=sql_array("select ref value from resource where file_checksum='$checksum'");
-        if(count($duplicates)>0 && !($replace_resource && in_array($replace_resource,$duplicates)))
-            {
-            return $duplicates;                       
-            }
-        }
-    return array(); 
-}
 
-if (!function_exists("upload_preview")){
-function upload_preview($ref)
-    {       
-    hook ("removeannotations","",array($ref));      
-        
-    # Upload a preview image only.
-    $processfile=$_FILES['userfile'];
-    $filename=strtolower(str_replace(" ","_",$processfile['name']));
-    
-    # Work out extension
-    $extension=explode(".",$filename);
-    $extension=trim(strtolower($extension[count($extension)-1]));
-    if ($extension=="jpeg")
-        {
-        $extension="jpg";
+        $duplicates = sql_array("SELECT ref value FROM resource WHERE file_checksum='$checksum'");
+        if(count($duplicates) > 0 && !($replace_resource && in_array($replace_resource, $duplicates)))
+            {
+            return $duplicates;
+            }
         }
-    
-    if ($extension != "jpg")
+
+    return array();
+    }
+
+
+if(!function_exists("upload_preview"))
+    {
+    function upload_preview($ref)
         {
-        return false;
-        }    
-    
-    # Move uploaded file into position. 
-    $filepath=get_resource_path($ref,true,"tmp",true,$extension);
-    $result=move_uploaded_file($processfile['tmp_name'], $filepath);
-    if ($result!=false) {chmod($filepath,0777);}
-    
-    # Create previews
-    create_previews($ref,false,$extension,true);
-    
-    # Delete temporary file, if not transcoding.
-    if(!sql_value("SELECT is_transcoding value FROM resource WHERE ref = '".escape_check($ref)."'", false))
-        {
-        unlink($filepath);
+        hook ("removeannotations", "", array($ref));
+
+        // Upload a preview image only.
+        $processfile = $_FILES['userfile'];
+        $filename = strtolower(str_replace(" ", "_", $processfile['name']));
+
+        // Work out extension.
+        $extension = explode(".", $filename);
+        $extension = trim(strtolower($extension[count($extension) - 1]));
+        if($extension == "jpeg")
+            {
+            $extension = "jpg";
+            }
+
+        if($extension != "jpg")
+            {
+            return false;
+            }
+
+        // Move uploaded file into position.
+        $filepath = get_resource_path($ref, true, "tmp", true, $extension);
+        $result = move_uploaded_file($processfile['tmp_name'], $filepath);
+        if($result != false)
+            {
+            chmod($filepath, 0777);
+            }
+
+        // Create previews.
+        create_previews($ref, false, $extension, true);
+
+        // Delete temporary file, if not transcoding.
+        if(!sql_value("SELECT is_transcoding value FROM resource WHERE ref = '".escape_check($ref)."'", false))
+            {
+            unlink($filepath);
+            }
+
+        return true;
         }
-    
-    return true;
-    }}
+    }
+
 
 /**
-* Extract text from the resource and save to the configured field
-* 
+* Extract text from the resource and save to the configured field.
+*
 * @uses resource_log()
 * @uses get_resource_path()
 * @uses debug()
 * @uses run_command()
 * @uses hook()
 * @uses update_field()
-* 
+*
 * @param integer $ref        Resource ref
 * @param string  $extension  File extension
-* @param string  $path       Path can be set to use an alternate file, for example, in the case of unoconv
-* 
+* @param string  $path       Path can be set to use an alternate file, for example, in the case of unoconv.
+*
 * @return void
 */
-function extract_text($ref,$extension,$path="")
+function extract_text($ref, $extension, $path = "")
     {
-    global $extracted_text_field,$antiword_path,$pdftotext_path,$zip_contents_field,$lang;
+    global $extracted_text_field, $antiword_path, $pdftotext_path, $zip_contents_field, $lang;
 
-    resource_log($ref,LOG_CODE_TRANSFORMED,'','','',$lang['embedded_metadata_extract_option']);
+    resource_log($ref, LOG_CODE_TRANSFORMED, '', '', '', $lang['embedded_metadata_extract_option']);
 
-    $text="";
-    if ($path==""){$path=get_resource_path($ref,true,"",false,$extension);}
-    
-    # Microsoft Word extraction using AntiWord.
-    if ($extension=="doc" && isset($antiword_path))
+    $text = "";
+    if($path == "")
         {
-        $command=$antiword_path . "/antiword";
-        if (!file_exists($command)) {$command=$antiword_path . "\antiword.exe";}
-        if (!file_exists($command)) {debug("ERROR: Antiword executable not found at '$antiword_path'"); return false;}
-
-        $cmd=$command . " -m UTF-8 " . escapeshellarg($path);
-        $text=run_command($cmd);
-        }
-    
-       # Microsoft OfficeOpen (docx,xlsx) extraction
-       # This is not perfect and needs some work, but does at least extract indexable content.
-       if ($extension=="docx"||$extension=="xlsx")
-        {   
-        $path=escapeshellarg($path);
-        
-         # DOCX files are zip files and the content is in word/document.xml.
-               # We extract this then remove tags.
-               switch($extension){
-               case "xlsx":
-                   $cmd="unzip -p $path \"xl/sharedStrings.xml\"";
-                   $text=run_command($cmd);
-                   break;
-
-               case "docx":
-                   $cmd="unzip -p $path \"word/document.xml\"";
-                   $text=run_command($cmd);
-                   break;
-               }
-               
-        # Remove tags, but add newlines as appropriate (without this, separate text blocks are joined together with no spaces).
-        $text=str_replace("<","\n<",$text);
-        $text=trim(strip_tags($text));
-        while (strpos($text,"\n\n")!==false) {$text=str_replace("\n\n","\n",$text);} # condense multiple line breaks
+        $path = get_resource_path($ref, true, "", false, $extension);
         }
 
-    # OpenOffice Text (ODT)
-    if ($extension=="odt"||$extension=="ods"||$extension=="odp")
-        {   
-        $path=escapeshellarg($path);
-        
-        # ODT files are zip files and the content is in content.xml.
-        # We extract this then remove tags.
-        $cmd="unzip -p $path \"content.xml\"";
-        $text=run_command($cmd);
-
-        # Remove tags, but add newlines as appropriate (without this, separate text blocks are joined together with no spaces).
-        $text=str_replace("<","\n<",$text);
-        $text=trim(strip_tags($text));
-        while (strpos($text,"\n\n")!==false) {$text=str_replace("\n\n","\n",$text);} # condense multiple line breaks
-        }
-    
-    # PDF extraction using pdftotext (part of the XPDF project)
-    if (($extension=="pdf" || $extension=="ai") && isset($pdftotext_path))
+    // Microsoft Word extraction using AntiWord.
+    if($extension == "doc" && isset($antiword_path))
         {
-        $command=$pdftotext_path . "/pdftotext";
-        if (!file_exists($command)) {$command=$pdftotext_path . "\pdftotext.exe";}
-        if (!file_exists($command)) {debug("ERROR: pdftotext executable not found at '$pdftotext_path'"); return false;}
+        $command = $antiword_path . "/antiword";
+        if(!file_exists($command))
+            {
+            $command = $antiword_path . "\antiword.exe";
+            }
+        if(!file_exists($command))
+            {
+            debug("ERROR: Antiword executable not found at '$antiword_path'");
+            return false;
+            }
 
-        $cmd=$command . " -enc UTF-8 " . escapeshellarg($path) . " -";
+        $cmd = $command . " -m UTF-8 " . escapeshellarg($path);
+        $text = run_command($cmd);
+        }
+
+       // Microsoft OfficeOpen (docx, xlsx) extraction, not perfect and needs some work, but does at least extract indexable content.
+       if($extension == "docx"||$extension == "xlsx")
+            {
+            $path = escapeshellarg($path);
+
+            # DOCX files are ZIP files and the content is in word/document.xml, extract this, then remove tags.
+            switch($extension)
+                {
+                case "xlsx":
+                   $cmd = "unzip -p $path \"xl/sharedStrings.xml\"";
+                   $text = run_command($cmd);
+                   break;
+                case "docx":
+                   $cmd = "unzip -p $path \"word/document.xml\"";
+                   $text = run_command($cmd);
+                   break;
+                }
+
+        // Remove tags, but add newlines as appropriate (without this, separate text blocks are joined together with no spaces).
+        $text = str_replace("<", "\n<", $text);
+        $text = trim(strip_tags($text));
+        while(strpos($text, "\n\n") !== false)
+            {
+            $text = str_replace("\n\n", "\n", $text); # Condense multiple line breaks.
+            }
+        }
+
+    // OpenOffice text (ODT).
+    if($extension == "odt"||$extension == "ods"||$extension == "odp")
+        {
+        $path = escapeshellarg($path);
+
+        // ODT files are ZIP files and the content is in content.xml, extract this, then remove tags.
+        $cmd = "unzip -p $path \"content.xml\"";
         $text = run_command($cmd);
 
+        // Remove tags, but add newlines as appropriate (without this, separate text blocks are joined together with no spaces).
+        $text = str_replace("<", "\n<", $text);
+        $text = trim(strip_tags($text));
+        while(strpos($text, "\n\n") !== false)
+            {
+            $text = str_replace("\n\n", "\n", $text); # Condense multiple line breaks.
+            }
         }
 
-    # HTML extraction
-    if ($extension=="html" || $extension=="htm")
+    // PDF extraction using pdftotext, part of the XPDF project.
+    if(($extension == "pdf" || $extension == "ai") && isset($pdftotext_path))
         {
-        $text=strip_tags(file_get_contents($path));
+        $command = $pdftotext_path . "/pdftotext";
+        if(!file_exists($command))
+            {
+            $command = $pdftotext_path . "\pdftotext.exe";
+            }
+        if(!file_exists($command))
+            {
+            debug("ERROR: pdftotext executable not found at '$pdftotext_path'");
+            return false;
+            }
+
+        $cmd = $command . " -enc UTF-8 " . escapeshellarg($path) . " -";
+        $text = run_command($cmd);
         }
 
-    # TXT extraction
-    if ($extension=="txt")
+    // HTML extraction.
+    if($extension == "html" || $extension == "htm")
         {
-        $text=file_get_contents($path);
+        $text = strip_tags(file_get_contents($path));
         }
 
-    if ($extension=="zip")
+    // TXT extraction.
+    if($extension == "txt")
         {
-        # Zip files - map the field
-        $path=escapeshellarg($path);
+        $text = file_get_contents($path);
+        }
 
-        $cmd="unzip -l $path";
-        $text=run_command($cmd);
+    // ZIP files, map the field.
+    if($extension == "zip")
+        {
+        $path = escapeshellarg($path);
+        $cmd = "unzip -l $path";
+        $text = run_command($cmd);
 
         global $zip_contents_field_crop;
-        if ($zip_contents_field_crop>0)
+
+        // Remove the first few lines according to $zip_contents_field_crop in config.
+        if($zip_contents_field_crop > 0)
             {
-            # Remove the first few lines according to $zip_contents_field_crop in config.
-            $text=explode("\n",$text);
-            for ($n=0;$n<$zip_contents_field_crop;$n++) {array_shift($text);}
-            $text=join("\n",$text);
+            $text = explode("\n", $text);
+            for($n = 0; $n < $zip_contents_field_crop; $n++)
+                {
+                array_shift($text);
+                }
+            $text = join("\n", $text);
             }
-        
-        if (isset($zip_contents_field))
+
+        if(isset($zip_contents_field))
             {
-            $extracted_text_field=$zip_contents_field;
+            $extracted_text_field = $zip_contents_field;
             }
         }
-    
-    hook("textextraction", "all", array($extension,$path));
-        
-    # Save the extracted text.
-    if ($text!="")
+
+    hook("textextraction", "all", array($extension, $path));
+
+    // Save the extracted text.
+    if($text != "")
         {
-        $modified_text=hook("modifiedextractedtext",'',array($text));
-        if(!empty($modified_text)){$text=$modified_text;}
-        
-        # Save text
-        update_field($ref,$extracted_text_field,$text);
+        $modified_text = hook("modifiedextractedtext", '', array($text));
+        if(!empty($modified_text))
+            {
+            $text = $modified_text;
+            }
+
+        // Save text.
+        update_field($ref, $extracted_text_field, $text);
         }
-    
     }
-    
+
+
 function get_image_orientation($file)
     {
     $exiftool_fullpath = get_utility_path('exiftool');
-    if ($exiftool_fullpath == false)
+    if($exiftool_fullpath == false)
         {
         return 0;
         }
 
-    $cmd=$exiftool_fullpath . ' -s -s -s -orientation ' . escapeshellarg($file);
+    $cmd = $exiftool_fullpath . ' -s -s -s -orientation ' . escapeshellarg($file);
     $orientation = run_command($cmd);
     $orientation = str_replace('Rotate', '', $orientation);
-    
-    if (strpos($orientation, 'CCW'))
+
+    if(strpos($orientation, 'CCW'))
         {
         $orientation = trim(str_replace('CCW', '', 360-$orientation));
-        } 
-    else 
+        }
+    else
         {
         $orientation = trim(str_replace('CW', '', $orientation));
         }
 
-    // Failed or no orientation available
+    // Failed or no orientation available.
     if(!is_numeric($orientation))
         {
         return 0;
@@ -3212,135 +3265,134 @@ function get_image_orientation($file)
     return $orientation;
     }
 
-function AutoRotateImage($src_image, $ref = false) 
+
+// Use $ref to pass a resource ID in case orientation data needs to be taken from a non-ingested image to properly
+//  rotate a preview image.
+function AutoRotateImage($src_image, $ref = false)
     {
-    # use $ref to pass a resource ID in case orientation data needs to be taken
-    # from a non-ingested image to properly rotate a preview image
     global $imagemagick_path, $camera_autorotation_ext, $camera_autorotation_gm;
 
     debug("AutoRotateImage(src_image = $src_image, ref = $ref)");
-
-    if (!isset($imagemagick_path)) 
+    if(!isset($imagemagick_path))
         {
         return false;
-        # for the moment, this only works for imagemagick
-        # note that it would be theoretically possible to implement this
-        # with a combination of exiftool and GD image rotation functions.
+        // For the moment, this only works for ImageMagick. Note that it would be theoretically possible to implement
+        //  this with a combination of exiftool and GD image rotation functions.
         }
 
-    # Locate imagemagick.
+    // Locate ImageMagick.
     $convert_fullpath = get_utility_path("im-convert");
-    if ($convert_fullpath == false) 
+    if($convert_fullpath == false)
         {
         return false;
         }
-    
+
     $exploded_src = explode('.', $src_image);
     $ext = $exploded_src[count($exploded_src) - 1];
     $triml = strlen($src_image) - (strlen($ext) + 1);
     $noext = substr($src_image, 0, $triml);
-    
-    if (count($camera_autorotation_ext) > 0 && (!in_array(strtolower($ext), $camera_autorotation_ext))) 
+
+    // If the autorotation extensions are set, make sure it is allowed for this extension.
+    if(count($camera_autorotation_ext) > 0 && (!in_array(strtolower($ext), $camera_autorotation_ext)))
         {
-        # if the autorotation extensions are set, make sure it is allowed for this extension
         return false;
         }
 
     $exiftool_fullpath = get_utility_path("exiftool");
     $new_image = $noext . '-autorotated.' . $ext;
-    
-    if ($camera_autorotation_gm) 
+
+    if($camera_autorotation_gm)
         {
         $orientation = get_image_orientation($src_image);
-        if ($orientation != 0) 
+        if($orientation != 0)
             {
             $command = $convert_fullpath . ' ' . escapeshellarg($src_image) . ' -rotate +' . $orientation . ' ' . escapeshellarg($new_image);
             $output=run_command($command);
             }
         $command = $exiftool_fullpath . ' Orientation=1 ' . escapeshellarg($new_image);
-        } 
+        }
     else
         {
-        if ($ref != false) 
+        if($ref != false)
             {
-            # use the original file to get the orientation info
-            $extension = sql_value("select file_extension value from resource where ref='{$ref}'", '');
+            // Use the original file to get the orientation info.
+            $extension = sql_value("SELECT file_extension value FROM resource WHERE ref='{$ref}'", '');
             $file = get_resource_path($ref, true, "", false, $extension, -1, 1, false, "", -1);
-            # get the orientation
+
+            // Get the orientation.
             $orientation = get_image_orientation($file);
-            if ($orientation != 0) 
+            if($orientation != 0)
                 {
                 $command = $convert_fullpath . ' -rotate +' . $orientation . ' ' . escapeshellarg($src_image) . ' ' . escapeshellarg($new_image);
                 $output=run_command($command);
 
-                # change the orientation metadata
+                // Change the orientation metadata.
                 $command = $exiftool_fullpath . ' -Orientation=1 ' . escapeshellarg($new_image);
                 }
-            } 
+            }
         else
             {
             $orientation = get_image_orientation($src_image);
-            if ($orientation != 0) 
+            if($orientation != 0)
                 {
                 $command = $convert_fullpath . ' ' . escapeshellarg($src_image) . ' -auto-orient ' . escapeshellarg($new_image);
-                $output=run_command($command);
+                $output = run_command($command);
                 }
             }
         }
 
-    if (!file_exists($new_image)) 
+    if(!file_exists($new_image))
         {
         return false;
         }
 
-    if (!$ref) 
+    // Preserve custom metadata fields with ExifTool, save the new orientation.
+    if(!$ref)
         {
-        # preserve custom metadata fields with exiftool        
-        # save the new orientation
-        # $new_orientation=run_command($exiftool_fullpath.' -s -s -s -orientation -n '.$new_image);
-        $cmd=$exiftool_fullpath . ' -s -s -s -orientation -n ' . escapeshellarg($src_image);
+        // $new_orientation=run_command($exiftool_fullpath.' -s -s -s -orientation -n '.$new_image);
+        $cmd = $exiftool_fullpath . ' -s -s -s -orientation -n ' . escapeshellarg($src_image);
         $old_orientation = run_command($cmd);
         $exiftool_copy_command = $exiftool_fullpath . " -TagsFromFile " . escapeshellarg($src_image) . " -all:all " . escapeshellarg($new_image);
 
-        $output=run_command($exiftool_copy_command);
+        $output = run_command($exiftool_copy_command);
 
-        # If orientation was empty there's no telling if rotation happened, so don't assume.
-        # Also, don't go through this step if the old orientation was set to normal
-        if ($old_orientation != '' && $old_orientation != 1) 
+        // If orientation was empty there's no telling if rotation happened, so do not assume. Also, do not go through
+        //  this step if the old orientation was set to normal.
+        if($old_orientation != '' && $old_orientation != 1)
             {
             $fix_orientation = $exiftool_fullpath . ' -Orientation=1 -n ' . escapeshellarg($new_image);
-            $output=run_command($fix_orientation);
+            $output = run_command($fix_orientation);
             }
-        
-        # we'll remove the exiftool created file copy (as a result of using -TagsFromFile)
+
+        // We will remove the ExifTool created file copy (as a result of using -TagsFromFile).
         if(file_exists($new_image . '_original'))
             {
             unlink($new_image . '_original');
             }
         }
-    
+
     unlink($src_image);
     rename($new_image, $src_image);
-    return true; 
+    return true;
     }
 
 
 /**
-* Provides ability to extract the ICC profile for a specified resource/ alternative file
-* 
+* Provides ability to extract the ICC profile for a specified resource/alternative file.
+*
 * @uses get_resource_path()
 * @uses extract_icc()
-* 
-* @param  integer  $ref          Resource ref
-* @param  string   $extension    Extension of the file
-* @param  integer  $alternative  Resource alternative ref. Default -1 as per get_resource_path() defintion
-* 
+*
+* @param  integer  $ref          Resource ref.
+* @param  string   $extension    Extension of the file.
+* @param  integer  $alternative  Resource alternative ref. Default -1 as per get_resource_path() defintion.
+*
 * @return boolean
 */
 function extract_icc_profile($ref, $extension, $alternative = -1)
     {
-    // this is provided for compatibility. However, we are now going to rely on the caller to tell us the
-    // path of the file. extract_icc() is where the real work will happen.
+    // This is provided for compatibility. However, we are now going to rely on the caller to tell us the path of the
+    //  file. extract_icc() is where the real work will happen.
     $infile = get_resource_path($ref, true, '', true, $extension, true, 1, false, '', $alternative);
 
     if(extract_icc($infile, $ref))
@@ -3350,23 +3402,34 @@ function extract_icc_profile($ref, $extension, $alternative = -1)
 
     return false;
     }
-    
 
-function extract_icc($infile, $ref='') {
-   global $config_windows, $syncdir;
 
-   # Locate imagemagick, or fail this if it isn't installed
-   $convert_fullpath = get_utility_path("im-convert");
-   if ($convert_fullpath==false) {return false;}
+function extract_icc($infile, $ref = '')
+    {
+    global $config_windows, $syncdir;
 
-   if ($config_windows){ $stderrclause = ''; } else { $stderrclause = '2>&1'; }
+    // Locate ImageMagick, or fail this if it is not installed.
+    $convert_fullpath = get_utility_path("im-convert");
+    if($convert_fullpath == false)
+        {
+        return false;
+        }
 
-   //$outfile=get_resource_path($ref,true,"",false,$extension.".icc");
-   //new, more flexible approach: we will just create a file for anything the caller hands to us.
-   //this makes things work with alternatives, the deepzoom plugin, etc.
-   $path_parts = pathinfo($infile);
-   
-   if(strpos($infile, $syncdir)===false)
+    if($config_windows)
+        {
+        $stderrclause = '';
+        }
+    else
+        {
+        $stderrclause = '2>&1';
+        }
+
+    // $outfile=get_resource_path($ref,true,"",false,$extension.".icc");
+    // New, more flexible approach: we will just create a file for anything the caller hands to us. This makes things
+    //  work with alternatives, the deepzoom plugin, etc.
+    $path_parts = pathinfo($infile);
+
+    if(strpos($infile, $syncdir) === false)
         {
         $outfile = $path_parts['dirname'] . '/' . $path_parts['filename'] .'.'. $path_parts['extension'] .'.icc';
         }
@@ -3374,66 +3437,87 @@ function extract_icc($infile, $ref='') {
         {
         $outfile = get_resource_path($ref,true,'',false,'icc',-1);
         }
-  
-   if (file_exists($outfile)){
-      // extracted profile already existed. We'll remove it and start over
-      unlink($outfile);
-   }
 
-    $cmd = $convert_fullpath . " \"" . (!$config_windows && strpos($infile, ':')!==false ? strtolower($path_parts['extension']) . ':' : '') . $infile . "[0]\" \"" . $outfile . "\" " .  $stderrclause;
+    // Extracted profile already existed. We will remove it and start over.
+    if(file_exists($outfile))
+        {
+        unlink($outfile);
+        }
+
+    $cmd = $convert_fullpath . " \"" . (!$config_windows && strpos($infile, ':') !== false ? strtolower($path_parts['extension']) . ':' : '') . $infile . "[0]\" \"" . $outfile . "\" " .  $stderrclause;
     $cmdout = run_command($cmd);
 
-   if ( preg_match("/no color profile is available/",$cmdout) || !file_exists($outfile) ||filesize_unlimited($outfile) == 0){
-   // the icc profile extraction failed. So delete file.
-   if (file_exists($outfile)){ unlink ($outfile); };
-   return false;
-   }
+    if(preg_match("/no color profile is available/", $cmdout) || !file_exists($outfile) ||filesize_unlimited($outfile) == 0)
+        {
+        // The ICC profile extraction failed, so delete file.
+        if(file_exists($outfile))
+            {
+            unlink ($outfile);
+            };
 
-   if (file_exists($outfile)) { return true; } else { return false; }
+        return false;
+        }
 
-}
+    if(file_exists($outfile))
+        {
+        return true;
+        }
+    else
+        {
+        return false;
+        }
+    }
 
-function get_imagemagick_version($array=true){
-    // return version number of ImageMagick, or false if it is not installed or cannot be determined.
-    // will return an array of major/minor/version/patch if $array is true, otherwise just the version string
 
-    # Locate imagemagick, or return false if it isn't installed
+// Return version number of ImageMagick or FALSE if it is not installed or cannot be determined. Will return an array
+//  of major/minor/version/patch if $array is TERUE; otherwise, just the version string.
+function get_imagemagick_version($array = true)
+    {
+    // Locate ImageMagick or return FALSE if it is not installed.
     $convert_fullpath = get_utility_path("im-convert");
-    if ($convert_fullpath==false) {return false;}
+    if($convert_fullpath == false)
+        {
+        return false;
+        }
 
     $versionstring = run_command($convert_fullpath . " --version");
-    // example: 
-    //          Version: ImageMagick 6.5.0-0 2011-02-18 Q16 http://www.imagemagick.org
-        //          Copyright: Copyright (C) 1999-2009 ImageMagick Studio LLC
+    // example: Version: ImageMagick 6.5.0-0 2011-02-18 Q16 http://www.imagemagick.org
+    //          Copyright: Copyright (C) 1999-2009 ImageMagick Studio LLC
 
-    if (preg_match("/^Version: +ImageMagick (\d+)\.(\d+)\.(\d+)-(\d+) /",$versionstring,$matches)){
+    if(preg_match("/^Version: +ImageMagick (\d+)\.(\d+)\.(\d+)-(\d+) /", $versionstring, $matches))
+        {
         $majorver = $matches[1];
         $minorver = $matches[2];
         $revision = $matches[3];
         $patch = $matches[4];
-        if ($array){
-            return array($majorver,$minorver,$revision,$patch);
-        } else {
+        if($array)
+            {
+            return array($majorver, $minorver, $revision, $patch);
+            }
+        else
+            {
             return "$majorver.$minorver.$revision-$patch";
+            }
         }
-    } else {
+    else
+        {
         return false;
+        }
     }
-}
 
 
 /**
-* Function used to get new width & height for an image in order to maintain
-* aspect ratio while it will fit within a desired dimension.
-* 
-* @param string  $image_path    The full path to the image (can be physical / URL)
-* @param integer $target_width  
-* @param integer $target_height 
-* @param boolean $enlarge_image Specify whether images smaller than our target
-*                               should be enlarged or not. Default is FALSE
-* 
-* @return array New dimensions which can be used to resize the image and offset values client
-*               code can use for consistent visual display
+* Function used to get new width and height for an image in order to maintain aspect ratio while it will fit within a
+*  desired dimension.
+*
+* @param string  $image_path    The full path to the image, can be physical or URL.
+* @param integer $target_width
+* @param integer $target_height
+* @param boolean $enlarge_image Specify whether images smaller than our target should be enlarged or not. Default is
+*                                FALSE.
+*
+* @return array New dimensions which can be used to resize the image and offset values client code can use for
+*                consistent visual display.
 */
 function calculate_image_dimensions($image_path, $target_width, $target_height, $enlarge_image = false)
     {
@@ -3447,19 +3531,16 @@ function calculate_image_dimensions($image_path, $target_width, $target_height, 
         'landscape' => false,
     );
 
-    // Check orientation and calculate ratio
+    // Check orientation and calculate ratio.
     if($source_width > $source_height)
         {
-        // Landscape
+        // Landscape.
         $return['landscape'] = true;
-
         $ratio = $target_width / $source_width;
         }
-    else
+    else // Portrait
         {
-        // Portrait
         $return['portrait'] = true;
-
         $ratio = $target_height / $source_height;
         }
 
@@ -3468,15 +3549,16 @@ function calculate_image_dimensions($image_path, $target_width, $target_height, 
         $ratio = 1;
         }
 
-    $return['new_width']  = floor($source_width * $ratio);
+    $return['new_width'] = floor($source_width * $ratio);
     $return['new_height'] = floor($source_height * $ratio);
-    $return['x_offset']   = ceil(($target_height - $return['new_height']) / 2);
-    $return['y_offset']   = ceil(($target_width - $return['new_width']) / 2);
+    $return['x_offset'] = ceil(($target_height - $return['new_height']) / 2);
+    $return['y_offset'] = ceil(($target_width - $return['new_width']) / 2);
 
     return $return;
     }
 
-function upload_file_by_url($ref,$no_exif=false,$revert=false,$autorotate=false,$url)
+
+function upload_file_by_url($ref, $no_exif = false, $revert = false, $autorotate = false, $url)
     {
     debug("upload_file_by_url(ref = $ref, no_exif = $no_exif,revert = $revert, autorotate = $autorotate, url = $url)");
 
@@ -3485,61 +3567,71 @@ function upload_file_by_url($ref,$no_exif=false,$revert=false,$autorotate=false,
         return false;
         }
 
-    # Download a file from the provided URL, then upload it as if it was a local upload.
+    // Download a file from the provided URL, then upload it as if it was a local upload.
     global $userref;
-    $file_path=get_temp_dir(false,$userref) . "/" . basename($url); # Temporary path creation for the downloaded file.
-    $s=explode("?",$file_path);$file_path=$s[0]; # Remove query string if it was present in the URL
 
-    $copied = @copy($url, $file_path); # Download the file.
+    // Temporary path creation for the downloaded file.
+    $file_path = get_temp_dir(false, $userref) . "/" . basename($url);
+
+    // Remove query string if it was present in the URL.
+    $s = explode("?", $file_path);
+    $file_path = $s[0];
+
+    // Download the file.
+    $copied = @copy($url, $file_path);
     if(!$copied)
         {
         debug("upload_file_by_url - failed to copy file from '$url' to '$file_path'");
         return false;
         }
-    return upload_file($ref,$no_exif,$revert,$autorotate,$file_path);   # Process as a normal upload...
+
+    // Process as a normal upload.
+    return upload_file($ref, $no_exif, $revert, $autorotate, $file_path);
     }
 
+
 /**
- * Delete all preview files for specified resource id or resource data array
- * 
- * @param $resource array|integer Resource array or resource ID to delete preview files for
+ * Delete all preview files for specified resource id or resource data array.
  *
- */ 
-function delete_previews($resource,$alternative=-1)
+ * @param $resource array|integer Resource array or resource ID to delete preview files for.
+ *
+ */
+function delete_previews($resource, $alternative = -1)
     {
     global $ffmpeg_preview_extension;
-    
-    // If a resource array has been passed we already have the extensions
+
+    // If a resource array has been passed, we already have the extensions.
     if(is_array($resource))
         {
-        $resource_data=$resource;
-        $extension=$resource["file_extension"];
-        $resource=$resource["ref"];
+        $resource_data = $resource;
+        $extension = $resource["file_extension"];
+        $resource = $resource["ref"];
         }
     else
         {
-        $resource_data=get_resource_data($resource);
-        $extension=$resource_data["file_extension"];
+        $resource_data = get_resource_data($resource);
+        $extension = $resource_data["file_extension"];
         }
-    
-    $fullsizejpgpath=get_resource_path($resource,true,"",false,"jpg",-1,1,false,"",$alternative);           
-    # Delete the full size original if not a JPG resource
-    if($extension!="" && strtolower($extension)!="jpg" && file_exists($fullsizejpgpath) && $alternative==-1)
+
+    $fullsizejpgpath = get_resource_path($resource, true, "", false, "jpg", -1, 1, false, "", $alternative);
+
+    // Delete the full size original if not a JPG resource.
+    if($extension != "" && strtolower($extension) != "jpg" && file_exists($fullsizejpgpath) && $alternative == -1)
         {
         unlink($fullsizejpgpath);
-        }           
-    
-    $dirinfo=pathinfo($fullsizejpgpath);    
+        }
+
+    $dirinfo = pathinfo($fullsizejpgpath);
     $resourcefolder = $dirinfo["dirname"];
 
-    $presizes=sql_array("select id value from preview_size");
-    $presizes[]="snapshot"; // To include any video snapshots
-    $pagecount=get_page_count($resource_data,$alternative);
+    $presizes = sql_array("SELECT id value FROM preview_size");
+    $presizes[] = "snapshot"; # To include any video snapshots.
+    $pagecount = get_page_count($resource_data, $alternative);
     foreach($presizes as $presize)
         {
-        for($page=1;$page<=$pagecount;$page++)
+        for($page = 1; $page <= $pagecount; $page++)
             {
-            $previewpath=get_resource_path($resource,true,$presize,false,"jpg",-1,$page,false,"",$alternative);
+            $previewpath = get_resource_path($resource, true, $presize, false, "jpg", -1, $page, false, "", $alternative);
             if(file_exists($previewpath))
                 {
                 unlink($previewpath);
@@ -3550,16 +3642,16 @@ function delete_previews($resource,$alternative=-1)
     $delete_prefixes = array();
     $delete_prefixes[] = "resized_";
     $delete_prefixes[] = "tile_";
-    
+
     $allfiles = new DirectoryIterator($resourcefolder);
-    foreach ($allfiles as $fileinfo)
+    foreach($allfiles as $fileinfo)
         {
-        if (!$fileinfo->isDot())
+        if(!$fileinfo->isDot())
             {
             $filename = $fileinfo->getFilename();
             foreach($delete_prefixes as $delete_prefix)
                 {
-                if(substr($filename,strlen($resource),strlen($delete_prefix)) == $delete_prefix)
+                if(substr($filename, strlen($resource), strlen($delete_prefix)) == $delete_prefix)
                     {
                     unlink($resourcefolder . DIRECTORY_SEPARATOR . $filename);
                     }
@@ -3568,39 +3660,40 @@ function delete_previews($resource,$alternative=-1)
         }
     }
 
+
 function getFileDimensions($identify_fullpath, $prefix, $file, $extension)
     {
-    # Get image's dimensions.
+    // Get image dimensions.
     $identcommand = $identify_fullpath . ' -format %wx%h '. escapeshellarg($prefix . $file) .'[0]';
-    $identoutput=run_command($identcommand);
+    $identoutput = run_command($identcommand);
 
     if($extension == "svg")
         {
         list($w, $h) = getSvgSize($file);
         }
-    else if(!empty($identoutput))
+    elseif(!empty($identoutput))
         {
-        $wh=explode("x",$identoutput);
+        $wh = explode("x", $identoutput);
         $w = $o_width = $wh[0];
         $h = $o_height = $wh[1];
         }
-    else
+    else // We really need dimensions here, so fallback to PHP's method.
         {
-        // we really need dimensions here, so fallback to php's method
-        list($w,$h) = @getimagesize($file);
+        list($w, $h) = @getimagesize($file);
         }
-    
+
     $dimensions = array($w, $h);
 
     return($dimensions);
     }
 
+
 /**
-* Get SVG size by reading the file and looking for dimensions at either width and height OR at Viewbox attribute(s)
-* 
-* @param string $file_path Path to SVG file (should work with both a physical path and a URL)
-* 
-* @return array where first element is width and second is height represented as strings
+* Get SVG size by reading the file and looking for dimensions at either width and height OR at Viewbox attribute(s).
+*
+* @param string $file_path Path to SVG file (should work with both a physical path and a URL).
+*
+* @return array where first element is width and second is height represented as strings.
 */
 function getSvgSize($file_path)
     {
@@ -3609,19 +3702,19 @@ function getSvgSize($file_path)
         trigger_error("getSvgSize(): file_path does not exist!");
         }
 
-    $svg_size   = array(0, 0);
-    $xml        = new SimpleXMLElement($file_path, 0, true);
+    $svg_size = array(0, 0);
+    $xml = new SimpleXMLElement($file_path, 0, true);
     $attributes = $xml->attributes();
 
-    // This information should be available in either width and height attributes and/ or viewBox
+    // This information should be available in either width and height attributes and/or viewBox.
     if(isset($attributes->width) && isset($attributes->height))
         {
         $svg_size[0] = (string) $attributes->width;
         $svg_size[1] = (string) $attributes->height;
         }
-    else if(isset($attributes->viewBox) && trim($attributes->viewBox) !== '')
+    elseif(isset($attributes->viewBox) && trim($attributes->viewBox) !== '')
         {
-        // Note: viewBox coordinates can be separated by either space and/ or a comma
+        // Note: viewBox coordinates can be separated by either space and/or a comma.
         list($min_x, $min_y, $width, $height) = preg_split("/(\s|,)/", $attributes->viewBox);
 
         if(isset($width) && isset($height))
@@ -3632,23 +3725,24 @@ function getSvgSize($file_path)
         }
 
     return $svg_size;
-    } 
+    }
+
 
 /**
-* Replace preview image with preview image from another resource/alternaive file
-* 
-* @param int $ref               Resource to replace preview image for
-* @param int $previewresource   Preview source resource ref
-* @param int $previewalt        Preview source resource alternative ref
-* 
+* Replace preview image with preview image from another resource/alternative file.
+*
+* @param int $ref               Resource to replace preview image for.
+* @param int $previewresource   Preview source resource ref.
+* @param int $previewalt        Preview source resource alternative ref.
+*
 * @return boolean
 */
-function replace_preview_from_resource($ref,$previewresource,$previewalt)
+function replace_preview_from_resource($ref, $previewresource, $previewalt)
     {
-    $prepath = get_resource_path($ref,true,"tmp",true);
-    foreach(array("","hpr") as $usesize)
+    $prepath = get_resource_path($ref, true, "tmp", true);
+    foreach(array("", "hpr") as $usesize)
         {
-        $usepath = get_resource_path($ref,true,$usesize,true,'jpg',true,1,false,'',$previewalt);
+        $usepath = get_resource_path($ref, true, $usesize, true, 'jpg', true, 1, false, '', $previewalt);
         if(file_exists($usepath))
             {
             break;
@@ -3661,9 +3755,10 @@ function replace_preview_from_resource($ref,$previewresource,$previewalt)
         $result = copy($usepath,$prepath);
         if($result === true)
             {
-            create_previews($ref,false,'jpg',true);
+            create_previews($ref, false, 'jpg', true);
             return true;
             }
         }
-    return false;    
+
+    return false;
     }

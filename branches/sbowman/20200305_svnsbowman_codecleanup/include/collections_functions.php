@@ -1,7 +1,7 @@
 <?php
 // Functions to Manipulate Collections
 
-if (!function_exists("get_user_collections"))
+if(!function_exists("get_user_collections"))
     {
     function get_user_collections($user, $find = "", $order_by = "name", $sort = "ASC", $fetchrows = -1, $auto_create = true)
         {
@@ -573,7 +573,7 @@ if(!function_exists("search_public_collections"))
                         }
                     else
                         {
-                        if (substr($keywords[$n], 0, 19) == "collectionkeywords:") $keywords[$n] = substr($keywords[$n], 19);
+                        if(substr($keywords[$n], 0, 19) == "collectionkeywords:") $keywords[$n] = substr($keywords[$n], 19);
                         // Support field specific matching, discard the field identifier as not appropriate for collection searches.
                         if(strpos($keywords[$n], ":") !== false)
                             {
@@ -1820,7 +1820,7 @@ function add_saved_search_items($collection, $search = "", $restypes = "", $arch
     }
 
 // Can all resources in this collection be edited by the user?  Returns TRUE or FALSE.
-if (!function_exists("allow_multi_edit"))
+if(!function_exists("allow_multi_edit"))
     {
     function allow_multi_edit($collection, $collectionid = 0)
         {
@@ -2241,7 +2241,7 @@ function copy_collection($copied, $current, $remove_existing = false)
 
 
 // Returns true if a collection is a research request.
-if (!function_exists("collection_is_research_request"))
+if(!function_exists("collection_is_research_request"))
     {
     function collection_is_research_request($collection)
         {
@@ -2251,7 +2251,7 @@ if (!function_exists("collection_is_research_request"))
 
 
 // Generates aN HTML link for adding a resource to a collection.
-if (!function_exists("add_to_collection_link"))
+if(!function_exists("add_to_collection_link"))
     {
     function add_to_collection_link($resource,$search="",$extracode="",$size="",$class="")
         {
@@ -2263,7 +2263,7 @@ if (!function_exists("add_to_collection_link"))
 
 
 // Generates an HTML link for removing a resource to a collection.
-if (!function_exists("remove_from_collection_link"))
+if(!function_exists("remove_from_collection_link"))
     {
     function remove_from_collection_link($resource, $search = "", $class = "")
         {
@@ -2334,6 +2334,8 @@ function collection_log($collection, $type, $resource, $notes = "")
 
 function get_collection_log($collection, $fetchrows = -1)
     {
+    debug_function_call("get_collection_log", func_get_args());
+
     global $view_title_field;
 
     $extra_fields = hook("collection_log_extra_fields");
@@ -2516,7 +2518,7 @@ function remove_all_resources_from_collection($ref)
     }
 
 
-if (!function_exists("get_home_page_promoted_collections"))
+if(!function_exists("get_home_page_promoted_collections"))
     {
     function get_home_page_promoted_collections()
         {

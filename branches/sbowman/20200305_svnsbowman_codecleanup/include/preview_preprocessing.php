@@ -1,7 +1,6 @@
 <?php
 // Preview Preprocessing Functions
-// Contains the integration code with ImageMagick and the integration code for those types that we need ImageMagick
-// to be able to process, for example types that use GhostScript or FFmpeg.
+// Contains the integration code with ImageMagick and the integration code for Ghostscript or FFmpeg.
 
 global $imagemagick_path, $imagemagick_preserve_profiles, $imagemagick_quality, $imagemagick_colorspace, $ghostscript_path, $pdf_pages, $antiword_path, $unoconv_path, $pdf_resolution, $pdf_dynamic_rip, $ffmpeg_audio_extensions, $ffmpeg_audio_params, $qlpreview_path,$ffmpeg_supported_extensions, $qlpreview_exclude_extensions, $ffmpeg_global_options,$ffmpeg_snapshot_fraction, $ffmpeg_snapshot_seconds,$ffmpeg_no_new_snapshots, $lang, $dUseCIEColor;
 
@@ -184,9 +183,9 @@ if($extension == "psd" && !isset($newfile) && $psd_transparency_checkerboard)
     }
 
 // Try SWF  Note: gnash-dump must be compiled on the server. http://www.xmission.com/~ink/gnash/gnash-dump/README.txt
-// Ubuntu: ./configure --prefix=/usr/local/gnash-dump --enable-renderer=agg \
-// --enable-gui=gtk,dump --disable-kparts --disable-nsapi --disable-menus
-// several dependencies will also be necessary, according to ./configure
+//  Ubuntu: ./configure --prefix=/usr/local/gnash-dump --enable-renderer=agg \
+//  --enable-gui=gtk,dump --disable-kparts --disable-nsapi --disable-menus
+//  several dependencies will also be necessary, according to ./configure
 if($extension == "swf" && !isset($newfile))
     {
     global $dump_gnash_path;
@@ -299,7 +298,7 @@ if(($extension == "cr2" || $extension == "nef" || $extension == "dng" || $extens
     }
 
 // Try Apple iWork Formats, the following are to generate previews for the Apple iWork files, such as Apple Pages,
-// Apple Keynote, and Apple Numbers.
+//  Apple Keynote, and Apple Numbers.
 if((($extension == "pages") || ($extension == "numbers") || (!isset($unoconv_path) && $extension == "key")) && !isset($newfile))
     {
     $cmd = "unzip -p " . escapeshellarg($file) . " \"QuickLook/Thumbnail.jpg\" > $target";
@@ -702,7 +701,7 @@ elseif(($ffmpeg_fullpath != false) && !isset($newfile) && in_array($extension, $
         debug("FFMPEG-VIDEO: Get snapshot: {$cmd}");
         }
 
-    if (file_exists($target))
+    if(file_exists($target))
         {
         $newfile=$target;
         debug('FFMPEG-VIDEO: $newfile = ' . $newfile);
@@ -710,7 +709,7 @@ elseif(($ffmpeg_fullpath != false) && !isset($newfile) && in_array($extension, $
         if($ffmpeg_preview && ($extension != $ffmpeg_preview_extension || $ffmpeg_preview_force || $video_preview_hls_support != 0))
             {
                 debug('FFMPEG-VIDEO: Before running the actual preview command...');
-                if ($ffmpeg_preview_async && $php_fullpath !== false)
+                if($ffmpeg_preview_async && $php_fullpath !== false)
                     {
                     debug('FFMPEG-VIDEO: Create preview asynchronously...');
                     global $scramble_key;
@@ -781,24 +780,24 @@ if((!isset($newfile)) && (!in_array($extension, $ffmpeg_audio_extensions)) && (!
             $i = 0;
             while (!$photoshop_eps && ($eps_line = fgets($eps_file)) && ($i < 100))
                 {
-            if (@preg_match("/%%BoundingBox: [0-9]+ [0-9]+ ([0-9]+) ([0-9]+)/i", $eps_line, $regs))
+            if(@preg_match("/%%BoundingBox: [0-9]+ [0-9]+ ([0-9]+) ([0-9]+)/i", $eps_line, $regs))
                 {
                 $eps_bbox_x = $regs[1];
                 $eps_bbox_y = $regs[2];
                 }
-            if (@preg_match("/%ImageData: ([0-9]+) ([0-9]+)/i", $eps_line, $regs))
+            if(@preg_match("/%ImageData: ([0-9]+) ([0-9]+)/i", $eps_line, $regs))
                 {
                 $eps_data_x = $regs[1];
                 $eps_data_y = $regs[2];
                 }
-            if (@preg_match("/%BeginPhotoshop:/i",$eps_line))
+            if(@preg_match("/%BeginPhotoshop:/i",$eps_line))
                 {
                 $photoshop_eps = true;
                 }
             ++$i;
             }
 
-        if ($photoshop_eps)
+        if($photoshop_eps)
             {
             $eps_density_x = $eps_data_x / $eps_bbox_x * 72;
             $eps_density_y = $eps_data_y / $eps_bbox_y * 72;
@@ -1050,7 +1049,7 @@ if((!isset($newfile)) && (!in_array($extension, $ffmpeg_audio_extensions)) && (!
         }
     else // Not a PDF file, so single extraction only.
         {
-        create_previews_using_im($ref, false, $extension, $previewonly, false, $alternative);
+        create_previews_using_im($ref, false, $extension, $previewonly, false, $alternative, $ingested, $onlysizes);
         }
     }
 
