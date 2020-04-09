@@ -11,6 +11,10 @@ $k=getvalescaped("k","");
 
 $filter_by_type = trim(getval("filter_by_type", ""));
 $filter_by_usageoption = getval("filter_by_usageoption", null, true);
+$filter_url_params = array(
+    "filter_by_type" => $filter_by_type,
+    "filter_by_usageoption" => $filter_by_usageoption,
+);
 
 // Logs can sometimes contain confidential information and the user looking at them must have admin permissions set.
 // Some log records can be viewed by all users. Ensure access control by allowing only white listed log codes to bypass 
@@ -40,6 +44,16 @@ $per_page=getvalescaped("per_page_list", $default_perpage_list);rs_setcookie('pe
 // When filtering by download records only the table output will be slightly different, showing only the following columns:
 // date, user, usage option and usage reason
 $filter_dld_records_only = ($filter_by_type == LOG_CODE_DOWNLOADED);
+
+$url_params = array(
+    "ref" => $ref,
+    "search" => $search,
+    "search_offset" => $search_offset,
+    "order_by" => $order_by,
+    "sort" => $sort,
+    "archive" => $archive,
+    "k" => $k,
+);
 
 # next / previous resource browsing
 $go=getval("search_go","");
@@ -90,7 +104,7 @@ include "../include/header.php";
 
 
 <div class="backtoresults">
-<a href="<?php echo $baseurl_short?>pages/log.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&search_offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k) ?>&search_go=previous&<?php echo hook("nextpreviousextraurl") ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["previousresult"]?></a>
+<a href="<?php echo generateURL("{$baseurl_short}pages/log.php", array_merge($url_params, $filter_url_params), array("search_go" => "previous")) . hook("nextpreviousextraurl"); ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["previousresult"]?></a>
 <?php 
 hook("viewallresults");
 if ($k=="") { ?>
@@ -98,13 +112,11 @@ if ($k=="") { ?>
 <a href="<?php echo $baseurl_short?>pages/search.php?search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k)?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["viewallresults"]?></a>
 <?php } ?>
 |
-<a href="<?php echo $baseurl_short?>pages/log.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&search_offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by) ?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k)?>&search_go=next&<?php echo hook("nextpreviousextraurl") ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["nextresult"]?>&nbsp;<?php echo LINK_CARET ?></a>
+<a href="<?php echo generateURL("{$baseurl_short}pages/log.php", array_merge($url_params, $filter_url_params), array("search_go" => "next")) . hook("nextpreviousextraurl"); ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["nextresult"]?>&nbsp;<?php echo LINK_CARET ?></a>
 </div>
 
 <h1><?php echo $lang["resourcelog"] . " : " . $lang["resourceid"] . " " .  htmlspecialchars($ref);render_help_link("user/logs");?></h1>
-
 </div>
-
 <?php
 $fetchrows = $offset + $per_page;
 
@@ -131,10 +143,11 @@ else
 $results=count($log);
 $totalpages=ceil($results/$per_page);
 $curpage=floor($offset/$per_page)+1;
-
-$url=$baseurl_short."pages/log.php?ref=" . urlencode($ref) . "&search=" . urlencode($search) . "&search_offset=" . urlencode($search_offset) . "&order_by=" . urlencode($order_by) . "&sort=" . urlencode($sort) . "&archive=" . urlencode($archive) . "&k=" . urlencode($k) . hook("nextpreviousextraurl");
+$url = generateURL(
+    "{$baseurl_short}pages/log.php",
+    array_merge($url_params, $filter_url_params)
+) . hook("nextpreviousextraurl");
 ?>
-
 <div class="TopInpageNav"><!--<?php pager(false); ?></div>-->
 <div class="InpageNavLeftBlock"><?php echo $lang["resultsdisplay"]?>:
 	<?php 
