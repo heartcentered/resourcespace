@@ -3745,8 +3745,8 @@ function get_resource_access($resource)
         if($search_filter_nodes 
             && strlen(trim($userderestrictfilter)) > 0
             && !is_numeric($userderestrictfilter)
-            && trim($userdata["derestrict_filter"]) != ""
-            && $userdata["derestrict_filter_id"] != -1
+            && trim($userdata[0]["derestrict_filter"]) != ""
+            && $userdata[0]["derestrict_filter_id"] != -1
         )
             {
             // Migrate unless marked not to due to failure (flag will be reset if group is edited)
@@ -3904,7 +3904,7 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
     # Checks the edit permissions (e0, e-1 etc.) and also the group edit filter which filters edit access based on resource metadata.
 	
     global $userref,$usergroup, $usereditfilter,$edit_access_for_contributor,
-    $search_filter_nodes, $userpermissions, $lang, $baseurl;
+    $search_filter_nodes, $userpermissions, $lang, $baseurl, $userdata;
     $plugincustomeditaccess = hook('customediteaccess','',array($resource,$status,$resourcedata));
 
     if($plugincustomeditaccess)
@@ -3948,8 +3948,13 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
         } 
 	
     $gotmatch=false;
-
-    if($search_filter_nodes && strlen(trim($usereditfilter)) > 0 && !is_numeric($usereditfilter) && $usereditfilter != -1)
+    
+    if($search_filter_nodes 
+        && strlen(trim($usereditfilter)) > 0
+        && !is_numeric($usereditfilter)
+        && trim($userdata[0]["edit_filter"]) != ""
+        && $userdata[0]["edit_filter_id"] != -1
+        )
         {
         // Migrate unless marked not to due to failure (flag will be reset if group is edited)
         $migrateeditfilter = edit_filter_to_restype_permission($usereditfilter, $usergroup, $userpermissions, true);

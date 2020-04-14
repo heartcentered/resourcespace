@@ -1232,14 +1232,13 @@ function do_search(
         if($search_filter_nodes 
             && strlen(trim($usereditfilter)) > 0
             && !is_numeric($usereditfilter)
-            && trim($userdata["edit_filter"]) != ""
-            && $userdata["edit_filter_id"] != -1
+            && trim($userdata[0]["edit_filter"]) != ""
+            && $userdata[0]["edit_filter_id"] != -1
         )
             {
             // Migrate unless marked not to due to failure
             $usereditfilter = edit_filter_to_restype_permission($usereditfilter, $usergroup, $userpermissions);
             $migrateresult = migrate_filter($usereditfilter);
-            global $userdata, $lang, $baseurl;
             if(is_numeric($migrateresult))
                 {
                 debug("Migrated . " . $migrateresult);

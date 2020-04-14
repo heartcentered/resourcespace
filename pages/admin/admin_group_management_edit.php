@@ -287,7 +287,7 @@ include "../../include/header.php";
         <p><?php echo $lang["action-title_see_wiki_for_advanced_options"]; ?></p>
 
         <?php
-        $filters = get_filters($order = "name", $sort = "ASC");
+        $filters = get_filters("name","ASC");
         $filters[] = array("ref" => -1, "name" => $lang["disabled"]);
 
 		if ($search_filter_nodes)

@@ -665,7 +665,7 @@ function get_export_tables($exportcollection=0)
 function edit_filter_to_restype_permission($filtertext, $usergroup, $existingperms, $updatecurrent = false)
     {
     global $userpermissions;
-    $addpermissions = array($filtertext);
+    $addpermissions = array();
     // Replace any resource type edit filter sections with new XE/XE-?/XE? permissions
     $filterrules = explode(";", $filtertext);
     $cleanedrules = array();
