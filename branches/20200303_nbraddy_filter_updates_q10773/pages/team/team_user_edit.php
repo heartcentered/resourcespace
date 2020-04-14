@@ -240,7 +240,7 @@ if($search_filter_nodes)
 if ($search_filter_nodes)
     {
     // Show filter selector if already migrated or no filter has been set
-    $search_filters = get_filters($order = "name", $sort = "ASC");
+    $search_filters = get_filters("name","ASC");
     $filters[] = array("ref" => -1, "name" => $lang["disabled"]);
     ?>
     <div class="Question">
