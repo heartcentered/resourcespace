@@ -125,7 +125,7 @@ if($filter_by_type != "")
     {
     $filters["r.type"] = $filter_by_type;
     }
-if(!is_null($filter_by_usageoption) && $filter_by_usageoption > 0)
+if(!is_null($filter_by_usageoption) && $filter_by_usageoption >= 0)
     {
     $filters["r.usageoption"] = $filter_by_usageoption;
     }
