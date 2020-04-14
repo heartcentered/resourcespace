@@ -198,7 +198,7 @@ for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
         {
         ?>
         <td><?php
-        if(isset($download_usage_options[$log[$n]["usageoption"]]) && $log[$n]["usageoption"] != -1 && $log[$n]["usageoption"] > 0)
+        if(isset($download_usage_options[$log[$n]["usageoption"]]) && $log[$n]["usageoption"] != -1 && $log[$n]["usageoption"] >= 0)
             {
             echo nl2br(htmlspecialchars($download_usage_options[$log[$n]["usageoption"]]));
             }
