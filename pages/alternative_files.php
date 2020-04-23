@@ -14,6 +14,7 @@ $archive=getvalescaped("archive","",true);
 $restypes=getvalescaped("restypes","");
 if (strpos($search,"!")!==false) {$restypes="";}
 $starsearch=getvalescaped("starsearch","");
+$modal = (getval("modal", "") == "true");
 
 $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
@@ -79,11 +80,17 @@ jQuery("#toggleall").click(function() {
 }
 </script>
 <div class="BasicsBox">
-<p>
-<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/edit.php",$urlparams); ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoeditresource"]?></a><br / >
-<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/view.php",$urlparams); ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a>
-</p>
-<?php 
+<?php
+if(!$modal)
+    {
+    ?>
+    <p>
+    <a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/edit.php",$urlparams); ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoeditresource"]?></a><br / >
+    <a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/view.php",$urlparams); ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a>
+    </p>
+    <?php
+    }
+
 if($alternative_file_resource_preview)
     {
     if(file_exists(get_resource_path($resource['ref'], true, 'col', false)))
@@ -103,8 +110,6 @@ if($alternative_file_resource_title && isset($resource['field'.$view_title_field
 <h1><?php echo $lang["managealternativefilestitle"]; render_help_link('user/alternative-files');?></h1>
 
 <?php if (count($files)>0){?><a href="#" id="deletechecked" onclick="if (confirm('<?php echo $lang["confirm-deletion"]?>')) {clickDelete();} return false;"><?php echo LINK_CARET ?><?php echo $lang["action-deletechecked"]?></a><?php } ?>
-</div>
-
 <form method=post id="fileform" action="<?php echo generateurl($baseurl . "/pages/alternative_files.php",$urlparams); ?>">
 <input type=hidden name="filedelete" id="filedelete" value="">
 <?php generateFormToken("fileform"); ?>
@@ -141,7 +146,7 @@ for ($n=0;$n<count($files);$n++)
 	
 	<a href="#" onclick="if (confirm('<?php echo $lang["filedeleteconfirm"]?>')) {document.getElementById('filedelete').value='<?php echo $files[$n]["ref"]?>';document.getElementById('fileform').submit();} return false;"><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a>
 
-	&nbsp;<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/alternative_file.php",$urlparams,array("ref"=>$files[$n]["ref"])); ?>"><?php echo LINK_CARET ?><?php echo $lang["action-edit"]?></a>
+	&nbsp;<a onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);" href="<?php echo generateurl($baseurl . "/pages/alternative_file.php",$urlparams,array("ref"=>$files[$n]["ref"])); ?>"><?php echo LINK_CARET ?><?php echo $lang["action-edit"]?></a>
 
     <?php if($editaccess && (file_exists(get_resource_path($ref , true, '', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true)) || file_exists(get_resource_path($ref , true, 'hpr', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true))))
         {
@@ -158,7 +163,7 @@ for ($n=0;$n<count($files);$n++)
 </table>
 </div>
 <p>
-	<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/upload_plupload.php",$urlparams,array('alternative'=>$ref)); ?>"><?php echo LINK_CARET ?><?php echo $lang["alternativebatchupload"] ?></a>
+	<a onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);" href="<?php echo generateurl($baseurl . "/pages/upload_plupload.php",$urlparams,array('alternative'=>$ref)); ?>"><?php echo LINK_CARET ?><?php echo $lang["alternativebatchupload"] ?></a>
 </p>
 </form>
 
@@ -168,7 +173,7 @@ for ($n=0;$n<count($files);$n++)
     <input type=hidden name="previewref", id="upload_pre_ref" value="<?php echo htmlspecialchars($ref); ?>"/>
     <input type=hidden name="previewalt", id="upload_pre_alt" value=""/>
 </form>
-
+</div> <!-- end of basicbox -->
 <script type="text/javascript">
 jQuery('#altlistitems').tshift(); // make the select all checkbox work
 jQuery('#altlistitems input[type=checkbox]').click(function(){   
@@ -181,4 +186,3 @@ jQuery('#altlistitems input[type=checkbox]').click(function(){
 
 <?php
 include "../include/footer.php";
-?>

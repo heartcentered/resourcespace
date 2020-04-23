@@ -13,6 +13,7 @@ $order_by=getvalescaped("order_by","");
 $archive=getvalescaped("archive","",true);
 $restypes=getvalescaped("restypes","");
 if (strpos($search,"!")!==false) {$restypes="";}
+$modal = (getval("modal", "") == "true");
 
 $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
@@ -84,7 +85,7 @@ include "../include/header.php";
 
 <h1><?php echo $lang["editalternativefile"]; render_help_link('user/alternative-files');?></h1>
 
-<form method="post" class="form" id="fileform" onsubmit="return CentralSpacePost(this,true);" action="<?php echo $baseurl_short?>pages/alternative_file.php?search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>">
+<form method="post" class="form" id="fileform" onsubmit="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(this, true);" action="<?php echo $baseurl_short?>pages/alternative_file.php?search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>">
 <?php generateFormToken('fileform'); ?>
 <input type=hidden name=ref value="<?php echo htmlspecialchars($ref) ?>">
 <input type=hidden name=resource value="<?php echo htmlspecialchars($resource) ?>">
