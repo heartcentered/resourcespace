@@ -23,17 +23,18 @@ $curpos=getvalescaped("curpos","");
 $go=getval("go","");
 
 $urlparams= array(
-    'resource'          => $ref,
-    'ref'				=> $ref,
-    'search'			=> $search,
-    'order_by'			=> $order_by,
-    'offset'			=> $offset,
-    'restypes'			=> $restypes,
-    'starsearch'		=> $starsearch,
-    'archive'			=> $archive,
+    'resource' => $ref,
+    'ref' => $ref,
+    'search' => $search,
+    'order_by' => $order_by,
+    'offset' => $offset,
+    'restypes' => $restypes,
+    'starsearch' => $starsearch,
+    'archive' => $archive,
     'default_sort_direction' => $default_sort_direction,
-    'sort'				=> $sort,
-    'curpos'			=> $curpos
+    'sort' => $sort,
+    'curpos' => $curpos,
+    "modal" => ($modal ? "true" : ""),
 );
 
 # Fetch resource data.
@@ -144,13 +145,20 @@ for ($n=0;$n<count($files);$n++)
 	<?php if(count($alt_types) > 1){ ?><td><?php echo $files[$n]["alt_type"] ?></td><?php } ?>
 	<td><div class="ListTools">
 	
-	<a href="#" onclick="if (confirm('<?php echo $lang["filedeleteconfirm"]?>')) {document.getElementById('filedelete').value='<?php echo $files[$n]["ref"]?>';document.getElementById('fileform').submit();} return false;"><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a>
+	<a href="#" onclick="
+        if (confirm('<?php echo $lang["filedeleteconfirm"]?>'))
+            {
+            document.getElementById('filedelete').value='<?php echo $files[$n]["ref"]?>';
+            <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('fileform'), true);
+            }
+        return false;
+    "><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a>
 
 	&nbsp;<a onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);" href="<?php echo generateurl($baseurl . "/pages/alternative_file.php",$urlparams,array("ref"=>$files[$n]["ref"])); ?>"><?php echo LINK_CARET ?><?php echo $lang["action-edit"]?></a>
 
     <?php if($editaccess && (file_exists(get_resource_path($ref , true, '', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true)) || file_exists(get_resource_path($ref , true, 'hpr', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true))))
         {
-        echo "<a href=\"#\" onclick=\"previewform=jQuery('#previewform');jQuery('#upload_pre_alt').val('" . $files[$n]["ref"] . "');return CentralSpacePost(previewform,true);\">" . LINK_CARET . $lang["useaspreviewimage"] . "</a>";
+        echo "<a href=\"#\" onclick=\"previewform=jQuery('#previewform');jQuery('#upload_pre_alt').val('" . $files[$n]["ref"] . "');return " . ($modal ? "Modal" : "CentralSpace") . "Post(previewform, true);\">" . LINK_CARET . $lang["useaspreviewimage"] . "</a>";
         } 
     
     hook("refreshinfo"); ?>

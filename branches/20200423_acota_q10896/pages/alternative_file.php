@@ -68,10 +68,11 @@ if (getval("name","")!="" && getval("tweak","")=="" && enforcePostRequest(false)
 		notify_resource_change($resource);
 		}
 	hook ("savealternatefiledata");
+    $url_modal_part = "&modal=" . ($modal ? "true" : "");
 	if (getval("tweak","")!=''){
-		redirect ($baseurl_short."pages/alternative_file.php?resource=$resource&ref=$ref&search=".urlencode($search)."&offset=$offset&order_by$order_by&sort=$sort&archive=$archive");
+		redirect ($baseurl_short."pages/alternative_file.php?resource=$resource&ref=$ref&search=".urlencode($search)."&offset=$offset&order_by$order_by&sort=$sort&archive=$archive" . $url_modal_part);
 	} else {
-		redirect ($baseurl_short."pages/alternative_files.php?ref=$resource&search=".urlencode($search)."&offset=$offset&order_by=$order_by&sort=$sort&archive=$archive");
+		redirect ($baseurl_short."pages/alternative_files.php?ref=$resource&search=".urlencode($search)."&offset=$offset&order_by=$order_by&sort=$sort&archive=$archive" . $url_modal_part);
 		}
 	}
 
@@ -86,7 +87,14 @@ include "../include/header.php";
 <h1><?php echo $lang["editalternativefile"]; render_help_link('user/alternative-files');?></h1>
 
 <form method="post" class="form" id="fileform" onsubmit="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(this, true);" action="<?php echo $baseurl_short?>pages/alternative_file.php?search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>">
-<?php generateFormToken('fileform'); ?>
+<?php
+if($modal)
+    {
+    ?>
+    <input type="hidden" name="modal" value="true">
+    <?php
+    }
+generateFormToken('fileform'); ?>
 <input type=hidden name=ref value="<?php echo htmlspecialchars($ref) ?>">
 <input type=hidden name=resource value="<?php echo htmlspecialchars($resource) ?>">
 
