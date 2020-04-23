@@ -21,6 +21,7 @@ $starsearch   = getvalescaped("starsearch", "");
 $default_sort_direction = (substr($order_by,0,5) == "field") ? "ASC" : "DESC";
 $sort         = getval("sort", $default_sort_direction);
 $ajax         = filter_var(getval("ajax", false), FILTER_VALIDATE_BOOLEAN);
+$modal = (getval("modal", "") == "true");
 
 # Check if editing existing external share
 $editaccess   = getvalescaped("editaccess", "");
@@ -83,10 +84,29 @@ if($editing && !$editexternalurl)
     }
     ?>
 <div class="BasicsBox">
-    <p><a href="<?php echo $baseurl_short . 'pages/view.php?' . $query_string ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
-
-    <h1><?php echo $page_header; render_help_link("user/resource-sharing");?></h1>
-
+    <?php
+    if(!$modal)
+        {
+        ?>
+        <p><a href="<?php echo $baseurl_short . 'pages/view.php?' . $query_string ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
+        <?php
+        }
+        ?>
+    <div class="RecordHeader">
+        <div class="BackToResultsContainer">
+            <div class="backtoresults">
+            <?php
+            if($modal)
+                {
+                ?>
+                <a href="#" class="closeLink fa fa-times" onclick="ModalClose();"></a>
+                <?php
+                }
+                ?>
+            </div>
+        </div>
+        <h1><?php echo $page_header; render_help_link("user/resource-sharing");?></h1>
+    </div>
         <form method="post" id="resourceshareform" action="<?php echo $baseurl_short?>pages/resource_share.php?ref=<?php echo urlencode($ref)?>">
             <input type="hidden" name="ref" id="ref" value="<?php echo htmlspecialchars($ref) ?>">
             <input type="hidden" name="generateurl" id="generateurl" value="<?php echo $generateurl ? "true" :"" ?> ">
@@ -368,4 +388,3 @@ if($editing && !$editexternalurl)
 
 <?php
 include "../include/footer.php";
-?>
