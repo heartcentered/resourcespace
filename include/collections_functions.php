@@ -3457,3 +3457,45 @@ function relate_all_collection($collection, $checkperms = true)
         }
     return true;
     }
+
+
+/**
+* Update collection type for one collection or batch
+* 
+* @param  integer|array  $cid   Collection ID -or- list of collection IDs
+* @param  integer        $type  Collection type. @see include/definitions.php for available options
+* 
+* @return boolean
+*/
+function update_collection_type($cid, $type)
+    {
+    debug_function_call("update_collection_type", func_get_args());
+
+    if(!is_array($cid))
+        {
+        $cid = array($cid);
+        }
+
+    $cid = array_filter($cid, "is_numeric");
+
+    if(empty($cid))
+        {
+        return false;
+        }
+
+    if(!in_array($type, definitions_get_by_prefix("COLLECTION_TYPE")))
+        {
+        return false;
+        }
+
+    foreach($cid as $ref)
+        {
+        collection_log($ref, LOG_CODE_EDITED, "", "Update collection type to '{$type}'");
+        }
+
+    $cid_list = "'" . implode("', '", $cid) . "'";
+
+    sql_query("UPDATE collection SET `type` = '{$type}' WHERE ref IN ({$cid_list})");
+
+    return true;
+    }
