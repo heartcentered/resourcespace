@@ -115,9 +115,18 @@ if($editing && !$editexternalurl)
             <input type="hidden" name="editexpiration" id="editexpiration" value="">
             <input type="hidden" name="editgroup" id="editgroup" value="">
             <input type="hidden" name="editaccesslevel" id="editaccesslevel" value="">
+            <input type="hidden" name="editexternalurl" id="editexternalurl" value="">
 			<input type="hidden" name="user" id="user" value="">
 			<input type="hidden" name="deleteusercustomaccess" id="deleteusercustomaccess" value="">
-            <?php generateFormToken("resourceshareform"); ?>
+            <?php
+            if($modal)
+                {
+                ?>
+                <input type="hidden" name="modal" value="true">
+                <?php
+                }
+            generateFormToken("resourceshareform");
+            ?>
             <div class="VerticalNav">
                 <ul>
                 <?php
@@ -125,7 +134,7 @@ if($editing && !$editexternalurl)
                     {
                     if ($email_sharing) 
                         { ?>
-                        <li><i aria-hidden="true" class="fa fa-fw fa-envelope"></i>&nbsp;<a href="<?php echo $baseurl_short . 'pages/resource_email.php?' . $query_string ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["emailresourcetitle"]?></a></li> 
+                        <li><i aria-hidden="true" class="fa fa-fw fa-envelope"></i>&nbsp;<a href="<?php echo $baseurl_short . 'pages/resource_email.php?' . $query_string ?>" onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);"><?php echo $lang["emailresourcetitle"]?></a></li> 
                         <?php 
                         }
                     }
@@ -150,12 +159,16 @@ if($editing && !$editexternalurl)
                             <?php
                             if ($editing  && !$editexternalurl)
                                 { ?>
-                                <input name="editexternalurl" type="submit" value="&nbsp;&nbsp;<?php echo $lang["save"]?>&nbsp;&nbsp;" />
+                                <input name="editexternalurl" type="button" value="&nbsp;&nbsp;<?php echo $lang["save"]?>&nbsp;&nbsp;"
+                                onclick="
+                                document.getElementById('editexternalurl').value = '<?php echo $lang["save"]; ?>';
+                                return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('resourceshareform'), true);">
                                 <?php
                                 }
                             else
                                 { ?>
-                                <input name="generateurl" type="submit" value="&nbsp;&nbsp;<?php echo $lang["generateexternalurl"]?>&nbsp;&nbsp;" />
+                                <input name="generateurl" type="button" value="&nbsp;&nbsp;<?php echo $lang["generateexternalurl"]?>&nbsp;&nbsp;"
+                                onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('resourceshareform'), true);">
                                 <?php 
                                 }
                             ?>
@@ -317,7 +330,7 @@ if($editing && !$editexternalurl)
 			    function resourceShareDeleteShare(access_key) {
 			        if (confirm('<?php echo $lang["confirmdeleteaccessresource"]?>')) {
 			            document.getElementById('deleteaccess').value = access_key;
-			            document.getElementById('resourceshareform').submit(); 
+                        <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('resourceshareform'),true);
 			        }
 			        return false;
 			    }
@@ -326,7 +339,7 @@ if($editing && !$editexternalurl)
 			        document.getElementById('editexpiration').value = expires;
 			        document.getElementById('editaccesslevel').value = access;
 			        document.getElementById('editgroup').value = user_group;
-			        CentralSpacePost(document.getElementById('resourceshareform'),true);
+			        <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('resourceshareform'),true);
 			        return false;
 			    }
 				function resourceShareDeleteUserCustomAccess(user) {
