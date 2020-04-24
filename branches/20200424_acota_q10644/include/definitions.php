@@ -291,3 +291,8 @@ $corefields = array(
         'join_fields'
         )
     );
+
+// Collection types
+define("STANDARD",  0);
+define("UPLOAD",    1); # for collections used in upload then edit mode
+define("SELECTION", 2); # selecting resources to be edited in batch for the active user (allowed only one per user)
