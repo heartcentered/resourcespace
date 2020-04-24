@@ -37,7 +37,16 @@ function get_user_collections($user,$find="",$order_by="name",$sort="ASC",$fetch
  
 		//$sql.="and (c.name rlike '$search' or u.username rlike '$search' or u.fullname rlike '$search' $spcr )";
 		}
-    
+
+    if($sql == "")
+        {
+        $sql = "WHERE c.`type` = '" . COLLECTION_TYPE_STANDARD . "'";
+        }
+    else
+        {
+        $sql .= "AND c.`type` = '" . COLLECTION_TYPE_STANDARD . "'";
+        }
+
     # Include themes in my collecions? 
     # Only filter out themes if $themes_in_my_collections is set to false in config.php
    	global $themes_in_my_collections;
