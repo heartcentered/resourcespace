@@ -2414,7 +2414,9 @@ function setup_user($userdata)
 			}		
 		}
 	else
-		{	
+		{
+        include_once "collections_functions.php";
+
 		$usercollection=$userdata["current_collection"];
 		// Check collection actually exists
 		$validcollection=sql_value("select ref value from collection where ref='$usercollection'",0);
@@ -2432,12 +2434,17 @@ function setup_user($userdata)
 		if ($usercollection==0 || !is_numeric($usercollection))
 			{
 			# Create a collection for this user
-			include_once "collections_functions.php"; # Make sure collections functions are included before create_collection
 			# The collection name is translated when displayed!
 			$usercollection=create_collection($userref,"Default Collection",0,1); # Do not translate this string!
 			# set this to be the user's current collection
 			sql_query("update user set current_collection='$usercollection' where ref='$userref'");
 			}
+
+        if(is_null(get_user_selection_collection($userref)))
+            {
+            $selection_col = create_collection($userref, "Selection Collection (for batch edit)", 0, 1);
+            update_collection_type($selection_col, COLLECTION_TYPE_SELECTION);
+            }
 		}
 
         $newfilter = false;
