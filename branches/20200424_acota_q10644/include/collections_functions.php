@@ -3499,3 +3499,28 @@ function update_collection_type($cid, $type)
 
     return true;
     }
+
+
+/**
+* Get a users' collection of type SELECTION.
+* 
+* There can only be one collection of this type per user. If more, the first one found will be used instead.
+* 
+* @param integer  $user  User ID
+* 
+* @return null|integer  Returns NULL if none found or the collection ID
+*/
+function get_user_selection_collection($user)
+    {
+    if(!is_numeric($user))
+        {
+        return null;
+        }
+
+    $sql = sprintf("SELECT ref AS `value` FROM collection WHERE `user` = '%s' AND `type` = '%s' ORDER BY ref ASC",
+        escape_check($user),
+        COLLECTION_TYPE_SELECTION
+    );
+
+    return sql_value($sql, null);
+    }
