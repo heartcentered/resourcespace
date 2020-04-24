@@ -1,7 +1,7 @@
 <?php
 
 // current upgrade level of ResourceSpace (used for migration scripts, will set sysvar using this if not already defined)
-define('SYSTEM_UPGRADE_LEVEL', 8);
+define('SYSTEM_UPGRADE_LEVEL', 9);
 
 // ------------------------- FIELD TYPES -------------------------
 
@@ -292,7 +292,6 @@ $corefields = array(
         )
     );
 
-// Collection types
-define("STANDARD",  0);
-define("UPLOAD",    1); # for collections used in upload then edit mode
-define("SELECTION", 2); # selecting resources to be edited in batch for the active user (allowed only one per user)
+define("COLLECTION_TYPE_STANDARD",  0);
+define("COLLECTION_TYPE_UPLOAD",    1); # for collections used in upload then edit mode
+define("COLLECTION_TYPE_SELECTION", 2); # selecting resources to be edited in batch for the active user (allowed only one per user)
