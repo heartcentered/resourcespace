@@ -11,8 +11,16 @@ $ref=getvalescaped("ref","");
 $resource=getvalescaped("resource","");
 
 # Check access
-$edit_access=get_edit_access($resource);
-if (!$edit_access) {exit("Access denied");} # Should never arrive at this page without edit access
+if ($resource!="")
+	{
+	$edit_access=get_edit_access($resource);
+	if (!$edit_access) {exit("Access denied");} # Should never arrive at this page without edit access
+	}
+else
+	{
+	# Editing all licenses via Manage Licenses - admin only
+	if (!checkperm("a")) {exit("Access denied");} 
+	}
 
 if (getval("submitted","")!="")
 	{
@@ -57,7 +65,7 @@ if (getval("submitted","")!="")
 	else
 		{
 		# Addded from Manage Licenses
-		redirect("plugins/license_manager/pages/list.php");
+		redirect("plugins/licensemanager/pages/list.php");
 		}
 	}
 
@@ -86,7 +94,10 @@ include "../../../include/header.php";
 
 <?php if ($resource!="") { ?>
 <p><a href="<?php echo $baseurl_short?>pages/view.php?ref=<?php echo $resource ?>"  onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
+<?php } else { ?>
+<p><a href="<?php echo $baseurl_short?>plugins/licensemanager/pages/list.php"  onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["back"]?></a></p>
 <?php } ?>
+
 
 <h1><?php echo ($ref=="new"?$lang["new_license"]:$lang["edit_license"]) ?></h1>
 

@@ -12,6 +12,7 @@ $lang["edit_license"]="Edit license";
 $lang["delete_license"]="Delete license";
 $lang["license_id"]="License ID";
 $lang["licensemanager_new"]="New license";
+$lang["managelicenses"]="Manage licenses";
 
 $lang["outbound"]="Outbound";
 $lang["outbound_license_description"]="(we are the copyright holders)";
@@ -21,3 +22,4 @@ $lang["inbound_license_description"]="(they are the copyright holders)";
 $lang["no_expiry_date"]="No expiry date";
 $lang["action-unlink"]="Unlink";
 $lang["unlink_license"]="Unlink license";
+$lang["licensesearch"]="Search by licensor/licensee/medium/description";
