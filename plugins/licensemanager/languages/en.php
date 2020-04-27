@@ -24,3 +24,6 @@ $lang["action-unlink"]="Unlink";
 $lang["unlink_license"]="Unlink license";
 $lang["licensesearch"]="Search by licensor/licensee/medium/description";
 $lang["linkedresources"]="Linked resources";
+
+$lang["linklicense"]="Link license";
+$lang["unlinklicense"]="Unlink license";
