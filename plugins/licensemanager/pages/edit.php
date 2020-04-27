@@ -45,16 +45,28 @@ if (getval("submitted","")!="")
 		sql_query("insert into license (outbound,holder,license_usage,description,expires) values ('" . getvalescaped("outbound","") . "', '" . getvalescaped("holder","") . "', '$license_usage', '" . getvalescaped("description","") . "', $expires)");	
 		$ref=sql_insert_id();
 
-		if ($resource!="")
+		# Add to all the selected resources
+		$resources=explode(", ",getvalescaped("resources",""));
+		foreach ($resources as $r)
 			{
-			sql_query("insert into resource_license(resource,license) values ('" . escape_check($resource) . "','" . escape_check($ref) . "')");
-			resource_log($resource,"","",$lang["new_license"] . " " . $ref);
+			sql_query("insert into resource_license(resource,license) values ('" . escape_check($r) . "','" . escape_check($ref) . "')");
+			resource_log($r,"","",$lang["new_license"] . " " . $ref);
 			}
 		}
 	else
 		{
 		# Existing record	
 		sql_query("update license set outbound='" . getvalescaped("outbound","") . "',holder='" . getvalescaped("holder","") . "', license_usage='$license_usage',description='" . getvalescaped("description","") . "',expires=$expires where ref='$ref'");
+
+		# Add all the selected resources
+		sql_query("delete from resource_license where license='$ref'");
+		$resources=explode(",",getvalescaped("resources",""));
+		foreach ($resources as $r)
+			{
+			$r=trim($r);
+			sql_query("insert into resource_license(resource,license) values ('" . escape_check($r) . "','" . escape_check($ref) . "')");
+			resource_log($r,"","",$lang["new_license"] . " " . $ref);
+			}
 		}
 
 	# Added from resource page?
@@ -80,12 +92,14 @@ if ($ref=="new")
 		"description"=>"",
 		"expires"=>date("Y-m-d")
 		);
+	if ($resource=="") {$resources=array();} else {$resources=array($resource);}
 	}
 else
 	{
 	$license=sql_query("select * from license where ref='$ref'");
 	if (count($license)==0) {exit("License not found.");}
 	$license=$license[0];
+	$resources=sql_array("select distinct resource value from resource_license where license='$ref' order by resource");
 	}
 		
 include "../../../include/header.php";
@@ -189,10 +203,14 @@ onChange="jQuery('.license_usage').attr('checked',this.checked);" <?php if ($all
 	/><?php echo $lang["no_expiry_date"] ?>
 	<?php if ($license["expires"]=="") { ?><script>jQuery('#expires_day, #expires_month, #expires_year').attr('disabled',true);</script><?php } ?>
 
-
-
 <div class="clearerleft"> </div></div>
 
+
+<div class="Question">
+		<label for="resources"><?php echo $lang["linkedresources"]?></label>
+		<textarea class="stdwidth" rows="3" name="resources" id="resources"><?php echo join(", ",$resources)?></textarea>
+		<div class="clearerleft"> </div>
+	</div>
 
 
 <div class="QuestionSubmit">
