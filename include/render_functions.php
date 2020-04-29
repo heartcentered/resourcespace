@@ -3004,3 +3004,35 @@ function render_custom_fields(array $cfs)
             });
         });
     }
+
+/* -- todo: delete if not used in the end
+function render_collection_selection_checkbox($resource)
+    {
+    global $use_checkboxes_for_selection, $collection_block_restypes;
+
+    if(!$use_checkboxes_for_selection)
+        {
+        return;
+        }
+
+    if(in_array($resource["resource_type"], $collection_block_restypes))
+        {
+        return;
+        ?><input type="checkbox" class="checkselect" style="opacity: 0;"><?php
+        }
+    ?>
+    <input 
+        type="checkbox" 
+        id="check<?php echo htmlspecialchars($ref)?>" class="checkselect" 
+        <?php 
+        if (in_array($ref,$collectionresources))
+            { ?>
+            checked
+            <?php 
+            } ?> 
+        onclick="if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')){ AddResourceToCollection(event,<?php echo htmlspecialchars($ref)?>); } else if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')==false){ RemoveResourceFromCollection(event,<?php echo htmlspecialchars($ref)?>); }"
+    >
+    <?php
+
+    return;
+    }*/
