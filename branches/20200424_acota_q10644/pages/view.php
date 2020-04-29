@@ -315,7 +315,8 @@ $fields=get_resource_field_data($ref,$multi_fields,!hook("customgetresourceperms
 $modified_view_fields=hook("modified_view_fields","",array($ref,$fields));if($modified_view_fields){$fields=$modified_view_fields;}
 
 # Load edit access level (checking edit permissions - e0,e-1 etc. and also the group 'edit filter')
-$edit_access=get_edit_access($ref,$resource["archive"],$fields,$resource);
+$edit_access = ($access==0 && get_edit_access($ref,$resource["archive"],$fields,$resource));
+
 if ($k!="" && !$internal_share_access) {$edit_access=0;}
 
 function check_view_display_condition($fields,$n,$fields_all)		
@@ -970,7 +971,7 @@ else if(1 == $resource['has_image'])
     		}
         	?>
         <!-- Available tools to manipulate previews -->
-        <div id="PreviewTools" onmouseenter="showHidePreviewTools();" onmouseleave="showHidePreviewTools();">
+        <div id="PreviewTools">
             <script>
             function showHidePreviewTools()
                 {
@@ -987,7 +988,7 @@ else if(1 == $resource['has_image'])
                 jQuery(element).toggleClass('Enabled');
                 }
             </script>
-            <div id="PreviewToolsOptionsWrapper" class="Hidden">
+            <div id="PreviewToolsOptionsWrapper">
             <?php
             if($annotate_enabled && file_exists($imagepath))
                 {
@@ -1684,7 +1685,7 @@ hook ("resourceactions") ?>
 	if (can_share_resource($ref,$access) && !$hide_resource_share_link) 
 		{ 
 		?>
-		<li><a href="<?php echo $baseurl ?>/pages/resource_share.php?ref=<?php echo urlencode($ref) ?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);" >
+		<li><a href="<?php echo $baseurl ?>/pages/resource_share.php?ref=<?php echo urlencode($ref) ?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 		<?php echo "<i class='fa fa-share-alt'></i>&nbsp;" . $lang["share"];?>
 		</a></li>
 		<?php 
@@ -1692,7 +1693,7 @@ hook ("resourceactions") ?>
 		}
 	if ($edit_access) 
 		{ ?>
-		<li><a href="<?php echo $baseurl ?>/pages/edit.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>"    onClick="return <?php echo ($resource_edit_modal_from_view_modal && $modal ? 'Modal' : 'CentralSpace')?>Load(this,true);">
+		<li><a href="<?php echo $baseurl ?>/pages/edit.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 			<?php echo "<i class='fa fa-pencil'></i>&nbsp;" .$lang["action-edit"]?>
 		</a></li>
 		<?php 
@@ -1700,7 +1701,7 @@ hook ("resourceactions") ?>
 			{
 			?>
 			<li>
-			<a href="<?php echo $baseurl ?>/pages/delete.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>&amp;restypes=<?php echo urlencode($restypes); ?>" onClick="return ModalLoad(this,true);">
+			<a href="<?php echo $baseurl ?>/pages/delete.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>&amp;restypes=<?php echo urlencode($restypes); ?>" onclick="return ModalLoad(this, true);">
 			<?php 
 			if ($resource["archive"]==3)
 				{
@@ -1716,7 +1717,7 @@ hook ("resourceactions") ?>
 			}
 		if (!$disable_alternative_files && !checkperm('A')) 
 			{ ?>
-			<li><a href="<?php echo $baseurl ?>/pages/alternative_files.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);">
+			<li><a href="<?php echo $baseurl ?>/pages/alternative_files.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 			<?php echo "<i class='fa fa-files-o'></i>&nbsp;" . $lang["managealternativefiles"]?>
 			</a></li>
 			<?php 
@@ -1734,19 +1735,19 @@ hook ("resourceactions") ?>
 		}
 	if ($metadata_download && (checkperm('f*') || $can_see_fields_individually))	
 		{ ?>
-		<li><a href="<?php echo $baseurl ?>/pages/metadata_download.php?ref=<?php echo urlencode($ref)?>" onClick="return CentralSpaceLoad(this,true);" >
+		<li><a href="<?php echo $baseurl ?>/pages/metadata_download.php?ref=<?php echo urlencode($ref)?>" onclick="return ModalLoad(this, true);">
 		<?php echo "<i class='fa fa-history'></i>&nbsp;" .$lang["downloadmetadata"]?>
 		</a></li><?php 
 		} 
 	if (checkperm('v')) 
 		{ ?>
-		<li><a href="<?php echo $baseurl ?>/pages/log.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;search_offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);">
+		<li><a href="<?php echo $baseurl ?>/pages/log.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;search_offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 		<?php echo "<i class='fa fa-history'></i>&nbsp;" .$lang["log"]?>
 		</a></li><?php 
 		}
 	if (checkperm("R") && $display_request_log_link) 
 		{ ?>
-		<li><a href="<?php echo $baseurl ?>/pages/request_log.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);">
+		<li><a href="<?php echo $baseurl ?>/pages/request_log.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 		<?php echo "<i class='fa fa-history'></i>&nbsp;" .$lang["requestlog"]?>
 		</a></li><?php 
 		}
@@ -1756,7 +1757,7 @@ hook ("resourceactions") ?>
         $find_in_pdf_url = generateURL("{$baseurl}/pages/search_text_in_pdf.php", array( 'ref' => $ref));
         ?>
         <li>
-            <a href="<?php echo $find_in_pdf_url; ?>" onClick="return ModalLoad(this, true, true);"><i class='fa fa-search'></i>&nbsp;<?php echo $lang['findtextinpdf']; ?></a>
+            <a href="<?php echo $find_in_pdf_url; ?>" onclick="return ModalLoad(this, true, true);"><i class='fa fa-search'></i>&nbsp;<?php echo $lang['findtextinpdf']; ?></a>
         </li>
         <?php 
         }
