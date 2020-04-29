@@ -35,7 +35,7 @@ if ((!isset($suppress_headers) || !$suppress_headers) && !isset($nocache))
 # Error handling
 function errorhandler($errno, $errstr, $errfile, $errline)
     {
-    global $baseurl, $pagename, $show_report_bug_link, $email_errors, $show_error_messages, $use_error_exception;
+    global $baseurl, $pagename, $show_report_bug_link, $email_errors, $show_error_messages,$show_detailed_errors, $use_error_exception;
 
     if (!error_reporting()) 
         {
@@ -70,11 +70,19 @@ function errorhandler($errno, $errstr, $errfile, $errline)
             <p style="font-size:14px;color:black;margin-top:20px;">Please <a href="#" onClick="history.go(-1)">go back</a> and try something else.</p>
             <?php 
             if ($show_error_messages) 
-                { ?>
-                <p style="font-size:14px;color:black;">You can <a href="<?php echo $baseurl?>/pages/check.php">check</a> your installation configuration.</p>
+                { 
+                if (checkperm('a')) //Only show check installtion if you have permissions for that page.
+                    {?>
+                    <p style="font-size:14px;color:black;">You can <a href="<?php echo $baseurl?>/pages/check.php">check</a> your installation configuration.</p>
+                    <?php 
+                    } ?>
                 <hr style="margin-top:20px;">
-                <p style="font-size:11px;color:black;"><?php echo htmlspecialchars($error_info); ?></p>
-                <?php 
+                <?php
+                if ($show_detailed_errors===true)
+                    {?>
+                    <p style="font-size:11px;color:black;"><?php echo htmlspecialchars($error_info); ?></p>
+                    <?php
+                    }
                 } ?>
         </div>
         <?php
@@ -2470,8 +2478,9 @@ function setup_user($userdata)
             $usersearchfilter=isset($userdata["search_filter_override"]) && $userdata["search_filter_override"]!='' ? $userdata["search_filter_override"] : $userdata["search_filter"];
             }
             
-        $usereditfilter=$userdata["edit_filter"];
-        $userderestrictfilter=$userdata["derestrict_filter"];
+        $usereditfilter         = ($search_filter_nodes && isset($userdata["edit_filter_id"]) && is_numeric($userdata["edit_filter_id"]) && $userdata['edit_filter_id'] > 0) ? $userdata['edit_filter_id'] : $userdata["edit_filter"];
+        $userderestrictfilter   = ($search_filter_nodes && isset($userdata["derestrict_filter_id"]) && is_numeric($userdata["derestrict_filter_id"]) && $userdata['derestrict_filter_id'] > 0) ? $userdata['derestrict_filter_id'] : $userdata["derestrict_filter"];;
+
         $hidden_collections=explode(",",$userdata["hidden_collections"]);
         $userresourcedefaults=$userdata["resource_defaults"];
         $userrequestmode=trim($userdata["request_mode"]);
@@ -2581,7 +2590,9 @@ function validate_user($user_select_sql, $getuserdata=true)
                        u.session,
                        g.search_filter_id,
                        g.download_limit,
-                       g.download_log_days
+                       g.download_log_days,
+                       g.edit_filter_id,
+                       g.derestrict_filter_id
                   FROM user AS u
              LEFT JOIN usergroup AS g on u.usergroup = g.ref
 			 LEFT JOIN usergroup AS pg ON g.parent=pg.ref

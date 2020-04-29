@@ -2065,6 +2065,9 @@ $collection_frame_height=153;
 # Ability to hide error messages
 $show_error_messages=true;
 
+# Include detail of errors to user
+$show_detailed_errors=false;
+
 # Ability to set that the 'request' button on resources adds the item to the current collection (which then can be requested) instead of starting a request process for this individual item.
 $request_adds_to_collection=false;
 
@@ -3191,9 +3194,6 @@ $resource_view_modal=true;
 # Option to show other standard pages e.g. resource requests in a modal
 $modal_default=false;
 
-# Show the resource edit in a modal when accessed from resource view modal.
-$resource_edit_modal_from_view_modal=false;
-
 # Use the "preview" size on the resource view page
 $resource_view_use_pre = false;
 
@@ -3692,7 +3692,10 @@ $ghostscript_extensions = array('ps', 'pdf');
 $non_image_types_generate_preview_only = true;
 
 // Enable updated search filter functionality? Allows for simpler setup of more advanced search filters
-// Once enabled the filters will gradually be updated as users search. To update all the filter immediately run upgrade/scripts/005_migrate_search_filters.php
+// Once enabled the filters will gradually be updated as users search.
+// NOTE - from v9.3 onwards, enabling this will also update edit and derestrict filters to use the same filters
+// To update all the search filters immediately run upgrade/scripts/005_migrate_search_filters.php
+// To update edit and derestrict filters run upgrade/scripts/009_migrate_edit_derestrict_filters.php
 $search_filter_nodes = false;
 
 // Browse bar 
