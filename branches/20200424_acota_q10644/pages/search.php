@@ -412,10 +412,12 @@ $revsort = ($sort=="ASC") ? "DESC" : "ASC";
 $allow_reorder=false;
 
 # get current collection resources to pre-fill checkboxes
-if ($use_checkboxes_for_selection){
-$collectionresources=get_collection_resources($usercollection);
-}
-    $hiddenfields=getvalescaped("hiddenfields","");
+if($use_checkboxes_for_selection)
+    {
+    $collectionresources = get_collection_resources(get_user_selection_collection($userref));
+    }
+
+$hiddenfields=getvalescaped("hiddenfields","");
 
 # fetch resource types from query string and generate a resource types cookie
 if (getvalescaped("resetrestypes","")=="")

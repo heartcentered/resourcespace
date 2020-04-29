@@ -351,7 +351,7 @@ if (!hook("renderresultthumb"))
 
             if(!hook("thumbscheckboxes"))
             {
-            if ($use_checkboxes_for_selection)
+            if($use_checkboxes_for_selection)
                 {
                 if(!in_array($result[$n]['resource_type'],$collection_block_restypes))  
                     {?>
@@ -359,20 +359,23 @@ if (!hook("renderresultthumb"))
                         type="checkbox" 
                         id="check<?php echo htmlspecialchars($ref)?>" 
                         class="checkselect" 
+                        data-resource="<?php echo htmlspecialchars($result[$n]["ref"]); ?>"
+                        data-csrf-token-identifier="<?php echo $CSRF_token_identifier; ?>"
+                        data-csrf-token="<?php echo generateCSRFToken($usersession, "resource{$result[$n]["ref"]}"); ?>"
                         <?php 
                         if (in_array($ref,$collectionresources))
                             { ?>
                             checked
                             <?php 
                             } ?> 
-                        onclick="if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')){ AddResourceToCollection(event,<?php echo htmlspecialchars($ref)?>); } else if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')==false){ RemoveResourceFromCollection(event,<?php echo htmlspecialchars($ref)?>); }"
+                        onclick="return ToggleCollectionResourceSelection(this);"
                     >
                     <?php 
                     }
                 else
                     {
                     ?>
-                    <input type="checkbox" style="opacity: 0;">
+                    <input type="checkbox" class="checkselect" style="opacity: 0;">
                     <?php
                     }
                 }

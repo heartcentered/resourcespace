@@ -171,3 +171,60 @@ function UpdateHiddenCollections(checkbox, collection, post_data) {
         }
     }); 
 }
+
+
+function ToggleCollectionResourceSelection(elem)
+    {
+    var input = jQuery(elem);
+    var resource = input.data("resource");
+    var csrf_token_identifier = input.data("csrf-token-identifier");
+    var csrf_token = input.data("csrf-token");
+
+    var default_post_data = {};
+    default_post_data[csrf_token_identifier] = csrf_token;
+    var post_data = Object.assign({}, default_post_data);
+    post_data.ajax = true;
+    post_data.resource = resource;
+
+    if(input.prop("checked"))
+        {
+        post_data.action = "add_resource";
+        console.debug("ToggleCollectionResourceSelection: adding resource %i to collection", resource);
+        }
+    else
+        {
+        post_data.action = "remove_resource";
+        console.debug("ToggleCollectionResourceSelection: removing resource %i from collection", resource);
+        }
+    console.debug("ToggleCollectionResourceSelection: post_data = %o", post_data);
+
+    CentralSpaceShowLoading();
+
+    jQuery.ajax({
+        type: 'POST',
+        url: baseurl + "/pages/ajax/collections.php",
+        data: post_data,
+        dataType: "json"
+        })
+        .done(function(response, textStatus, jqXHR)
+            {
+            console.log(response);
+            styledalert("TODO", "Implement this!");
+            })
+        .fail(function(data, textStatus, jqXHR)
+            {
+            if(typeof data.responseJSON === 'undefined')
+                {
+                return;
+                }
+
+            var response = data.responseJSON;
+            styledalert(jqXHR, response.data.message);
+            })
+        .always(function()
+            {
+            CentralSpaceHideLoading();
+            });
+
+    return true;
+    }
