@@ -46,11 +46,18 @@ if (getval("submitted","")!="")
 		$ref=sql_insert_id();
 
 		# Add to all the selected resources
-		$resources=explode(", ",getvalescaped("resources",""));
-		foreach ($resources as $r)
+		if (getvalescaped("resources","")!="")
 			{
-			sql_query("insert into resource_license(resource,license) values ('" . escape_check($r) . "','" . escape_check($ref) . "')");
-			resource_log($r,"","",$lang["new_license"] . " " . $ref);
+			$resources=explode(", ",getvalescaped("resources",""));
+			foreach ($resources as $r)
+				{
+				$r=trim($r);
+				if (is_numeric($r))
+					{
+					sql_query("insert into resource_license(resource,license) values ('" . escape_check($r) . "','" . escape_check($ref) . "')");
+					resource_log($r,"","",$lang["new_license"] . " " . $ref);
+					}
+				}
 			}
 		}
 	else
@@ -61,11 +68,18 @@ if (getval("submitted","")!="")
 		# Add all the selected resources
 		sql_query("delete from resource_license where license='$ref'");
 		$resources=explode(",",getvalescaped("resources",""));
-		foreach ($resources as $r)
+
+		if (getvalescaped("resources","")!="")
 			{
-			$r=trim($r);
-			sql_query("insert into resource_license(resource,license) values ('" . escape_check($r) . "','" . escape_check($ref) . "')");
-			resource_log($r,"","",$lang["new_license"] . " " . $ref);
+			foreach ($resources as $r)
+				{
+				$r=trim($r);
+				if (is_numeric($r))
+					{
+					sql_query("insert into resource_license(resource,license) values ('" . escape_check($r) . "','" . escape_check($ref) . "')");
+					resource_log($r,"","",$lang["new_license"] . " " . $ref);
+					}
+				}
 			}
 		}
 
