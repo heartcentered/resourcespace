@@ -30,3 +30,6 @@ $lang["csv_upload_override"]="Override";
 $lang["csv_upload_automatic_notes"]='"Automatic" requires a numeric field in the CSV file called "resource_type" that indicates the resource type for each line.';
 $lang["csv_upload_filter_notes"]='"Filter" only processes CSV line where the "resource_type" field matches the specified value.';
 $lang["csv_upload_override_notes"]='"Override" will treat every CSV line as the specified resource type, regardless of "resource_type" existence or value.';
+$lang["csv_upload_error_no_header"]="No header row found in file";
+$lang["csv_upload_update_existing"] = "Update existing resources? If this is unchecked then new resources wil be created based on the CSV data";
+$lang["csv_upload_update_existing_collection"] = "Only update resources in a collection?";
