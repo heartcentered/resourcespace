@@ -9,7 +9,7 @@ function HookLicensemanagerAllExport_add_tables()
 function HookLicensemanagerAllRender_actions_add_collection_option($top_actions,array $options)
     {
     // Add the options to link a license and unlike the license
-    global $search,$lang,$k;
+    global $search,$lang,$k,$baseurl_short;
 
     if($k != '' || !checkperm("a"))
         {
@@ -17,7 +17,7 @@ function HookLicensemanagerAllRender_actions_add_collection_option($top_actions,
         }
 
     $data_attr_url = generateURL(
-        "/plugins/licensemanager/pages/batch.php",
+        $baseurl_short . "plugins/licensemanager/pages/batch.php",
         array(
             'collection'   => $search,
             'unlink' => 'true'
@@ -37,7 +37,7 @@ function HookLicensemanagerAllRender_actions_add_collection_option($top_actions,
     array_push($options, $option);
 
     $data_attr_url = generateURL(
-        "/plugins/licensemanager/pages/batch.php",
+        $baseurl_short . "plugins/licensemanager/pages/batch.php",
         array(
             'collection'   => $search
         )
