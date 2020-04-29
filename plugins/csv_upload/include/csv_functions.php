@@ -2,63 +2,37 @@
 
 include_once (dirname(__FILE__)."/../../../include/metadata_functions.php");
 
-function csv_upload_process($filename,&$meta,$resource_types,&$messages,$override="",$max_error_count=100,$processcsv=false)
+function csv_upload_process($filename,&$meta,$resource_types,&$messages,$override="",$max_error_count=100,$processcsv=false, $csv_set_options)
 	{
-	/*
-from definitions.php
-
-not included:
-FIELD_TYPE_CHECK_BOX_LIST,    
-FIELD_TYPE_DROP_DOWN_LIST,  
-FIELD_TYPE_CATEGORY_TREE, 
-FIELD_TYPE_DYNAMIC_KEYWORDS_LIST,
-FIELD_TYPE_RADIO_BUTTONS,   
-FIELD_TYPE_DATE_RANGE
-*/
-/* field types that should not be checked for options in the CSV upload process */
-$csv_field_definitions = array(
-	FIELD_TYPE_TEXT_BOX_SINGLE_LINE, 
-	FIELD_TYPE_TEXT_BOX_MULTI_LINE,  
-	FIELD_TYPE_DATE_AND_OPTIONAL_TIME,   
-	FIELD_TYPE_TEXT_BOX_LARGE_MULTI_LINE,  
-	FIELD_TYPE_EXPIRY_DATE,                 
-	FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR,
-	FIELD_TYPE_DATE,             
-	FIELD_TYPE_WARNING_MESSAGE       
-	) ; 	
-	// echo "csv_upload_process(" . $filename . ", Resource types: ";
-	// foreach($resource_types as $restype) {echo $restype. ", ";}
-	// echo "Override:" . $override . "<br>";
-	// if($processcsv){echo "Processing CSV file<br>";}
-
-  // Ensure /r line endings (such as those created in MS Excel) are handled correctly
+    // Ensure /r line endings (such as those created in MS Excel) are handled correctly
 	$save_auto_detect_line_endings = ini_set("auto_detect_line_endings", "1");  
-
-  global $FIXED_LIST_FIELD_TYPES, $DATE_FIELD_TYPES, $NODE_FIELDS;
+    global $FIXED_LIST_FIELD_TYPES, $DATE_FIELD_TYPES, $NODE_FIELDS;
 
 	$file=fopen($filename,'r');
 	$line_count=0;
+    
+    // Get list of possible resources to replace
+    if($csv_set_options["update_existing"])
+        {
+        if($csv_set_options["csv_update_col"] && $csv_set_options["csv_update_col_id"] > 0)
+            {
+            $replaceresources = do_search("!collection" . (int)$csv_set_options["csv_update_col_id"],'','ref','',-1,'asc',false,0,false,false,'',false,false,false);
+            }
+        else
+            {
+            // Limit resources to replace to those that user can edit
+            $replaceresources = do_search('','','ref','',-1,'asc',false,0,false,false,'',false,false,false,true);
+            }
+        }
 
-	if (($header = fgetcsv($file))==false)
-		{
-		array_push($messages, "No header found");
-		fclose($file);
-		ini_set("auto_detect_line_endings", $save_auto_detect_line_endings);
-		return false;		
-		}			
-		
-	for($i=0; $i<count($header); $i++)
-		{
-		$header[$i]=strtoupper($header[$i]);
-		}
-				
+
+
 	# ----- start of header row checks -----
 
 	$resource_types_allowed=array();
 	$resource_type_filter=getvalescaped("resource_type","",true);
 	if(getvalescaped("add_to_collection","")!="")
 		{
-		include_once dirname(__FILE__)."/../../../include/collections_functions.php";
 		global $usercollection;
 		$add_to_collection=true;
 		}
@@ -423,3 +397,42 @@ $csv_field_definitions = array(
 	ini_set("auto_detect_line_endings", $save_auto_detect_line_endings);
 	return true;
 }
+
+
+function csv_upload_get_info($filename, &$messages)
+	{
+	//$save_auto_detect_line_endings = ini_set("auto_detect_line_endings", "1");  
+
+    global $lang;
+
+	$file=fopen($filename,'r');
+	$line_count=0;
+
+	if (($headers = fgetcsv($file))==false)
+		{
+		array_push($messages, $lang["csv_upload_error_no_header"]);
+		fclose($file);
+		ini_set("auto_detect_line_endings", $save_auto_detect_line_endings);
+		return false;		
+		}			
+    
+    // Create array to hold sample data to show to user
+    $headercount = count($headers);
+    $csv_data = array();
+    for($n=0;$n<$headercount;$n++)
+        {
+        $csv_data[$n]["header"] = $headers[$n];
+        $csv_data[$n]["values"] = array();
+        }
+
+    $row = 0;
+    while (($data= fgetcsv($file))!=false && $row < 20)
+        {
+        for($c=0;$c<$headercount;$c++)
+            {
+            $csv_data[$c]["values"][$row] = isset($data[$c]) ? $data[$c] : "";
+            }
+        $row++;
+        }
+    return $csv_data;
+    }
