@@ -42,8 +42,12 @@ if ($k=="" || $internal_share_access)
             }
         }
     }
-# Disable checkboxes for external users.
-if ($k!="" && !$internal_share_access) {$use_checkboxes_for_selection=false;}
+
+// Disable checkboxes for external users.
+if($k != "" && !$internal_share_access)
+    {
+    $use_checkboxes_for_selection = false;
+    }
 
 $search = getvalescaped('search', '');
 $modal  = ('true' == getval('modal', ''));
