@@ -517,6 +517,7 @@ $lang["youfound"]="You found"; # e.g. you found 17 resources
 $lang["youfoundresources"]="resources"; # e.g. you found 17 resources
 $lang["youfoundresource"]="resource"; # e.g. you found 1 resource
 $lang["youfoundresults"]="results"; # e.g. you found 17 resources
+$lang["selected"] = "selected";
 $lang["youfoundresult"]="result"; # e.g. you found 1 resource
 $lang["display"]="Display"; # e.g. Display: thumbnails / list
 $lang["sortorder"]="Sort order";
@@ -875,6 +876,8 @@ $lang['upload_here'] = "Upload here";
 $lang['help-tooltip'] = "Get more information on this page";
 $lang["unauthorized"] = "Unauthorized";
 $lang["warning_duplicate_shortname_fields"] = "There is already a resource type field with the same shortname. Please make it unique!";
+$lang["edit_selected"] = "Edit selected";
+$lang["clear_selected"] = "Clear selected";
 
 # Pager
 $lang["next"]="Next";

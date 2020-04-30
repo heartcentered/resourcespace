@@ -44,6 +44,7 @@ if ($k=="" || $internal_share_access)
     }
 
 // Disable checkboxes for external users.
+$use_checkboxes_for_selection = true;
 if($k != "" && !$internal_share_access)
     {
     $use_checkboxes_for_selection = false;
@@ -418,7 +419,8 @@ $allow_reorder=false;
 # get current collection resources to pre-fill checkboxes
 if($use_checkboxes_for_selection)
     {
-    $collectionresources = get_collection_resources(get_user_selection_collection($userref));
+    $selection_collection_resources = get_collection_resources(get_user_selection_collection($userref));
+    $selection_collection_resources_count = count($selection_collection_resources);
     }
 
 $hiddenfields=getvalescaped("hiddenfields","");
@@ -968,10 +970,16 @@ if($responsive_ui)
     <div class="ResponsiveResultDisplayControls">
         <a href="#" id="Responsive_ResultDisplayOptions" class="ResourcePanel ResponsiveButton" style="display:none;"><?php echo $lang['responsive_result_settings']; ?></a>
         <div id="ResponsiveResultCount" style="display:none;">
-            <span class="Selected">
         <?php
-        if(isset($collections)) 
+        if($use_checkboxes_for_selection && $selection_collection_resources_count > 0)
             {
+            echo render_selected_resources_counter(count($selection_collection_resources));
+            }
+        else if(isset($collections)) 
+            {
+            ?>
+            <span class="Selected">
+            <?php
             echo number_format($results_count);
             ?>
             </span>
@@ -980,6 +988,9 @@ if($responsive_ui)
             } 
         else
             {
+            ?>
+            <span class="Selected">
+            <?php
             echo number_format($resources_count);
             ?>
             </span>
@@ -993,14 +1004,24 @@ if($responsive_ui)
     }
     hook('responsiveresultoptions');
     ?>
-    <div id="SearchResultFound" class="InpageNavLeftBlock"><span class="Selected">
+    <div id="SearchResultFound" class="InpageNavLeftBlock">
     <?php
-    if (isset($collections)) 
+    if($use_checkboxes_for_selection && $selection_collection_resources_count > 0)
         {
+        echo render_selected_resources_counter(count($selection_collection_resources));
+        }
+    else if (isset($collections)) 
+        {
+        ?>
+        <span class="Selected">
+        <?php
         echo number_format($results_count)?> </span><?php echo ($results_count==1) ? $lang["youfoundresult"] : $lang["youfoundresults"];
-        } 
+        }
     else
         {
+        ?>
+        <span class="Selected">
+        <?php
         echo number_format($resources_count)?> </span><?php echo ($resources_count==1)? $lang["youfoundresource"] : $lang["youfoundresources"];
         }
      ?></div>
@@ -1216,6 +1237,12 @@ if($responsive_ui)
         if(isset($is_authenticated) && $is_authenticated)
             {
             render_upload_here_button($searchparams);
+
+            if($use_checkboxes_for_selection && $selection_collection_resources_count > 0)
+                {
+                render_edit_selected_btn();
+                render_clear_selected_btn();
+                }
             }
         
         if (!$display_selector_dropdowns && !$perpage_dropdown){?>

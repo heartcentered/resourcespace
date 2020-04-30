@@ -359,7 +359,7 @@ if (!hook("renderresultthumb"))
                         class="checkselect" 
                         data-resource="<?php echo htmlspecialchars($result[$n]["ref"]); ?>"
                         <?php 
-                        if (in_array($ref,$collectionresources))
+                        if (in_array($ref, $selection_collection_resources))
                             { ?>
                             checked
                             <?php 

@@ -191,3 +191,51 @@ function ToggleCollectionResourceSelection(e, collection)
 
     return true;
     }
+
+
+function ClearSelectionCollection(t)
+    {
+    var button = jQuery(t);
+    var csrf_token_identifier = button.data("csrf-token-identifier");
+    var csrf_token = button.data("csrf-token");
+
+    var default_post_data = {};
+    default_post_data[csrf_token_identifier] = csrf_token;
+    var post_data = Object.assign({}, default_post_data);
+    post_data.ajax = true;
+    post_data.action = "clear_selection_collection_resources";
+
+    console.debug("ClearSelectionCollection: post_data = %o", post_data);
+
+    CentralSpaceShowLoading();
+
+    jQuery.ajax({
+        type: 'POST',
+        url: baseurl + "/pages/ajax/collections.php",
+        data: post_data,
+        dataType: "json"
+        })
+        .done(function(response, textStatus, jqXHR)
+            {
+            if(typeof response.status !== "undefined" && response.status == "success")
+                {
+                window.location.reload(true);
+                }
+            })
+        .fail(function(data, textStatus, jqXHR)
+            {
+            if(typeof data.responseJSON === 'undefined')
+                {
+                return;
+                }
+
+            var response = data.responseJSON;
+            styledalert(jqXHR, response.data.message);
+            })
+        .always(function()
+            {
+            CentralSpaceHideLoading();
+            });
+
+    return true;
+    }

@@ -69,6 +69,19 @@ function ajax_response_fail(array $data)
 
 
 /**
+* Builds the correct response expected for a success request where there is no data to return (e.g when deleting a record)
+* 
+* @return array
+*/
+function ajax_response_ok_no_data()
+    {
+    return array(
+        "status" => "success",
+        "data" => null); 
+    }
+
+
+/**
 * Returns a standard AJAX response for unauthorised access with a 401 HTTP status code
 * 
 * @return void
