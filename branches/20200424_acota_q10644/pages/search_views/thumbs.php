@@ -350,8 +350,6 @@ if (!hook("renderresultthumb"))
             hook("thumblistextras");  // add icons for resourceconnect
 
             if(!hook("thumbscheckboxes"))
-            {
-            if($use_checkboxes_for_selection)
                 {
                 if(!in_array($result[$n]['resource_type'],$collection_block_restypes))  
                     {?>
@@ -360,15 +358,13 @@ if (!hook("renderresultthumb"))
                         id="check<?php echo htmlspecialchars($ref)?>" 
                         class="checkselect" 
                         data-resource="<?php echo htmlspecialchars($result[$n]["ref"]); ?>"
-                        data-csrf-token-identifier="<?php echo $CSRF_token_identifier; ?>"
-                        data-csrf-token="<?php echo generateCSRFToken($usersession, "resource{$result[$n]["ref"]}"); ?>"
                         <?php 
                         if (in_array($ref,$collectionresources))
                             { ?>
                             checked
                             <?php 
                             } ?> 
-                        onclick="return ToggleCollectionResourceSelection(this);"
+                        onclick="return ToggleCollectionResourceSelection(event, <?php echo $USER_SELECTION_COLLECTION; ?>);"
                     >
                     <?php 
                     }
@@ -378,8 +374,7 @@ if (!hook("renderresultthumb"))
                     <input type="checkbox" class="checkselect" style="opacity: 0;">
                     <?php
                     }
-                }
-            } # end hook thumbscheckboxes
+                } # end hook thumbscheckboxes
         if(!hook("replacethumbsidinthumbnail"))
             {
             if ($display_resource_id_in_thumbnail && $ref>0) 

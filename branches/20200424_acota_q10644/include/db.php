@@ -2362,7 +2362,7 @@ function setup_user($userdata)
            $usersearchfilter, $usereditfilter, $userderestrictfilter, $hidden_collections, $userresourcedefaults,
            $userrequestmode, $request_adds_to_collection, $usercollection, $lang, $validcollection, $userpreferences,
            $userorigin, $actions_enable, $actions_permissions, $actions_on, $usersession, $anonymous_login, $resource_created_by_filter,
-           $user_dl_limit,$user_dl_days, $search_filter_nodes;
+           $user_dl_limit,$user_dl_days, $search_filter_nodes, $USER_SELECTION_COLLECTION;
 		
 	# Hook to modify user permissions
 	if (hook("userpermissions")){$userdata["permissions"]=hook("userpermissions");} 
@@ -2448,10 +2448,11 @@ function setup_user($userdata)
 			sql_query("update user set current_collection='$usercollection' where ref='$userref'");
 			}
 
-        if(is_null(get_user_selection_collection($userref)))
+        $USER_SELECTION_COLLECTION = get_user_selection_collection($userref);
+        if(is_null($USER_SELECTION_COLLECTION))
             {
-            $selection_col = create_collection($userref, "Selection Collection (for batch edit)", 0, 1);
-            update_collection_type($selection_col, COLLECTION_TYPE_SELECTION);
+            $USER_SELECTION_COLLECTION = create_collection($userref, "Selection Collection (for batch edit)", 0, 1);
+            update_collection_type($USER_SELECTION_COLLECTION, COLLECTION_TYPE_SELECTION);
             }
 		}
 

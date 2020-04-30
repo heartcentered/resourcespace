@@ -3,7 +3,7 @@
 * @package ResourceSpace
 * @subpackage AJAX
 * 
-* The functions available in this file will help developers to provide a consistent response to AJAX requests.
+* The functions available in this file will help developers provide a consistent response to AJAX requests.
 * 
 * All functions (with the exception of ajax_permission_denied) will follow the JSEnd specification (@see https://github.com/omniti-labs/jsend)
 * 

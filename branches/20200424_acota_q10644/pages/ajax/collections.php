@@ -24,6 +24,7 @@ if($action == "" || !in_array($action, $allowed_actions))
     ajax_send_response(400, ajax_response_fail(ajax_build_message($fail_msg)));
     }
 
+// todo: move actions from pages/collections.php here (break them apart if needed to cover single responsibilities)
 
 // todo: implement actions as needed
 ajax_send_response(200, array(
