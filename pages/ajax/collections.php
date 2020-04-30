@@ -15,7 +15,7 @@ if(checkperm("b"))
 $return = array();
 $action = trim(getval("action", ""));
 $allowed_actions = array(
-    "add_resource",
+    "clear_selection_collection_resources",
 );
 
 if($action == "" || !in_array($action, $allowed_actions))
@@ -26,7 +26,8 @@ if($action == "" || !in_array($action, $allowed_actions))
 
 // todo: move actions from pages/collections.php here (break them apart if needed to cover single responsibilities)
 
-// todo: implement actions as needed
-ajax_send_response(200, array(
-        "status" => "success",
-        "data" => ajax_build_message("inserted")));
+if($action == "clear_selection_collection_resources")
+    {
+    remove_all_resources_from_collection($USER_SELECTION_COLLECTION);
+    ajax_send_response(200, ajax_response_ok_no_data());
+    }

@@ -17,7 +17,7 @@ if (!hook("replacelistitem"))
                         id="check<?php echo htmlspecialchars($ref)?>" 
                         class="checkselect" 
                         <?php 
-                        if (in_array($ref,$collectionresources))
+                        if (in_array($ref, $selection_collection_resources))
                             { ?>checked<?php } ?> 
                         onclick="if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')){ AddResourceToCollection(event,<?php echo htmlspecialchars($ref)?>); } else if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')==false) { RemoveResourceFromCollection(event,<?php echo htmlspecialchars($ref)?>); <?php if (isset($collection)){?>document.location.href='?search=<?php echo urlencode($search)?>&order_by=<?php echo urlencode($order_by)?>&archive=<?php echo urlencode($archive)?>&offset=<?php echo urlencode($offset)?>';<?php } ?> }"
                     >

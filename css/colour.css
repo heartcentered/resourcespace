@@ -430,3 +430,7 @@ a.ui-button.plupload_button.ui-button-disabled {
     background-color: rgba(0,0,0,0.4);
     padding-bottom: 5px;
     }
+
+.SelectionCollectionLink, .SelectionCollectionLink:link, .SelectionCollectionLink:visited { color: #474747; }
+.ClearSelectedButton { background-color: #b71c1c; }
+.ClearSelectedButton:hover { background-color: #7f0000; }

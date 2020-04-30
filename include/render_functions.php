@@ -2604,16 +2604,16 @@ function render_field_selector_question($label, $name, $ftypes,$class="stdwidth"
 * Render a filter bar button
 * 
 * @param string $text Button text
-* @param string $text The onclick attribute for the button
+* @param string $attr Button attributes
 * @param string $icon HTML for icon element (e.g "<i aria-hidden="true" class="fa fa-fw fa-upload"></i>")
 * 
 * @return void
 */
-function render_filter_bar_button($text, $on_click, $icon)
+function render_filter_bar_button($text, $attr, $icon)
     {
     ?>
     <div class="InpageNavLeftBlock">
-        <button type="button" onclick="<?php echo $on_click; ?>"><?php echo $icon . htmlspecialchars($text); ?></button>
+        <button type="button" <?php echo $attr; ?>><?php echo $icon . htmlspecialchars($text); ?></button>
     </div>
     <?php
     return;
@@ -2734,9 +2734,9 @@ function render_upload_here_button(array $search_params, $return_params_only = f
         }
         
     $upload_here_url = generateURL("{$GLOBALS['baseurl']}/{$upload_endpoint}", $upload_here_params);
-    $upload_here_on_click = "CentralSpaceLoad('{$upload_here_url}');";
+    $attributes = "onclick=\"CentralSpaceLoad('{$upload_here_url}');\"";
 
-    return render_filter_bar_button($GLOBALS['lang']['upload_here'], $upload_here_on_click, UPLOAD_ICON);
+    return render_filter_bar_button($GLOBALS['lang']['upload_here'], $attributes, UPLOAD_ICON);
     }
 
 /**
@@ -3005,34 +3005,91 @@ function render_custom_fields(array $cfs)
         });
     }
 
-/* -- todo: delete if not used in the end
-function render_collection_selection_checkbox($resource)
+
+/**
+* Generates HTML for the "X Selected" in the search results found part pointing to the special collection COLLECTION_TYPE_SELECTION
+* 
+* @param integer $i Counter to display
+* 
+* @return string  Returns HTML
+*/
+function render_selected_resources_counter($i)
     {
-    global $use_checkboxes_for_selection, $collection_block_restypes;
+    global $baseurl, $lang, $USER_SELECTION_COLLECTION;
 
-    if(!$use_checkboxes_for_selection)
+    $url = generateURL("{$baseurl}", array("c" => $USER_SELECTION_COLLECTION));
+
+    $x_selected = '<span class="Selected">' . number_format($i) . "</span> {$lang["selected"]}";
+    $return = "<a href=\"{$url}\" class=\"SelectionCollectionLink\" onclick=\"return CentralSpaceLoad(this, true);\">{$x_selected}</a>";
+
+    return $return;
+    }
+
+
+/**
+* Renders the "Edit selected" button. This is using the special 'COLLECTION_TYPE_SELECTION' collection
+* 
+* @return void
+*/
+function render_edit_selected_btn()
+    {
+    global $baseurl_short, $lang, $USER_SELECTION_COLLECTION, $restypes, $archive;
+
+    $search = "!collection{$USER_SELECTION_COLLECTION}";
+    $editable_resources = do_search($search, $restypes, "resourceid", $archive, -1, "desc", false, 0, false, false, "", false, false, true, true);
+    $non_editable_resources = do_search($search, $restypes, "resourceid", $archive, -1, "desc", false, 0, false, false, "", false, false, true, false);
+
+    if(!is_array($editable_resources) || !is_array($non_editable_resources))
         {
         return;
         }
 
-    if(in_array($resource["resource_type"], $collection_block_restypes))
+    $editable_resources_count = count($editable_resources);
+    $non_editable_resources_count = count($non_editable_resources);
+
+    if($editable_resources_count == 0 || $non_editable_resources_count == 0)
         {
         return;
-        ?><input type="checkbox" class="checkselect" style="opacity: 0;"><?php
         }
-    ?>
-    <input 
-        type="checkbox" 
-        id="check<?php echo htmlspecialchars($ref)?>" class="checkselect" 
-        <?php 
-        if (in_array($ref,$collectionresources))
-            { ?>
-            checked
-            <?php 
-            } ?> 
-        onclick="if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')){ AddResourceToCollection(event,<?php echo htmlspecialchars($ref)?>); } else if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')==false){ RemoveResourceFromCollection(event,<?php echo htmlspecialchars($ref)?>); }"
-    >
-    <?php
 
-    return;
-    }*/
+    // If not all resources are editable, don't show the batch edit button
+    if($editable_resources_count != $non_editable_resources_count)
+        {
+        return;
+        }
+
+    $batch_edit_url = generateURL(
+        "{$baseurl_short}pages/edit.php",
+        array(
+            "search"            =>  $search,
+            "collection"        =>  $USER_SELECTION_COLLECTION,
+            "restypes"          =>  $restypes,
+            "order_by"          =>  "resourceid",
+            "archive"           =>  $archive,
+            "sort"              =>  "desc",
+            "daylimit"          =>  "",
+            "editsearchresults" => "true",
+        ));
+
+    $attributes = "onclick=\"ModalLoad('{$batch_edit_url}', true);\"";
+
+    return render_filter_bar_button($lang["edit_selected"], $attributes, ICON_EDIT);
+    }
+
+
+/**
+* Renders the "Clear selected" button. This is using the special 'COLLECTION_TYPE_SELECTION' collection
+* 
+* @return void
+*/
+function render_clear_selected_btn()
+    {
+    global $baseurl_short, $lang, $USER_SELECTION_COLLECTION, $CSRF_token_identifier, $usersession;
+
+    $attributes  = "class=\"ClearSelectedButton\"";
+    $attributes .= " onclick=\"ClearSelectionCollection(this);\"";
+    $attributes .= " data-csrf-token-identifier=\"{$CSRF_token_identifier}\"";
+    $attributes .= " data-csrf-token=\"" . generateCSRFToken($usersession, "clear_selected_btn_{$USER_SELECTION_COLLECTION}") . "\"";
+
+    return render_filter_bar_button($lang["clear_selected"], $attributes, ICON_REMOVE);
+    }
