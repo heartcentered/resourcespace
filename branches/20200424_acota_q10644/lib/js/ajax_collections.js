@@ -79,7 +79,7 @@ function AddResourceToCollection(event,resource,size, collection_id) {
     thumbs = getCookie("thumbs");
     PopCollection(thumbs);
 
-    jQuery('#CollectionDiv').load(baseurl_short + 'pages/collections.php?add=' + resource + '&toCollection=' + collection_id + '&size=' + size + '&thumbs=' + thumbs + '&ajax=true');
+    CollectionDivLoad(baseurl_short + 'pages/collections.php?add=' + resource + '&toCollection=' + collection_id + '&size=' + size + '&thumbs=' + thumbs);
     delete prevremoved;
     if(collection_bar_hide_empty){
 	CheckHideCollectionBar();
@@ -189,6 +189,12 @@ function ToggleCollectionResourceSelection(e, collection)
         RemoveResourceFromCollection(e, resource, null, collection);
         }
 
+    // Both AddResourceToCollection & RemoveResourceFromCollection are using CollectionDivLoad() for their actions.
+    jQuery("#CollectionDiv").one("CollectionDiv_loaded", function(e)
+        {
+        UpdateSelColSearchFilterBar();
+        });
+
     return true;
     }
 
@@ -238,4 +244,123 @@ function ClearSelectionCollection(t)
             });
 
     return true;
+    }
+
+
+function UpdateSelColSearchFilterBar()
+    {
+    UpdateSelectedResourcesCounter();
+    }
+
+function UpdateSelectedResourcesCounter()
+    {
+    console.debug("UpdateSelectedResourcesCounter()");
+
+    CentralSpaceShowLoading();
+    jQuery.ajax({
+        type: 'GET',
+        url: baseurl + "/pages/ajax/collections.php",
+        data: {
+            ajax: true,
+            action: "get_selected_resources_counter"
+        },
+        dataType: "json"
+        })
+        .done(function(response, textStatus, jqXHR)
+            {
+            if(response.status == "success")
+                {
+                var selected_resources = response.data.selected;
+
+                if(selected_resources > 0)
+                    {
+                    jQuery("#CentralSpace").trigger("ShowSelectedResourcesCounter");
+                    }
+                else
+                    {
+                    jQuery("#CentralSpace").trigger("RemoveSelectedResourcesCounter");
+                    }
+                }
+            })
+        .fail(function(data, textStatus, jqXHR)
+            {
+            if(typeof data.responseJSON === 'undefined')
+                {
+                return;
+                }
+
+            var response = data.responseJSON;
+            styledalert(jqXHR, response.data.message);
+            })
+        .always(function()
+            {
+            CentralSpaceHideLoading();
+            });
+
+
+    jQuery("#CentralSpace").one("ShowSelectedResourcesCounter", function(e)
+        {
+        CentralSpaceShowLoading();
+
+        jQuery.ajax({
+            type: 'GET',
+            url: baseurl + "/pages/ajax/collections.php",
+            data: {
+                action: "render_selected_resources_counter"
+            },
+            dataType: "html"
+            })
+            .done(function(response, textStatus, jqXHR)
+                {
+                var orig_srf = jQuery("#OriginalSearchResultFound");
+                var remove_old = false;
+
+                if(orig_srf.length)
+                    {
+                    remove_old = true;
+                    }
+
+                srf = jQuery("#SearchResultFound");
+                var srf_copy = srf.clone();
+
+                srf_copy.html(response);
+                srf_copy.insertAfter(srf);
+
+                if(remove_old)
+                    {
+                    srf.remove();
+                    return;
+                    }
+
+                // Hide the field
+                srf.attr("id", "OriginalSearchResultFound");
+                srf.addClass("DisplayNone");
+                srf.removeClass("InpageNavLeftBlock");
+                })
+            .always(function()
+                {
+                CentralSpaceHideLoading();
+                });
+        });
+
+
+    // For some reason one() didn't work in this case. I had to de-register any existing callbacks
+    jQuery("#CentralSpace").off("RemoveSelectedResourcesCounter").one("RemoveSelectedResourcesCounter", function(e)
+        {
+        var orig_srf = jQuery("#OriginalSearchResultFound");
+
+        // We already had the "selected" counter - there is no search results found counter. Reload in this case.
+        if(!orig_srf.length)
+            {
+            window.location.reload(true);
+            }
+
+        jQuery("#SearchResultFound").remove();
+
+        orig_srf.addClass("InpageNavLeftBlock");
+        orig_srf.removeClass("DisplayNone");
+        orig_srf.attr("id", "SearchResultFound");
+        });
+
+    return;
     }

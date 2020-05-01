@@ -3084,7 +3084,7 @@ function render_edit_selected_btn()
 */
 function render_clear_selected_btn()
     {
-    global $baseurl_short, $lang, $USER_SELECTION_COLLECTION, $CSRF_token_identifier, $usersession;
+    global $lang, $USER_SELECTION_COLLECTION, $CSRF_token_identifier, $usersession;
 
     $attributes  = "class=\"ClearSelectedButton\"";
     $attributes .= " onclick=\"ClearSelectionCollection(this);\"";
