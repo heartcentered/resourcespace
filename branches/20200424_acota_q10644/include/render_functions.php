@@ -3071,7 +3071,8 @@ function render_edit_selected_btn()
             "editsearchresults" => "true",
         ));
 
-    $attributes = "onclick=\"ModalLoad('{$batch_edit_url}', true);\"";
+    $attributes  = " id=\"EditSelectedResourcesBtn\"";
+    $attributes .= " onclick=\"ModalLoad('{$batch_edit_url}', true);\"";
 
     return render_filter_bar_button($lang["edit_selected"], $attributes, ICON_EDIT);
     }
@@ -3086,7 +3087,7 @@ function render_clear_selected_btn()
     {
     global $lang, $USER_SELECTION_COLLECTION, $CSRF_token_identifier, $usersession;
 
-    $attributes  = "class=\"ClearSelectedButton\"";
+    $attributes  = " id=\"ClearSelectedResourcesBtn\" class=\"ClearSelectedButton\"";
     $attributes .= " onclick=\"ClearSelectionCollection(this);\"";
     $attributes .= " data-csrf-token-identifier=\"{$CSRF_token_identifier}\"";
     $attributes .= " data-csrf-token=\"" . generateCSRFToken($usersession, "clear_selected_btn_{$USER_SELECTION_COLLECTION}") . "\"";

@@ -3,8 +3,8 @@ $rsroot = dirname(__FILE__);
 include "{$rsroot}/../../include/db.php";
 include_once "{$rsroot}/../../include/general.php";
 include "{$rsroot}/../../include/authenticate.php";
-include_once "{$rsroot}/../../include/collections_functions.php";
 include_once "{$rsroot}/../../include/ajax_functions.php";
+include_once "{$rsroot}/../../include/collections_functions.php";
 include_once "{$rsroot}/../../include/render_functions.php";
 // include_once "{$rsroot}/../../include/resource_functions.php";
 
@@ -19,6 +19,8 @@ $allowed_actions = array(
     "clear_selection_collection_resources",
     "get_selected_resources_counter",
     "render_selected_resources_counter",
+    "render_edit_selected_btn",
+    "render_clear_selected_btn",
 );
 
 if($action == "" || !in_array($action, $allowed_actions))
@@ -45,4 +47,19 @@ if($action == "render_selected_resources_counter")
     {
     $counter = count(get_collection_resources($USER_SELECTION_COLLECTION));
     ajax_send_text_response(200, render_selected_resources_counter($counter));
+    }
+
+if($action == "render_clear_selected_btn")
+    {
+    ajax_send_text_response(200, render_clear_selected_btn());
+    }
+
+if($action == "render_edit_selected_btn")
+    {
+    include_once "{$rsroot}/../../include/search_do.php";
+    include_once "{$rsroot}/../../include/search_functions.php";
+
+    $restypes = getval("restypes", "");
+    $archive = getval("archive", "");
+    ajax_send_text_response(200, render_edit_selected_btn());
     }

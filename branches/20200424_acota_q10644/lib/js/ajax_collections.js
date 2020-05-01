@@ -250,6 +250,49 @@ function ClearSelectionCollection(t)
 function UpdateSelColSearchFilterBar()
     {
     UpdateSelectedResourcesCounter();
+
+    // trying an approach where all updates are after we checked how many selected resources we have left
+    CentralSpaceShowLoading();
+    jQuery.ajax({
+        type: 'GET',
+        url: baseurl + "/pages/ajax/collections.php",
+        data: {
+            ajax: true,
+            action: "get_selected_resources_counter"
+        },
+        dataType: "json"
+        })
+        .done(function(response, textStatus, jqXHR)
+            {
+            if(response.status == "success")
+                {
+                var selected_resources = response.data.selected;
+                var clear_btns = (selected_resources == 0);
+
+                jQuery(".TopInpageNavLeft").trigger("UpdateForSelectionCollection", [clear_btns]);                    
+                }
+            })
+        .fail(function(data, textStatus, jqXHR)
+            {
+            if(typeof data.responseJSON === 'undefined')
+                {
+                return;
+                }
+
+            var response = data.responseJSON;
+            styledalert(jqXHR, response.data.message);
+            })
+        .always(function()
+            {
+            CentralSpaceHideLoading();
+            });
+
+    jQuery(".TopInpageNavLeft").one("UpdateForSelectionCollection", function(e, clear)
+        {
+        UpdateSelectedBtns(clear);
+        });
+
+    return;
     }
 
 function UpdateSelectedResourcesCounter()
@@ -361,6 +404,59 @@ function UpdateSelectedResourcesCounter()
         orig_srf.removeClass("DisplayNone");
         orig_srf.attr("id", "SearchResultFound");
         });
+
+    return;
+    }
+
+function UpdateSelectedBtns(clear)
+    {
+    console.debug("UpdateSelectedBtns(clear = %o)", clear);
+
+    if(clear)
+        {
+        jQuery("#EditSelectedResourcesBtn").parent().remove();
+        jQuery("#ClearSelectedResourcesBtn").parent().remove();
+        return;
+        }
+
+    var EditBtn_ajax = jQuery.ajax({
+        type: 'GET',
+        url: baseurl + "/pages/ajax/collections.php",
+        data: {
+            action: "render_edit_selected_btn",
+            restypes: searchparams.restypes,
+            archive: searchparams.archive,
+        },
+        dataType: "html"
+        });
+
+    var ClearBtn_ajax = jQuery.ajax({
+        type: 'GET',
+        url: baseurl + "/pages/ajax/collections.php",
+        data: {
+            action: "render_clear_selected_btn"
+        },
+        dataType: "html"
+        });
+
+    jQuery.when(EditBtn_ajax, ClearBtn_ajax)
+        .then(function(edit_btn_response, clear_btn_response)
+            {
+            var TopInpageNavLeft = jQuery(".TopInpageNavLeft");
+            var btn = jQuery("#EditSelectedResourcesBtn");
+            if(!btn.length)
+                {
+                TopInpageNavLeft.append(edit_btn_response[0]);
+                }
+
+            var btn = jQuery("#ClearSelectedResourcesBtn");
+            if(!btn.length)
+                {
+                TopInpageNavLeft.append(clear_btn_response[0]);
+                }
+
+            return;
+            });
 
     return;
     }
