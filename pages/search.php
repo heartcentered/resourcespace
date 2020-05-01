@@ -623,6 +623,14 @@ if($k=="" || $internal_share_access)
     <?php
     }
 
+if($use_checkboxes_for_selection)
+    {
+    ?>
+    <script>
+    var searchparams = <?php echo json_encode($searchparams); ?>;
+    </script>
+    <?php
+    }
 
 // Allow Drag & Drop from collection bar to CentralSpace only when special search is "!collection"
 if($collectionsearch && collection_writeable(substr($search, 11)))
