@@ -5,6 +5,7 @@ include_once "{$rsroot}/../../include/general.php";
 include "{$rsroot}/../../include/authenticate.php";
 include_once "{$rsroot}/../../include/collections_functions.php";
 include_once "{$rsroot}/../../include/ajax_functions.php";
+include_once "{$rsroot}/../../include/render_functions.php";
 // include_once "{$rsroot}/../../include/resource_functions.php";
 
 if(checkperm("b"))
@@ -16,6 +17,8 @@ $return = array();
 $action = trim(getval("action", ""));
 $allowed_actions = array(
     "clear_selection_collection_resources",
+    "get_selected_resources_counter",
+    "render_selected_resources_counter",
 );
 
 if($action == "" || !in_array($action, $allowed_actions))
@@ -30,4 +33,16 @@ if($action == "clear_selection_collection_resources")
     {
     remove_all_resources_from_collection($USER_SELECTION_COLLECTION);
     ajax_send_response(200, ajax_response_ok_no_data());
+    }
+
+if($action == "get_selected_resources_counter")
+    {
+    $counter = count(get_collection_resources($USER_SELECTION_COLLECTION));
+    ajax_send_response(200, ajax_response_ok(array("selected" => $counter)));
+    }
+
+if($action == "render_selected_resources_counter")
+    {
+    $counter = count(get_collection_resources($USER_SELECTION_COLLECTION));
+    ajax_send_text_response(200, render_selected_resources_counter($counter));
     }

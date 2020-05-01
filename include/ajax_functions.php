@@ -49,6 +49,37 @@ function ajax_send_response($code, array $response)
 
 
 /**
+* Send AJAX text/html response back to the client together with the appropriate HTTP status code
+* 
+* @param  integer  $code      HTTP status code for this response
+* @param  string   $response  Response data (text/html)
+* 
+* @return void
+*/
+function ajax_send_text_response($code, $response)
+    {
+    http_response_code($code);
+    echo $response;
+    exit();
+    }
+
+
+/**
+* Builds the correct response expected for a success request where there is data to return (e.g getting search results)
+* 
+* @param array $data Data to be returned back to the client
+* 
+* @return array
+*/
+function ajax_response_ok(array $data)
+    {
+    return array(
+        "status" => "success",
+        "data" => $data);
+    }
+
+
+/**
 * Builds the correct response expected for failures.
 * 
 * When a call is rejected due to invalid data or call conditions, the response data key contains an object explaining 
@@ -64,7 +95,7 @@ function ajax_response_fail(array $data)
     {
     return array(
         "status" => "fail",
-        "data" => $data); 
+        "data" => $data);
     }
 
 
@@ -77,7 +108,7 @@ function ajax_response_ok_no_data()
     {
     return array(
         "status" => "success",
-        "data" => null); 
+        "data" => null);
     }
 
 
