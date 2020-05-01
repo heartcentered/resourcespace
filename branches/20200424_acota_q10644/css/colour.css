@@ -432,5 +432,5 @@ a.ui-button.plupload_button.ui-button-disabled {
     }
 
 .SelectionCollectionLink, .SelectionCollectionLink:link, .SelectionCollectionLink:visited { color: #474747; }
-.ClearSelectedButton { background-color: #b71c1c; }
-.ClearSelectedButton:hover { background-color: #7f0000; }
+.ClearSelectedButton { background-color: #ff2b2b; }
+.ClearSelectedButton:hover { background-color: #b71c1c; }
