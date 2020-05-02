@@ -68,6 +68,7 @@ function AddResourceToCollection(event,resource,size, collection_id) {
                         resourceid = jQuery(this).attr("id").substring(5)
                         resourcelist.push(resourceid);
                         jQuery(this).prop('checked',true);
+                        jQuery("#ResourceShell" + resourceid).addClass("Selected");
                     }
                 });
                 resource = resourcelist.join(",");
@@ -127,6 +128,7 @@ function RemoveResourceFromCollection(event,resource,pagename, collection_id) {
                         resourceid = jQuery(this).attr("id").substring(5)
                         resourcelist.push(resourceid);
                         jQuery(this).prop('checked',false);
+                        jQuery("#ResourceShell" + resourceid).removeClass("Selected");
                     }
                 });
                 resource = resourcelist.join(",");
