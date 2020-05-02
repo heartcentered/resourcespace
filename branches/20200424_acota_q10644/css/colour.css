@@ -65,11 +65,13 @@ input[readonly] {
     border-radius: 4px;
     transition: all 0.1s ease-in-out;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 3px solid rgba(255, 255, 255, 0);
 }
 .ResourcePanel:hover {
     box-shadow: 0 1px 10px 0px rgba(0,0,0,0.3);
     z-index: 100;
 }
+.ResourcePanel.Selected { border: 3px solid #2E99E6; }
 
 /* Tooltips */
 #easyTooltip {

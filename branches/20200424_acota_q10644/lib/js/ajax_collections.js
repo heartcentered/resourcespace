@@ -182,11 +182,13 @@ function ToggleCollectionResourceSelection(e, collection)
         {
         console.debug("ToggleCollectionResourceSelection: adding resource #%i to collection #%i", resource, collection);
         AddResourceToCollection(e, resource, null, collection);
+        jQuery("#ResourceShell" + resource).addClass("Selected");
         }
     else
         {
         console.debug("ToggleCollectionResourceSelection: removing resource #%i from collection #%i", resource, collection);
         RemoveResourceFromCollection(e, resource, null, collection);
+        jQuery("#ResourceShell" + resource).removeClass("Selected");
         }
 
     // Both AddResourceToCollection & RemoveResourceFromCollection are using CollectionDivLoad() for their actions.
