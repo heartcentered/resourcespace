@@ -33,3 +33,5 @@ $lang["csv_upload_override_notes"]='"Override" will treat every CSV line as the 
 $lang["csv_upload_error_no_header"]="No header row found in file";
 $lang["csv_upload_update_existing"] = "Update existing resources? If this is unchecked then new resources wil be created based on the CSV data";
 $lang["csv_upload_update_existing_collection"] = "Only update resources in a collection?";
+
+$lang["csv_upload_process"] = "Process";

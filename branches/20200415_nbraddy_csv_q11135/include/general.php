@@ -642,7 +642,7 @@ function get_resource_field_data_batch($refs)
     return $return;
     }
     
-function get_resource_types($types = "", $translate = true)
+function get_resource_types($types = "", $translate = true, $refkeys = false)
     {
     # Returns a list of resource types. The standard resource types are translated using $lang. Custom resource types are i18n translated.
     // support getting info for a comma-delimited list of restypes (as in a search)
@@ -670,8 +670,18 @@ function get_resource_types($types = "", $translate = true)
         {
         if (!checkperm('T' . $r[$n]['ref']))
             {
-            if ($translate==true) {$r[$n]["name"]=lang_or_i18n_get_translated($r[$n]["name"], "resourcetype-");} # Translate name
-            $return[]=$r[$n]; # Add to return array
+            if ($translate==true)
+                {
+                $r[$n]["name"]=lang_or_i18n_get_translated($r[$n]["name"], "resourcetype-");
+                }
+            if($refkeys)
+                {
+                $return[$r[$n]["ref"]]=$r[$n]; # Add to return array
+                }
+            else
+                {
+                $return[]=$r[$n]; # Add to return array
+                }
             }
         }
     return $return;
