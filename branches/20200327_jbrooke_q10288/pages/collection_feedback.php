@@ -94,7 +94,17 @@ if ($errors!="")
 		<!--Resource Panel-->
 		<div class="ResourcePanelShell" id="ResourceShell<?php echo urlencode($ref)?>">
 		<div class="ResourcePanel">
-		
+		<?php  
+        if ($resource_type_icons) 
+            { ?>
+            <div class="ResourceTypeIcon<?php
+            if (array_key_exists($result[$n]['resource_type'], $resource_type_icons_mapping))
+                {
+                echo ' fa fa-fw fa-' . $resource_type_icons_mapping[$result[$n]['resource_type']];  
+                }
+            ?>" ></div>
+            <?php 
+            } ?>
 		<table border="0" class="ResourceAlign"><tr><td>
 		
 		<?php if ($result[$n]["has_image"]==1) {
