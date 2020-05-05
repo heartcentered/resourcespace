@@ -14,12 +14,7 @@ include_once (dirname(__FILE__)."/../include/meta_functions.php");
 include_once (dirname(__FILE__)."/../include/csv_functions.php");
 	
 $fd="user_{$userref}_uploaded_meta";			// file descriptor for uploaded file
-$override_fields=array("status","access");		// user can set if empty or override these fields
-//$process_csv            = (getvalescaped("process_csv","")!="" && enforcePostRequest(false));
 $allfields              = get_resource_type_fields();
-$override               = getvalescaped("override","");
-
-
 $csv_set_options = array();
 $csv_saved_options = getval("saved_csv_options","");
 
@@ -74,8 +69,6 @@ foreach($csv_settings as $csv_setting => $csv_setting_default)
         $csv_set_options[$csv_setting] = $csv_setting_default;
         }
     }
-
-
 
 $selected_columns = array();
 $selected_columns[] = $csv_set_options["resource_type_column"];
@@ -386,12 +379,9 @@ switch($csvstep)
             }
         else
             {
-            // Step 2(b) Update existing
-            //- Duplicate match handling - Update all or none and report at end
-            
+            // Step 2(b) Update existing            
             echo "<h2>" . $lang["csv_upload_update_existing_title"] . "</h2>";
             echo "<p>" . $lang["csv_upload_update_existing_notes"] . "</p>";
-
             ?>
             <form action="<?php echo $_SERVER["SCRIPT_NAME"]; ?>" id="upload_csv_form" method="post" enctype="multipart/form-data" onSubmit="return CentralSpacePost(this,true);" >
             <?php generateFormToken("upload_csv_form"); ?>
@@ -420,7 +410,6 @@ switch($csvstep)
                         <?php
                         foreach($csv_info as $csv_column => $csv_field_data)
                             {
-                            //echo "<option value=\"" . $csv_column . "\" " . ((($csv_set_options["resource_type_column"] != "" && $csv_set_options["resource_type_column"] == $csv_column) || strtolower($csv_field_data["header"])) == strtolower($lang["resourcetype"]) ? " selected " : "") . ">" . htmlspecialchars($csv_field_data["header"]) . "</option>\n";
                             echo "<option value=\"" . $csv_column . "\" ";
                             if(
                                 ($csv_set_options["resource_type_column"] != "" && $csv_set_options["resource_type_column"] == $csv_column)
@@ -445,7 +434,6 @@ switch($csvstep)
                         foreach($csv_info as $csv_column => $csv_field_data)
                             {
                             echo "<option value=\"" . $csv_column . "\" ";
-                           //echo "<option value=\"" . $csv_column . "\"  " . ($csv_set_options["id_column"] == $csv_column ? " selected " : "") . ">" . htmlspecialchars($csv_field_data["header"]) . "</option>\n";
                             if(
                                 ($csv_set_options["id_column"] != "" && $csv_set_options["id_column"] == $csv_column)
                                 || 
@@ -509,9 +497,9 @@ switch($csvstep)
                 <div class="Listview">
                     <table id="csv_upload_table" border="0" cellspacing="0" cellpadding="0" class="ListviewStyle">
                     <tr class="ListviewTitleStyle"> 
-                        <th>Column Header</th>
-                        <th>Field</th>
-                        <th>Sample data</th>
+                        <th><?php echo $lang["csv_upload_mapping_header"]; ?></th>
+                        <th><?php echo $lang["field"]; ?></th>
+                        <th><?php echo $lang["csv_upload_mapping_csv_data"]; ?></th>
                     </tr>
 
                     <?php
@@ -524,7 +512,7 @@ switch($csvstep)
                         echo "<tr>";
                         echo "<td><div class='fixed medwidth' >". htmlspecialchars($csv_field_data["header"]) . "</div></td>\n";
                         echo "<td><select name='fieldmapping[" . $csv_column  . "]' class='stdwidth columnselect'>";
-                        echo "<option value=''>DO NOT USE</option>";
+                        echo "<option value=''>" . $lang["csv_upload_mapping_ignore"] . "</option>";
                         foreach($allfields as $field)
                             {
                             echo "<option value=\"" . $field["ref"] . "\" ";

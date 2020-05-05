@@ -52,5 +52,6 @@ $lang["csv_upload_upload_config"]               = "Upload CSV configuration file
 $lang["csv_upload_upload_config_question"]      = "Upload CSV configuration file? Use this if you have uploaded a similar CSV before and have saved the configuration";
 $lang["csv_upload_upload_config_set"]           = "CSV configuration set";
 $lang["csv_upload_upload_config_clear"]         = "Clear CSV mapping configuration";
-
-
+$lang["csv_upload_mapping_ignore"]              = "DO NOT USE";
+$lang["csv_upload_mapping_header"]              = "Column Header";
+$lang["csv_upload_mapping_csv_data"]            = "Sample data from CSV";
