@@ -320,35 +320,34 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                 $currentoptions = array();
                 $field_nodes   = get_nodes($fieldid,'', (FIELD_TYPE_CATEGORY_TREE == $field_type));
                 $node_options = array_column($field_nodes, 'name', 'ref');
-                }
-
-            foreach($field_nodes as $field_node)
-                {
-                // Create array to hold all translations for a node so that any translation can match the correct node
-                $node_translations[$field_node["ref"]] = array();
-                $nodetranslations = explode('~', $field_node["name"]);
-
-                if(count($nodetranslations) < 2)
+                foreach($field_nodes as $field_node)
                     {
-                    $currentoptions[]=mb_strtolower(trim($field_node['name'])); # Not a translatable field
-                    $node_translations[$field_node["ref"]][] = trim($field_node['name']);
-                    }
-                else
-                    {
-                    for ($n=1;$n<count($nodetranslations);$n++)
+                    // Create array to hold all translations for a node so that any translation can match the correct node
+                    $node_translations[$field_node["ref"]] = array();
+                    $nodetranslations = explode('~', $field_node["name"]);
+
+                    if(count($nodetranslations) < 2)
                         {
-                        if (substr($nodetranslations[$n],2,1)!=":" && substr($nodetranslations[$n],5,1)!=":" && substr($nodetranslations[$n],0,1)!=":")
+                        $currentoptions[]=mb_strtolower(trim($field_node['name'])); # Not a translatable field
+                        $node_translations[$field_node["ref"]][] = trim($field_node['name']);
+                        }
+                    else
+                        {
+                        for ($n=1;$n<count($nodetranslations);$n++)
                             {
-                            # Not a translated string, return as-is
-                            $currentoptions[]=mb_strtolower(trim($field_node['name']));
-                            $node_translations[$field_node["ref"]][] = trim($field_node['name']);
-                            }
-                        else
-                            {
-                            # Support both 2 character and 5 character language codes (for example en, en-US)
-                            $p=strpos($nodetranslations[$n],':');                        
-                            $currentoptions[]=mb_strtolower(trim(substr($nodetranslations[$n],$p+1)));
-                            $node_translations[$field_node["ref"]][] = trim(substr($nodetranslations[$n],$p+1));
+                            if (substr($nodetranslations[$n],2,1)!=":" && substr($nodetranslations[$n],5,1)!=":" && substr($nodetranslations[$n],0,1)!=":")
+                                {
+                                # Not a translated string, return as-is
+                                $currentoptions[]=mb_strtolower(trim($field_node['name']));
+                                $node_translations[$field_node["ref"]][] = trim($field_node['name']);
+                                }
+                            else
+                                {
+                                # Support both 2 character and 5 character language codes (for example en, en-US)
+                                $p=strpos($nodetranslations[$n],':');                        
+                                $currentoptions[]=mb_strtolower(trim(substr($nodetranslations[$n],$p+1)));
+                                $node_translations[$field_node["ref"]][] = trim(substr($nodetranslations[$n],$p+1));
+                                }
                             }
                         }
                     }
@@ -636,13 +635,19 @@ function csv_upload_get_info($filename, &$messages)
         }
 
     $row = 0;
-    while (($data= fgetcsv($file))!=false && $row < 20)
+    $founddata = array();
+    while ((($data= fgetcsv($file)) != false) && count($founddata) < $headercount)
         {
         for($c=0;$c<$headercount;$c++)
             {
-            $csv_data[$c]["values"][$row] = isset($data[$c]) ? $data[$c] : "";
+            if(isset($data[$c]) && trim($data[$c]) != "")
+                {
+                $csv_data[$c]["values"][$row] = mb_substr($data[$c],0,30) . (mb_strlen($data[$c]) > 30 ? "..." : "");
+                $founddata[$c] = true;
+                }
             }
         $row++;
         }
+
     return $csv_data;
     }
