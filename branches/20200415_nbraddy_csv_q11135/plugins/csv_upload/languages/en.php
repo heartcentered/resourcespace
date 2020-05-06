@@ -35,14 +35,14 @@ $lang["csv_upload_create_new_title"]            = "Create new resources";
 $lang["csv_upload_create_new_notes"]            = "Select the options required to create new resources";
 
 $lang["csv_upload_map_fields_notes"]            = "Match the columns in the CSV to the required metadata fields. Clicking 'Next' will check the CSV without actually changing data";
-$lang["csv_upload_map_fields_auto_notes"]       = "Metadata fields have been pre-selected based on names or titles but please chck that these are correct";
+$lang["csv_upload_map_fields_auto_notes"]       = "Metadata fields have been pre-selected based on names or titles but please check that these are correct";
 $lang["csv_upload_workflow_column"]             = "Select the column that contains the workflow state ID";
 $lang["csv_upload_workflow_default"]            = "Default workflow state if no column selected or if no valid state found in column";
 $lang["csv_upload_access_column"]               = "Select the column that contains the access level (0=Open, 1=Restricted, 2=Confidential)";
 $lang["csv_upload_access_default"]              = "Default access level if no column is selected or if no valid access found in column";
-$lang["csv_upload_resource_type_column"]        = "Select the column that contains the resource type identifer";
+$lang["csv_upload_resource_type_column"]        = "Select the column that contains the resource type identifier";
 $lang["csv_upload_resource_type_default"]       = "Default resource type if no column selected or if no valid type is found in column";
-$lang["csv_upload_resource_match_column"]       = "Select the column that contains the resource type identifer";
+$lang["csv_upload_resource_match_column"]       = "Select the column that contains the resource identifier";
 $lang["csv_upload_match_type"]                  = "Match resource based on resource ID or metadata field value?";
 $lang["csv_upload_multiple_match_action"]       = "Action to take if multiple matching resources are found";
 $lang["csv_upload_validation_notes"]            = "Check the validation messages below before proceeding. Click Process to process the changes";

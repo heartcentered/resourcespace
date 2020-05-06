@@ -138,7 +138,11 @@ jQuery('document').ready(function()
         {
         selcolumn  = this.value;
         prevcolumn = jQuery(this).attr("prev");
-        
+        if(selcolumn == '')
+            {
+            return;
+            }
+
         console.log("selected: " + selcolumn);
         console.log("prev:      " + prevcolumn);
         
@@ -525,12 +529,14 @@ switch($csvstep)
                                 echo " selected ";
                                 }
                             echo  ">" . htmlspecialchars($field["title"]) . "</option>\n";
-
-
-                           // echo "<option value='" . $field["ref"] . "' " . (in_array(mb_strtolower($csv_field_data["header"]), array(mb_strtolower($field["name"]),mb_strtolower($field["title"]))) ? " selected " : "") . " >" . $field["title"] . "</option>\n";
                             }
                         echo "</select></td>";
-                        echo "<td>[" . htmlspecialchars(implode("],[",array_slice(array_filter($csv_field_data["values"]),0,5))) . "]</td>";
+                        echo "<td>";
+                        if(count($csv_field_data["values"]) > 0)
+                            {
+                            echo "<div class=\"keywordselected\">" . implode("</div><div class=\"keywordselected\">",array_slice(array_filter($csv_field_data["values"],"htmlspecialchars"),0,5)) . "</div></td>";
+                            }
+                        echo "</td>";
                         echo "</tr>";
                         }
                     ?>
