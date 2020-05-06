@@ -890,17 +890,38 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
                     }
                 }
     
-            $actions_array = array_merge($collection_actions_array, $search_actions_array);
-            
+            /**
+            * @var A global variable that allows other parts in ResourceSpace to append extra options to the actions 
+            * unified dropdown (plugins can use existing hooks). It is recommended to unset it after calling render_actions()
+            */
+            $render_actions_extra_options = array();
+            if(
+                isset($GLOBALS["render_actions_extra_options"])
+                && is_array($GLOBALS["render_actions_extra_options"])
+                && !empty($GLOBALS["render_actions_extra_options"]))
+                {
+                $render_actions_extra_options = $GLOBALS["render_actions_extra_options"];
+                }
+
+            $actions_array = array_merge($collection_actions_array, $search_actions_array, $render_actions_extra_options);
+
             $modify_actions_array = hook('modify_unified_dropdown_actions_options', '', array($actions_array,$top_actions));
 
-	if(!empty($modify_actions_array))
+            if(!empty($modify_actions_array))
                 {
                 $actions_array = $modify_actions_array;
                 }
 
+            /**
+            * @var A global variable that allows other parts in ResourceSpace to filter actions options (plugins can use 
+            * existing hooks). It is recommended to unset it after calling render_actions()
+            */
+            if(isset($GLOBALS["render_actions_filter"]) && is_callable($GLOBALS["render_actions_filter"]))
+                {
+                $actions_array = array_filter($actions_array, $GLOBALS["render_actions_filter"]);
+                }
+
             // Sort array into category groups
-           
             usort($actions_array, function($a, $b){
                if(isset($a['category']) && isset($b['category']))
                     {

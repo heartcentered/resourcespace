@@ -978,7 +978,9 @@ $lang['email_error_user_list_not_valid'] = 'No valid emails to send to (users mi
 
 # New for 1.3
 $lang["savesearchitemstocollection"]="Save results to collection";
+$lang["add_selected_to_collection"] = "Add selected to collection";
 $lang["removeallresourcesfromcollection"]="Remove all resources from this collection";
+$lang["remove_selected_from_collection"] = "Remove selected from this collection";
 $lang['deleteallresourcesfromcollection'] = 'Delete all resources';
 $lang["deleteallsure"]="Are you sure you wish to DELETE these resources? This will delete the resources themselves, not just remove them from this collection.";
 $lang["batchdonotaddcollection"]="(do not add to a collection)";
@@ -1036,6 +1038,7 @@ $lang["removetext"]="Remove text / option(s)";
 $lang["find"]="Find";
 $lang["andreplacewith"]="...and replace with...";
 $lang["relateallresources"]="Relate all resources in this collection";
+$lang["relate_selected_resources"] = "Relate selected resources";
 $lang['relateallresources_confirmation'] = 'All resources in this collection are now related';
 
 # New for 1.5
@@ -1916,6 +1919,7 @@ $lang["requestassignedtoyoumail"]="A resource request has been assigned to you f
 
 $lang["manageresources-overquota"]="Resource management disabled - you have exceeded your disk usage quota";
 $lang["searchitemsdiskusage"]="Disk space used by results";
+$lang["selected_items_disk_usage"] = "Disk space used by selected";
 $lang['collection_disk_usage'] = 'Disk space used by all resources';
 $lang["matchingresourceslabel"]="Matching resources";
 
