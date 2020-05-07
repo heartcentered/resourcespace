@@ -1238,7 +1238,14 @@ if($responsive_ui)
             }
 
         $url=generateURL($baseurl . "/pages/search.php",$searchparams); // Moved above render_actions as $url is used to render search actions
-        render_actions($collectiondata,true,false);
+        if($use_checkboxes_for_selection && $selection_collection_resources_count > 0)
+            {
+            render_selected_collection_actions();
+            }
+        else
+            {
+            render_actions($collectiondata, true, false);
+            }
 
         hook("search_header_after_actions");
 

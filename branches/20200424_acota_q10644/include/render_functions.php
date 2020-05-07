@@ -3133,3 +3133,66 @@ function render_clear_selected_btn()
 
     return render_filter_bar_button($lang["clear_selected"], $attributes, ICON_REMOVE);
     }
+
+
+/**
+* Render the actions specific to when a user selected resources (using the special "COLLECTION_TYPE_SELECTION" collection)
+* 
+* @return void
+*/
+function render_selected_collection_actions()
+    {
+    global $USER_SELECTION_COLLECTION, $usercollection, $usersession, $lang, $CSRF_token_identifier, $search,
+           $render_actions_extra_options, $render_actions_filter, $resources_count;
+
+    $orig_search = $search;
+    $search = "!collection{$USER_SELECTION_COLLECTION}";
+
+    $selected_resources = get_collection_resources($USER_SELECTION_COLLECTION);
+    $resources_count = count($selected_resources);
+    $usercollection_resources = get_collection_resources($usercollection);
+    $refs_to_remove = count(array_intersect($selected_resources, $usercollection_resources));
+    $collection_data = get_collection($USER_SELECTION_COLLECTION);
+
+    $valid_selection_collection_actions = array(
+        "relate_all",
+        "save_search_items_to_collection",
+        "remove_selected_from_collection",
+        "search_items_disk_usage",
+        "csv_export_results_metadata",
+        // @todo: add share selction
+    );
+
+    if($refs_to_remove > 0)
+        {
+        $callback_csrf_token = generateCSRFToken($usersession, "remove_selected_from_collection");
+        $render_actions_extra_options = array(
+            array(
+                "value" => "remove_selected_from_collection",
+                "label" => $lang["remove_selected_from_collection"],
+                "data_attr" => array(
+                    "callback" => "RemoveSelectedFromCollection('{$CSRF_token_identifier}', '{$callback_csrf_token}');",
+                ),
+                "category" => ACTIONGROUP_COLLECTION,
+            ),
+        );
+        }
+    $render_actions_filter = function($action) use ($valid_selection_collection_actions)
+        {
+        return in_array($action["value"], $valid_selection_collection_actions);
+        };
+
+    // override the language for actions as it's now specific to a selection of resources
+    $lang["relateallresources"] = $lang["relate_selected_resources"];
+    $lang["savesearchitemstocollection"] = $lang["add_selected_to_collection"];
+    $lang["searchitemsdiskusage"] = $lang["selected_items_disk_usage"];
+    $lang["csvExportResultsMetadata"] = $lang["csvExportResultsMetadata"];
+
+    render_actions($collection_data, true, false);
+
+    $search = $orig_search;
+    unset($render_actions_extra_options);
+    unset($render_actions_filter);
+
+    return;
+    }
