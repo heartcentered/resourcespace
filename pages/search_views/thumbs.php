@@ -49,7 +49,7 @@ if (!hook("renderresultthumb"))
         }; 
 
     $class = array();
-    if(in_array($ref, $selection_collection_resources))
+    if($use_checkboxes_for_selection && in_array($ref, $selection_collection_resources))
         {
         $class[] = "Selected";
         }
@@ -351,9 +351,11 @@ if (!hook("renderresultthumb"))
         ?>
         <!-- Checkboxes -->
         <div class="ResourcePanelIcons">
-            <?php
-            hook("thumblistextras");  // add icons for resourceconnect
+        <?php
+        hook("thumblistextras");  // add icons for resourceconnect
 
+        if($use_checkboxes_for_selection)
+            {
             if(!hook("thumbscheckboxes"))
                 {
                 if(!in_array($result[$n]['resource_type'],$collection_block_restypes))  
@@ -380,6 +382,7 @@ if (!hook("renderresultthumb"))
                     <?php
                     }
                 } # end hook thumbscheckboxes
+            }
         if(!hook("replacethumbsidinthumbnail"))
             {
             if ($display_resource_id_in_thumbnail && $ref>0) 
