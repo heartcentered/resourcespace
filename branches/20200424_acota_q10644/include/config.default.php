@@ -93,6 +93,9 @@ $scramble_key="abcdef123";
 # global number of installations, users and resources.
 $send_statistics=true;
 
+# The level of PHP error reporting to use. By default, hide warnings.
+$config_error_reporting=E_ALL & ~E_WARNING & ~E_NOTICE;
+
 # Enable work-arounds required when installed on Microsoft Windows systems
 $config_windows=false;
 
@@ -1833,6 +1836,9 @@ $view_title_field=8;
 # Searchable Date Field:
 $date_field=12; 
 
+# Search for dates into the future. Allows the specified number of years ahead of this year to be added to the year drop down used by simple and advanced search.
+$maxyear_extends_current=0;
+
 # Data Joins -- Developer's tool to allow adding additional resource field data to the resource table for use in search displays.
 # ex. $data_joins=array(13); to add the expiry date to the general search query result.  
 $data_joins=array();
@@ -3196,6 +3202,10 @@ $resource_view_use_pre = false;
 
 # Only use use the larger layout on the view page for certain file extensions.
 # $resource_view_large_ext = array("jpg", "jpeg", "tif", "tiff", "gif", "png", "svg");
+
+# Use the larger layout on the view page for landscape images, smaller layout for portrait images.
+# NOTE: Enabling $resource_view_large_ext will override this.
+$resource_view_large_orientation = false;
 
 # Show geographical search results in a modal
 $geo_search_modal_results = true;
