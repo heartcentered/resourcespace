@@ -1,6 +1,6 @@
 <?php
 $class = array();
-if(in_array($ref, $selection_collection_resources))
+if($use_checkboxes_for_selection && in_array($ref, $selection_collection_resources))
     {
     $class[] = "Selected";
     }
