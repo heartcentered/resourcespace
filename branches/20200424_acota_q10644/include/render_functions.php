@@ -3160,7 +3160,7 @@ function render_selected_collection_actions()
         "remove_selected_from_collection",
         "search_items_disk_usage",
         "csv_export_results_metadata",
-        // @todo: add share selction
+        "share_collection",
     );
 
     if($refs_to_remove > 0)
@@ -3186,7 +3186,7 @@ function render_selected_collection_actions()
     $lang["relateallresources"] = $lang["relate_selected_resources"];
     $lang["savesearchitemstocollection"] = $lang["add_selected_to_collection"];
     $lang["searchitemsdiskusage"] = $lang["selected_items_disk_usage"];
-    $lang["csvExportResultsMetadata"] = $lang["csvExportResultsMetadata"];
+    $lang["share"] = $lang["share_selected"];
 
     render_actions($collection_data, true, false);
 
