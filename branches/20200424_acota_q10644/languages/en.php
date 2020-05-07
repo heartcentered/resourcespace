@@ -980,7 +980,7 @@ $lang['email_error_user_list_not_valid'] = 'No valid emails to send to (users mi
 $lang["savesearchitemstocollection"]="Save results to collection";
 $lang["add_selected_to_collection"] = "Add selected to collection";
 $lang["removeallresourcesfromcollection"]="Remove all resources from this collection";
-$lang["remove_selected_from_collection"] = "Remove selected from this collection";
+$lang["remove_selected_from_collection"] = "Remove selected from collection";
 $lang['deleteallresourcesfromcollection'] = 'Delete all resources';
 $lang["deleteallsure"]="Are you sure you wish to DELETE these resources? This will delete the resources themselves, not just remove them from this collection.";
 $lang["batchdonotaddcollection"]="(do not add to a collection)";
@@ -1854,6 +1854,7 @@ $lang["error-plugin-not-activated"] = "Plugin not activated";
 $lang["error-failed-to-delete"] = "Failed to delete";
 $lang["error-failed-to-move"] = "Failed to move";
 $lang["error-request-missing-key"] = "Request missing the '%key' parameter."; # %key will be replaced with the missing POST param name required
+$lang["error-collection-unreadable"] = "Your user doesn't have read access to collection #%ref."; # %ref will be replaced with the actual collection ref
 
 $lang["no-options-available"]="No options available";
 $lang["header-upload-subtitle"] = "Step %number: %subtitle"; # %number, %subtitle will be replaced, e.g. Step 1: Specify Default Content For New Resources

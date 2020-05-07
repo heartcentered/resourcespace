@@ -28,7 +28,7 @@ switch ($type)
         $archive = getvalescaped("archive", "0");
         $per_page = getvalescaped("per_page", null, true);
         $offset = getvalescaped("offset", null, true);
-        $fetchrows = (!is_null($per_page) || !is_null($offset) ? $per_page + $offset : -1);
+        $fetchrows = (!is_null($per_page) && !is_null($offset) ? $per_page + $offset : -1);
         $sort = getvalescaped("sort", "desc");
         // $access_override = false;
         $starsearch = getvalescaped("starsearch", 0, true);
@@ -67,26 +67,18 @@ switch ($type)
             "remove_selected_from_collection",
             "search_items_disk_usage",
             "csv_export_results_metadata",
-            // todo: add share selction
+            // @todo: add share selction
         );
 
+        $callback_csrf_token = generateCSRFToken($usersession, "remove_selected_from_collection");
+
         $render_actions_extra_options = array(
+            // @todo: might have to add this after we check there are any selected resources in the usercollection
             array(
                 "value" => "remove_selected_from_collection",
                 "label" => $lang["remove_selected_from_collection"],
-                "data-attr" => array(
-                    "url" => generateURL(
-                        "{$baseurl_short}pages/collections.php",
-                        array(
-                            "removesearch" => $search,// find how to remove search from collection (if it exists)
-                            "restypes" => $restypes,
-                            "order_by" => $order_by,
-                            "sort" => $sort,
-                            "archive" => $archive,
-                            "mode" => "resources",
-                            "starsearch" => $starsearch,
-                        )
-                    )
+                "data_attr" => array(
+                    "callback" => "RemoveSelectedFromCollection('{$CSRF_token_identifier}', '{$callback_csrf_token}');",
                 ),
                 "category" => ACTIONGROUP_COLLECTION,
             ),

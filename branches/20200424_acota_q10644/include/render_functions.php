@@ -1195,7 +1195,22 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
 
                 default:
                     var option_url = jQuery('#<?php echo $action_selection_id; ?> option:selected').data('url');
-                    CentralSpaceLoad(option_url, true);
+                    var option_callback = jQuery('#<?php echo $action_selection_id; ?> option:selected').data('callback');
+
+                    // If action option has a defined data-callback attribute, then we can call it
+                    // IMPORTANT: never allow callback data attribute to be input/saved by user. Only ResourceSpace should
+                    // generate the callbacks - key point is "generate"
+                    if(typeof option_callback !== "undefined")
+                        {
+                        eval(option_callback);
+                        }
+
+                    // If action option has a defined data-url attribute, then we can CentralSpaceLoad it
+                    if(typeof option_url !== "undefined")
+                        {
+                        CentralSpaceLoad(option_url, true);
+                        }
+    
                     break;
                 }
 				
