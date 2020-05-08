@@ -423,13 +423,17 @@ function UpdateSelectedUnifiedActions(clear)
     {
     console.debug("UpdateSelectedUnifiedActions(clear = %o)", clear);
 
+    var search_action_selection = jQuery("select[id^=search_action_selection");
+    var load_actions_action_selection = jQuery("select[id^=load_actions_action_selection").parent();
+    var actionspace = (!search_action_selection.length ? load_actions_action_selection : search_action_selection);
+
     if(clear)
         {
-        alert("to implement in UpdateSelectedUnifiedActions()!");
+        LoadActions("search", actionspace.parent(), "search", null, searchparams);
         return;
         }
 
-    LoadActions("search", jQuery("#search_action_selection").parent(), "selection_collection", null, searchparams);
+    LoadActions("search", actionspace.parent(), "selection_collection", null, searchparams);
 
     return;
     }
