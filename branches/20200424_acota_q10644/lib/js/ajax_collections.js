@@ -17,12 +17,6 @@ function ChangeCollection(collection,k,last_collection,searchParams) {
     PopCollection(thumbs);
     // Set the collection and update the count display
     CollectionDivLoad(baseurl_short + 'pages/collections.php?collection=' + collection + '&thumbs=' + thumbs + '&last_collection=' + last_collection + '&k=' + k + '&' +searchParams);
-
-    jQuery("#CollectionDiv").one("CollectionDiv_loaded", function(e)
-        {
-        usercollection = parseInt(collection, 10);
-        console.debug("Successfully changed collection to %i", usercollection);
-        });
 }
 
 function UpdateCollectionDisplay(k) {
