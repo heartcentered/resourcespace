@@ -120,7 +120,7 @@ if (!checkperm("c"))
 ?>
 
 <div class="BasicsBox">
-<h1><?php echo $lang["csv_upload_nav_link"]; ?></h1>
+<h1><?php echo $lang["csv_upload_nav_link"]; render_help_link("plugins/csv-upload");?></h1>
 <h2><?php echo $lang["csv_upload_step" . $csvstep]; ?></h2>
 
 <script>
@@ -516,14 +516,17 @@ switch($csvstep)
                         echo "<tr>";
                         echo "<td><div class='fixed medwidth' >". htmlspecialchars($csv_field_data["header"]) . "</div></td>\n";
                         echo "<td><select name='fieldmapping[" . $csv_column  . "]' class='stdwidth columnselect'>";
-                        echo "<option value=''>" . $lang["csv_upload_mapping_ignore"] . "</option>";
+                        echo "<option value='-1' " . ((isset($csv_set_options["fieldmapping"][$csv_column]) && $csv_set_options["fieldmapping"][$csv_column] == -1) ? "selected" : "") . ">" . $lang["csv_upload_mapping_ignore"] . "</option>";
                         foreach($allfields as $field)
                             {
                             echo "<option value=\"" . $field["ref"] . "\" ";
                             if(
                                 (isset($csv_set_options["fieldmapping"][$csv_column]) && $csv_set_options["fieldmapping"][$csv_column] == $field["ref"])
                                 || 
-                                in_array(mb_strtolower($csv_field_data["header"]), array(mb_strtolower($field["name"]),mb_strtolower($field["title"])))
+                                    (in_array(mb_strtolower($csv_field_data["header"]), array(mb_strtolower($field["name"]),mb_strtolower($field["title"])))
+                                    &&
+                                    !(isset($csv_set_options["fieldmapping"][$csv_column]) && $csv_set_options["fieldmapping"][$csv_column] == -1)
+                                    )
                                 )
                                 {
                                 echo " selected ";
