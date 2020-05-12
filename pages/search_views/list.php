@@ -1,6 +1,6 @@
 <?php
 $class = array();
-if($use_checkboxes_for_selection && in_array($ref, $selection_collection_resources))
+if($use_selection_collection && in_array($ref, $selection_collection_resources))
     {
     $class[] = "Selected";
     }
@@ -14,7 +14,7 @@ if (!hook("replacelistitem"))
     <?php 
     if(!hook("listcheckboxes"))
         {
-        if ($use_checkboxes_for_selection)
+        if ($use_selection_collection)
             {
             if(!in_array($result[$n]['resource_type'],$collection_block_restypes))
                 {?>
