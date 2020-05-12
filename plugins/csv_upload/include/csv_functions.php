@@ -60,7 +60,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
         }
 	array_push ($messages,"Processing " . count($csv_set_options["fieldmapping"]) . " metadata columns");
 
-	while ((($line=fgetcsv($file))!==false) && $error_count<$max_error_count)
+	while ((($line=fgetcsv($file))!==false) && ($error_count<$max_error_count || $max_error_count==0))
 		{
         $line_count++;
 		if (!$processcsv && count($line) != count($headers))	// check that the current row has the correct number of columns
@@ -75,10 +75,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
         // Get the required resource type - needed before processing data so resources can be created
         if($csv_set_options["resource_type_column"] != "")
             {
-            //print_r($line);
             $resource_type_set = $line[$csv_set_options["resource_type_column"]];
-
-            //echo "- resource type in CSV : '" . $resource_type_set . "' from column " . $csv_set_options["resource_type_column"] .  "<br/>";
             if(trim($resource_type_set) == "")
                 {
                 if($csv_set_options["update_existing"])
@@ -149,7 +146,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                 }
             else
                 {
-                array_push($messages,"Warning: (line #" . count($line) . ")resource_type " . $resource_type_set . " (" . $resource_types[$resource_type_set]["name"] . ") has missing field headers (" . implode(",",$missing_fields) . ") and will be ignored");
+                array_push($messages,"Warning: (line #" . count($line) . ") resource_type " . $resource_type_set . " (" . $resource_types[$resource_type_set]["name"] . ") has missing field headers (" . implode(",",$missing_fields) . ") and will be ignored");
                 }
             }
 
@@ -191,6 +188,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                     }
                 elseif(count($validmatches) == 1)
                     {
+                    array_push ($messages,"Found resource ID : " . $validmatches[0] . " matching the identifier " . $match_val . " specified in line " . count($line));
                     $resourcerefs = $validmatches;
                     }
                 elseif($csv_set_options["multiple_match"])
@@ -256,12 +254,9 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                 }
             $resourcerefs = array($newref);
             }
-
-        if(!$processcsv)
-            {
-            array_push($messages," -  Updating resources: " . implode(",",$resourcerefs));
-            }
-
+        
+        array_push($messages," - " . ($processcsv ? "Updating" : "Update") . " resources: " . implode(",",$resourcerefs));
+        
 		$cell_count=-1;
 		$workflow_states = get_editable_states($userref);
 
@@ -270,10 +265,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
             {
             foreach($resourcerefs as $resource_id)
                 {
-                if(!$processcsv)
-                    {
-                    array_push($messages," -  Updating resouce type for resource id #" . $resource_id . " to " . $resource_type_set);
-                    }
+                array_push($messages," - " . ($processcsv ? "Updating" : "Update") . " resource type for resource id #" . $resource_id . " to " . $resource_type_set);
                 if($processcsv)
                     {
                     update_resource_type($resource_id,$resource_type_set);
@@ -291,7 +283,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                 ||
                 !isset($csv_set_options["fieldmapping"][$column_id])
                 ||
-                $csv_set_options["fieldmapping"][$column_id] == ""
+                $csv_set_options["fieldmapping"][$column_id] == -1
                 ||
                     (
                     $resource_type_set != 0
@@ -319,17 +311,18 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                 {
                 $currentoptions = array();
                 $field_nodes   = get_nodes($fieldid,'', (FIELD_TYPE_CATEGORY_TREE == $field_type));
+                $node_trans_arr[$fieldid] = array();
                 $node_options = array_column($field_nodes, 'name', 'ref');
                 foreach($field_nodes as $field_node)
                     {
                     // Create array to hold all translations for a node so that any translation can match the correct node
-                    $node_translations[$field_node["ref"]] = array();
+                    $node_trans_arr[$fieldid][$field_node["ref"]] = array();
                     $nodetranslations = explode('~', $field_node["name"]);
 
                     if(count($nodetranslations) < 2)
                         {
                         $currentoptions[]=mb_strtolower(trim($field_node['name'])); # Not a translatable field
-                        $node_translations[$field_node["ref"]][] = trim($field_node['name']);
+                        $node_trans_arr[$fieldid][$field_node["ref"]][] = trim($field_node['name']);
                         }
                     else
                         {
@@ -339,14 +332,14 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                                 {
                                 # Not a translated string, return as-is
                                 $currentoptions[]=mb_strtolower(trim($field_node['name']));
-                                $node_translations[$field_node["ref"]][] = trim($field_node['name']);
+                                $node_trans_arr[$fieldid][$field_node["ref"]][] = trim($field_node['name']);
                                 }
                             else
                                 {
                                 # Support both 2 character and 5 character language codes (for example en, en-US)
                                 $p=strpos($nodetranslations[$n],':');                        
                                 $currentoptions[]=mb_strtolower(trim(substr($nodetranslations[$n],$p+1)));
-                                $node_translations[$field_node["ref"]][] = trim(substr($nodetranslations[$n],$p+1));
+                                $node_trans_arr[$fieldid][$field_node["ref"]][] = trim(substr($nodetranslations[$n],$p+1));
                                 }
                             }
                         }
@@ -376,11 +369,16 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                     {
                     $cell_value_array =array_filter(array_map('trim', explode(",",$cell_value)));
                     }
-                else
+                elseif(trim($cell_value) != "")
                     {
                     // Make single value into a dummy array
                     $cell_value_array=array(trim($cell_value));
                     }
+                else
+                    {
+                    $cell_value_array=array();
+                    }
+
             $update_dynamic_field=false;
 
             # validate option against multiple option list 
@@ -417,10 +415,11 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                                     {
                                     $lastref = sql_value("SELECT MAX(ref) value FROM node;",0);
                                     $new_node  = isset($new_node) ? $new_node + 1 : $lastref + 1;
-                                    array_push($messages," -  Add new field option to field " . $field_name .  " as node " . $new_node . ", value:'" . $cell_value_item . "'");
+                                    array_push($messages," - " . ($processcsv ? "Added" : "Add") . " new field option to field " . $field_name .  " as node " . $new_node . ", value:'" . $cell_value_item . "'");
                                     }
-                                $node_translations[$new_node][] = $cell_value_item;
-                                $node_options[$new_node]        = $cell_value_item;
+                                
+                                $node_trans_arr[$fieldid][$new_node] = array($cell_value_item);
+                                $node_options[$new_node] = $cell_value_item;
                             break;
 
                             case (FIELD_TYPE_DATE_RANGE):
@@ -465,7 +464,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                 $nodes_to_remove    = array();
                 if ($processcsv)
                     {
-                    //echo "Updating resource " . $resource_id . ", field '" . $fieldid . "' with value '" . $cell_value . "'<br/>";
+                    //echo "" . ($processcsv ? "Updating" : "Update") . " resource " . $resource_id . ", field '" . $fieldid . "' with value '" . $cell_value . "'<br/>";
                     if($field_def['type']==FIELD_TYPE_DATE_RANGE)
                         {
                         # each value will be a node so we end up with a pair of nodes to represent the start and end dates
@@ -500,8 +499,8 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                         $daterangenodes     = array();
                         $daterangestartnode = set_node(null, $fieldid, $rangestart, null, null,true);
                         $daterangeendnode   = set_node(null, $fieldid, $rangeend, null, null,true);
-                        $node_options[$daterangestartnode]  = $rangestart;
-                        $node_options[$daterangeendnode]    = $rangeend;
+                        $node_trans_arr[$fieldid][$daterangestartnode]  = $rangestart;
+                        $node_trans_arr[$fieldid][$daterangeendnode]    = $rangeend;
                         $daterangenodes = array($daterangestartnode,$daterangeendnode);
 
                         $nodes_to_add = array_diff($daterangenodes, $current_field_nodes);
@@ -511,25 +510,27 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                         {
                         // Get currently selected nodes for this field 
                         $setnodes = array();
-                        //exit(print_r($node_translations));
                         $current_field_nodes = $csv_set_options["update_existing"] ? get_resource_nodes($resource_id, $fieldid) : array();
-                        foreach($node_translations as $node_id => $node_translation_arr)
+                        if(count($cell_value_array) > 0)
                             {
-                            foreach($node_translation_arr as $node_translation)
+                            foreach($node_trans_arr[$fieldid] as $node_id => $translations)
                                 {
-                                //echo "Checking for '" . htmlspecialchars($node_translation) . "' in ('" . implode("','",$cell_value_array) . "')<br/>";
-                                // Add to array of nodes, unless it has been added to array already as a parent for a previous node
-                                if (in_array($node_translation, $cell_value_array))
+                                foreach($translations as $translation)
                                     {
-                                    //echo "Found node " . $node_id . "<br/>";
-                                    $setnodes[] = $node_id;
-                                    // We need to add all parent nodes for category trees
-                                    if($field_def['type']==FIELD_TYPE_CATEGORY_TREE && $category_tree_add_parents) 
+                                    //echo "Checking for '" . htmlspecialchars($node_translation) . "' in ('" . implode("','",$cell_value_array) . "')<br/>";
+                                    // Add to array of nodes, unless it has been added to array already as a parent for a previous node
+                                    if (in_array($translation, $cell_value_array))
                                         {
-                                        $parent_nodes = get_parent_nodes($node_id);
-                                        foreach($parent_nodes as $parent_node_ref=>$parent_node_name)
+                                        //echo "Found node " . $node_id . "<br/>";
+                                        $setnodes[] = $node_id;
+                                        // We need to add all parent nodes for category trees
+                                        if($field_def['type']==FIELD_TYPE_CATEGORY_TREE && $category_tree_add_parents) 
                                             {
-                                            $setnodes[] = $parent_node_ref;
+                                            $parent_nodes = get_parent_nodes($node_id);
+                                            foreach($parent_nodes as $parent_node_ref=>$parent_node_name)
+                                                {
+                                                $setnodes[] = $parent_node_ref;
+                                                }
                                             }
                                         }
                                     }
@@ -543,7 +544,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                         update_field($resource_id, $fieldid, $cell_value);
                         }
 
-                    if(count($nodes_to_add)>0 || count($nodes_to_remove) > 0)
+                    if(count($nodes_to_add) > 0 || count($nodes_to_remove) > 0)
                         {
                         $new_nodes_val = "";
                         delete_resource_nodes($resource_id, $nodes_to_remove);
@@ -568,7 +569,7 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
                     }
                 elseif($cell_value != "")
                     {
-                    array_push($messages," -  Updating resource " . $resource_id . ", field '" . $field_name . "' with value '" . $cell_value . "'");
+                    array_push($messages," -  " . ($processcsv ? "Updating" : "Update") . " resource " . $resource_id . ", field '" . $field_name . "' with value '" . $cell_value . "'");
                     }
                 } // End of foreach resourcerefs
 
@@ -584,15 +585,15 @@ function csv_upload_process($filename,&$meta,$resource_types,&$messages,$max_err
 		array_push($messages,"Error: No lines of data found in file");
 		}
 
-	if ($error_count>0)
+	if ($error_count > 0 && !$processcsv)
 		{
-		if ($error_count==$max_error_count)
+		if ($max_error_count > 0 && $error_count>=$max_error_count)
 			{
 			array_push($messages,"Warning: Showing first {$max_error_count} data validation errors only - more may exist");
 			}
 		ini_set("auto_detect_line_endings", $save_auto_detect_line_endings);
 		return false;
-		}
+        }
 
 	array_push($messages,"Info: data successfully validated");
 

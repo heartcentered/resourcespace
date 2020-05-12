@@ -124,7 +124,7 @@ if (!checkperm("c"))
 <h2><?php echo $lang["csv_upload_step" . $csvstep]; ?></h2>
 
 <script>
-selectedcolumns = new Array(<?php echo ($selected_columns > 0) ? "'" . htmlspecialchars(implode(',',$selected_columns)) . "'" : ""; ?>);
+selectedFields = new Array();
 
 jQuery('document').ready(function()
     {
@@ -132,42 +132,53 @@ jQuery('document').ready(function()
     jQuery('.columnselect').each(function()
         {
         jQuery(this).attr("prev",this.value);
-        });
 
-    jQuery('.columnselect').change(function()
-        {
-        selcolumn  = this.value;
-        prevcolumn = jQuery(this).attr("prev");
-        if(selcolumn == '')
+        if(this.value == -1)
             {
             return;
             }
 
-        console.log("selected: " + selcolumn);
-        console.log("prev:      " + prevcolumn);
-        
-        jQuery(this).attr("prev",selcolumn);
-        if(prevcolumn != selcolumn)
+        selectedFields.push(this.value);
+        // Disable selected column options in other inputs
+        var fieldCount = selectedFields.length;
+        for (var i = 0; i < fieldCount; i++) 
             {
-            var index = selectedcolumns.indexOf(prevcolumn);
+            jQuery('.columnselect option[value="' + selectedFields[i] + '"]')
+            .not("option:selected",this)
+            .prop("disabled", true)
+            }
+        });
+
+    jQuery('.columnselect').change(function()
+        {
+        selField  = this.value;
+        prevField = jQuery(this).attr("prev");
+       
+        console.log("selected: " + selField);
+        console.log("prev:      " + prevField);
+        
+        jQuery(this).attr("prev",selField);
+        if(prevField != selField)
+            {
+            var index = selectedFields.indexOf(prevField);
             if (index !== -1) 
                 {
-                selectedcolumns.splice(index, 1);
+                selectedFields.splice(index, 1);
                 }
             }
-        if(!selectedcolumns.includes(selcolumn))
+        if(!selectedFields.includes(selField) && selField != -1)
             {
-            selectedcolumns.push(selcolumn);
+            selectedFields.push(selField);
             }
 
         // Re-enable options
         jQuery('.columnselect option').prop("disabled", false);
 
         // Disable selected column options in other inputs
-        var colCount = selectedcolumns.length;
-        for (var i = 0; i < colCount; i++) 
+        var fieldCount = selectedFields.length;
+        for (var i = 0; i < fieldCount; i++) 
             {
-            jQuery('.columnselect option[value="' + selectedcolumns[i] + '"]')
+            jQuery('.columnselect option[value="' + selectedFields[i] + '"]')
             .not("option:selected",this)
             .prop("disabled", true)
             }
@@ -598,7 +609,7 @@ switch($csvstep)
         // Process file
         $meta=meta_get_map();
         $messages=array();
-        csv_upload_process($csvfile,$meta,$resource_types,$messages,1,true,$csv_set_options);
+        csv_upload_process($csvfile,$meta,$resource_types,$messages,0,true,$csv_set_options);
         ?>
         <div class="BasicsBox">
             <textarea rows="20" cols="100"><?php
