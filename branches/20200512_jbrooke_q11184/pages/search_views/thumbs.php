@@ -204,7 +204,8 @@ if (!hook("renderresultthumb"))
                         />
                         <?php 
                         }
-                    hook("aftersearchimg","",array($result[$n]))?>
+                   hook("aftersearchimg","",array($result[$n], $thm_url, $display))
+                   ?>
                 </a>
                 <?php } ?>
             <?php 
