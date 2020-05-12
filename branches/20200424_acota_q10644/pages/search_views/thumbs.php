@@ -49,7 +49,7 @@ if (!hook("renderresultthumb"))
         }; 
 
     $class = array();
-    if($use_checkboxes_for_selection && in_array($ref, $selection_collection_resources))
+    if($use_selection_collection && in_array($ref, $selection_collection_resources))
         {
         $class[] = "Selected";
         }
@@ -354,7 +354,7 @@ if (!hook("renderresultthumb"))
         <?php
         hook("thumblistextras");  // add icons for resourceconnect
 
-        if($use_checkboxes_for_selection)
+        if($use_selection_collection)
             {
             if(!hook("thumbscheckboxes"))
                 {

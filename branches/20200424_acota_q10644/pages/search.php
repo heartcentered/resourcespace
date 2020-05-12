@@ -44,10 +44,10 @@ if ($k=="" || $internal_share_access)
     }
 
 // Disable checkboxes for external users.
-$use_checkboxes_for_selection = true;
+$use_selection_collection = true;
 if($k != "" && !$internal_share_access)
     {
-    $use_checkboxes_for_selection = false;
+    $use_selection_collection = false;
     }
 
 $search = getvalescaped('search', '');
@@ -417,7 +417,7 @@ $revsort = ($sort=="ASC") ? "DESC" : "ASC";
 $allow_reorder=false;
 
 # get current collection resources to pre-fill checkboxes
-if($use_checkboxes_for_selection)
+if($use_selection_collection)
     {
     $selection_collection_resources = get_collection_resources(get_user_selection_collection($userref));
     $selection_collection_resources_count = count($selection_collection_resources);
@@ -623,7 +623,7 @@ if($k=="" || $internal_share_access)
     <?php
     }
 
-if($use_checkboxes_for_selection)
+if($use_selection_collection)
     {
     ?>
     <script>
@@ -979,7 +979,7 @@ if($responsive_ui)
         <a href="#" id="Responsive_ResultDisplayOptions" class="ResourcePanel ResponsiveButton" style="display:none;"><?php echo $lang['responsive_result_settings']; ?></a>
         <div id="ResponsiveResultCount" style="display:none;">
         <?php
-        if($use_checkboxes_for_selection && $selection_collection_resources_count > 0)
+        if($use_selection_collection && $selection_collection_resources_count > 0)
             {
             echo render_selected_resources_counter(count($selection_collection_resources));
             }
@@ -1014,7 +1014,7 @@ if($responsive_ui)
     ?>
     <div id="SearchResultFound" class="InpageNavLeftBlock">
     <?php
-    if($use_checkboxes_for_selection && $selection_collection_resources_count > 0)
+    if($use_selection_collection && $selection_collection_resources_count > 0)
         {
         echo render_selected_resources_counter(count($selection_collection_resources));
         }
@@ -1238,7 +1238,7 @@ if($responsive_ui)
             }
 
         $url=generateURL($baseurl . "/pages/search.php",$searchparams); // Moved above render_actions as $url is used to render search actions
-        if($use_checkboxes_for_selection && $selection_collection_resources_count > 0)
+        if($use_selection_collection && $selection_collection_resources_count > 0)
             {
             render_selected_collection_actions();
             }
@@ -1253,7 +1253,7 @@ if($responsive_ui)
             {
             render_upload_here_button($searchparams);
 
-            if($use_checkboxes_for_selection && $selection_collection_resources_count > 0)
+            if($use_selection_collection && $selection_collection_resources_count > 0)
                 {
                 render_edit_selected_btn();
                 render_clear_selected_btn();
@@ -1415,7 +1415,7 @@ if($responsive_ui)
         <?php if(!hook("replacelistviewtitlerow")){?>   
         <tr class="ListviewTitleStyle">
         <?php if (!hook("listcheckboxesheader")){?>
-        <?php if ($use_checkboxes_for_selection){?><td><?php echo $lang['addremove'];?></td><?php } ?>
+        <?php if ($use_selection_collection){?><td><?php echo $lang['addremove'];?></td><?php } ?>
         <?php } # end hook listcheckboxesheader 
 
         for ($x=0;$x<count($df);$x++)
