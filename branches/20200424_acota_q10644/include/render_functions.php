@@ -3111,7 +3111,7 @@ function render_edit_selected_btn()
         ));
 
     $attributes  = " id=\"EditSelectedResourcesBtn\"";
-    $attributes .= " onclick=\"ModalLoad('{$batch_edit_url}', true);\"";
+    $attributes .= " onclick=\"CentralSpaceLoad('{$batch_edit_url}', true);\"";
 
     return render_filter_bar_button($lang["edit_selected"], $attributes, ICON_EDIT);
     }
