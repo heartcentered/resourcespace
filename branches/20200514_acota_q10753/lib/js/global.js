@@ -1507,13 +1507,14 @@ function unsetCookie(cookieName, cpath)
 	document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;path=' + cpath;	
 	}
 
+
+/**
+* Check if system upgrade is in progress. Reloads the page if it is to show user current status.
+* 
+* @return void
+*/
 function check_upgrade_in_progress()
     {
-    console.log("is upgrade_in_progress");
-    // ModalLoad(baseurl + "/pages/content.php?content=upgrade_in_progress", true, true, true);
-
-alert("continue check_upgrade_in_progress() in global.js");
-
     jQuery.ajax({
         type: 'GET',
         url: baseurl + "/pages/ajax/message.php",
@@ -1532,10 +1533,10 @@ alert("continue check_upgrade_in_progress() in global.js");
 
             if(response.data.upgrade_in_progress)
                 {
-                console.log("show upgrade_in_progress message!");
+                window.location.reload(true);
                 return;
                 }
-
-            console.log("hide upgrade_in_progress message!");
             });
+    
+    return;
     }

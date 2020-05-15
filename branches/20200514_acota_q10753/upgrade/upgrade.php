@@ -64,7 +64,16 @@ if (is_process_lock(PROCESS_LOCK_UPGRADE_IN_PROGRESS))
         }
     else
         {
+        echo "<h1>{$lang["upgrade_in_progress"]}</h1>";
         echo nl2br($message);
+        ?>
+        <script>
+        setTimeout(function()
+            {
+            window.location.reload(true);
+            }, 5000);
+        </script>
+        <?php
         }
     exit;
     }
