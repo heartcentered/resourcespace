@@ -93,6 +93,9 @@ $scramble_key="abcdef123";
 # global number of installations, users and resources.
 $send_statistics=true;
 
+# Query cache time in minutes. How long before the disk cache is refreshed for a given result set. Should not be necessary to change this.
+$query_cache_expires_minutes=30;
+
 # The level of PHP error reporting to use. By default, hide warnings.
 $config_error_reporting=E_ALL & ~E_WARNING & ~E_NOTICE;
 
@@ -741,6 +744,11 @@ $archive_search=false;
 # Display the Research Request functionality?
 # Allows users to request resources via a form, which is e-mailed.
 $research_request=false;
+
+# custom research request fields
+# see https://www.resourcespace.com/knowledge-base/resourceadmin/user-research-requests
+$custom_researchrequest_fields = array();
+
 
 # Country search in the right nav? (requires a field with the short name 'country')
 $country_search=false;

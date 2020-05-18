@@ -60,6 +60,9 @@ function activate_plugin($name)
 
         log_activity(null, LOG_CODE_ENABLED, $plugin_yaml_esc['version'], 'plugins', 'inst_version', $plugin_yaml_esc['name'], 'name', '', null, true);
 
+        // Clear query cache
+        clear_query_cache("plugins");
+
         hook("after_activate_plugin","",array($name));
         return true;
         }
@@ -92,6 +95,10 @@ function deactivate_plugin($name)
 
         log_activity(null, LOG_CODE_DISABLED, '', 'plugins', 'inst_version', $name, 'name', $inst_version, null, true);
         }
+
+    // Clear query cache
+    clear_query_cache("plugins");
+
     }
 
 /**
@@ -107,6 +114,9 @@ function deactivate_plugin($name)
 function purge_plugin_config($name)
     {
     sql_query("UPDATE plugins SET config=NULL, config_json=NULL where name='$name'");
+
+    // Clear query cache
+    clear_query_cache("plugins");
     }
 /**
  * Load plugin .yaml file.
@@ -344,6 +354,9 @@ function set_plugin_config($plugin_name, $config)
 
     sql_query("UPDATE plugins SET config='$config_ser_bin', config_json='$config_ser_json' WHERE name='$plugin_name'");
 
+    // Clear query cache
+    clear_query_cache("plugins");
+
     return true;
     }
 
@@ -357,7 +370,7 @@ function set_plugin_config($plugin_name, $config)
  */
 function is_plugin_activated($name)
     {
-    $activated = sql_query("SELECT name FROM plugins WHERE name='$name' and inst_version IS NOT NULL");
+    $activated = sql_query("SELECT name FROM plugins WHERE name='$name' and inst_version IS NOT NULL","plugins");
     if (is_array($activated) && count($activated)>0)
         {
         return true;
@@ -1335,10 +1348,19 @@ function plugin_activate_for_setup($plugin_name)
 	// Include <plugin>/hooks/all.php case functions are included here
 	$pluginpath=get_plugin_path($plugin_name);
 	$hookpath=$pluginpath . "/hooks/all.php";
-	if (file_exists($hookpath)) {include_once $hookpath;}	
-	
-	// Include plugin configuration
-	include_plugin_config($plugin_name);	
+    if (file_exists($hookpath)) {include_once $hookpath;}	
+
+    // Include plugin configuration	for displaying on Options page
+    $plugin_name = escape_check($plugin_name);
+    $active_plugin = sql_query("SELECT name,enabled_groups,config,config_json FROM plugins WHERE `name` = '{$plugin_name}' AND inst_version>=0 order by priority");
+    if (empty($active_plugin))
+        {
+        include_plugin_config($plugin_name);
+        }
+        else
+        {
+        include_plugin_config($plugin_name, $active_plugin[0]['config'], $active_plugin[0]['config_json']);
+        }   	
 	return true;
 	}
 
