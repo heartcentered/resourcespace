@@ -27,17 +27,18 @@ $z = intval($_GET['z']);
 
 $file = $tilecache."/${z}_${x}_$y.png";
 $gettile = true;
-while(((!is_file($file)
+while((     !is_file($file)
             ||
-            (filemtime($file)<time()-($geo_tile_cache_lifetime) && count($geo_tile_servers) > 0))
+            (filemtime($file)<time()-($geo_tile_cache_lifetime) && count($geo_tile_servers) > 0)
             ||
-            mime_content_type($file) != "image/png")
+            mime_content_type($file) != "image/png"
+            )
         && 
             $gettile
         )
     {
     if(count($geo_tile_servers) > 0)
-        {             
+        {
         // Try to get an updated tile from a tile server
         $rnd = rand(0,count($geo_tile_servers)-1);
         $url = 'https://'.$geo_tile_servers[$rnd];
@@ -66,6 +67,12 @@ while(((!is_file($file)
         {
         // Use included tiles
         $file = __DIR__ . "/../../gfx/geotiles/${z}_${x}_$y.png";
+        $gettile = false;
+        continue;
+        }
+    else
+        {
+        debug("Request for a map tile at resolution " . $z . " received but no tiles available at this resolution");
         $gettile = false;
         continue;
         }
