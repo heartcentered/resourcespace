@@ -253,8 +253,12 @@ function add_resource_to_collection($resource,$collection,$smartadd=false,$size=
 			sql_query("insert into collection_resource(resource,collection,purchase_size) values ('" . escape_check($resource) . "','" . escape_check($collection) . "','$size')");
 			}
 		
-		#log this
+		// log this
 		collection_log($collection,"a",$resource);
+
+		// Clear theme image cache
+		clear_query_cache("themeimage");
+
 		return true;
 		}
 	else
@@ -281,8 +285,12 @@ function remove_resource_from_collection($resource,$collection,$smartadd=false,$
 			sql_query("delete from external_access_keys where resource='" . escape_check($resource) . "' and collection='" . escape_check($collection) . "'");
 			}
 		
-		#log this
+		// log this
 		collection_log($collection,"r",$resource);
+
+		// Clear theme image cache
+		clear_query_cache("themeimage");
+
 		return true;
 		}
 	else
@@ -1693,7 +1701,7 @@ function get_theme_image($themes=array(), $collection="", $smart=false)
 		$sql = "SELECT ti.ref value from (" . $sqlselect . $orderby_theme . ") ti "
 		       .$orderby . " limit " . escape_check($theme_images_number);
 			   
-        $images=sql_array($sql,true);
+        $images=sql_array($sql,"themeimage");
         }
     if (count($images)>0) {return $images;}
 	return false;

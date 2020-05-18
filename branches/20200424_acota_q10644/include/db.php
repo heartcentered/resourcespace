@@ -397,7 +397,7 @@ if ($use_plugins_manager)
 		{
 		if ($plugin_name!='')
 			{
-			if (sql_value("SELECT inst_version AS value FROM plugins WHERE name='$plugin_name'",'')=='')
+			if (sql_value("SELECT inst_version AS value FROM plugins WHERE name='$plugin_name'",'',"plugins")=='')
 				{
 				# Installed plugin isn't marked as installed in the DB.  Update it now.
 				# Check if there's a plugin.yaml file to get version and author info.
@@ -413,7 +413,7 @@ if ($use_plugins_manager)
     # Need verbatim queries for this query
     $mysql_vq = $mysql_verbatim_queries;
     $mysql_verbatim_queries = true;
-	$active_plugins = sql_query("SELECT name,enabled_groups,config,config_json FROM plugins WHERE inst_version>=0 order by priority");
+	$active_plugins = sql_query("SELECT name,enabled_groups,config,config_json FROM plugins WHERE inst_version>=0 order by priority","plugins");
     $mysql_verbatim_queries = $mysql_vq;
 
     $active_yaml = array();
@@ -585,7 +585,7 @@ $pagefilter="AND (page = '" . $pagename . "' OR page = 'all' OR page = '' " .  (
 if ($pagename=="admin_content") {$pagefilter="";} # Special case for the team content manager. Pull in all content from all pages so it's all overridden.
 
 $site_text=array();
-$results=sql_query("select language,name,text from site_text where (page='$pagename' or page='all' or page='') and (specific_to_group is null or specific_to_group=0)");
+$results=sql_query("select language,name,text from site_text where (page='$pagename' or page='all' or page='') and (specific_to_group is null or specific_to_group=0)","sitetext");
 for ($n=0;$n<count($results);$n++) {$site_text[$results[$n]["language"] . "-" . $results[$n]["name"]]=$results[$n]["text"];}
 
 $query = sprintf('
@@ -602,7 +602,7 @@ $query = sprintf('
 	escape_check($defaultlanguage),
 	$pagefilter
 );
-$results=sql_query($query);
+$results=sql_query($query,"sitetext");
 
 // Create a new array to hold customised text at any stage, may be overwritten in authenticate.php. Needed so plugin lang file can be overidden if plugin only enabled for specific groups
 $customsitetext=array();
@@ -652,8 +652,6 @@ $hook_cache = array();
 $hook_cache_hits = 0;
 
 # Load the sysvars into an array. Useful so we can check migration status etc.
-// Note: We should really guard against this by using set_sysvar() and get_sysvar() instead.
-
 $systemvars = sql_query("SELECT name, value FROM sysvars");
 $sysvars = array();
 foreach($systemvars as $systemvar)
@@ -678,8 +676,14 @@ function set_sysvar($name,$value=null)
 // get a system variable (which is received from the sysvars table)
 function get_sysvar($name, $default=false)
     {
-    $name=escape_check($name);
-    return sql_value("SELECT `value` FROM `sysvars` WHERE `name`='{$name}'",$default);
+	// Check the global array.
+	global $sysvars;
+    if (isset($sysvars) && array_key_exists($name,$sysvars))
+        {
+        return $sysvars[$name];
+        }
+    // Value not set, return default
+    return $default;
     }
 
 function hook($name,$pagename="",$params=array(),$last_hook_value_wins=false)
@@ -903,13 +907,13 @@ function db_rollback_transaction($name)
     return false;
 	}        
 
-function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $reconnect=true, $fetch_specific_columns=false)
+function sql_query($sql,$cache="",$fetchrows=-1,$dbstruct=true, $logthis=2, $reconnect=true, $fetch_specific_columns=false)
     {
     # sql_query(sql) - execute a query and return the results as an array.
 	# Database functions are wrapped in this way so supporting a database server other than MySQL is 
 	# easier.
 	
-	# $cache - disk based caching - cache the results on disk.
+	# $cache - disk based caching - cache the results on disk, if a cache group is specified. The group allows selected parts of the cache to be cleared by certain operations, for example clearing all cached site content whenever site text is edited.
 	# At the moment this is basic and ignores $fetchrows and $fetch_specific_columns so isn't useful for queries employing those parameters
 
     # If $fetchrows is set we don't have to loop through all the returned rows. We
@@ -918,13 +922,15 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
     # result set has been returned as an array (as it was working previously).
 	# $logthis parameter is only relevant if $mysql_log_transactions is set.  0=don't log, 1=always log, 2=detect logging - i.e. SELECT statements will not be logged
     global $db, $config_show_performance_footer, $debug_log, $debug_log_override, $suppress_sql_log,
-    $mysql_verbatim_queries, $mysql_log_transactions, $storagedir, $scramble_key;
+    $mysql_verbatim_queries, $mysql_log_transactions, $storagedir, $scramble_key, $query_cache_expires_minutes, $query_cache_already_completed_this_time;
 	
 	// Check cache for this query
-	if ($cache)
+	$cache_write=false;
+	if ($cache!="" && (!isset($query_cache_already_completed_this_time) || !in_array($cache,$query_cache_already_completed_this_time))) // Caching active and this cache group has not been cleared by a previous operation this run
 		{
-		$cache_location=$storagedir . "/tmp/querycache";
-		$cache_file=$cache_location . "/" . md5($sql) . "_" . md5($scramble_key . $sql) . ".json"; // Scrambled path to cache
+		$cache_write=true;
+		$cache_location=get_query_cache_location();
+		$cache_file=$cache_location . "/" . $cache . "_" . md5($sql) . "_" . md5($scramble_key . $sql) . ".json"; // Scrambled path to cache
 		if (file_exists($cache_file))
 			{
 			$cachedata=json_decode(file_get_contents($cache_file),true);
@@ -932,7 +938,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 				{
 				if ($sql==$cachedata["query"]) // Query matches so not a (highly unlikely) hash collision
 					{
-					if (time()-$cachedata["time"]<(60*30)) // Less than 30 mins old?
+					if (time()-$cachedata["time"]<(60*$query_cache_expires_minutes)) // Less than 30 mins old?
 						{
 						return $cachedata["results"];
 						}
@@ -1126,7 +1132,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 		}
 
 	// Write to the cache
-	if ($cache)
+	if ($cache_write)
 		{
 		if (!file_exists($storagedir . "/tmp")) {mkdir($storagedir . "/tmp",0777);}
 		if (!file_exists($cache_location)) {mkdir($cache_location,0777);}
@@ -1178,7 +1184,7 @@ function sql_query($sql,$cache=false,$fetchrows=-1,$dbstruct=true, $logthis=2, $
 * 
 * @return string
 */
-function sql_value($query, $default, $cache=false)
+function sql_value($query, $default, $cache="")
     {
     db_set_connection_mode("read_only");
     $result = sql_query($query, $cache, -1, true, 0, true, false);
@@ -1203,7 +1209,7 @@ function sql_value($query, $default, $cache=false)
 * 
 * @return array
 */
-function sql_array($query,$cache=false)
+function sql_array($query,$cache="")
 	{
 	$return = array();
 
@@ -1223,6 +1229,36 @@ function sql_insert_id()
     global $db;
 
     return mysqli_insert_id($db["read_write"]);
+	}
+
+function get_query_cache_location()
+	{
+	global $storagedir;
+	return $storagedir . "/tmp/querycache";
+	}
+
+function clear_query_cache($cache)
+	{
+	// Clear all cached queries for cache group $cache
+
+	// If we've already done this on this page load, don't do it again as it will only add to the load in the case of batch operations.
+	global $query_cache_already_completed_this_time;
+	if (!isset($query_cache_already_completed_this_time)) {$query_cache_already_completed_this_time=array();}
+	if (in_array($cache,$query_cache_already_completed_this_time)) {return false;}
+
+	$cache_location=get_query_cache_location();
+	if (!file_exists($cache_location)) {return false;} // Cache has not been used yet.
+	$cache_files=scandir($cache_location);
+	foreach ($cache_files as $file)
+		{
+		if (substr($file,0,strlen($cache)+1)==$cache . "_")
+			{
+			unlink($cache_location . "/" . $file);
+			}
+		}
+	
+	$query_cache_already_completed_this_time[]=$cache;
+	return true;
 	}
 
 function check_db_structs($verbose=false)
@@ -1874,24 +1910,6 @@ function text($name)
 	$key=$pagename . "__" . $name;	
 	if (array_key_exists($key,$lang)) {return $lang[$key];}
 	else if(array_key_exists("all__" . $name,$lang)) {return $lang["all__" . $name];}
-
-	/*
-		Old method, commented for reference; look directly in the site content table.
-	
-	# Returns site text with name $name, or failing that returns dummy text.
-	global $site_text,$pagename,$language,$languages,$usergroup;
-	if (array_key_exists($language . "-" . $name,$site_text)) {return $site_text[$language . "-" .$name];} 
-	
-	# Can't find the language key? Look for it in other languages.
-	reset($languages);foreach ($languages as $key=>$value)
-		{
-		if (array_key_exists($key . "-" . $name,$site_text)) {return $site_text[$key . "-" . $name];} 		
-		}
-	if (!array_key_exists('en', $languages))
-		{
-		if (array_key_exists("en-" . $name,$site_text)) {return $site_text["en-" . $name];}
-		}
-	*/
 	
 	return "";
 	}
@@ -2463,7 +2481,7 @@ function setup_user($userdata)
 
 		$usercollection=$userdata["current_collection"];
 		// Check collection actually exists
-		$validcollection=sql_value("select ref value from collection where ref='$usercollection'",0);
+		$validcollection=$userdata["current_collection_valid"];
 		if($validcollection==0)
 			{
 			// Not a valid collection - switch to user's primary collection if there is one
@@ -2533,7 +2551,7 @@ function setup_user($userdata)
                 }
             }
 
-    	$userpreferences = ($user_preferences) ? sql_query("SELECT user, `value` AS colour_theme FROM user_preferences WHERE user = '" . escape_check($userref) . "' AND parameter = 'colour_theme';") : FALSE;
+    	$userpreferences = ($user_preferences) ? sql_query("SELECT user, `value` AS colour_theme FROM user_preferences WHERE user = '" . escape_check($userref) . "' AND parameter = 'colour_theme';","preferences") : FALSE;
     	$userpreferences = ($userpreferences && isset($userpreferences[0])) ? $userpreferences[0]: FALSE;
 
         # Some alternative language choices for basket mode / e-commerce
@@ -2605,6 +2623,7 @@ function validate_user($user_select_sql, $getuserdata=true)
                        g.parent,
                        u.usergroup,
                        u.current_collection,
+					   (select count(*) from collection where ref=u.current_collection) as current_collection_valid,
                        u.last_active,
                        timestampdiff(second, u.last_active, now()) AS idle_seconds,
                        u.email,

@@ -363,7 +363,10 @@ function get_resource_path(
 $GLOBALS['get_resource_data_cache'] = array();
 function get_resource_data($ref,$cache=true)
     {
-    if ($ref==""){return false;}
+    if ((string)(int)$ref != (string)$ref)
+        {
+        return false;
+        }
     # Returns basic resource data (from the resource table alone) for resource $ref.
     # For 'dynamic' field data, see get_resource_field_data
     global $default_resource_type, $get_resource_data_cache,$always_record_resource_creator;
@@ -667,7 +670,7 @@ function get_resource_types($types = "", $translate = true)
         $sql=" where ref in ($cleantypes) ";
         }
     
-    $r=sql_query("select * from resource_type $sql order by order_by,ref");
+    $r=sql_query("select * from resource_type $sql order by order_by,ref","schema");
     $return=array();
     # Translate names (if $translate==true) and check permissions
     for ($n=0;$n<count($r);$n++)
@@ -1580,7 +1583,7 @@ function get_user($ref)
         if (isset($udata_cache[$ref])){
           $return=$udata_cache[$ref];
         } else {
-    $udata_cache[$ref]=sql_query("SELECT u.*, if(find_in_set('permissions',g.inherit_flags)>0 AND pg.permissions IS NOT NULL,pg.permissions,g.permissions) permissions, g.parent, g.search_filter, g.edit_filter, g.ip_restrict ip_restrict_group, g.name groupname, u.ip_restrict ip_restrict_user, u.search_filter_override, u.search_filter_o_id, g.resource_defaults,if(find_in_set('config_options',g.inherit_flags)>0 AND pg.config_options IS NOT NULL,pg.config_options,g.config_options) config_options,g.request_mode, g.derestrict_filter, g.search_filter_id, g.download_limit, g.download_log_days, g.edit_filter_id, g.derestrict_filter_id FROM user u LEFT JOIN usergroup g ON u.usergroup=g.ref LEFT JOIN usergroup pg ON g.parent=pg.ref WHERE u.ref='$ref'");
+    $udata_cache[$ref]=sql_query("SELECT u.*, if(find_in_set('permissions',g.inherit_flags)>0 AND pg.permissions IS NOT NULL,pg.permissions,g.permissions) permissions, g.parent, g.search_filter, g.edit_filter, g.ip_restrict ip_restrict_group, g.name groupname, u.ip_restrict ip_restrict_user, u.search_filter_override,(select count(*) from collection where ref=u.current_collection) as current_collection_valid,u.search_filter_o_id, g.resource_defaults,if(find_in_set('config_options',g.inherit_flags)>0 AND pg.config_options IS NOT NULL,pg.config_options,g.config_options) config_options,g.request_mode, g.derestrict_filter, g.search_filter_id, g.download_limit, g.download_log_days, g.edit_filter_id, g.derestrict_filter_id FROM user u LEFT JOIN usergroup g ON u.usergroup=g.ref LEFT JOIN usergroup pg ON g.parent=pg.ref WHERE u.ref='$ref'");
     }
     
     # Return a user's credentials.
@@ -2447,6 +2450,10 @@ function save_site_text($page,$name,$language,$group)
                 sql_query("delete from site_text where page='$page' and name='$name' and language!='$defaultlanguage' and trim(text)='" . trim(escape_check($defaulttext)) . "'");
                 
         }
+
+    // Clear cache
+    clear_query_cache("sitetext");
+
     }
     
 function string_similar($string1,$string2)
@@ -3867,7 +3874,6 @@ function get_simple_search_fields()
 * @param array   $fields    Resource field data and properties as returned by get_resource_field_data()
 * @param boolean $render_js Set to TRUE to render the client side code for checking display conditions or FALSE otherwise
 * 
-* TODO: split rendering the JS parts into different function(s)
 * 
 * @return boolean Returns TRUE if no display condition or if field shoud be displayed or FALSE if field should not be displayed.
 */
@@ -4112,7 +4118,6 @@ function check_display_condition($n, array $field, array $fields, $render_js)
             // Assume field will not be displayed
             newfield<?php echo $field['ref']; ?>status = 'none';
             newfield<?php echo $field['ref']; ?>show   = false;
-            // TODO Explain meaning of provisional
             newfield<?php echo $field['ref']; ?>provisional = true;
             <?php
             foreach($scriptconditions as $scriptcondition)
@@ -4131,7 +4136,6 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                     )
                 */
                 ?>
-                // TODO Explain meaning of subcheck
                 newfield<?php echo $field['ref']; ?>subcheck = false;
                 fieldokvalues<?php echo $scriptcondition['field']; ?> = <?php echo json_encode($scriptcondition['valid']); ?>;
                 <?php
@@ -4171,7 +4175,6 @@ function check_display_condition($n, array $field, array $fields, $render_js)
                     <?php
                     }
                 ?>
-                // TODO Explain this
                 if(!newfield<?php echo $field['ref']; ?>subcheck)
                     {
                     newfield<?php echo $field['ref']; ?>provisional = false;
@@ -4612,7 +4615,7 @@ function get_hidden_indexed_fields()
     if (is_array($hidden_fields_cache)){
         return $hidden_fields_cache;
     } else { 
-        $fields=sql_query("select ref,active from resource_type_field where length(name)>0");
+        $fields=sql_query("select ref,active from resource_type_field where length(name)>0","schema");
         # Apply field permissions
         for ($n=0;$n<count($fields);$n++)
             {
@@ -4677,7 +4680,7 @@ function get_fields_for_search_display($field_refs)
     }
 
     # Executes query.
-    $fields = sql_query("select *, ref, name, type, title, keywords_index, partial_index, value_filter from resource_type_field where ref in ('" . join("','",$field_refs) . "')");
+    $fields = sql_query("select *, ref, name, type, title, keywords_index, partial_index, value_filter from resource_type_field where ref in ('" . join("','",$field_refs) . "')","schema");
 
     # Applies field permissions and translates field titles in the newly created array.
     $return = array();
@@ -5630,46 +5633,12 @@ function draw_performance_footer(){
     <tr><td>Dupes</td><td><?php echo $dupes?></td></tr>
     <tr><td colspan=2><a href="#" onClick="document.getElementById('querylog<?php echo $performance_footer_id?>').style.display='block';return false;"><?php echo LINK_CARET ?>details</a></td></tr>
     </table>
-    <table class="InfoTable" id="querylog<?php echo $performance_footer_id?>" style="display: none; float: <?php if ($pagename=='collections'){?>left<?php } else {?>right<?php }?>; margin: 10px;">
-    <?php
-
-        foreach($querylog as $query=>$values){
-        if (substr($query,0,7)!="explain" && $query!="show warnings"){
-        $show_warnings=false;
-        if (strtolower(substr($query,0,6))=="select"){
-            $explain=sql_query("explain extended ".$query);
-            /*$warnings=sql_query("show warnings");
-            $show_warnings=true;*/
-        }
-        ?>
-        <tr><td align="left"><div style="word-wrap: break-word; width:350px;"><?php echo $query?><?php if ($show_warnings){ foreach ($warnings as $warning){echo "<br /><br />".$warning['Level'].": ".htmlentities($warning['Message']);}}?></div></td><td>&nbsp;
-        <table class="InfoTable">
-        <?php if (strtolower(substr($query,0,6))=="select"){
-            ?><tr>
-            <?php
-            foreach ($explain[0] as $explainitem=>$value){?>
-                <td align="left">   
-                <?php echo $explainitem?><br /></td><?php 
-                }
-            ?></tr><?php
-
-            for($n=0;$n<count($explain);$n++){
-                ?><tr><?php
-                foreach ($explain[$n] as $explainitem=>$value){?>
-                <td align="left">   
-                    <?php echo str_replace(",",", ",$value)?></td><?php 
-                    }
-                ?></tr><?php    
-                }
-            }   ?>
-        </table>
-        </td><td><?php echo round($values['time'],4)?></td>
-        </td><td><?php echo ($values['dupe']>1)?''.$values["dupe"].'X':'1'?></td></tr>
-        <?php   
-        }
-        }
-    ?>
+    <table class="InfoTable" style="float: right;margin-right: 10px;display:none;" id="querylog<?php echo $performance_footer_id?>">
+    <?php foreach ($querylog as $query=>$details) { ?>
+    <tr><td><?php echo($query) ?></td></tr>
+    <?php } ?>
     </table>
+    </div>
     </div>
     <?php
     }
@@ -6198,7 +6167,7 @@ function validate_html($html)
 
 function get_indexed_resource_type_fields()
     {
-    return sql_array("select ref as value from resource_type_field where keywords_index=1");
+    return sql_array("select ref as value from resource_type_field where keywords_index=1","schema");
     }
 
 function get_resource_type_fields($restypes="", $field_order_by="ref", $field_sort="asc", $find="", $fieldtypes = array(), $include_inactive=false)
@@ -6633,7 +6602,7 @@ function get_slideshow_files_data()
     $homeanim_folder_path = dirname(__DIR__) . "/{$homeanim_folder}";
 
     $query = "SELECT ref, resource_ref, homepage_show, featured_collections_show, login_show FROM slideshow";
-    $slideshow_records = sql_query($query);
+    $slideshow_records = sql_query($query,"slideshow");
 
     $slideshow_files = array();
 
@@ -7230,6 +7199,8 @@ function create_resource_type_field($name, $restype = 0, $type = FIELD_TYPE_TEXT
         }
 
     log_activity(null, LOG_CODE_CREATED, $name, 'resource_type_field', 'title', $new, null, '');
+
+    clear_query_cache("schema");
 
     return $new;
     }
@@ -8002,7 +7973,6 @@ function check_script_last_ran($name, $fail_notify_allowance, &$last_ran_datetim
 
     if('' != $script_last_ran)
         {
-        // @todo: potentially inject a date format value if it turns out to be required
         $last_ran_datetime = date('l F jS Y @ H:m:s', strtotime($script_last_ran));
 
         // It's been less than user allows it to last run, meaning it is all good!
@@ -8072,6 +8042,8 @@ function delete_resource_type_field($ref)
     hook("after_delete_resource_type_field");
 
     log_activity('Deleted metadata field "' . $fieldinfo["title"] . '" (' . $fieldinfo["ref"] . ')',LOG_CODE_DELETED,null,'resource_type_field',null,$ref);
+
+    clear_query_cache("schema");
 
     return true;
     }
