@@ -85,6 +85,8 @@ rs_setcookie('starsearch', $starsearch,0,"","",false,false);
 # Selectedtypes can also contain Global and Media which are virtual checkboxes which are always considered to be checked
 $selectedtypes=get_selectedtypes();
 
+$access = getval("access", 0);
+
 # Disable auto-save function, only applicable to edit form. Some fields pick up on this value when rendering then fail to work.
 $edit_autosave=false;
 
@@ -714,6 +716,32 @@ else
 	<?php
 	}
 
+if(checkperm("v"))
+    {
+    render_question_div("search_advanced_access_question", function() use ($lang, $access)
+        {
+        ?>
+        <label for="search_advanced_access"><?php echo htmlspecialchars($lang["access"]); ?></label>
+        <select id="search_advanced_access" class="stdWidth" name="access" onchange="UpdateResultCount();">
+        <?php
+        foreach(range(0, 2) as $access_level)
+            {
+            if(checkperm("ea{$access_level}"))
+                {
+                continue;
+                }
+
+            $label = htmlspecialchars($lang["access{$access_level}"]);
+            $extra_attributes = ($access_level == $access ? " selected" : "");
+
+            echo render_dropdown_option($access_level, $label, array(), $extra_attributes);
+            }
+        ?>
+        </select>
+        <?php
+        });
+    }
+
 if($advanced_search_contributed_by)
     {
     ?>
@@ -863,4 +891,3 @@ if($archive!==0){
 }
 
 include "../include/footer.php";
-?>
