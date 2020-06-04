@@ -1,11 +1,7 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include "../include/search_functions.php";
-include "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once '../include/render_functions.php';
 
 $ref        = getvalescaped('ref', '', true);
 $user_group = getvalescaped('usergroup', '', true);
@@ -134,7 +130,7 @@ if($editing && !$editexternalurl)
                     {
                     if ($email_sharing) 
                         { ?>
-                        <li><i aria-hidden="true" class="fa fa-fw fa-envelope"></i>&nbsp;<a href="<?php echo $baseurl_short . 'pages/resource_email.php?' . $query_string ?>" onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);"><?php echo $lang["emailresourcetitle"]?></a></li> 
+                        <li><i aria-hidden="true" class="fa fa-fw fa-envelope"></i>&nbsp;<a href="<?php echo $baseurl_short . 'pages/resource_email.php?' . $query_string ?>" onclick="return CentralSpaceLoad(this, true);"><?php echo $lang["emailresourcetitle"]?></a></li> 
                         <?php 
                         }
                     }
@@ -219,7 +215,7 @@ if($editing && !$editexternalurl)
                     }
                     ?>
                 </ul>
-            </div>
+            
         <?php 
         # Do not allow access to the existing shares if the user has restricted access to this resource.
         if (!$internal_share_only && $minaccess==0)
@@ -388,15 +384,16 @@ if($editing && !$editexternalurl)
 							<td><?php echo htmlspecialchars($ca["usergroup"]); ?></td>
 							<td><?php echo htmlspecialchars($custexpires); ?></td>
 							<td><?php echo htmlspecialchars($custaccess); ?></td>
-							<td><div class="ListTools"><a href="#" onClick="return resourceShareDeleteUserCustomAccess(<?php echo get_user_by_username($ca["user"]) ?>);"><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a> </td>
+							<td><div class="ListTools"><a href="#" onClick="return resourceShareDeleteUserCustomAccess(<?php echo get_user_by_username($ca["user"]) ?>);"><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a></div></td>
 						</tr>
 						<?php
 						}
 					?></table>
 				</div> <!-- end Listview --><?php
 				}
-		?>
-        </form>
+		    ?>
+        </div>
+    </form>
 </div> <!-- BasicsBox -->
 
 <?php
