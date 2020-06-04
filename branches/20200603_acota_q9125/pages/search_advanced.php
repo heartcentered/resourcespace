@@ -736,7 +736,7 @@ if(checkperm("v"))
         {
         ?>
         <label for="search_advanced_access"><?php echo htmlspecialchars($lang["access"]); ?></label>
-        <select id="search_advanced_access" class="stdWidth" name="access" onchange="UpdateResultCount();">
+        <select id="search_advanced_access" class="SearchWidth" name="access" onchange="UpdateResultCount();">
             <option><?php echo $lang["all"]; ?></option>
         <?php
         foreach(range(0, 2) as $access_level)
