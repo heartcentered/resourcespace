@@ -6,14 +6,11 @@
  * @subpackage Pages
  */
 include_once "../include/db.php";
-include_once "../include/general.php";
+
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref",""),$k))) {include "../include/authenticate.php";}
-include_once "../include/search_functions.php";
-include_once "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
 include_once "../include/image_processing.php";
-include_once '../include/render_functions.php';
+
 
 // Set a flag for logged in users if $external_share_view_as_internal is set and logged on user is accessing an external share
 $internal_share_access = ($k!="" && $external_share_view_as_internal && isset($is_authenticated) && $is_authenticated);
@@ -158,7 +155,7 @@ if($use_mp3_player)
     $mp3realpath = get_resource_path($ref, true, '', false, 'mp3');
     if(file_exists($mp3realpath))
         {
-        $mp3path = get_resource_path($ref, false, '', false, 'mp3');
+        $mp3path = get_resource_path($ref, false, 'videojs', false, 'mp3');
         }
     }
 
@@ -375,8 +372,14 @@ function display_field_data($field,$valueonly=false,$fixedwidth=452)
 
     # Populate field value for node based fields so it conforms to automatic ordering setting
 
-	if(in_array($field['type'],$FIXED_LIST_FIELD_TYPES))
-		{    
+    if($field['type'] == FIELD_TYPE_CATEGORY_TREE)
+        {
+        $treenodes = get_resource_nodes($ref, $field["ref"], true);
+        $treetext_arr = get_tree_strings($treenodes);
+        $value = implode(",<br/>",$treetext_arr);        
+        }
+    elseif(in_array($field['type'],$FIXED_LIST_FIELD_TYPES))
+		{
 		# Get all nodes attached to this resource and this field    
 		$nodes_in_sequence = get_resource_nodes($ref,$field['ref'],true);
 		
@@ -440,10 +443,7 @@ function display_field_data($field,$valueonly=false,$fixedwidth=452)
 		else {$title="";}
 
 		# Value formatting
-		if (($field["type"]==FIELD_TYPE_CHECK_BOX_LIST) || ($field["type"]==FIELD_TYPE_CATEGORY_TREE) || ($field["type"]==FIELD_TYPE_DYNAMIC_KEYWORDS_LIST))
-			{$i18n_split_keywords =true;}
-		else 	{$i18n_split_keywords =false;}
-		$value=i18n_get_translated($value,$i18n_split_keywords );
+		$value=i18n_get_translated($value);
 		
 		// Don't display the comma for radio buttons:
 		if($field['type'] == FIELD_TYPE_RADIO_BUTTONS) {
@@ -1940,21 +1940,40 @@ if ($view_resource_collections && !checkperm('b')){ ?>
 	</script>
 	<?php }
 
-// include optional ajax metadata report
-if ($metadata_report && isset($exiftool_path) && ($k=="" || $internal_share_access)){?>
-        <div class="RecordBox">
+if ($metadata_report && isset($exiftool_path) && ($k=="" || $internal_share_access))
+    {
+    ?>
+    <div class="RecordBox">
         <div class="RecordPanel">  
-        <div class="Title"><?php echo $lang['metadata-report']?></div>
-        <div id="<?php echo $context ?>metadata_report"><a onclick="metadataReport(<?php echo htmlspecialchars($ref)?>,'<?php echo $context ?>');document.getElementById('<?php echo $context ?>metadata_report').innerHTML='<?php echo $lang['pleasewait']?>';return false;" class="itemNarrow" href="#"> <?php echo LINK_CARET . $lang['viewreport'];?></a><br /></div>
+            <h3 class="CollapsibleSectionHead collapsed"><?php echo $lang['metadata-report']; ?></h3>
+            <div id="<?php echo $context; ?>MetadataReportSection" class="CollapsibleSection"></div>
+            <script>
+            jQuery("#<?php echo $context; ?>MetadataReportSection").on("ToggleCollapsibleSection", function(e, data)
+                {
+                if(data.state == "collapsed")
+                    {
+                    return false;
+                    }
+
+                // if report has already been generated, just show it
+                if(jQuery.trim(jQuery(this).html()).length > 0)
+                    {
+                    return true;
+                    }
+
+                CentralSpaceShowLoading();
+                metadataReport(<?php echo htmlspecialchars($ref); ?>, '<?php echo htmlspecialchars($context); ?>');
+
+                return true;
+                });
+            </script>
         </div>
-        
-        </div>
+    </div>
+    <?php
+    }
 
-<?php } ?>
+hook("customrelations"); //For future template/spawned relations in Web to Print plugin
 
-<?php hook("customrelations"); //For future template/spawned relations in Web to Print plugin ?>
-
-<?php
 # -------- Related Resources (must be able to search for this to work)
 if($enable_related_resources && !isset($relatedresources))
     {
@@ -2054,7 +2073,7 @@ if (count($result)>0)
 				// Don't show this type again.
 				continue;
 				}
-        $restypename=sql_value("select name as value from resource_type where ref = '" . escape_check($rtype) . "'","");
+        $restypename=sql_value("select name as value from resource_type where ref = '" . escape_check($rtype) . "'","", "schema");
 		$restypename = lang_or_i18n_get_translated($restypename, "resourcetype-", "-2");
 		?><!--Panel for related resources-->
 		<div class="RecordBox">
@@ -2291,11 +2310,11 @@ if($annotate_enabled)
 	?>
 
 <script>
-/* Call SelectTab upon page load to select first tab*/
-jQuery('document').ready(function() 
-	{       
-	SelectTab();
-	});
+jQuery('document').ready(function()
+    {
+    /* Call SelectTab upon page load to select first tab*/
+    SelectTab();
+    registerCollapsibleSections(false);
+    });
 </script>
-
-<?php include "../include/footer.php"; ?>
+<?php include "../include/footer.php";
