@@ -15,12 +15,6 @@ if ($cli || !in_array(realpath(__DIR__ . '/../include/db.php'), get_included_fil
     include_once __DIR__ . '/../include/db.php';
     }
 
-// need to perform a get_included_files() again to guard against db.php bringing in general.php in the future
-if ($cli || !in_array(realpath(__DIR__ . '/../include/general.php'), get_included_files()))
-    {
-    include_once __DIR__ . '/../include/general.php';
-    }
-
 // Don't trigger upgrade if request is done via ajax. Checking if upgrade is in progress can be done through ajax
 if(!$cli && $ajax)
     {
@@ -40,10 +34,7 @@ if ($current_system_upgrade_level===false)
 // if the current system upgrade level is the same as that found in version.php then simply return as there is nothing to do
 if ($current_system_upgrade_level>=SYSTEM_UPGRADE_LEVEL)
     {
-    if ($cli)
-        {
-        echo "The system is up-to-date and does not require upgrading." . PHP_EOL;
-        }
+    // Nothing to do.
     return;
     }
 
