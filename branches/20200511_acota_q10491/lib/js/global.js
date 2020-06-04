@@ -613,6 +613,8 @@ function CollectionDivLoad (anchor,scrolltop)
 	
 	jQuery('#CollectionDiv').load(url, function ()
 		{
+        jQuery("#CollectionDiv").trigger("CollectionDiv_loaded");
+
 		if(collection_bar_hide_empty){
 			CheckHideCollectionBar();
 			}
@@ -704,15 +706,16 @@ function registerCollapsibleSections(use_cookies)
 			{
 			cur    = jQuery(this).next();
 			cur_id = cur.attr("id");
+            var cur_state = null;
 
 			if (cur.is(':visible'))
 				{
 				if(use_cookies)
 					{
-					//console.log('collapsed');
 					SetCookie(cur_id, 'collapsed');
 					}
 
+                cur_state = "collapsed";
 				jQuery(this).removeClass('expanded');
 				jQuery(this).addClass('collapsed');
 				}
@@ -720,15 +723,18 @@ function registerCollapsibleSections(use_cookies)
 				{
 				if(use_cookies)
 					{
-					//console.log('expanded');
 					SetCookie(cur_id, 'expanded');
 					}
+
+                cur_state = "expanded";
 				jQuery(this).addClass('expanded');
 				jQuery(this).removeClass('collapsed');
 				}
 
 			cur.stop(); // Stop existing animation if any
 			cur.slideToggle();
+
+            jQuery("#" + cur_id).trigger("ToggleCollapsibleSection", [{section_id: cur_id, state: cur_state}]);
 
 			return false;
 			}).each(function()
@@ -1237,23 +1243,31 @@ function StripResizeResults(targetImageHeight)
         }
     }
 
-function LoadActions(pagename,id,type,ref, csrfidentifier,token)
+function LoadActions(pagename,id,type,ref, extra_data)
     {
     CentralSpaceShowLoading();
-    var actionspace=jQuery('#' + id);
+
+    if(typeof id === "object")
+        {
+        var actionspace = id;
+        }
+    else
+        {
+        var actionspace=jQuery('#' + id);
+        }
+
     url = baseurl_short+"pages/ajax/load_actions.php";
-    var post_data = {
-                    actiontype: type,
-                    ref: ref,
-                    page: pagename
-                    };
-                    
-    post_data[csrfidentifier] = token;
-    
+    var data = {
+        actiontype: type,
+        ref: ref,
+        page: pagename
+    };
+    var data_obj = Object.assign({}, data, extra_data);
+
     jQuery.ajax({
-            type:'POST',
+            type:'GET',
             url: url,
-            data: post_data,
+            data: data_obj,
             async:false            
 			}).done(function(response, status, xhr)
                 {
@@ -1263,7 +1277,6 @@ function LoadActions(pagename,id,type,ref, csrfidentifier,token)
                     }
                 else
                     {
-                    // Load completed	
                     actionspace.html(response);
                   }
                 CentralSpaceHideLoading();

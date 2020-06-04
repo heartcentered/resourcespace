@@ -1,13 +1,10 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
 if (! (checkperm("c") || checkperm("d")))
     {exit ("Permission denied.");}
 include "../include/image_processing.php";
-include "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once "../include/search_functions.php";
 
 
 $overquota                              = overquota();

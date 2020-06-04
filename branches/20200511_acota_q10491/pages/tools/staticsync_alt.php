@@ -14,8 +14,7 @@ if('cli' != PHP_SAPI)
     }
 
 include dirname(__FILE__) . "/../../include/db.php";
-include_once dirname(__FILE__) . "/../../include/general.php";
-include dirname(__FILE__) . "/../../include/resource_functions.php";
+
 include dirname(__FILE__) . "/../../include/image_processing.php";
 
 if (file_exists(dirname(__FILE__) . "/staticsync_local_functions.php")){
@@ -33,7 +32,7 @@ if ($staticsync_ingest){
 $staticsync_alt_suffix_array = array('_alt','_verso','_DNG','_VERSO','_ALT','_dng','_orig','_ORIG','_tp','_TP','_tpv','_TPV','_cov','_COV','_ex','_EX','_scr','_SCR');
 $staticsync_alt_suffixes = true;
 $numeric_alt_suffixes = 8;
-$file_minimum_age = 0; // don't touch files that aren't at least this many seconds old
+$file_minimum_age = 120; // don't touch files that aren't at least this many seconds old
 
 
 if ($numeric_alt_suffixes > 0){

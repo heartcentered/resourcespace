@@ -1,9 +1,7 @@
 <?php
 include "../../../include/db.php";
-include_once "../../../include/general.php";
+
 include_once "../../../include/authenticate.php";
-include_once "../../../include/resource_functions.php";
-include_once "../../../include/collections_functions.php";
 if (!checkperm("a")) {exit("Access denied");} # Should never arrive at this page without admin access
 
 
@@ -14,6 +12,16 @@ if (getval("submitted","")!="" && enforcePostRequest(false))
 	{
     $resources=get_collection_resources($collection);
     $ref=getvalescaped("ref","");
+    $url_params = array(
+        'ref'        => $ref,
+        'search'     => getval('search',''),
+        'order_by'   => getval('order_by',''),
+        'collection' => getval('collection',''),
+        'offset'     => getval('offset',0),
+        'restypes'   => getval('restypes',''),
+        'archive'    => getval('archive','')
+    );
+    $redirect_url = generateURL($baseurl_short . "/plugins/licesemanager/pages/edit.php",$url_params);
 
     foreach ($resources as $resource)
         {
@@ -27,7 +35,7 @@ if (getval("submitted","")!="" && enforcePostRequest(false))
         resource_log($resource,"","",$lang[($unlink?"un":"") . "linklicense"] . " " . $ref);
         }
 
-	redirect("plugins/licensemanager/pages/edit.php?ref=" . $ref);
+	redirect($redirect_url);
 	}
 		
 include "../../../include/header.php";
