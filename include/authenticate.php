@@ -310,7 +310,7 @@ else
 			$pagefilter,
 			$usergroup
 		);
-		$results = sql_query($site_text_query,false,-1,true,0);
+		$results = sql_query($site_text_query,"sitetext",-1,true,0);
 
 		for($n = 0; $n < count($results); $n++)
 			{
@@ -330,7 +330,7 @@ else
 
 # Load group specific plugins and reorder plugins list
 $plugins= array();
-$active_plugins = (sql_query("SELECT name,enabled_groups, config, config_json, disable_group_select FROM plugins WHERE inst_version>=0 ORDER BY priority"));
+$active_plugins = (sql_query("SELECT name,enabled_groups, config, config_json, disable_group_select FROM plugins WHERE inst_version>=0 ORDER BY priority","plugins"));
 
 
 foreach($active_plugins as $plugin)
@@ -390,11 +390,12 @@ if(
 
     if(filter_var(getval("ajax", false), FILTER_VALIDATE_BOOLEAN))
         {
+        include_once dirname(__FILE__) . "/ajax_functions.php";
         $return['error'] = array(
             'title'  => $lang["error-csrf-verification"],
             'detail' => $lang["error-csrf-verification-failed"]);
 
-        echo json_encode($return);
+        echo json_encode(array_merge($return, ajax_response_fail(ajax_build_message($lang["error-csrf-verification-failed"]))));
         exit();
         }
 

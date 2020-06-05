@@ -6,14 +6,11 @@
  * @subpackage Pages
  */
 include_once "../include/db.php";
-include_once "../include/general.php";
+
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref",""),$k))) {include "../include/authenticate.php";}
-include_once "../include/search_functions.php";
-include_once "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
 include_once "../include/image_processing.php";
-include_once '../include/render_functions.php';
+
 
 // Set a flag for logged in users if $external_share_view_as_internal is set and logged on user is accessing an external share
 $internal_share_access = ($k!="" && $external_share_view_as_internal && isset($is_authenticated) && $is_authenticated);
@@ -123,12 +120,23 @@ if($comments_resource_enable && $comments_view_panel_show_marker){
 # Should the page use a larger resource preview layout?
 $use_larger_layout = true;
 if (isset($resource_view_large_ext))
-	{
-	if (!in_array($resource["file_extension"], $resource_view_large_ext))
-		{
-		$use_larger_layout = false;
-		}
-	}
+    {
+    if (!in_array($resource["file_extension"], $resource_view_large_ext))
+        {
+        $use_larger_layout = false;
+        }
+    }
+else
+    {
+    if (isset($resource_view_large_orientation) && $resource_view_large_orientation == true)
+        {
+        if ($resource["has_image"] == 1 && ($resource["thumb_height"] >= $resource["thumb_width"]))
+            {
+            # Portrait or square image
+            $use_larger_layout = false;
+            }
+        }
+    }
 
 // Set $use_mp3_player switch if appropriate
 $use_mp3_player = (
@@ -147,7 +155,7 @@ if($use_mp3_player)
     $mp3realpath = get_resource_path($ref, true, '', false, 'mp3');
     if(file_exists($mp3realpath))
         {
-        $mp3path = get_resource_path($ref, false, '', false, 'mp3');
+        $mp3path = get_resource_path($ref, false, 'videojs', false, 'mp3');
         }
     }
 
@@ -315,7 +323,8 @@ $fields=get_resource_field_data($ref,$multi_fields,!hook("customgetresourceperms
 $modified_view_fields=hook("modified_view_fields","",array($ref,$fields));if($modified_view_fields){$fields=$modified_view_fields;}
 
 # Load edit access level (checking edit permissions - e0,e-1 etc. and also the group 'edit filter')
-$edit_access=get_edit_access($ref,$resource["archive"],$fields,$resource);
+$edit_access = ($access==0 && get_edit_access($ref,$resource["archive"],$fields,$resource));
+
 if ($k!="" && !$internal_share_access) {$edit_access=0;}
 
 function check_view_display_condition($fields,$n,$fields_all)		
@@ -363,8 +372,8 @@ function display_field_data($field,$valueonly=false,$fixedwidth=452)
 
     # Populate field value for node based fields so it conforms to automatic ordering setting
 
-	if(in_array($field['type'],$FIXED_LIST_FIELD_TYPES))
-		{    
+    if(in_array($field['type'],$FIXED_LIST_FIELD_TYPES) && !$field['type'] == FIELD_TYPE_CATEGORY_TREE )
+		{
 		# Get all nodes attached to this resource and this field    
 		$nodes_in_sequence = get_resource_nodes($ref,$field['ref'],true);
 		
@@ -428,10 +437,7 @@ function display_field_data($field,$valueonly=false,$fixedwidth=452)
 		else {$title="";}
 
 		# Value formatting
-		if (($field["type"]==FIELD_TYPE_CHECK_BOX_LIST) || ($field["type"]==FIELD_TYPE_CATEGORY_TREE) || ($field["type"]==FIELD_TYPE_DYNAMIC_KEYWORDS_LIST))
-			{$i18n_split_keywords =true;}
-		else 	{$i18n_split_keywords =false;}
-		$value=i18n_get_translated($value,$i18n_split_keywords );
+		$value=i18n_get_translated($value);
 		
 		// Don't display the comma for radio buttons:
 		if($field['type'] == FIELD_TYPE_RADIO_BUTTONS) {
@@ -970,20 +976,12 @@ else if(1 == $resource['has_image'])
     		}
         	?>
         <!-- Available tools to manipulate previews -->
-        <div id="PreviewTools" onmouseenter="showHidePreviewTools();" onmouseleave="showHidePreviewTools();">
+        <div id="PreviewTools">
             <script>
             function showHidePreviewTools()
                 {
                 var tools_wrapper = jQuery('#PreviewToolsOptionsWrapper');
                 var tools_options = tools_wrapper.find('.ToolsOptionLink');
-
-                // If any of the tools are enabled do not close Preview tools box
-                if(tools_options.length > 0 && tools_options.hasClass('Enabled'))
-                    {
-                    tools_wrapper.removeClass('Hidden');
-
-                    return false;
-                    }
 
                 tools_wrapper.toggleClass('Hidden');
 
@@ -995,7 +993,7 @@ else if(1 == $resource['has_image'])
                 jQuery(element).toggleClass('Enabled');
                 }
             </script>
-            <div id="PreviewToolsOptionsWrapper" class="Hidden">
+            <div id="PreviewToolsOptionsWrapper">
             <?php
             if($annotate_enabled && file_exists($imagepath))
                 {
@@ -1045,17 +1043,8 @@ else if(1 == $resource['has_image'])
                     <?php
                     }
                     ?>
-
-                        rs_tagging_plugin_added = true;
+			 rs_tagging_plugin_added = true;
 						
-					 	// We have to wait for initialisation process to finish as this does ajax calls
-                        // in order to set itself up
-                        setTimeout(function ()
-                            {
-                            toggleAnnotationsOption(element);
-                            }, 
-                            3000);
-                        return false;
                         }
 
                     // Feature enabled? Then disable it.
@@ -1095,23 +1084,6 @@ else if(1 == $resource['has_image'])
 
                     return false;
                     }
-
-                <?php
-                if(checkPreviewToolsOptionUniqueness('annotate_enabled'))
-                    {
-                    ?>
-                    jQuery('#PreviewToolsOptionsWrapper').on('readyToUseAnnotorious', function ()
-                        {
-                        setTimeout(function ()
-                            {
-                            showHidePreviewTools();
-                            }, 
-                            3000);
-                        toggleAnnotationsOption(jQuery('.AnnotationsOption'));
-                        });
-                    <?php
-                    }
-                    ?>
                 </script>
                 <?php
                 }
@@ -1718,7 +1690,7 @@ hook ("resourceactions") ?>
 	if (can_share_resource($ref,$access) && !$hide_resource_share_link) 
 		{ 
 		?>
-		<li><a href="<?php echo $baseurl ?>/pages/resource_share.php?ref=<?php echo urlencode($ref) ?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);" >
+		<li><a href="<?php echo $baseurl ?>/pages/resource_share.php?ref=<?php echo urlencode($ref) ?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 		<?php echo "<i class='fa fa-share-alt'></i>&nbsp;" . $lang["share"];?>
 		</a></li>
 		<?php 
@@ -1726,15 +1698,15 @@ hook ("resourceactions") ?>
 		}
 	if ($edit_access) 
 		{ ?>
-		<li><a href="<?php echo $baseurl ?>/pages/edit.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>"    onClick="return <?php echo ($resource_edit_modal_from_view_modal && $modal ? 'Modal' : 'CentralSpace')?>Load(this,true);">
-			<?php echo "<i class='fa fa-pencil'></i>&nbsp;" .$lang["action-edit"]?>
+		<li><a href="<?php echo $baseurl ?>/pages/edit.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
+			<?php echo "<i class='fa fa-pencil'></i>&nbsp;" .$lang["action-editmetadata"]?>
 		</a></li>
 		<?php 
 		if ((!checkperm("D") || hook('check_single_delete')) && !(isset($allow_resource_deletion) && !$allow_resource_deletion))
 			{
 			?>
 			<li>
-			<a href="<?php echo $baseurl ?>/pages/delete.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>&amp;restypes=<?php echo urlencode($restypes); ?>" onClick="return ModalLoad(this,true);">
+			<a href="<?php echo $baseurl ?>/pages/delete.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>&amp;restypes=<?php echo urlencode($restypes); ?>" onclick="return ModalLoad(this, true);">
 			<?php 
 			if ($resource["archive"]==3)
 				{
@@ -1750,7 +1722,7 @@ hook ("resourceactions") ?>
 			}
 		if (!$disable_alternative_files && !checkperm('A')) 
 			{ ?>
-			<li><a href="<?php echo $baseurl ?>/pages/alternative_files.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);">
+			<li><a href="<?php echo $baseurl ?>/pages/alternative_files.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 			<?php echo "<i class='fa fa-files-o'></i>&nbsp;" . $lang["managealternativefiles"]?>
 			</a></li>
 			<?php 
@@ -1768,19 +1740,19 @@ hook ("resourceactions") ?>
 		}
 	if ($metadata_download && (checkperm('f*') || $can_see_fields_individually))	
 		{ ?>
-		<li><a href="<?php echo $baseurl ?>/pages/metadata_download.php?ref=<?php echo urlencode($ref)?>" onClick="return CentralSpaceLoad(this,true);" >
+		<li><a href="<?php echo $baseurl ?>/pages/metadata_download.php?ref=<?php echo urlencode($ref)?>" onclick="return ModalLoad(this, true);">
 		<?php echo "<i class='fa fa-history'></i>&nbsp;" .$lang["downloadmetadata"]?>
 		</a></li><?php 
 		} 
 	if (checkperm('v')) 
 		{ ?>
-		<li><a href="<?php echo $baseurl ?>/pages/log.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;search_offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);">
+		<li><a href="<?php echo $baseurl ?>/pages/log.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;search_offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 		<?php echo "<i class='fa fa-history'></i>&nbsp;" .$lang["log"]?>
 		</a></li><?php 
 		}
 	if (checkperm("R") && $display_request_log_link) 
 		{ ?>
-		<li><a href="<?php echo $baseurl ?>/pages/request_log.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onClick="return CentralSpaceLoad(this,true);">
+		<li><a href="<?php echo $baseurl ?>/pages/request_log.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
 		<?php echo "<i class='fa fa-history'></i>&nbsp;" .$lang["requestlog"]?>
 		</a></li><?php 
 		}
@@ -1790,7 +1762,7 @@ hook ("resourceactions") ?>
         $find_in_pdf_url = generateURL("{$baseurl}/pages/search_text_in_pdf.php", array( 'ref' => $ref));
         ?>
         <li>
-            <a href="<?php echo $find_in_pdf_url; ?>" onClick="return ModalLoad(this, true, true);"><i class='fa fa-search'></i>&nbsp;<?php echo $lang['findtextinpdf']; ?></a>
+            <a href="<?php echo $find_in_pdf_url; ?>" onclick="return ModalLoad(this, true, true);"><i class='fa fa-search'></i>&nbsp;<?php echo $lang['findtextinpdf']; ?></a>
         </li>
         <?php 
         }
@@ -1962,21 +1934,40 @@ if ($view_resource_collections && !checkperm('b')){ ?>
 	</script>
 	<?php }
 
-// include optional ajax metadata report
-if ($metadata_report && isset($exiftool_path) && ($k=="" || $internal_share_access)){?>
-        <div class="RecordBox">
+if ($metadata_report && isset($exiftool_path) && ($k=="" || $internal_share_access))
+    {
+    ?>
+    <div class="RecordBox">
         <div class="RecordPanel">  
-        <div class="Title"><?php echo $lang['metadata-report']?></div>
-        <div id="<?php echo $context ?>metadata_report"><a onclick="metadataReport(<?php echo htmlspecialchars($ref)?>,'<?php echo $context ?>');document.getElementById('<?php echo $context ?>metadata_report').innerHTML='<?php echo $lang['pleasewait']?>';return false;" class="itemNarrow" href="#"> <?php echo LINK_CARET . $lang['viewreport'];?></a><br /></div>
+            <h3 class="CollapsibleSectionHead collapsed"><?php echo $lang['metadata-report']; ?></h3>
+            <div id="<?php echo $context; ?>MetadataReportSection" class="CollapsibleSection"></div>
+            <script>
+            jQuery("#<?php echo $context; ?>MetadataReportSection").on("ToggleCollapsibleSection", function(e, data)
+                {
+                if(data.state == "collapsed")
+                    {
+                    return false;
+                    }
+
+                // if report has already been generated, just show it
+                if(jQuery.trim(jQuery(this).html()).length > 0)
+                    {
+                    return true;
+                    }
+
+                CentralSpaceShowLoading();
+                metadataReport(<?php echo htmlspecialchars($ref); ?>, '<?php echo htmlspecialchars($context); ?>');
+
+                return true;
+                });
+            </script>
         </div>
-        
-        </div>
+    </div>
+    <?php
+    }
 
-<?php } ?>
+hook("customrelations"); //For future template/spawned relations in Web to Print plugin
 
-<?php hook("customrelations"); //For future template/spawned relations in Web to Print plugin ?>
-
-<?php
 # -------- Related Resources (must be able to search for this to work)
 if($enable_related_resources && !isset($relatedresources))
     {
@@ -2076,7 +2067,7 @@ if (count($result)>0)
 				// Don't show this type again.
 				continue;
 				}
-        $restypename=sql_value("select name as value from resource_type where ref = '" . escape_check($rtype) . "'","");
+        $restypename=sql_value("select name as value from resource_type where ref = '" . escape_check($rtype) . "'","", "schema");
 		$restypename = lang_or_i18n_get_translated($restypename, "resourcetype-", "-2");
 		?><!--Panel for related resources-->
 		<div class="RecordBox">
@@ -2313,11 +2304,11 @@ if($annotate_enabled)
 	?>
 
 <script>
-/* Call SelectTab upon page load to select first tab*/
-jQuery('document').ready(function() 
-	{       
-	SelectTab();
-	});
+jQuery('document').ready(function()
+    {
+    /* Call SelectTab upon page load to select first tab*/
+    SelectTab();
+    registerCollapsibleSections(false);
+    });
 </script>
-
-<?php include "../include/footer.php"; ?>
+<?php include "../include/footer.php";

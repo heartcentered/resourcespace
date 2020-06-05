@@ -236,6 +236,9 @@ function set_config_option($user_id, $param_name, $param_value)
 
     sql_query($query);
 
+    // Clear disk cache
+    clear_query_cache("preferences");
+
     return true;
     }
 
@@ -296,7 +299,7 @@ function get_config_option($user_id, $name, &$returned_value, $default = null)
 */
 function get_config_option_users($option,$value)
     {
-    $users = sql_array("SELECT user value FROM user_preferences WHERE parameter = '" . escape_check($option). "' AND value='" . escape_check($value) . "'");
+    $users = sql_array("SELECT user value FROM user_preferences WHERE parameter = '" . escape_check($option). "' AND value='" . escape_check($value) . "'","preferences");
     return $users;   
     }
 
@@ -318,7 +321,7 @@ function get_config_options($user_id, array &$returned_options)
         ',
         is_null($user_id) ? 'user IS NULL' : 'user = \'' . escape_check($user_id) . '\''
     );
-    $config_options = sql_query($query);
+    $config_options = sql_query($query,"preferences");
 
     if(empty($config_options))
         {
@@ -919,10 +922,10 @@ function config_single_ftype_select($name, $label, $current, $width=300, $rtype=
 		}
 		
     if($rtype===false){
-    	$fields=sql_query('select * from resource_type_field ' .  (($fieldtypefilter=="")?'':' where ' . $fieldtypefilter) . ' order by title, name');
+    	$fields=sql_query('select * from resource_type_field ' .  (($fieldtypefilter=="")?'':' where ' . $fieldtypefilter) . ' order by title, name', "schema");
     }
     else{
-    	$fields=sql_query("select * from resource_type_field where resource_type='$rtype' " .  (($fieldtypefilter=="")?"":" and " . $fieldtypefilter) . "order by title, name");
+    	$fields=sql_query("select * from resource_type_field where resource_type='$rtype' " .  (($fieldtypefilter=="")?"":" and " . $fieldtypefilter) . "order by title, name", "schema");
     }
 ?>
   <div class="Question">

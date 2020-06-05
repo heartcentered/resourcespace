@@ -6,7 +6,7 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; 
 
 if (!checkperm("a"))
@@ -59,7 +59,8 @@ if (getval("save","")!="" && enforcePostRequest(false))
                inherit_global_fields = '{$inherit_global_fields}'
          WHERE ref = '$ref'
      ");
-	
+     clear_query_cache("schema");
+
 	redirect(generateURL($baseurl_short . "pages/admin/admin_resource_types.php",$url_params));
 	}
 	
@@ -79,12 +80,12 @@ if (getval("delete","")!="" && enforcePostRequest(false))
 	    //If we have a target type, move the current resources to the new resource type
 	    if($targettype!="" && $targettype!=$ref)
 		{
-		include "../../include/resource_functions.php"; 
 		foreach($affectedresources as $affectedresource)
 		    {update_resource_type($affectedresource,$targettype);}
 		}
 	    // Delete the resource type
-	    sql_query("delete from resource_type where ref='$ref'");
+        sql_query("delete from resource_type where ref='$ref'");
+        clear_query_cache("schema");
 		redirect(generateURL($baseurl_short . "pages/admin/admin_resource_types.php",$url_params));
 	    }
 	
@@ -104,7 +105,7 @@ $restypedata=sql_query ("
         FROM resource_type
        WHERE ref = '{$ref}'
     ORDER BY `name`
-");
+", "schema");
 $restypedata=$restypedata[0];
 
 $inherit_global_fields_checked = ((bool) $restypedata['inherit_global_fields'] ? 'checked' : '');

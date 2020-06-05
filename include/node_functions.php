@@ -118,7 +118,8 @@ function set_node($ref, $resource_type_field, $name, $parent, $order_by,$returne
 
         return $new_ref;
         }
-
+    
+    clear_query_cache("schema");
     }
 
 
@@ -142,6 +143,8 @@ function delete_node($ref)
 
     remove_all_node_keyword_mappings($ref);
 
+    clear_query_cache("schema");
+
     return;
     }
 
@@ -161,6 +164,8 @@ function delete_nodes_for_resource_type_field($ref)
         }
 
     sql_query("DELETE FROM node WHERE resource_type_field = '" . escape_check($ref) . "';");
+
+    clear_query_cache("schema");
 
     return;
     }
@@ -270,7 +275,8 @@ function get_nodes($resource_type_field, $parent = NULL, $recursive = FALSE, $of
     // Get length of language string + 2 (for ~ and :) for usuage in SQL below
     $language_string_length = (strlen($language_in_use) + 2);
 
-    $parent_sql = (trim($parent)=="") ? "parent IS NULL" : "parent = '" . escape_check($parent) . "'";
+    $parent_sql = trim($parent) == "" ? ($recursive ? "TRUE" : "parent IS NULL") : ("parent = '" . escape_check($parent) . "'");
+   
     $query = "
         SELECT 
             *,
@@ -307,7 +313,8 @@ function get_nodes($resource_type_field, $parent = NULL, $recursive = FALSE, $of
         {
         array_push($return_nodes, $node);
 
-        if($recursive)
+        // No need to recurse if no parent was specified as we already have all nodes
+        if($recursive && (int)$parent > 0)
             {
             foreach(get_nodes($resource_type_field, $node['ref'], TRUE) as $sub_node)
                 {
@@ -459,6 +466,7 @@ function reorder_node(array $nodes_new_order)
     $query .= 'ELSE order_by END);';
 
     sql_query($query);
+    clear_query_cache("schema");
 
     return;
     }
@@ -509,6 +517,7 @@ function reorder_nodes(array $unordered_nodes)
             }
         }
 
+    clear_query_cache("schema");
     return $reordered_nodes;
     }
 
@@ -940,6 +949,8 @@ function add_node_keyword($node, $keyword, $position, $normalize = true, $stem =
 
     log_activity("Keyword {$keyword_ref} added for node ID #{$node}", LOG_CODE_CREATED, $keyword, 'node_keyword');
 
+    clear_query_cache("schema");
+
     return true;
     }
 
@@ -983,6 +994,8 @@ function remove_node_keyword($node, $keyword, $position, $normalized = false)
 
     log_activity("Keyword ID {$keyword_ref} removed for node ID #{$node}", LOG_CODE_DELETED, null, 'node_keyword', null, null, null, $keyword);
 
+    clear_query_cache("schema");
+
     return;
     }
 
@@ -997,6 +1010,7 @@ function remove_node_keyword($node, $keyword, $position, $normalized = false)
 function remove_all_node_keyword_mappings($node)
     {
     sql_query("DELETE FROM node_keyword WHERE node = '" . escape_check($node) . "'");
+    clear_query_cache("schema");
 
     return;
     }
@@ -1029,6 +1043,7 @@ function check_node_indexed(array $node, $partial_index = false)
     // (re-)index node
     remove_all_node_keyword_mappings($node['ref']);
     add_node_keyword_mappings($node, $partial_index);
+    clear_query_cache("schema");
 
     return;
     }
@@ -1083,6 +1098,7 @@ function add_node_keyword_mappings(array $node, $partial_index = false)
         add_node_keyword($node['ref'], $keywords[$n], $keyword_position);
         }
     db_end_transaction("add_node_keyword_mappings");
+    clear_query_cache("schema");
 
     return true;
     }
@@ -1136,6 +1152,7 @@ function remove_node_keyword_mappings(array $node, $partial_index = false)
         remove_node_keyword($node['ref'], $keywords[$n], $keyword_position);
         }
 
+    clear_query_cache("schema");
     return true;
     }
 
@@ -1289,7 +1306,7 @@ function delete_resource_nodes($resourceid,$nodes=array())
 
     foreach ($field_nodes_arr as $key => $value)
         {
-        resource_log($resourceid,"e",$key,"",implode(",",$value),"");
+        resource_log($resourceid,"e",$key,"","," . implode(",",$value),'');
         }
     }
 
@@ -1331,7 +1348,7 @@ function copy_resource_nodes($resourcefrom, $resourceto)
     // NOTE: this does not apply to user template resources (negative ID resource)
     if($resourcefrom > 0)
         {
-        $omitfields      = sql_array("SELECT ref AS `value` FROM resource_type_field WHERE omit_when_copying = 1", 0);
+        $omitfields      = sql_array("SELECT ref AS `value` FROM resource_type_field WHERE omit_when_copying = 1", "schema");
         $omit_fields_sql = "AND n.resource_type_field NOT IN ('" . implode("','", $omitfields) . "')";
         }
 
@@ -1376,7 +1393,7 @@ function copy_resource_type_field_nodes($from, $to)
     global $FIXED_LIST_FIELD_TYPES;
 
     // Since field has been copied, they are both the same, so we only need to check the from field
-    $type = sql_value("SELECT `type` AS `value` FROM resource_type_field WHERE ref = '{$from}'", 0);
+    $type = sql_value("SELECT `type` AS `value` FROM resource_type_field WHERE ref = '{$from}'", 0, "schema");
 
     if(!in_array($type, $FIXED_LIST_FIELD_TYPES))
         {
@@ -1653,3 +1670,81 @@ function get_node_tree($parentId = "", array $nodes)
     	}
     return $tree;
 	}
+
+/**
+ * This function returns an array of strings that represent the full paths to each tree node passed
+ * 
+ * @param array $resource_nodes - node tree to parse 
+ * @param array $allnodes       - include paths to all nodes -if false will just include the paths to the end leaf nodes
+ * 
+ * @return array $nodestrings - array of strings for all nodes passed in correct hierarchical order
+ * 
+ */
+function get_tree_strings($resource_nodes,$allnodes = false)
+    {
+    global $category_tree_add_parents;
+    // Arrange all passed nodes with parents first so that unnecessary paths can be removed
+    $orderednodes = array();
+    // Array with node ids as indexes to ease parent tracking
+    $treenodes = array();
+
+    while(count($resource_nodes) > 0)
+        {
+        $todocount = count($resource_nodes);
+        for($n=0;$n < $todocount;$n++)
+            {            
+            if(
+                in_array($resource_nodes[$n]["parent"],array_column($resource_nodes,"ref"))
+                &&
+                !in_array($resource_nodes[$n]["parent"],array_column($orderednodes,"ref"))
+                )
+                {
+                // Don't add yet, add once parent has been added
+                continue;
+                }
+            $orderednodes[] = $resource_nodes[$n];
+            $treenodes[$resource_nodes[$n]["ref"]] = $resource_nodes[$n];
+            unset($resource_nodes[$n]);
+            }
+        $resource_nodes = array_values($resource_nodes);
+        }
+
+    // Create an array of all branch nodes for each node
+    $nodestrings = array();
+
+    foreach($orderednodes as $resource_node)
+        {
+        $node_parts = array();
+        // Create an array to hold all the node names, including all parents
+        $node_parts[$resource_node["ref"]] = array();
+        $node_parts[$resource_node["ref"]][] = i18n_get_translated($resource_node["name"]);
+        $nodeparent = $resource_node["parent"];
+        while($nodeparent != "" && isset($treenodes[$nodeparent]))
+            {
+            $node_parts[$resource_node["ref"]][] = i18n_get_translated($treenodes[$nodeparent]["name"]);
+            $nodeparent = $treenodes[$nodeparent]["parent"];
+            }
+
+        // Create string representation, reversing the order so parents come first
+        $fullpath = "";
+        for($n=count($node_parts[$resource_node["ref"]])-1;$n>=0;$n--)
+            {
+            $fullpath .= $node_parts[$resource_node["ref"]][$n];
+            if(!$allnodes)
+                {
+                $duplicatepath = array_search($fullpath,$nodestrings);                 
+
+                if($duplicatepath !== false)
+                    {
+                    unset($nodestrings[$duplicatepath]);
+                    }          
+                }
+            if($n>0)
+                {
+                $fullpath .= "/";
+                }
+            }
+        $nodestrings[$resource_node["ref"]] = $fullpath;
+        }
+    return $nodestrings;
+    }

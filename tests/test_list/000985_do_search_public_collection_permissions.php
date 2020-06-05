@@ -1,6 +1,5 @@
 <?php
 
-include_once(__DIR__ . '/../../include/search_functions.php');
 
 if (php_sapi_name()!=="cli") {exit("This utility is command line only.");}
 // Test to ensure that J permission blocks access to resources that are outside public collections that the user has access to.
@@ -130,5 +129,5 @@ if (!is_array($results)
 
 //End of tests
 
-$saved_userref = $userref;
+$userref = $saved_userref;
 $userpermissions = $savedpermissions;

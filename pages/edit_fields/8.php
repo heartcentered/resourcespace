@@ -47,10 +47,10 @@ var editor = CKEDITOR.instances['<?php echo ((isset($modal) && $modal)?"Modal_":
 if ($edit_autosave) {?>
 editor.on('blur',function(e) 
 	{
-	if(editor.checkDirty())
+	if(this.checkDirty())
 		{
-		editor.updateElement();
-		AutoSave('<?php echo $field["ref"]?>',this);
+		this.updateElement();
+		AutoSave('<?php echo $field["ref"]?>');
 		}
 	});
 

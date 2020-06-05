@@ -39,7 +39,7 @@ if ($sort_tabs)
 
 if(isset($related_type_show_with_data)) {
 	// Get resource type tab names, excluding the current resource type (if any set):
-	$resource_type_tab_names = sql_array("SELECT tab_name as value FROM resource_type WHERE ref<>'" . $resource['resource_type'] . "'", "");
+	$resource_type_tab_names = sql_array("SELECT tab_name as value FROM resource_type WHERE ref<>'" . $resource['resource_type'] . "'", "schema");
 	$resource_type_tab_names = array_values(array_unique($resource_type_tab_names));
 
 	// These are the tab names which will be rendered for the resource specified:
@@ -55,12 +55,6 @@ foreach ($fields_tab_names as $key => $value) {
 
 $modified_view_tabs=hook("modified_view_tabs","view",array($fields_tab_names));if($modified_view_tabs!=='' && is_array($modified_view_tabs)){$fields_tab_names=$modified_view_tabs;}
         
-//ensure there is a default tab as the first tab
-//append default string in tab name array 
-array_unshift($fields_tab_names, $lang['default']);
-//remove any other instances of default string in tab name array
-$fields_tab_names = array_unique($fields_tab_names);
-
 ?>
         
         
