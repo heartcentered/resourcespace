@@ -1,14 +1,11 @@
 <?php
 include_once dirname(__FILE__)."/../include/db.php";
-include_once dirname(__FILE__)."/../include/general.php";
-include_once dirname(__FILE__)."/../include/collections_functions.php";
+
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key_collection(getvalescaped("collection","",true),$k))) {include_once dirname(__FILE__)."/../include/authenticate.php";}
 if (checkperm("b")){exit($lang["error-permissiondenied"]);}
 include_once dirname(__FILE__)."/../include/research_functions.php";
-include_once dirname(__FILE__)."/../include/resource_functions.php";
-include_once dirname(__FILE__)."/../include/search_functions.php";
-include_once dirname(__FILE__) . '/../include/render_functions.php';
+
 
 $sort            = getvalescaped('sort', 'DESC');
 $search          = getvalescaped('search', '');
@@ -66,9 +63,6 @@ if($emptycollection!='' && getvalescaped("submitted","")=='removeall' && getval(
     {
     remove_all_resources_from_collection($emptycollection);
     }
-    
-# Disable checkboxes for external users.
-if ($k!="" && !$internal_share_access) {$use_checkboxes_for_selection=false;}
 
 if(!isset($thumbs))
     {
@@ -303,7 +297,6 @@ else { ?>
 
 					jQuery('#trash_bin').hide();
 					// AddResourceToCollection includes a reload of CollectionDiv 
-					//  TODO: Why doesn't it use CollectionDivLoad function to do the reload?
 					AddResourceToCollection(event, resource_id, '');
 					}
 			});
@@ -413,7 +406,6 @@ else { ?>
 					if(class_of_drag.indexOf("CollectionPanelShell") >= 0)
 						{
 						// Handle different cases such as Saved searches
-						// TODO: Explain why?
 						if(ui.draggable.data('savedSearch') === 'yes')
 							{
 							CollectionDivLoad('<?php echo $baseurl; ?>/pages/collections.php?removesearch=' + resource_id + '&nc=<?php echo time(); ?>');
@@ -740,38 +732,6 @@ if (($userrequestmode==2 || $userrequestmode==3) && $basket_stores_size)
 			}
 		}
 	}
-
-if(!hook("clearmaincheckboxesfromcollectionframe")){
-	if ($use_checkboxes_for_selection ){?>
-	
-	<script>
-	var checkboxes=jQuery('input.checkselect');
-	//clear all
-	checkboxes.each(function(box){
-		jQuery(checkboxes[box]).prop('checked',false);
-		jQuery(checkboxes[box]).change();
-	});
-	</script>
-<?php }
-} // end hook clearmaincheckboxesfromcollectionframe
-
-if(!hook("updatemaincheckboxesfromcollectionframe")){
-		
-	if ($use_checkboxes_for_selection){?>
-	<script><?php
-	# update checkboxes in main window
-	for ($n=0;$n<count($results_all);$n++)			
-		{
-		$ref=$results_all[$n]["ref"];
-		?>
-		if (jQuery('#check<?php echo htmlspecialchars($ref) ?>')){
-		jQuery('#check<?php echo htmlspecialchars($ref) ?>').prop('checked',true);
-		}
-			
-	<?php }
-	} ?></script><?php
-}# end hook updatemaincheckboxesfromcollectionframe
-
 ?><div><?php
 
 if (true) { // draw both
@@ -1047,7 +1007,7 @@ if ($count_result>0)
 				$title_field=$metadata_template_title_field;
 				}	
 			}	
-		$field_type=sql_value("select type value from resource_type_field where ref=$title_field","");
+		$field_type=sql_value("select type value from resource_type_field where ref=$title_field","", "schema");
 		if($field_type==8){
 			$title=strip_tags($title);
 			$title=str_replace("&nbsp;"," ",$title);

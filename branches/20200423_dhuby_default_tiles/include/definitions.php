@@ -1,7 +1,7 @@
 <?php
 
 // current upgrade level of ResourceSpace (used for migration scripts, will set sysvar using this if not already defined)
-define('SYSTEM_UPGRADE_LEVEL', 8);
+define('SYSTEM_UPGRADE_LEVEL', 10);
 
 // ------------------------- FIELD TYPES -------------------------
 
@@ -162,6 +162,7 @@ define ('RESOURCE_LOG_APPEND_PREVIOUS', -1);    // used to specify that we want 
 define('LINK_CARET','<i aria-hidden="true" class="fa fa-caret-right"></i>&nbsp;'); 
 define('LINK_CARET_BACK','<i aria-hidden="true" class="fa fa-caret-left"></i>&nbsp;');
 define('LINK_CARET_PLUS','<i aria-hidden="true" class="fa fa-plus"></i>&nbsp;');
+define('LINK_CARET_PLUS_CIRCLE','<i aria-hidden="true" class="fa fa-plus-circle"></i>&nbsp;');
 define('UPLOAD_ICON','<i aria-hidden="true" class="fa fa-fw fa-upload"></i>&nbsp;');
 define('DASH_ICON','<i aria-hidden="true" class="fa fa-fw fa-th"></i>&nbsp;');
 define('FEATURED_COLLECTION_ICON','<i aria-hidden="true" class="fa fa-fw fa-folder"></i>&nbsp;');
@@ -169,6 +170,8 @@ define('RECENT_ICON','<i aria-hidden="true" class="fa fa-fw fa-clock"></i>&nbsp;
 define('HELP_ICON','<i aria-hidden="true" class="fa fa-fw fa-book"></i>&nbsp;');
 define('HOME_ICON','<i aria-hidden="true" class="fa fa-fw fa-home"></i>&nbsp;');
 define('SEARCH_ICON', '<i class="fa fa-search" aria-hidden="true"></i>&nbsp;');
+define('ICON_EDIT', '<i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;');
+define('ICON_REMOVE', '<i class="fa fa-minus-circle" aria-hidden="true"></i>&nbsp;');
 
 define ('NODE_TOKEN_PREFIX','@@');
 define ('NODE_TOKEN_OR','|');
@@ -291,3 +294,7 @@ $corefields = array(
         'join_fields'
         )
     );
+
+define("COLLECTION_TYPE_STANDARD",  0);
+define("COLLECTION_TYPE_UPLOAD",    1); # for collections used in upload then edit mode
+define("COLLECTION_TYPE_SELECTION", 2); # selecting resources to be edited in batch for the active user (allowed only one per user)

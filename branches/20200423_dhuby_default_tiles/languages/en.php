@@ -517,6 +517,7 @@ $lang["youfound"]="You found"; # e.g. you found 17 resources
 $lang["youfoundresources"]="resources"; # e.g. you found 17 resources
 $lang["youfoundresource"]="resource"; # e.g. you found 1 resource
 $lang["youfoundresults"]="results"; # e.g. you found 17 resources
+$lang["selected"] = "selected";
 $lang["youfoundresult"]="result"; # e.g. you found 1 resource
 $lang["display"]="Display"; # e.g. Display: thumbnails / list
 $lang["sortorder"]="Sort order";
@@ -544,6 +545,7 @@ $lang["filedimensions"]="File dimensions";
 $lang["options"]="Options";
 $lang["previousresult"]="Previous result";
 $lang["viewallresults"]="View all results";
+$lang["vieworiginalresource"]="View original resource";
 $lang["nextresult"]="Next result";
 $lang["pixels"]="pixels";
 $lang["download"]="Download";
@@ -807,6 +809,7 @@ $lang["action-select"]="Select";
 $lang["action-download"]="Download";
 $lang["action-email"]="E-mail";
 $lang["action-edit"]="Edit";
+$lang["action-editmetadata"]="Edit metadata";
 $lang["action-delete"]="Delete";
 $lang["action-deletechecked"]="Delete checked";
 $lang["action-deletecollection"]="Delete collection";
@@ -820,7 +823,7 @@ $lang["continuetohome"]="Continue to the home page";
 $lang["backtohelphome"]="Back to help home";
 $lang["backtosearch"]="Back to my search results";
 $lang["backtoview"]="Resource View";
-$lang["backtoeditresource"]="Back to edit resource";
+$lang["backtoeditmetadata"]="Back to edit metadata";
 $lang["backtouser"]="Back to user login";
 $lang["continuetouser"]="Continue to user login";
 $lang["termsandconditions"]="Terms and conditions";
@@ -874,6 +877,8 @@ $lang['upload_here'] = "Upload here";
 $lang['help-tooltip'] = "Get more information on this page";
 $lang["unauthorized"] = "Unauthorized";
 $lang["warning_duplicate_shortname_fields"] = "There is already a resource type field with the same shortname. Please make it unique!";
+$lang["edit_selected"] = "Edit selected";
+$lang["clear_selected"] = "Clear selected";
 
 # Pager
 $lang["next"]="Next";
@@ -927,6 +932,7 @@ $lang["plugin_field_fmt"]="%A (%B)"; // %A and %B are replaced by content define
 
 #Sharing
 $lang["share"]="Share";
+$lang["share_selected"] = "Share selected";
 $lang["sharecollection"]="Share collection";
 $lang["sharecollection-name"]="Share collection - %collectionname"; # %collectionname will be replaced, e.g. Share Collection - Cars
 $lang["share_theme_category"]="Share featured collection category";
@@ -974,7 +980,9 @@ $lang['email_error_user_list_not_valid'] = 'No valid emails to send to (users mi
 
 # New for 1.3
 $lang["savesearchitemstocollection"]="Save results to collection";
+$lang["add_selected_to_collection"] = "Add selected to collection";
 $lang["removeallresourcesfromcollection"]="Remove all resources from this collection";
+$lang["remove_selected_from_collection"] = "Remove selected from collection";
 $lang['deleteallresourcesfromcollection'] = 'Delete all resources';
 $lang["deleteallsure"]="Are you sure you wish to DELETE these resources? This will delete the resources themselves, not just remove them from this collection.";
 $lang["batchdonotaddcollection"]="(do not add to a collection)";
@@ -1032,6 +1040,7 @@ $lang["removetext"]="Remove text / option(s)";
 $lang["find"]="Find";
 $lang["andreplacewith"]="...and replace with...";
 $lang["relateallresources"]="Relate all resources in this collection";
+$lang["relate_selected_resources"] = "Relate selected resources";
 $lang['relateallresources_confirmation'] = 'All resources in this collection are now related';
 
 # New for 1.5
@@ -1420,6 +1429,7 @@ $lang['plugins-search-results-header'] = 'Plugins search results';
 $lang['plugins-author'] = 'Author';
 $lang['plugins-version'] = 'Version';
 $lang['plugins-instversion'] = 'Installed version';
+$lang['plugins-icon'] = 'Icon';
 $lang['plugins-uploadheader'] = 'Upload plugin';
 $lang['plugins-uploadtext'] = 'Select a .rsp file to install.';
 $lang['plugins-deactivate'] = 'Deactivate';
@@ -1742,6 +1752,9 @@ $lang["can_edit_field"]="Can edit field";
 $lang["can_see_resource_type"]="Can see resource type '%TYPE'. Unchecking this <strong>adds</strong> the 'T%REF' permission";
 $lang["restricted_access_only_to_resource_type"]="Restricted access only to resource type";
 $lang["restricted_upload_for_resource_of_type"]="Restricted upload for resource of type";
+$lang["deny_edit_resource_type"]="Deny edit access to resource of type";
+$lang["deny_edit_all_resource_types"]="Deny edit access to all resource types except those specified by XE- permissions below";
+$lang["can_edit_resource_type"]="Can edit resources of type %%RESOURCETYPE%%. Ignored if XE permission is not present";
 $lang["edit_access_to_workflow_state"]="Edit access to workflow state";
 $lang["edit_access_to_access"]="Edit access to Access state '%STATE'. Unchecking this <strong>adds</strong> the 'ea%REF' permission";
 $lang["can_create_resources_and_upload_files-admins"]="Can create resources / upload files<br>(admin users; resources go to 'Active' state)";
@@ -1842,6 +1855,9 @@ $lang["error-403-forbidden"] = "403 Forbidden.";
 $lang["error-plugin-not-activated"] = "Plugin not activated";
 $lang["error-failed-to-delete"] = "Failed to delete";
 $lang["error-failed-to-move"] = "Failed to move";
+$lang["error-type-mismatch"] = "Argument '%arg' must be of type %expected-type, %type given";
+$lang["error-request-missing-key"] = "Request missing the '%key' parameter."; # %key will be replaced with the missing POST param name required
+$lang["error-collection-unreadable"] = "Your user doesn't have read access to collection #%ref."; # %ref will be replaced with the actual collection ref
 
 $lang["no-options-available"]="No options available";
 $lang["header-upload-subtitle"] = "Step %number: %subtitle"; # %number, %subtitle will be replaced, e.g. Step 1: Specify Default Content For New Resources
@@ -1908,6 +1924,7 @@ $lang["requestassignedtoyoumail"]="A resource request has been assigned to you f
 
 $lang["manageresources-overquota"]="Resource management disabled - you have exceeded your disk usage quota";
 $lang["searchitemsdiskusage"]="Disk space used by results";
+$lang["selected_items_disk_usage"] = "Disk space used by selected";
 $lang['collection_disk_usage'] = 'Disk space used by all resources';
 $lang["matchingresourceslabel"]="Matching resources";
 
@@ -2296,7 +2313,6 @@ $lang["team_stats__introtext"]="Charts are generated on demand based on live dat
 $lang["team_user__introtext"]="Use this section to add, remove and modify users.";
 $lang["terms__introtext"]="Before you proceed you must accept the terms and conditions.\n\n";
 $lang["terms__terms"]="Your terms and conditions go here.";
-$lang["terms and conditions__terms and conditions"]="Your terms and conditions go here.";
 $lang["themes__findpublic"]="Public collections are collections of resources that have been shared by other users.";
 $lang["themes__introtext"]="Featured collections are groups of resources that have been selected by the administrators to provide an example of the resources available in the system.";
 $lang["themes__manage"]="Organise and edit the featured collections available online. Featured collections are specially promoted collections. <br /><br /> <strong>1 To create a new entry under a Featured collection -  build a collection</strong><br /> Choose <strong>My Collections</strong> from the main top menu and set up a brand new <strong>public</strong> collection. Remember to include a featured collection name during the setup. Use an existing featured collection name to group the collection under a current featured collection (make sure you type it exactly the same), or choose a new title to create a brand new featured collection. Never allow users to add/remove resources from featured collections. <br /> <br /><strong>2 To edit the content of an existing entry under a featured collection </strong><br /> Choose <strong>edit collection</strong>. The items in that collection will appear in the <strong>My Collections</strong> panel at the bottom of the screen. Use the standard tools to edit, remove or add resources. <br /> <br /><strong>3 To alter a featured collection name or move a collection to appear under a different featured collection</strong><br /> Choose <strong>edit properties</strong> and edit featured collection category or collection name. Use an existing featured collection name to group the collection under an current featured collection (make sure you type it exactly the same), or choose a new title to create a brand new featured collection. <br /> <br /><strong>4 To remove a collection from a featured collection </strong><br /> Choose <strong>edit properties</strong> and delete the words in the featured collection category box. ";
@@ -2380,6 +2396,7 @@ $lang['manage_dash_tiles'] = 'Manage dash tiles';
 $lang['view_tiles'] = 'View tiles';
 $lang['upgrade_available_title'] = 'Upgrade available';
 $lang['upgrade_available_text'] = 'Click for more information about the new version';
+$lang["upgrade_in_progress"] = "Upgrade in progress";
 
 /* User group dash tiles */
 $lang['manage_user_group_dash_tiles']  = 'Manage user group dash tiles';
@@ -2666,7 +2683,7 @@ $lang["collection_restype_blocked"]="The following resource types cannot be adde
 $lang["retina_mode"]="Retina mode";
 
 $lang["private-api-key"]="Private API key";
-$lang["can_edit_resource_type"] = "Force edit access to resource type: ";
+$lang["force_edit_resource_type"] = "Force edit access to resource type: ";
 
 $lang["userpreference_headersize"]="Header size";
 $lang["headersmall"]="Small";
@@ -2782,9 +2799,9 @@ $lang['error-duplicatesfound'] = "Duplicate found: resource(s) %resourceref% mat
 $lang['see_log'] = "Please refer to the log below for more details on this upload.";$lang["edit_copy_from_field"]       = "Copy data from field";
 // Filter rules 
 $lang["filter_migration"]           = "Filter migration";
-$lang["filter_search_success"]      = "Search filter has been successfully migrated.";
-$lang["filter_search_error"]        = "An error was encountered migrating a search filter. Please check the search filter.";
-$lang["filter_search_delete_error"] = "Filter is in use by the following users or groups";
+$lang["filter_migrate_success"]     = "Filter has been successfully migrated.";
+$lang["filter_migrate_error"]       = "An error was encountered migrating a filter. Please check the filter.";
+$lang["filter_delete_error"]        = "Filter is in use by the following users or groups";
 $lang["filter_manage"]              = "Manage filters";
 $lang["filter_edit"]                = "Edit filter";
 $lang["filter_new"]                 = "New filter";
@@ -2866,3 +2883,4 @@ $lang["filechecksum"]                       = "File checksum";
 $lang["system_notification"]                = "%%APPLICATION_NAME%% - system notification";
 $lang["system_notification_email"]          = "[img_headerlogo]<br />\n[message]<br /><br /> \n<a href=\"[url]\">[url]</a><br /><br />\n[text_footer]\n";
 
+$lang["error_edit_filter_invalid"]          = "The edit filter is not correctly configured for this user group. Please contact your administrator";

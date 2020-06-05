@@ -1,5 +1,4 @@
 <?php
-include_once 'search_functions.php';
 include_once 'render_functions.php';
 
 # Store key variables to revert later so that we don't interfere with values that still need to be processed by search.php
@@ -706,6 +705,7 @@ elseif($restypes=='')
               <?php
               
               $y=date("Y");
+              $y += $maxyear_extends_current;
               for ($n=$y;$n>=$minyear;$n--)
                     {
                     ?><option <?php if ($n==$found_year) { ?>selected<?php } ?>><?php echo $n?></option><?php

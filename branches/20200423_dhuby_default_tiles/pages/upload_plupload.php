@@ -1,13 +1,10 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
 if (! (checkperm("c") || checkperm("d")))
     {exit ("Permission denied.");}
 include "../include/image_processing.php";
-include "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once "../include/search_functions.php";
 
 
 $overquota                              = overquota();
@@ -1267,7 +1264,20 @@ var pluploadconfig = {
                                   uploader.bind('UploadComplete', function(up, files) {
                                         jQuery('.plupload_done').slideUp('2000', function() {
                                                         uploader.splice();
-                                                        window.location.href='<?php echo $baseurl_short . "pages/search.php?search=!contributions" . urlencode($userref) . "&archive=" . urlencode($setarchivestate) . (($setarchivestate == -2 && $pending_submission_prompt_review && checkperm("e-1"))?"&promptsubmit=true":"") . (($collection_add!="false")?"&collection_add=" . $collection_add:""); ?>';
+                                                        <?php
+                                                        $redirect_url_params = array(
+                                                            'search'   => '!contributions' . $userref,
+                                                            'order_by' => 'resourceid',
+                                                            'sort'     => 'DESC',
+                                                            'archive'  => $setarchivestate
+                                                        );
+
+                                                        if ($setarchivestate == -2 && $pending_submission_prompt_review && checkperm("e-1")) {$redirect_url_params["promptsubmit"] = 'true';}
+                                                        if ($collection_add !='false'){$redirect_url_params['collection_add'] = $collection_add;}
+
+                                                        $redirect_url = generateURL($baseurl_short . 'pages/search.php',$redirect_url_params);
+                                                        ?>
+                                                        window.location.href='<?php echo $redirect_url; ?>';
                                                         
                                         });
                                   });
@@ -1504,7 +1514,7 @@ if (is_numeric($collection_add) && count(get_collection_external_access($collect
  if  ($alternative!=""){?><p>
 <a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/alternative_files.php?ref=<?php echo urlencode($alternative)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtomanagealternativefiles"]?></a></p><?php } ?>
 
-<?php if ($replace_resource!=""){?><p> <a href="<?php echo $baseurl_short?>pages/edit.php?ref=<?php echo urlencode($replace_resource)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoeditresource"]?></a><br / >
+<?php if ($replace_resource!=""){?><p> <a href="<?php echo $baseurl_short?>pages/edit.php?ref=<?php echo urlencode($replace_resource)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoeditmetadata"]?></a><br / >
 <a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($replace_resource) ?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p><?php } ?>
 
 <?php if ($alternative!=""){$resource=get_resource_data($alternative);
@@ -1659,10 +1669,12 @@ if ($status!="") { ?><?php echo $status?><?php } ?>
 if ($show_upload_log)
     {
     ?>
+    <div class="BasicsBox">
     <h2 class="CollapsibleSectionHead collapsed" id="UploadLogSectionHead" onClick="UICenterScrollBottom();"><?php echo $lang["log"]; ?></h2>
     <div class="CollapsibleSection" id="UploadLogSection">
         <textarea id="upload_log" rows=10 cols=100 style="width: 100%; border: solid 1px;" ><?php echo  $lang["plupload_log_intro"] . date("d M y @ H:i"); ?></textarea>
     </div> <!-- End of UploadLogSection -->
+    </div>
     <?php
     }
     ?>    

@@ -140,7 +140,7 @@ function extractFitsMetadata($file_path, $resource)
             WHERE length(rtf.fits_field) > 0
               AND (rtf.resource_type = '{$resource_type}' OR rtf.resource_type = 0)
          ORDER BY fits_field;
-    ");
+    ", "schema");
 
     if(0 === count($rs_fields_to_read_for))
         {
@@ -192,8 +192,17 @@ function check_date_format($date)
     {
     global $lang;
 
+    // Check the format of the date to "yyyy-mm-dd hh:mm:ss"
+    if (preg_match("/^([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})$/", $date, $parts))
+        {
+        if (!checkdate($parts[2], $parts[3], $parts[1]))
+            {
+            return str_replace("%date%", $date, $lang["invalid_date_error"]);
+            }
+        return str_replace("%date%", $date, check_date_parts($parts));
+        } 
     // Check the format of the date to "yyyy-mm-dd hh:mm"
-    if (preg_match("/^([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})$/", $date, $parts))
+    elseif (preg_match("/^([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})$/", $date, $parts))
         {
         if (!checkdate($parts[2], $parts[3], $parts[1]))
             {

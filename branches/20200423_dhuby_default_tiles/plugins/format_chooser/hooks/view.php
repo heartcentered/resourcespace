@@ -14,51 +14,62 @@ function show_table_headers($showprice)
 	}
 
 function HookFormat_chooserViewReplacedownloadoptions()
-	{
+    {
     global $resource, $ref, $counter, $headline, $lang, $download_multisize, $showprice, $save_as, $direct_link_previews, 
            $hide_restricted_download_sizes, $format_chooser_output_formats, $baseurl_short, $search, $offset, $k, 
            $order_by, $sort, $archive, $baseurl, $urlparams, $terms_download,$download_usage;
 
-	$inputFormat = $resource['file_extension'];
+    $inputFormat = $resource['file_extension'];
 
-	if ($resource["has_image"] != 1 || !$download_multisize || $save_as
-			|| !supportsInputFormat($inputFormat))
-		return false;
+    if ($resource["has_image"] != 1 || !$download_multisize || $save_as
+            || !supportsInputFormat($inputFormat))
+        return false;
 
-	$defaultFormat = getDefaultOutputFormat($inputFormat);
-	$tableHeadersDrawn = false;
+    $defaultFormat = getDefaultOutputFormat($inputFormat);
+    $tableHeadersDrawn = false;
 
-	?><table cellpadding="0" cellspacing="0" id="ResourceDownloadOptions"><?php
-	hook("formatchooserbeforedownloads");
-	$sizes = get_image_sizes($ref, false, $resource['file_extension'], false);
-	$downloadCount = 0;
-	$originalSize = -1;
-
-	# Show original file download
+    ?><table cellpadding="0" cellspacing="0" id="ResourceDownloadOptions"><?php
+    hook("formatchooserbeforedownloads");
+    $sizes = get_image_sizes($ref, false, $resource['file_extension'], false);
+    $downloadCount = 0;
+    $originalSize = -1;
+    # Show original file download
 	for ($n = 0; $n < count($sizes); $n++)
-		{
-		$downloadthissize = resource_download_allowed($ref, $sizes[$n]["id"], $resource["resource_type"]);
-		$counter++;
-
-		if ($sizes[$n]['id'] != '') {
-			if ($downloadthissize)
-				$downloadCount++;
-			continue;
-		}
+        {
+        $downloadthissize = resource_download_allowed($ref, $sizes[$n]["id"], $resource["resource_type"]);
+        $counter++;
+        if ($sizes[$n]['id'] != '')
+            {
+            if ($downloadthissize
+                ||
+                (!$hide_restricted_download_sizes && !$downloadthissize && checkperm("q"))
+                )
+                {
+                $downloadCount++;
+                }
+            continue;
+            }
 
 		# Is this the original file? Set that the user can download the original file
 		# so the request box does not appear.
 		$fulldownload = false;
-		if ($sizes[$n]["id"] == "")
-			$fulldownload = true;
+        if ($sizes[$n]["id"] == "")
+            {
+            $fulldownload = true;
+            $fullaccess = $downloadthissize;
+            }
 
 		$originalSize = $sizes[$n];
 
 		$headline = $lang['collection_download_original'];
-		if ($direct_link_previews && $downloadthissize)
-			$headline = make_download_preview_link($ref, $sizes[$n]);
-		if ($hide_restricted_download_sizes && !$downloadthissize && !checkperm("q"))
-			continue;
+        if ($direct_link_previews && $downloadthissize)
+            {
+            $headline = make_download_preview_link($ref, $sizes[$n]);
+            }
+        if ($hide_restricted_download_sizes && !$downloadthissize && !checkperm("q"))
+            {
+            continue;
+            }
 
 		if (!$tableHeadersDrawn)
 			{
@@ -90,9 +101,9 @@ function HookFormat_chooserViewReplacedownloadoptions()
 
 		?><tr class="DownloadDBlend">
 		<td class="DownloadFileSizePicker"><select id="size"><?php
-
-		$sizes = get_all_image_sizes();
-
+        $sizes = get_all_image_sizes();
+        $restrictedsizes = array();
+        
 		# Filter out all sizes that are larger than our image size, but not the closest one
 		for ($n = 0; $n < count($sizes); $n++)
 			{
@@ -102,25 +113,40 @@ function HookFormat_chooserViewReplacedownloadoptions()
 				$closestSize = (int)$sizes[$n]['width'];
 			}
         $all_sizes=$sizes;			
-		for ($n = 0; $n < count($all_sizes); $n++)
-			{
-			if (intval($sizes[$n]['width']) != $closestSize
-					&& intval($sizes[$n]['width']) > intval($originalSize['width'])
-					&& intval($sizes[$n]['height']) > intval($originalSize['height']))
-				unset($sizes[$n]);
-			}
-		foreach ($sizes as $n => $size)
-			{
-			# Only add choice if allowed
-			$downloadthissize = resource_download_allowed($ref, $size["id"], $resource["resource_type"]);
-			if (!$downloadthissize)
-				continue;
+        for ($n = 0; $n < count($all_sizes); $n++)
+            {
+            if (intval($sizes[$n]['width']) != $closestSize
+                    && intval($sizes[$n]['width']) > intval($originalSize['width'])
+                    && intval($sizes[$n]['height']) > intval($originalSize['height']))
+                unset($sizes[$n]);
+            }
+        foreach ($sizes as $n => $size)
+            {
+            # Only add choice if allowed
+            $downloadthissize = resource_download_allowed($ref, $size["id"], $resource["resource_type"]);
+            if($size["id"] == "hpr" && strtolower($resource["file_extension"]) == "jpg" && isset($fullaccess) && !$fullaccess)
+                {
+                $downloadthissize = false;   
+                }
+
+            if ($hide_restricted_download_sizes && !$downloadthissize && !checkperm("q"))
+                {
+                // No option to request restricted sizes
+                continue;
+                }
+
+            if(!$downloadthissize)
+                {
+                // This size is restricted - store to use in script array so download button can change 
+                $restrictedsizes[] = $sizes[$n]["id"];
+                }
 
 			$name = $size['name'];
 			if ($size['width'] == $closestSize)
 				$name = $lang['format_chooser_original_size'];
-			?><option value="<?php echo $n ?>"><?php echo $name ?></option><?php
-			}
+            ?><option value="<?php echo $n ?>"><?php echo $name ?></option><?php
+            }
+            
 		?></select><p id="sizeInfo"></p></td><?php
 		if ($showprice)
 			{
@@ -152,10 +178,10 @@ function HookFormat_chooserViewReplacedownloadoptions()
 					{
 					if ($size['width'] == $closestSize)
 						$size = $originalSize;
-				?>
-				<?php echo $n ?>: {
-					'info': '<?php echo get_size_info($size, $originalSize) ?>',
-					'id': '<?php echo $size['id'] ?>',
+                    echo $n ?>: {
+                    'info': '<?php echo get_size_info($size, $originalSize) ?>',
+                    'id': '<?php echo $size['id'] ?>',
+                    'restricted': '<?php echo in_array($sizes[$n]["id"],$restrictedsizes) ? "1" : "0" ?>'
 				},
 				<?php } ?>
 			};
@@ -168,6 +194,17 @@ function HookFormat_chooserViewReplacedownloadoptions()
 			function updateDownloadLink() {
 				var index = jQuery('select#size').find(":selected").val();
 				var selectedFormat = jQuery('select#format').find(":selected").val();
+                if(sizeInfo[index]["restricted"] != 0)
+                    {
+                    request_url = "<?php echo generateURL("{$baseurl}/pages/resource_request.php", $urlparams); ?>";
+                    jQuery("a#convertDownload").attr("href", request_url);
+                    jQuery("a#convertDownload").text("<?php echo $lang["action-request"]?>");
+                    return;
+                    }
+                
+                jQuery("a#convertDownload").text("<?php echo $lang["action-download"]?>");
+
+            
 				var profile = jQuery('select#profile').find(":selected").val();
 				if (profile)
 					profile = "&profile=" + profile;
@@ -187,7 +224,6 @@ function HookFormat_chooserViewReplacedownloadoptions()
                         terms_url += "&url=" + encodeURIComponent(basePage);
                     
                     jQuery("a#convertDownload").attr("href", terms_url);
-
                     return;
 					}
 
@@ -225,10 +261,10 @@ function HookFormat_chooserViewReplacedownloadoptions()
 		</script>
 		<?php
 		}
-		global $access,$alt_types_organize,$alternative_file_previews,$userrequestmode;
+		global $access,$alt_types_organize,$alternative_file_previews,$userrequestmode,$alt_files_visible_when_restricted;
 	# Alternative files listing
 $alt_access=hook("altfilesaccess");
-if ($access==0) $alt_access=true; # open access (not restricted)
+if ($access==0 || $alt_files_visible_when_restricted) $alt_access=true; # open access (not restricted)
 if ($alt_access) 
 	{
 	$alt_order_by="";$alt_sort="";
@@ -311,7 +347,13 @@ if ($alt_access)
 		else { ?>
 			<a href="#" onclick="directDownload('<?php echo $baseurl_short?>pages/download_progress.php?ref=<?php echo urlencode($ref)?>&ext=<?php echo $altfiles[$n]["file_extension"]?>&k=<?php echo urlencode($k)?>&alternative=<?php echo $altfiles[$n]["ref"]?>')"><?php echo $lang["action-download"]?></a>
 		<?php } ?></td></td>
-		<?php } else { ?>
+		<?php } 
+		else if (checkperm("q"))
+		{
+			?><td class="DownloadButton"><a href="<?php echo generateURL($baseurl_short."/pages/resource_request.php",$urlparams) ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["action-request"]?></td></td><?php
+		}
+		else 
+		{ ?>
 		<td class="DownloadButton DownloadDisabled"><?php echo $lang["access1"]?></td>
 		<?php } ?>
 		</tr>

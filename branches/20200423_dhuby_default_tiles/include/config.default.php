@@ -93,6 +93,12 @@ $scramble_key="abcdef123";
 # global number of installations, users and resources.
 $send_statistics=true;
 
+# Query cache time in minutes. How long before the disk cache is refreshed for a given result set. Should not be necessary to change this.
+$query_cache_expires_minutes=30;
+
+# The level of PHP error reporting to use. By default, hide warnings.
+$config_error_reporting=E_ALL & ~E_WARNING & ~E_NOTICE;
+
 # Enable work-arounds required when installed on Microsoft Windows systems
 $config_windows=false;
 
@@ -200,9 +206,6 @@ $linkedheaderimgsrc="";
 
 # Change the Header Logo link to another address by uncommenting and setting the variable below
 # $header_link_url=http://my-alternative-header-link
-
-# Include ResourceSpace version header in View Source
-$include_rs_header_info=true;
 
 # Used for specifying custom colours for header 
 $header_colour_style_override='';
@@ -732,6 +735,11 @@ $archive_search=false;
 # Allows users to request resources via a form, which is e-mailed.
 $research_request=false;
 
+# custom research request fields
+# see https://www.resourcespace.com/knowledge-base/resourceadmin/user-research-requests
+$custom_researchrequest_fields = array();
+
+
 # Country search in the right nav? (requires a field with the short name 'country')
 $country_search=false;
 
@@ -954,7 +962,7 @@ $user_purge=true;
 # List of active plugins.
 # Note that multiple plugins must be specified within array() as follows:
 # $plugins=array("loader","rss","messaging","googledisplay"); 
-$plugins = array('transform', 'rse_version', 'lightbox_preview', 'rse_search_notifications', 'rse_workflow');
+$plugins = array('transform', 'rse_version', 'lightbox_preview', 'rse_search_notifications', 'rse_workflow', 'licensemanager', 'image_banks');
 
 # Optional list of plugins that cannot be enabled through the UI. Can be useful to lock down system for hosting situations
 $disabled_plugins=array();
@@ -1408,7 +1416,8 @@ $category_tree_search_use_and=false;
 # Option to force single branch selection in category tree selection 
 $cat_tree_singlebranch=false;
 
-# Force selection of parent nodes when selecting a sub node?
+# Force selection of parent nodes when selecting a sub node? 
+# If set to false then each node should be unique to avoid possible corruption when exporting/importing data
 $category_tree_add_parents=true;
 
 # Force deselection of child nodes when deselecting a node?
@@ -1825,6 +1834,9 @@ $view_title_field=8;
 # Searchable Date Field:
 $date_field=12; 
 
+# Search for dates into the future. Allows the specified number of years ahead of this year to be added to the year drop down used by simple and advanced search.
+$maxyear_extends_current=0;
+
 # Data Joins -- Developer's tool to allow adding additional resource field data to the resource table for use in search displays.
 # ex. $data_joins=array(13); to add the expiry date to the general search query result.  
 $data_joins=array();
@@ -2056,6 +2068,9 @@ $collection_frame_height=153;
 
 # Ability to hide error messages
 $show_error_messages=true;
+
+# Include detail of errors to user
+$show_detailed_errors=false;
 
 # Ability to set that the 'request' button on resources adds the item to the current collection (which then can be requested) instead of starting a request process for this individual item.
 $request_adds_to_collection=false;
@@ -2409,9 +2424,6 @@ $site_text_custom_create=false;
 $resource_hit_count_on_downloads=false;
 $show_hitcount=false;
 
-# Use checkboxes for selecting resources 
-$use_checkboxes_for_selection=false;
-
 # allow player for mp3 files
 # player docs at http://flash-mp3-player.net/players/maxi/
 # Updated October 2015 so will use VideoJS if enabled ($videojs=true;)
@@ -2481,12 +2493,19 @@ $geo_search_restrict=array
 # Add OpenLayers configuration options to this variable to overwrite all other options. 
 $geo_override_options = "";
 
-$geo_tile_servers = array();
-$geo_tile_servers[] = 'a.tile.openstreetmap.org';
-$geo_tile_servers[] = 'b.tile.openstreetmap.org';
-$geo_tile_servers[] = 'c.tile.openstreetmap.org';
-$geo_tile_cache_lifetime = 60*60*24*365; // 1 year by default to prevent hitting tile server 
+// Only high level tiles are included by default. If you require higher resolution tiles 
+// you need permitted access to a full tile server, or you can set up your own. 
+// See https://wiki.openstreetmap.org/wiki/Tile_servers for more information
+// If no servers are available then your zoom ability will be limited
 
+$geo_tile_servers = array();
+//$geo_tile_servers[] = 'a.tile.sometileserver.org';
+//$geo_tile_servers[] = 'b.tile.sometileserver.org';
+//$geo_tile_servers[] = 'c.tile.sometileserver.org';
+
+// How long will tiles be cached? Set to one year by default
+// Unless absolutely necessary this should be a long period to avoid too many requests to the tile server
+$geo_tile_cache_lifetime = 60*60*24*365;
 
 # QuickLook previews (Mac Only)
 # If configured, attempt to produce a preview for files using Mac OS-X's built in QuickLook preview system which support multiple files.
@@ -2536,7 +2555,7 @@ $metadata_template_mandatory = false;
 $view_resource_collections=false;
 
 # enable titles on the search page that help describe the current context
-$search_titles=false;
+$search_titles=true;
 # whether all/additional keywords should be displayed in search titles (ex. "Recent 1000 / pdf")
 $search_titles_searchcrumbs=false;
 # whether field-specific keywords should include their shortnames in searchcrumbs (if $search_titles_searchcrumbs=true;) ex. "originalfilename:pdf"
@@ -3183,14 +3202,15 @@ $resource_view_modal=true;
 # Option to show other standard pages e.g. resource requests in a modal
 $modal_default=false;
 
-# Show the resource edit in a modal when accessed from resource view modal.
-$resource_edit_modal_from_view_modal=false;
-
 # Use the "preview" size on the resource view page
 $resource_view_use_pre = false;
 
 # Only use use the larger layout on the view page for certain file extensions.
 # $resource_view_large_ext = array("jpg", "jpeg", "tif", "tiff", "gif", "png", "svg");
+
+# Use the larger layout on the view page for landscape images, smaller layout for portrait images.
+# NOTE: Enabling $resource_view_large_ext will override this.
+$resource_view_large_orientation = false;
 
 # Show geographical search results in a modal
 $geo_search_modal_results = true;
@@ -3684,7 +3704,10 @@ $ghostscript_extensions = array('ps', 'pdf');
 $non_image_types_generate_preview_only = true;
 
 // Enable updated search filter functionality? Allows for simpler setup of more advanced search filters
-// Once enabled the filters will gradually be updated as users search. To update all the filter immediately run upgrade/scripts/005_migrate_search_filters.php
+// Once enabled the filters will gradually be updated as users search.
+// NOTE - from v9.3 onwards, enabling this will also update edit and derestrict filters to use the same filters
+// To update all the search filters immediately run upgrade/scripts/005_migrate_search_filters.php
+// To update edit and derestrict filters run upgrade/scripts/009_migrate_edit_derestrict_filters.php
 $search_filter_nodes = false;
 
 // Browse bar 

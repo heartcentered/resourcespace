@@ -1,9 +1,9 @@
 <?php
-include_once(__DIR__ . '/../../include/search_functions.php');
 
 // Check that get_Suggested keywords does not return data from fields that user does not have access to
 
 if (php_sapi_name()!=="cli") {exit("This utility is command line only.");}
+clear_query_cache("schema");
 
 $resourcea=create_resource(1,0);
 $resourceb=create_resource(1,0);
@@ -19,6 +19,7 @@ $userpermissions[]='f-' . $hidefield;
 // Set variables that could cause false results
 unset($hidden_fields_cache);
 $autocomplete_search_min_hitcount = 1;
+clear_query_cache("schema");
 
 $input = substr($sensitivename,0,5);
 $keywords=get_suggested_keywords($input);
@@ -40,6 +41,7 @@ $userpermissions[]='f-' . $hidenodefield;
 // Set variables that could cause false results
 unset($hidden_fields_cache);
 $autocomplete_search_min_hitcount = 1;
+clear_query_cache("schema");
 
 $input = substr($sensitivenodename,0,5);
 $keywords=get_suggested_keywords($input);

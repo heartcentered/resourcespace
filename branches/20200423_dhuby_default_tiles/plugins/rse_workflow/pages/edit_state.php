@@ -4,7 +4,6 @@
 #
 
 include '../../../include/db.php';
-include_once '../../../include/general.php';
 include '../../../include/authenticate.php'; if (!checkperm('a')) {exit ($lang['error-permissiondenied']);}
 unset($additional_archive_states);$additional_archive_states=array();
 include_once '../include/rse_workflow_functions.php';
@@ -98,7 +97,8 @@ if (getvalescaped("submitted","")!="" && enforcePostRequest(getval("ajax", false
                        simple_search_flag = '$simple_search_escaped'
                  WHERE code = '$code'");
             }
-
+        
+        clear_query_cache("workflow");
         $saved=true;
         }
     

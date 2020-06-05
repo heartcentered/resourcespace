@@ -1,15 +1,12 @@
 <?php
 
 include "../../../include/db.php";
-include_once "../../../include/general.php";
+
 include "../../../include/authenticate.php";
-include_once "../../../include/collections_functions.php";
-include "../../../include/search_functions.php";
-include "../../../include/resource_functions.php";
 include "../../../include/image_processing.php";
 
 # Fetch videos and process...
-$videos = do_search("!collection" . $usercollection);
+$videos = do_search("!collection" . $usercollection, '', 'collection', 0, $max_collection_thumbs, "ASC");
 $splice_order = getval("splice_order", "");
 
 if (getval("splice","") != "" && count($videos) > 1 && enforcePostRequest(false))

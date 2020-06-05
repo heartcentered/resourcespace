@@ -402,7 +402,7 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .Listview {overflow-x:auto; margin: 0 0 25px 0;}
 .ListviewTight {margin: 5px 10px 5px 0;}
 .Listview table{ width:100%;}
-.Listview td {padding:6px 8px 6px 8px;vertical-align: top;}
+.Listview td, .Listview th {padding:6px 8px 6px 8px;vertical-align: top;}
 .ListTools {text-align: right;}
 .ListTitle {font-weight: bold;}
 .Listview .IconStar {width:11px;height:12px;padding: 0;display: block;float:left;}
@@ -629,8 +629,8 @@ behavior: url('../css/iepngfix.htc');
 .NewFlag {display:inline;font-size:0.6em;margin-left:5px;padding:1px 3px 1px 3px;}
 .Breadcrumbs {float:left;margin-top:4px;}
 .SearchBreadcrumbs {margin-top:15px;}
-.SearchTitle {padding: 0px;margin-top:15px;}
-.SearchTitle + p{padding-bottom: 0px;}
+.SearchTitle {padding: 0px;margin-top:-10px;margin-bottom:5px;}
+.SearchTitle + p{padding-bottom: 7px;}
 .SearchBreadcrumbs + .RecordHeader .SearchTitle {margin-top:0px;}
 
 .CategoryBox {overflow:auto;width:414px;height:80px;padding:2px;font-size:1em;}
@@ -676,10 +676,10 @@ div.autocomplete ul li {
 #UserRatingMessage {padding-left: 10px;}
 
 /* CSS for the lightbox (for resource feedback) */
-#lightbox{  position: absolute; left: 0; width: 100%; z-index: 100; text-align: center; line-height: 0;}
+#lightbox{  position: absolute; left: 0; width: 100%; z-index: 120; text-align: center; line-height: 0;}
 #lightbox img{ width: auto; height: auto;}
 #lightbox a img{ border: none; }
-.lightboxOverlay {z-index: 10;}
+.lightboxOverlay {z-index: 110;}
 
 #outerImageContainer{ position: relative; width: 250px; height: 250px; margin: 0 auto; }
 #imageContainer{ padding: 10px; }
@@ -1074,6 +1074,13 @@ a.HomePanel:hover {
 #SearchPlugins, .ResultsFilterTopRight {
     float: right;
     font-size: 0.7em;
+}
+
+/* Plugin icon styling */
+.plugin-icon {
+    font-size: 28px;
+    width: 100%;
+    text-align: center;
 }
 
 /* Maintenance Page */

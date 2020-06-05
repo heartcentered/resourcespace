@@ -1010,7 +1010,7 @@ function extract_exif_comment($ref,$extension="")
             #echo "<pre>IPTC\n";print_r($iptc);exit();
 
             # Look for iptc fields, and insert.
-            $fields=sql_query("select * from resource_type_field where length(iptc_equiv)>0");
+            $fields=sql_query("select * from resource_type_field where length(iptc_equiv)>0", "schema");
             for ($n=0;$n<count($fields);$n++)
                 {
                 $iptc_equiv=$fields[$n]["iptc_equiv"];
@@ -1168,12 +1168,15 @@ function create_previews($ref,$thumbonly=false,$extension="jpg",$previewonly=fal
 
     # Handle alternative image file generation.
     global $image_alternatives;
+    # Check against the resource extension as extension might refer to a jpg preview file
+    $resource_extension = sql_value('SELECT file_extension value FROM resource WHERE ref=' . $ref . ';','');
+    
     if(isset($image_alternatives) && $alternative == -1)
         {
         for($n = 0; $n < count($image_alternatives); $n++)
             {
             $exts = explode(',', $image_alternatives[$n]['source_extensions']);
-            if(in_array($extension, $exts))
+            if(in_array($resource_extension, $exts))
                 {
                 # Remove any existing alternative file(s) with this name.
                 $existing = sql_query("SELECT ref FROM resource_alt_files WHERE resource = '$ref' AND name = '" . escape_check($image_alternatives[$n]['name']) . "'");
@@ -1504,7 +1507,7 @@ function create_previews_using_im($ref,$thumbonly=false,$extension="jpg",$previe
                 $fullgenerated = false;
                 $tileregion = $preview_tile_size * $scale;
                 debug("create_previews - creating tiles at scale: " . $scale . ". Region size=" . $tileregion);
-                if($fullgenerated && $tileregion > $sh || $tileregion > $sw)
+                if($fullgenerated && $tileregion > $sh && $tileregion > $sw)
                     {
                     debug("create_previews scaled tile (" . $scale . ") too large for source. Tile region length: " . $tileregion );
                     continue;
