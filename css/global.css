@@ -1714,7 +1714,6 @@ select.MultiSelect:before {
 }
 .BrowseBarLink{
     display: table-cell;
-    vertical-align: top;
     white-space: normal;
     padding-left: 4px;
 }
