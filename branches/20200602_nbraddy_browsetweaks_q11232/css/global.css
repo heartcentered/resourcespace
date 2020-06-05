@@ -1716,6 +1716,7 @@ select.MultiSelect:before {
     display: table-cell;
     white-space: normal;
     padding-left: 4px;
+    font-size: 90%;
 }
 #BrowseBar .BrowseLine {
     border-right: 1px solid;
