@@ -13,7 +13,7 @@ set_time_limit($cron_job_time_limit);
 
 // Init script logging (if set)
 global $museumplus_log_directory;
-$mplus_log_file = '';
+$mplus_log_file = null;
 if('' != trim($museumplus_log_directory))
     {
     if(!is_dir($museumplus_log_directory))
@@ -32,6 +32,7 @@ if('' != trim($museumplus_log_directory))
     // New log file
     $mplus_log_file = fopen($museumplus_log_directory . DIRECTORY_SEPARATOR . 'mplus_script_log_' . date('Y_m_d-H_i') . '.log', 'ab');
     }
+
 
 // Script options @see https://www.php.net/manual/en/function.getopt.php
 $mplus_short_options = 'hc';
@@ -167,6 +168,9 @@ foreach($mplus_resources as $mplus_resource)
 
 logScript("", $mplus_log_file);
 logScript(sprintf("MuseumPlus script completed in %01.2f seconds.", microtime(true) - $mplus_script_start_time), $mplus_log_file);
-fclose($mplus_log_file);
+if ($mplus_log_file != null)
+    {
+    fclose($mplus_log_file);
+    }
 sql_query("UPDATE sysvars SET `value` = NOW() WHERE `name` = '" . MPLUS_LAST_IMPORT . "'");
 clear_process_lock(MPLUS_LOCK);

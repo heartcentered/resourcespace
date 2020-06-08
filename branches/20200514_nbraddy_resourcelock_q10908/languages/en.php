@@ -138,6 +138,7 @@ $lang["property-enable_partial_indexing"]="Enable partial indexing";
 $lang["information-shorthand_name"]="Important: Shorthand name must be set for the field to be appear on the search bar, in Advanced search or to be used in search/edit filters. It must contain only lowercase alphabetical characters and/or numbers - no spaces or symbols.";
 $lang["property-shorthand_name"]="Shorthand name";
 $lang["property-display_field"]="Display field";
+$lang['property-field_full_width'] = "Display full width on view page";
 $lang["property-enable_advanced_search"]="Enable advanced search";
 $lang["property-enable_simple_search"]="Enable simple search";
 $lang["property-use_for_find_similar_searching"]="Use for find similar searching";
@@ -1008,6 +1009,7 @@ $lang["existingkeywords"]="Existing keywords:";
 $lang["extrakeywords"]="Extra keywords";
 $lang["leaderboard"]="Leaderboard";
 $lang["confirmeditall"]="Are you sure you wish to save? This will overwrite the existing values(s) for the selected field(s) for all the resources in your current collection.";
+$lang["confirm_edit_all_selected_resources"] = "Are you sure you wish to save? This will overwrite the existing values(s) for the selected field(s) for all the selected resources.";
 $lang["confirmsubmitall"]="Are you sure you wish to submit all for review? This will overwrite the existing values(s) for the selected field(s) for all the resources in your current collection and submit them all for review.";
 $lang["confirmunsubmitall"]="Are you sure you wish to unsubmit all from the review process? This will overwrite the existing values(s) for the selected field(s) for all the resources in your current collection and unsubmit them all from review.";
 $lang["confirmpublishall"]="Are you sure you wish to publish? This will overwrite the existing values(s) for the selected field(s) for all the resources in your current collection and publish them all for public viewing";
@@ -2727,7 +2729,7 @@ $lang["actions_view_editable_as_resultset"]="View resources to review as a resul
 
 $lang["refinemetadata"]="Refine metadata";
 $lang["saveandnext"]="Save and next";
-$lang["save_and_auto"]="Save and auto-next"; 
+$lang["save_and_auto"]="Save all with locked values"; 
 
 $lang["upload_sequence"]="Upload sequence";
 $lang["default_upload_sequence"]="Default upload sequence";

@@ -1091,7 +1091,7 @@ function render_actions(array $collection_data, $top_actions = true, $two_line =
 
             // Add extra collection actions javascript case through plugins
             // Note: if you are just going to a different page, it should be easily picked by the default case
-            $extra_options_js_case = hook('render_actions_add_option_js_case');
+            $extra_options_js_case = hook('render_actions_add_option_js_case', '', array($action_selection_id));
             if(trim($extra_options_js_case) !== '')
                 {
                 echo $extra_options_js_case;
@@ -2906,7 +2906,7 @@ function generate_browse_bar_item($id, $text)
     $html .= '<div class="BrowseBarStructure">
             <a href="#" class="browse_expand browse_closed" onclick="toggleBrowseElements(\'' . $id . '\',false,true);" ></a>
             </div><!-- End of BrowseBarStructure -->';	
-    $html .= '<div class="BrowseBarLink" >' . $text . '</div>';
+    $html .= '<div onclick="toggleBrowseElements(\'' . $id . '\',false,true);" class="BrowseBarLink" >' . $text . '</div>';
     
     $html .= '<a href="#" class="BrowseRefresh " onclick="toggleBrowseElements(\'' . $id . '\',true, true);" ><i class="fas fa-sync reloadicon"></i></a>';	
     
@@ -3132,10 +3132,11 @@ function render_edit_selected_btn()
             "sort"              =>  "desc",
             "daylimit"          =>  "",
             "editsearchresults" => "true",
+            "modal"             => "true",
         ));
 
     $attributes  = " id=\"EditSelectedResourcesBtn\"";
-    $attributes .= " onclick=\"CentralSpaceLoad('{$batch_edit_url}', true);\"";
+    $attributes .= " onclick=\"ModalLoad('{$batch_edit_url}', true);\"";
 
     return render_filter_bar_button($lang["edit_selected"], $attributes, ICON_EDIT);
     }
@@ -3173,7 +3174,7 @@ function render_selected_collection_actions()
     $search = "!collection{$USER_SELECTION_COLLECTION}";
 
     $orig_result = $result;
-    $result = do_search($search, '', 'relevance', 0, -1, 'desc', false, '', false, '');
+    $result = get_collection_resources_with_data($USER_SELECTION_COLLECTION);
 
     $selected_resources = array_column($result, "ref");
     $resources_count = count($selected_resources);
@@ -3662,7 +3663,233 @@ function display_upload_options()
         return false;
         }
     }
+    
 
+function display_field_data($field,$valueonly=false,$fixedwidth=452)
+	{		
+	global $ref, $show_expiry_warning, $access, $search, $extra, $lang, $FIXED_LIST_FIELD_TYPES, $range_separator, $force_display_template_orderby;
+
+	$value=$field["value"];
+
+    # Populate field value for node based fields so it conforms to automatic ordering setting
+
+    if($field['type'] == FIELD_TYPE_CATEGORY_TREE)
+        {
+        $treenodes = get_resource_nodes($ref, $field["ref"], true);
+        $treetext_arr = get_tree_strings($treenodes);
+        $value = implode(",<br/>",$treetext_arr);        
+        }
+    elseif(in_array($field['type'],$FIXED_LIST_FIELD_TYPES))
+		{
+		# Get all nodes attached to this resource and this field    
+		$nodes_in_sequence = get_resource_nodes($ref,$field['ref'],true);
+		
+		if((bool) $field['automatic_nodes_ordering'])
+			{
+			uasort($nodes_in_sequence,"node_name_comparator");    
+			}
+		else
+			{
+			uasort($nodes_in_sequence,"node_orderby_comparator");    
+			}
+	
+		$node_tree = get_node_tree("", $nodes_in_sequence); // get nodes as a tree in correct hierarchical order
+		$node_names = get_node_elements(array(), $node_tree, "name"); // retrieve values for a selected field in the tree 
+
+		$keyword_array=array();
+		foreach($node_names as $name)
+			{
+			$keyword_array[] = i18n_get_translated($name);
+			}
+		$value = implode(',',$keyword_array);
+		}
+
+	$modified_field=hook("beforeviewdisplayfielddata_processing","",array($field));
+    if($modified_field)
+        {
+		$field=$modified_field;
+	    }
+	
+	# Handle expiry fields
+	if (!$valueonly && $field["type"]==FIELD_TYPE_EXPIRY_DATE && $value!="" && $value<=date("Y-m-d H:i") && $show_expiry_warning) 
+		{
+		$extra.="<div class=\"RecordStory\"> <h1>" . $lang["warningexpired"] . "</h1><p>" . $lang["warningexpiredtext"] . "</p><p id=\"WarningOK\"><a href=\"#\" onClick=\"document.getElementById('RecordDownload').style.display='block';document.getElementById('WarningOK').style.display='none';\">" . $lang["warningexpiredok"] . "</a></p></div><style>#RecordDownload {display:none;}</style>";
+		}
+	
+	# Handle warning messages
+	if (!$valueonly && FIELD_TYPE_WARNING_MESSAGE == $field['type'] && '' != trim($value)) 
+		{
+		$extra.="<div class=\"RecordStory\"><h1>{$lang['fieldtype-warning_message']}</h1><p>" . nl2br(htmlspecialchars(i18n_get_translated($value))) . "</p><br /><p id=\"WarningOK\"><a href=\"#\" onClick=\"document.getElementById('RecordDownload').style.display='block';document.getElementById('WarningOK').style.display='none';\">{$lang['warningexpiredok']}</a></p></div><style>#RecordDownload {display:none;}</style>";
+		}
+	
+	# Process the value using a plugin. Might be processing an empty value so need to do before we remove the empty values
+	$plugin="../plugins/value_filter_" . $field["name"] . ".php";
+	
+    if ($field['value_filter']!="")
+        {
+        eval($field['value_filter']);
+        }
+    else if (file_exists($plugin))
+        {
+        include $plugin;
+        }
+    else if ($field["type"]==FIELD_TYPE_DATE_AND_OPTIONAL_TIME && strpos($value,":")!=false)
+        {
+        // Show the time as well as date if entered
+        $value=nicedate($value,true,true);
+        }
+    else if ($field["type"]==FIELD_TYPE_DATE_AND_OPTIONAL_TIME || $field["type"]==FIELD_TYPE_EXPIRY_DATE || $field["type"]==FIELD_TYPE_DATE)
+        {
+        $value=nicedate($value,false,true);
+        }
+	else if ($field["type"]==FIELD_TYPE_DATE_RANGE) 
+		{
+		$rangedates = explode(",",$value);		
+		natsort($rangedates);
+		$value=implode($range_separator,$rangedates);
+		}
+	
+    if (($field["type"]==FIELD_TYPE_CHECK_BOX_LIST) || ($field["type"]==FIELD_TYPE_DROP_DOWN_LIST) || ($field["type"]==FIELD_TYPE_CATEGORY_TREE) || ($field["type"]==FIELD_TYPE_DYNAMIC_KEYWORDS_LIST))
+        {
+        $value=TidyList($value);
+        }
+	
+	if (($value!="") && ($value!=",") && ($field["display_field"]==1) && ($access==0 || ($access==1 && !$field["hide_when_restricted"])))
+		{			
+		if (!$valueonly)
+			{
+            $title=htmlspecialchars(str_replace("Keywords - ","",$field["title"]));
+            }
+        else
+            {
+            $title="";
+            }
+
+		# Value formatting
+		$value=i18n_get_translated($value);
+		
+		// Don't display the comma for radio buttons:
+        if($field['type'] == FIELD_TYPE_RADIO_BUTTONS)
+            {
+			$value = str_replace(',', '', $value);
+		    }
+
+		$value_unformatted=$value; # store unformatted value for replacement also
+
+        # Do not convert HTML formatted fields (that are already HTML) to HTML. Added check for extracted fields set to 
+        # ckeditor that have not yet been edited.
+        if(
+            $field["type"] != FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR
+            || ($field["type"] == FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR && $value == strip_tags($value))
+            )
+            {
+            $value = nl2br(htmlspecialchars($value));
+            }
+
+		$modified_value = hook('display_field_modified_value', '', array($field));
+        if($modified_value)
+            {		
+			$value = $modified_value['value'];
+		    }
+
+		if (!$valueonly && trim($field["display_template"])!="")
+			{		
+			# Highlight keywords
+			$value=highlightkeywords($value,$search,$field["partial_index"],$field["name"],$field["keywords_index"]);
+			
+			$value_mod_after_highlight=hook('value_mod_after_highlight', '', array($field,$value));
+            if($value_mod_after_highlight)
+                {
+				$value=$value_mod_after_highlight;
+			    }
+
+            # Use a display template to render this field
+            $template = $field['display_template'];
+            $template = str_replace('[title]', $title, $template);
+            $template = str_replace('[value]', strip_tags_and_attributes($value,array("a"),array("href","target")), $template);
+            $template = str_replace('[value_unformatted]', $value_unformatted, $template);
+            $template = str_replace('[ref]', $ref, $template);
+
+            /*Language strings
+            Format: [lang-language-name_here]
+            Example: [lang-resourcetype-photo]
+            */
+            preg_match_all('/\[lang-(.+?)\]/', $template, $template_language_matches);
+            $i = 0;
+            foreach($template_language_matches[0] as $template_language_match_placeholder)
+                {
+                $placeholder_value = $template_language_match_placeholder;
+
+                if(isset($lang[$template_language_matches[1][$i]]))
+                    {
+                    $placeholder_value = $lang[$template_language_matches[1][$i]];
+                    }
+
+                $template = str_replace($template_language_match_placeholder, $placeholder_value, $template);
+
+                $i++;
+                }
+
+            $extra   .= $template;
+			}
+		else
+			{
+			#There is a value in this field, but we also need to check again for a current-language value after the i18n_get_translated() function was called, to avoid drawing empty fields
+            if ($value!="")
+                {
+				# Draw this field normally.				
+
+                /*
+                Sanitize value before rendering.
+                Note: we cannot use htmlspecialchars where we actually render it as that might break highligthing
+                */
+                if($value != strip_tags(htmlspecialchars_decode($value)))
+                    {
+                    // Strip tags moved before highlighting as was being corrupted
+                    $value = strip_tags_and_attributes(htmlspecialchars_decode($value));
+                    }
+                else
+                    {
+                    $value = htmlspecialchars($value);
+                    }
+
+				# Highlight keywords
+				$value=highlightkeywords($value,$search,$field["partial_index"],$field["name"],$field["keywords_index"]);
+				
+				$value_mod_after_highlight=hook('value_mod_after_highlight', '', array($field,$value));
+				if($value_mod_after_highlight)
+					{
+					$value=$value_mod_after_highlight;
+					}
+				
+                ?><div 
+                <?php
+                if (!$valueonly)
+                    {
+                    if ($field["full_width"])
+                        {
+                        echo "class=\"clearerleft item itemType".$field['type']."\"";
+                        }
+                    else
+                        {
+                        echo "class=\"itemNarrow itemType".$field['type']."\"";
+                        }
+                    }
+                elseif (isset($fixedwidth))
+                    {
+                    echo "style=\"width:" . $fixedwidth . "px\"";
+                    } ?>>
+				<h3><?php echo $title?></h3><p><?php echo $value; ?></p></div><?php
+				}
+			}
+			
+        if($force_display_template_orderby)
+            {
+            echo $extra;
+            $extra='';
+            }
+        }
+    }
 
 /*
 * Render the resource lock/unlock link for resource tools
