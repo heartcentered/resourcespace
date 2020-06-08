@@ -6,14 +6,11 @@
  * @subpackage Pages
  */
 include_once "../include/db.php";
-include_once "../include/general.php";
+
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref",""),$k))) {include "../include/authenticate.php";}
-include_once "../include/search_functions.php";
-include_once "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
 include_once "../include/image_processing.php";
-include_once '../include/render_functions.php';
+
 
 // Set a flag for logged in users if $external_share_view_as_internal is set and logged on user is accessing an external share
 $internal_share_access = ($k!="" && $external_share_view_as_internal && isset($is_authenticated) && $is_authenticated);
@@ -158,7 +155,7 @@ if($use_mp3_player)
     $mp3realpath = get_resource_path($ref, true, '', false, 'mp3');
     if(file_exists($mp3realpath))
         {
-        $mp3path = get_resource_path($ref, false, '', false, 'mp3');
+        $mp3path = get_resource_path($ref, false, 'videojs', false, 'mp3');
         }
     }
 
@@ -330,231 +327,7 @@ $edit_access = ($access==0 && get_edit_access($ref,$resource["archive"],$fields,
 
 if ($k!="" && !$internal_share_access) {$edit_access=0;}
 
-function check_view_display_condition($fields,$n,$fields_all)		
-	{
-	#Check if field has a display condition set
-	$displaycondition=true;
-	if ($fields[$n]["display_condition"]!="")
-		{
-		$fieldstocheck=array(); #' Set up array to use in jQuery script function
-		$s=explode(";",$fields[$n]["display_condition"]);
-		$condref=0;
-		foreach ($s as $condition) # Check each condition
-			{
-			$displayconditioncheck=false;
-			$s=explode("=",$condition);
-			for ($cf=0;$cf<count($fields_all);$cf++) # Check each field to see if needs to be checked
-				{
-				if ($s[0]==$fields_all[$cf]["name"]) # this field needs to be checked
-					{					
-					$checkvalues=$s[1];
-					$validvalues=explode("|",strtoupper($checkvalues));
-					$v=trim_array(explode(",",strtoupper($fields_all[$cf]["value"])));
-					foreach ($validvalues as $validvalue)
-						{
-						if (in_array($validvalue,$v)) {$displayconditioncheck=true;} # this is  a valid value						
-						}
-					if (!$displayconditioncheck) {$displaycondition=false;}					
-					}
-					
-				} # see if next field needs to be checked
-							
-			$condref++;
-			} # check next condition	
-		
-		}
-	return $displaycondition;
-	}
-
-function display_field_data($field,$valueonly=false,$fixedwidth=452)
-	{
-		
-	global $ref, $show_expiry_warning, $access, $search, $extra, $lang, $FIXED_LIST_FIELD_TYPES, $range_separator, $force_display_template_orderby;
-
-	$value=$field["value"];
-
-    # Populate field value for node based fields so it conforms to automatic ordering setting
-
-	if(in_array($field['type'],$FIXED_LIST_FIELD_TYPES))
-		{    
-		# Get all nodes attached to this resource and this field    
-		$nodes_in_sequence = get_resource_nodes($ref,$field['ref'],true);
-		
-		if((bool) $field['automatic_nodes_ordering'])
-			{
-			uasort($nodes_in_sequence,"node_name_comparator");    
-			}
-		else
-			{
-			uasort($nodes_in_sequence,"node_orderby_comparator");    
-			}
-	
-		$node_tree = get_node_tree("", $nodes_in_sequence); // get nodes as a tree in correct hierarchical order
-		$node_names = get_node_elements(array(), $node_tree, "name"); // retrieve values for a selected field in the tree 
-
-		$keyword_array=array();
-		foreach($node_names as $name)
-			{
-			$keyword_array[] = i18n_get_translated($name);
-			}
-		$value = implode(',',$keyword_array);
-		}
-
-	$modified_field=hook("beforeviewdisplayfielddata_processing","",array($field));
-	if($modified_field){
-		$field=$modified_field;
-	}
-	
-	# Handle expiry fields
-	if (!$valueonly && $field["type"]==FIELD_TYPE_EXPIRY_DATE && $value!="" && $value<=date("Y-m-d H:i") && $show_expiry_warning) 
-		{
-		$extra.="<div class=\"RecordStory\"> <h1>" . $lang["warningexpired"] . "</h1><p>" . $lang["warningexpiredtext"] . "</p><p id=\"WarningOK\"><a href=\"#\" onClick=\"document.getElementById('RecordDownload').style.display='block';document.getElementById('WarningOK').style.display='none';\">" . $lang["warningexpiredok"] . "</a></p></div><style>#RecordDownload {display:none;}</style>";
-		}
-	
-	# Handle warning messages
-	if (!$valueonly && FIELD_TYPE_WARNING_MESSAGE == $field['type'] && '' != trim($value)) 
-		{
-		$extra.="<div class=\"RecordStory\"><h1>{$lang['fieldtype-warning_message']}</h1><p>" . nl2br(htmlspecialchars(i18n_get_translated($value))) . "</p><br /><p id=\"WarningOK\"><a href=\"#\" onClick=\"document.getElementById('RecordDownload').style.display='block';document.getElementById('WarningOK').style.display='none';\">{$lang['warningexpiredok']}</a></p></div><style>#RecordDownload {display:none;}</style>";
-		}
-	
-	# Process the value using a plugin. Might be processing an empty value so need to do before we remove the empty values
-	$plugin="../plugins/value_filter_" . $field["name"] . ".php";
-	
-	if ($field['value_filter']!="")	{eval($field['value_filter']);}
-	else if (file_exists($plugin)) {include $plugin;}
-	else if ($field["type"]==FIELD_TYPE_DATE_AND_OPTIONAL_TIME && strpos($value,":")!=false){$value=nicedate($value,true,true);} // Show the time as well as date if entered
-	else if ($field["type"]==FIELD_TYPE_DATE_AND_OPTIONAL_TIME || $field["type"]==FIELD_TYPE_EXPIRY_DATE || $field["type"]==FIELD_TYPE_DATE) {$value=nicedate($value,false,true);}
-	else if ($field["type"]==FIELD_TYPE_DATE_RANGE) 
-		{
-		$rangedates = explode(",",$value);		
-		natsort($rangedates);
-		$value=implode($range_separator,$rangedates);
-		}
-	
-	if (($field["type"]==FIELD_TYPE_CHECK_BOX_LIST) || ($field["type"]==FIELD_TYPE_DROP_DOWN_LIST) || ($field["type"]==FIELD_TYPE_CATEGORY_TREE) || ($field["type"]==FIELD_TYPE_DYNAMIC_KEYWORDS_LIST)) {$value=TidyList($value);}
-	
-	if (($value!="") && ($value!=",") && ($field["display_field"]==1) && ($access==0 || ($access==1 && !$field["hide_when_restricted"])))
-		{			
-		if (!$valueonly)
-			{$title=htmlspecialchars(str_replace("Keywords - ","",$field["title"]));}
-		else {$title="";}
-
-		# Value formatting
-		if (($field["type"]==FIELD_TYPE_CHECK_BOX_LIST) || ($field["type"]==FIELD_TYPE_CATEGORY_TREE) || ($field["type"]==FIELD_TYPE_DYNAMIC_KEYWORDS_LIST))
-			{$i18n_split_keywords =true;}
-		else 	{$i18n_split_keywords =false;}
-		$value=i18n_get_translated($value,$i18n_split_keywords );
-		
-		// Don't display the comma for radio buttons:
-		if($field['type'] == FIELD_TYPE_RADIO_BUTTONS) {
-			$value = str_replace(',', '', $value);
-		}
-
-		$value_unformatted=$value; # store unformatted value for replacement also
-
-        # Do not convert HTML formatted fields (that are already HTML) to HTML. Added check for extracted fields set to 
-        # ckeditor that have not yet been edited.
-        if(
-            $field["type"] != FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR
-            || ($field["type"] == FIELD_TYPE_TEXT_BOX_FORMATTED_AND_CKEDITOR && $value == strip_tags($value))
-        )
-            {
-            $value = nl2br(htmlspecialchars($value));
-            }
-
-		$modified_value = hook('display_field_modified_value', '', array($field));
-		if($modified_value) {		
-			$value = $modified_value['value'];
-		}
-
-		if (!$valueonly && trim($field["display_template"])!="")
-			{			
-			# Highlight keywords
-			$value=highlightkeywords($value,$search,$field["partial_index"],$field["name"],$field["keywords_index"]);
-			
-			$value_mod_after_highlight=hook('value_mod_after_highlight', '', array($field,$value));
-			if($value_mod_after_highlight){
-				$value=$value_mod_after_highlight;
-			}
-
-            # Use a display template to render this field
-            $template = $field['display_template'];
-            $template = str_replace('[title]', $title, $template);
-            $template = str_replace('[value]', strip_tags_and_attributes($value,array("a"),array("href","target")), $template);
-            $template = str_replace('[value_unformatted]', $value_unformatted, $template);
-            $template = str_replace('[ref]', $ref, $template);
-
-            /*Language strings
-            Format: [lang-language-name_here]
-            Example: [lang-resourcetype-photo]
-            */
-            preg_match_all('/\[lang-(.+?)\]/', $template, $template_language_matches);
-            $i = 0;
-            foreach($template_language_matches[0] as $template_language_match_placeholder)
-                {
-                $placeholder_value = $template_language_match_placeholder;
-
-                if(isset($lang[$template_language_matches[1][$i]]))
-                    {
-                    $placeholder_value = $lang[$template_language_matches[1][$i]];
-                    }
-
-                $template = str_replace($template_language_match_placeholder, $placeholder_value, $template);
-
-                $i++;
-                }
-
-            $extra   .= $template;
-			}
-		else
-			{
-			#There is a value in this field, but we also need to check again for a current-language value after the i18n_get_translated() function was called, to avoid drawing empty fields
-			if ($value!=""){
-				# Draw this field normally.				
-
-                /*
-                Sanitize value before rendering.
-                Note: we cannot use htmlspecialchars where we actually render it as that might break highligthing
-                */
-                if($value != strip_tags(htmlspecialchars_decode($value)))
-                    {
-                    // Strip tags moved before highlighting as was being corrupted
-                    $value = strip_tags_and_attributes(htmlspecialchars_decode($value));
-                    }
-                else
-                    {
-                    $value = htmlspecialchars($value);
-                    }
-
-				# Highlight keywords
-				$value=highlightkeywords($value,$search,$field["partial_index"],$field["name"],$field["keywords_index"]);
-				
-				$value_mod_after_highlight=hook('value_mod_after_highlight', '', array($field,$value));
-				if($value_mod_after_highlight)
-					{
-					$value=$value_mod_after_highlight;
-					}
-				
-				?><div <?php if (!$valueonly)
-						{
-						echo "class=\"itemNarrow itemType".$field['type']."\"";
-						}
-					elseif (isset($fixedwidth))
-						{
-						echo "style=\"width:" . $fixedwidth . "px\"";
-						} ?>>
-				<h3><?php echo $title?></h3><p><?php echo $value; ?></p></div><?php
-				}
-			}
-			
-			if($force_display_template_orderby)
-                {
-                echo $extra;
-                $extra='';
-                }
-            }
-		}
-	
+//Check if we want to use a specified field as a caption below the preview
 //Check if we want to use a specified field as a caption below the preview
 if(isset($display_field_below_preview) && is_int($display_field_below_preview))
 	{
@@ -1705,7 +1478,7 @@ hook ("resourceactions") ?>
 	if ($edit_access) 
 		{ ?>
 		<li><a href="<?php echo $baseurl ?>/pages/edit.php?ref=<?php echo urlencode($ref)?>&amp;search=<?php echo urlencode($search)?>&amp;offset=<?php echo urlencode($offset)?>&amp;order_by=<?php echo urlencode($order_by)?>&amp;sort=<?php echo urlencode($sort)?>&amp;archive=<?php echo urlencode($archive)?>" onclick="return ModalLoad(this, true);">
-			<?php echo "<i class='fa fa-pencil'></i>&nbsp;" .$lang["action-edit"]?>
+			<?php echo "<i class='fa fa-pencil'></i>&nbsp;" .$lang["action-editmetadata"]?>
 		</a></li>
 		<?php 
 		if ((!checkperm("D") || hook('check_single_delete')) && !(isset($allow_resource_deletion) && !$allow_resource_deletion))
@@ -1940,21 +1713,40 @@ if ($view_resource_collections && !checkperm('b')){ ?>
 	</script>
 	<?php }
 
-// include optional ajax metadata report
-if ($metadata_report && isset($exiftool_path) && ($k=="" || $internal_share_access)){?>
-        <div class="RecordBox">
+if ($metadata_report && isset($exiftool_path) && ($k=="" || $internal_share_access))
+    {
+    ?>
+    <div class="RecordBox">
         <div class="RecordPanel">  
-        <div class="Title"><?php echo $lang['metadata-report']?></div>
-        <div id="<?php echo $context ?>metadata_report"><a onclick="metadataReport(<?php echo htmlspecialchars($ref)?>,'<?php echo $context ?>');document.getElementById('<?php echo $context ?>metadata_report').innerHTML='<?php echo $lang['pleasewait']?>';return false;" class="itemNarrow" href="#"> <?php echo LINK_CARET . $lang['viewreport'];?></a><br /></div>
+            <h3 class="CollapsibleSectionHead collapsed"><?php echo $lang['metadata-report']; ?></h3>
+            <div id="<?php echo $context; ?>MetadataReportSection" class="CollapsibleSection"></div>
+            <script>
+            jQuery("#<?php echo $context; ?>MetadataReportSection").on("ToggleCollapsibleSection", function(e, data)
+                {
+                if(data.state == "collapsed")
+                    {
+                    return false;
+                    }
+
+                // if report has already been generated, just show it
+                if(jQuery.trim(jQuery(this).html()).length > 0)
+                    {
+                    return true;
+                    }
+
+                CentralSpaceShowLoading();
+                metadataReport(<?php echo htmlspecialchars($ref); ?>, '<?php echo htmlspecialchars($context); ?>');
+
+                return true;
+                });
+            </script>
         </div>
-        
-        </div>
+    </div>
+    <?php
+    }
 
-<?php } ?>
+hook("customrelations"); //For future template/spawned relations in Web to Print plugin
 
-<?php hook("customrelations"); //For future template/spawned relations in Web to Print plugin ?>
-
-<?php
 # -------- Related Resources (must be able to search for this to work)
 if($enable_related_resources && !isset($relatedresources))
     {
@@ -2291,11 +2083,11 @@ if($annotate_enabled)
 	?>
 
 <script>
-/* Call SelectTab upon page load to select first tab*/
-jQuery('document').ready(function() 
-	{       
-	SelectTab();
-	});
+jQuery('document').ready(function()
+    {
+    /* Call SelectTab upon page load to select first tab*/
+    SelectTab();
+    registerCollapsibleSections(false);
+    });
 </script>
-
-<?php include "../include/footer.php"; ?>
+<?php include "../include/footer.php";

@@ -187,6 +187,41 @@ function get_collection_resources($collection)
     return sql_array("select resource value from collection_resource where collection='" . escape_check($collection) . "' order by sortorder asc, date_added desc, resource desc"); 
     }
 
+/**
+* Get all resources in a collection without checking permissions or filtering by workflow states.
+* This is useful when you want to get all the resources for further subprocessing (@see render_selected_collection_actions() 
+* as an example)
+* 
+* @param integer $ref Collection ID
+* 
+* @return array
+*/
+function get_collection_resources_with_data($ref)
+    {
+    if(!is_numeric($ref))
+        {
+        return array();
+        }
+
+    $ref = escape_check($ref);
+
+    $result = sql_query("
+            SELECT r.*
+              FROM collection_resource AS cr
+        RIGHT JOIN resource AS r ON cr.resource = r.ref
+             WHERE cr.collection = '{$ref}'
+          ORDER BY cr.sortorder ASC , cr.date_added DESC , cr.resource DESC
+    ");
+
+    if(!is_array($result))
+        {
+        return array();
+        }
+
+    return $result;
+    }
+
+
 function add_resource_to_collection($resource,$collection,$smartadd=false,$size="",$addtype="")
 	{
     if((string)(int)$collection != (string)$collection || (string)(int)$resource != (string)$resource)
@@ -2316,7 +2351,16 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
     	{
 		$order_by = $default_collection_sort;
 		}
-	
+    
+    if($pagename == 'collection_manage') 
+        {
+        $min_access = collection_min_access($collection_data['ref']);
+        }
+    else
+        {
+        $min_access = collection_min_access($result);
+        }
+
     // If resourceconnect plugin activated, need to consider if resource connect resources exist in the collection - if yes display view all resources link	
 	$count_resourceconnect_resources = hook("countresult","", array($urlparams["collection"],0));
 	$count_resourceconnect_resources = is_numeric($count_resourceconnect_resources) ? $count_resourceconnect_resources : 0;
@@ -2346,15 +2390,6 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         }
     
     // Download option
-    if($pagename == 'collection_manage') 
-        {
-        $min_access = collection_min_access($collection_data['ref']);
-        }
-    else
-        {
-        $min_access = collection_min_access($result);
-        }
-
     if($min_access == 0 )
         {
         if( $download_usage && ( isset($zipcommand) || $use_zip_extension || ( isset($archiver_path) && isset($collection_download_settings) ) ) && $collection_download && $count_result > 0)
@@ -2621,14 +2656,6 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
     if($count_result > 0 && ($k == '' || $internal_share_access))
         {
 		# Ability to request a whole collection (only if user has restricted access to any of these resources)
-		if($pagename == 'collection_manage') 
-			{
-			$min_access = collection_min_access($collection_data['ref']);
-			}
-		else
-		    {
-			$min_access = collection_min_access($result);
-			}
         if($min_access != 0)
             {                
             $data_attribute['url'] = generateURL($baseurl_short . "pages/collection_request.php",$urlparams);
@@ -3541,4 +3568,30 @@ function get_user_selection_collection($user)
     );
 
     return sql_value($sql, null);
+    }
+
+
+/**
+* Delete all collections that are not in use e.g. session collections for the anonymous user. Will not affect collections that are public.
+* 
+* @param integer $userref - ID of user to delete collections for 
+* @param integer $days - minimum age of collections to delete in days
+* 
+* @return integer - number of collections deleted
+*/
+function delete_old_collections($userref=0, $days=30)
+    {
+    if($userref==0 || !is_numeric($userref))
+        {
+        return 0;
+        }
+    $deletioncount = 0;
+    $old_collections=sql_array("SELECT ref value FROM collection WHERE user ='" . $userref . "' AND created < DATE_SUB(NOW(), INTERVAL '" . $days . "' DAY) AND public=0",0);
+    foreach($old_collections as $old_collection)
+        {
+        sql_query("DELETE FROM collection_resource WHERE collection='" . $old_collection . "'");
+        sql_query("DELETE FROM collection WHERE ref='" . $old_collection . "'");
+        $deletioncount++;
+        }
+    return $deletioncount;
     }

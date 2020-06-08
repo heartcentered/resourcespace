@@ -6,7 +6,6 @@ if('cli' != PHP_SAPI)
     }
 
 include dirname(__FILE__) . '/../../../include/db.php';
-include_once dirname(__FILE__) . '/../../../include/general.php';
 include_once dirname(__FILE__) . '/../../../include/resource_functions.php';
 include_once dirname(__FILE__) . '/../../../include/log_functions.php';
 
@@ -14,7 +13,7 @@ set_time_limit($cron_job_time_limit);
 
 // Init script logging (if set)
 global $museumplus_log_directory;
-$mplus_log_file = '';
+$mplus_log_file = null;
 if('' != trim($museumplus_log_directory))
     {
     if(!is_dir($museumplus_log_directory))
@@ -33,6 +32,7 @@ if('' != trim($museumplus_log_directory))
     // New log file
     $mplus_log_file = fopen($museumplus_log_directory . DIRECTORY_SEPARATOR . 'mplus_script_log_' . date('Y_m_d-H_i') . '.log', 'ab');
     }
+
 
 // Script options @see https://www.php.net/manual/en/function.getopt.php
 $mplus_short_options = 'hc';
