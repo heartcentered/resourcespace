@@ -122,7 +122,7 @@ function ClearLoadingTimers()
 function ReloadSearchBar()
 	{
 	var SearchBar=jQuery('#SearchBarContainer');
-	SearchBar.load(baseurl_short+"pages/ajax/reload_searchbar.php?pagename="+pagename, function (response, status, xhr)
+	SearchBar.load(baseurl_short+"pages/ajax/reload_searchbar.php?ajax=true&pagename="+pagename, function (response, status, xhr)
 			{
 			if (status=="error")
 				{				
@@ -649,7 +649,7 @@ function ReloadLinks()
         return false;
         }
         
-    nav2.load(baseurl_short+"pages/ajax/reload_links.php", function (response, status, xhr)
+    nav2.load(baseurl_short+"pages/ajax/reload_links.php?ajax=true", function (response, status, xhr)
         {
         // 403 is returned when user is logged out and ajax request! @see revision #12655
         if(xhr.status == 403)
@@ -706,15 +706,16 @@ function registerCollapsibleSections(use_cookies)
 			{
 			cur    = jQuery(this).next();
 			cur_id = cur.attr("id");
+            var cur_state = null;
 
 			if (cur.is(':visible'))
 				{
 				if(use_cookies)
 					{
-					//console.log('collapsed');
 					SetCookie(cur_id, 'collapsed');
 					}
 
+                cur_state = "collapsed";
 				jQuery(this).removeClass('expanded');
 				jQuery(this).addClass('collapsed');
 				}
@@ -722,15 +723,18 @@ function registerCollapsibleSections(use_cookies)
 				{
 				if(use_cookies)
 					{
-					//console.log('expanded');
 					SetCookie(cur_id, 'expanded');
 					}
+
+                cur_state = "expanded";
 				jQuery(this).addClass('expanded');
 				jQuery(this).removeClass('collapsed');
 				}
 
 			cur.stop(); // Stop existing animation if any
 			cur.slideToggle();
+
+            jQuery("#" + cur_id).trigger("ToggleCollapsibleSection", [{section_id: cur_id, state: cur_state}]);
 
 			return false;
 			}).each(function()
@@ -1515,3 +1519,37 @@ function unsetCookie(cookieName, cpath)
 	{
 	document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;path=' + cpath;	
 	}
+
+
+/**
+* Check if system upgrade is in progress. Reloads the page if it is to show user current status.
+* 
+* @return void
+*/
+function check_upgrade_in_progress()
+    {
+    jQuery.ajax({
+        type: 'GET',
+        url: baseurl + "/pages/ajax/message.php",
+        data: {
+            ajax: true,
+            check_upgrade_in_progress: true
+        },
+        dataType: "json"
+        })
+        .done(function(response)
+            {
+            if(response.status != "success")
+                {
+                return;
+                }
+
+            if(response.data.upgrade_in_progress)
+                {
+                window.location.reload(true);
+                return;
+                }
+            });
+    
+    return;
+    }

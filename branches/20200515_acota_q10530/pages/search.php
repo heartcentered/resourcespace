@@ -1,10 +1,6 @@
 <?php
 include_once "../include/db.php";
-include_once "../include/general.php";
-include_once "../include/resource_functions.php"; //for checking scr access
-include_once "../include/search_functions.php";
-include_once "../include/collections_functions.php";
-include_once '../include/render_functions.php';
+
 if($annotate_enabled)
     {
     include_once '../include/annotation_functions.php';
@@ -504,20 +500,23 @@ if (strpos($search,"!")!==false &&  substr($search,0,11)!="!properties" && !$spe
 $search=refine_searchstring($search);
 
 $editable_only = getval("foredit","")=="true";
+$search_access = getval("access", null, true); # admins can search for resources with a specific access from advanced search
 
 $searchparams= array(
-    'search'                                    => $search,
-    'k'                                         => $k,
-    'modal'                                     => $modal,  
-    'display'                                   => $display,
-    'order_by'                                  => $order_by,
-    'offset'                                    => $offset,
-    'per_page'                                  => $per_page,
-    'archive'                                   => $archive,
-    'sort'                                      => $sort,
-    'restypes'                                  => $restypes,
-    'recentdaylimit'                            => getvalescaped('recentdaylimit', '', true),
-    'foredit'                                   => ($editable_only?"true":"")
+    'search'         => $search,
+    'k'              => $k,
+    'modal'          => $modal,  
+    'display'        => $display,
+    'order_by'       => $order_by,
+    'offset'         => $offset,
+    'per_page'       => $per_page,
+    'archive'        => $archive,
+    'sort'           => $sort,
+    'restypes'       => $restypes,
+    'recentdaylimit' => getvalescaped('recentdaylimit', '', true),
+    'foredit'        => ($editable_only?"true":""),
+    'noreload'       => "true",
+    'access'         => $search_access,
 );
  
 $checkparams = array();
@@ -553,7 +552,7 @@ if ($search_includes_resources || substr($search,0,1)==="!")
     $search_includes_resources=true; // Always enable resource display for special searches.
     if (!hook("replacesearch"))
         {   
-        $result=do_search($search,$restypes,$order_by,$archive,$per_page+$offset,$sort,false,$starsearch,false,false,$daylimit, getvalescaped("go",""), true, false, $editable_only);
+        $result=do_search($search,$restypes,$order_by,$archive,$per_page+$offset,$sort,false,$starsearch,false,false,$daylimit, getvalescaped("go",""), true, false, $editable_only, false, $search_access);
         }
     }
 else
@@ -941,22 +940,12 @@ if($enable_themes && $enable_theme_breadcrumbs && !$search_titles && isset($them
         $theme_link);
     }
 
-// Show collection title and description.
-if ($collectionsearch && !$search_titles)
+if ($search_titles)
     {
-    if ($show_collection_name)
-        { ?>
-        <div class="RecordHeader">
-            <h1 class="SearchTitle">
-            <?php echo i18n_get_collection_name($collectiondata); ?>
-            </h1>
-        <?php
-        if(trim($collectiondata['description']) != "")
-            {
-            echo "<p>" . htmlspecialchars($collectiondata['description']) . "</p>";
-            }
-        echo "</div>";
-        }
+    hook("beforesearchtitle");
+    echo $search_title;
+    hook("aftersearchtitle");
+    hook("beforecollectiontoolscolumn");
     }
 
 if (!hook("replacesearchheader")) # Always show search header now.
@@ -1302,14 +1291,24 @@ if($responsive_ui)
     </div>
     <?php
 } 
-        hook("stickysearchresults");
+    hook("stickysearchresults");
 
-    if ($search_titles)
+    // Show collection title and description.
+    if ($collectionsearch)
         {
-        hook("beforesearchtitle");
-        echo $search_title;
-        hook("aftersearchtitle");
-        hook("beforecollectiontoolscolumn");
+        if ($show_collection_name)
+            { ?>
+            <div class="RecordHeader">
+                <h1 class="SearchTitle">
+                <?php echo i18n_get_collection_name($collectiondata); ?>
+                </h1>
+            <?php
+            if(trim($collectiondata['description']) != "")
+                {
+                echo "<p>" . htmlspecialchars($collectiondata['description']) . "</p>";
+                }
+            echo "</div>";
+            }
         }
     
     hook("beforesearchresults");
@@ -1644,5 +1643,81 @@ if($search_anchors)
     </script>
     <?php
     }
+    ?>
+<script>
+jQuery(document).ready(function()
+    {
+    jQuery(".checkselect").click(function(e)
+        {
+        if(e.shiftKey == false)
+            {
+            ToggleCollectionResourceSelection(e, <?php echo $USER_SELECTION_COLLECTION; ?>);
+            shift_select_previous_target = e.target;
+            return;
+            }
 
+        if(typeof shift_select_previous_target === "undefined")
+            {
+            shift_select_previous_target = e.target;
+            return;
+            }
+
+        var input = e.target;
+        var in_range = false;
+        jQuery(".checkselect").each(function()
+            {
+            var mark = (shift_select_previous_target === this || input === this);
+
+            if(mark && typeof last_mark === "undefined")
+                {
+                console.debug("Mark added at element with ID %o", this.id);
+                in_range = true;
+                last_mark = this;
+                }
+            else if(mark && typeof last_mark !== "undefined")
+                {
+                console.debug("Mark removed at element with ID %o", this.id);
+                in_range = false;
+                last_mark = this;
+
+                if(jQuery(input).prop("checked"))
+                    {
+                    this.setAttribute("checked", "checked");
+                    }
+                else
+                    {
+                    this.removeAttribute("checked");
+                    }
+                var toggle_event = jQuery.Event("click", { target: this });
+                ToggleCollectionResourceSelection(toggle_event, <?php echo $USER_SELECTION_COLLECTION; ?>);
+                }
+
+            if(!in_range)
+                {
+                return;
+                }
+
+            console.debug("checkselect is in range -- %o", this.id);
+            if(jQuery(input).prop("checked"))
+                {
+                this.setAttribute("checked", "checked");
+                }
+            else
+                {
+                this.removeAttribute("checked");
+                }
+            var toggle_event = jQuery.Event("click", { target: this });
+            ToggleCollectionResourceSelection(toggle_event, <?php echo $USER_SELECTION_COLLECTION; ?>);
+
+            return;
+            });
+
+        delete(shift_select_previous_target);
+        delete(last_mark);
+
+        return;
+        });
+    });
+</script>
+<?php
 include '../include/footer.php';

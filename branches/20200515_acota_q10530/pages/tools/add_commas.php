@@ -4,7 +4,7 @@
 # When some values have commas and others don't, sorting doesn't work correctly!!!
 
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 if('cli' != PHP_SAPI)
     {
     include "../../include/authenticate.php";
@@ -13,7 +13,6 @@ if('cli' != PHP_SAPI)
         exit("Permission denied");
         }
     }
-include "../../include/resource_functions.php";
 
 $resource_type_fields=sql_query("select ref from resource_type_field where type=3", "schema");
 $joins=get_resource_table_joins();

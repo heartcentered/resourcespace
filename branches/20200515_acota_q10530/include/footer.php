@@ -552,7 +552,7 @@ if (getval("ajax","") == "")
                     myLayout.sizePane("west", <?php echo $browsesize ?>);
                     jQuery('#BrowseBarContainer').show();
                     jQuery('#BrowseBarTab').show();
-                    jQuery('#BrowseBarContent').width(<?php echo $browsesize ?>-40);
+                    jQuery('#BrowseBarContent').width(<?php echo $browsesize ?>-30);
                     }
                 }
                 <?php
@@ -787,7 +787,6 @@ if (getval("ajax","") == "")
 		top.history.replaceState(document.title+'&&&'+jQuery('#CentralSpace').html(), applicationname);
 		}
 	catch(e){console.log(e);
-	//console.log("failed to load state");
 	}
 	
 	</script>

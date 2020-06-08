@@ -1,13 +1,10 @@
 <?php
 include_once "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php"; 
-include_once "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once "../include/search_functions.php";
 include_once "../include/image_processing.php";
 include_once '../include/node_functions.php';
-include_once '../include/render_functions.php';
+
 
 # Editing resource or collection of resources (multiple)?
 $ref=getvalescaped("ref","",true);
@@ -23,7 +20,7 @@ if (strpos($search,"!")!==false) {$restypes="";}
 $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
-$modal=(getval("modal","")=="true");
+$modal = (getval("modal", "") == "true");
 $single=getval("single","") != "" || getval("forcesingle","") != "";
 $disablenavlinks=getval("disablenav","")=="true";
 $uploader = getvalescaped("uploader","");
@@ -192,6 +189,7 @@ if ($go!="")
 
 $collection=getvalescaped("collection",0,true);
 $editsearch = getval("editsearchresults","") != "";
+$edit_selection_collection_resources = ($editsearch && $collection == $USER_SELECTION_COLLECTION);
 if($editsearch)
     {
     debug("edit.php: editing multiple items...");
@@ -675,7 +673,13 @@ if ((getval("autosave","")!="") || (getval("tweak","")=="" && getval("submitted"
                 $editsearch["restypes"] = $restypes;
                 $editsearch["archive"]  = $archive;
                 $save_errors=save_resource_data_multi(0,$editsearch);
-                if(!is_array($save_errors) && !hook("redirectaftermultisave"))
+
+                // When editing a search for the COLLECTION_TYPE_SELECTION we want to close the modal and reload the page
+                if(!is_array($save_errors) && $edit_selection_collection_resources)
+                    {
+                    exit("<script>ModalClose(); window.location.reload(true);</script>");
+                    }
+                else if(!is_array($save_errors) && !hook("redirectaftermultisave"))
                     {
                     redirect(generateURL($baseurl_short . "pages/search.php",$urlparams));
                     }
@@ -977,12 +981,19 @@ function EditNav() # Create a function so this can be repeated at the end of the
   
 function SaveAndClearButtons($extraclass="",$requiredfields=false,$backtoresults=false)
     {
-    global $lang, $multiple, $ref, $clearbutton_on_edit, $upload_review_mode, $resource, $noupload, $edit_autosave, $is_template, $show_required_field_label, $modal;
+    global $lang, $multiple, $ref, $clearbutton_on_edit, $upload_review_mode, $resource, $noupload, $edit_autosave, 
+           $is_template, $show_required_field_label, $modal, $edit_selection_collection_resources;
 
     $save_btn_value = ($ref > 0 ? ($upload_review_mode ? $lang["saveandnext"] : $lang["save"]) : $lang["next"]);
     if($ref < 0 && $noupload)
         {
         $save_btn_value = $lang['create'];
+        }
+
+    $confirm_text = $lang["confirmeditall"];
+    if($edit_selection_collection_resources)
+        {
+        $confirm_text = $lang["confirm_edit_all_selected_resources"];
         }
     ?>
     <div class="QuestionSubmit <?php echo $extraclass ?>">
@@ -992,7 +1003,7 @@ function SaveAndClearButtons($extraclass="",$requiredfields=false,$backtoresults
             echo "<input name='resetform' class='resetform' type='submit' value='" . $lang["clearbutton"] . "' />&nbsp;";
             }
             ?>
-        <input <?php if ($multiple) { ?>onclick="return confirm('<?php echo $lang["confirmeditall"]?>');"<?php } ?>
+        <input <?php if ($multiple) { ?>onclick="return confirm('<?php echo $confirm_text; ?>');"<?php } ?>
                name="save"
                class="editsave"
                type="submit"
@@ -1089,7 +1100,7 @@ else
          if (!$multiple  && $ref>0  && !hook("dontshoweditnav")) { EditNav(); }
          
          if (!$upload_review_mode) { ?>
-         <h1 id="editresource"><?php echo $lang["editresource"];render_help_link("user/editing-resources");?></h1>
+         <h1 id="editresource"><?php echo $lang["action-editmetadata"];render_help_link("user/editing-resources");?></h1>
          <?php } else { ?>
         <h1 id="editresource"><?php echo $lang["refinemetadata"];render_help_link("user/editing-resources");?></h1>
         <?php } ?>

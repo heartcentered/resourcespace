@@ -209,7 +209,8 @@ if (!hook("renderresultthumb"))
                         />
                         <?php 
                         }
-                    hook("aftersearchimg","",array($result[$n]))?>
+                   hook("aftersearchimg","",array($result[$n], $thm_url, $display))
+                   ?>
                 </a>
                 <?php } ?>
             <?php 
@@ -365,13 +366,13 @@ if (!hook("renderresultthumb"))
                         id="check<?php echo htmlspecialchars($ref)?>" 
                         class="checkselect" 
                         data-resource="<?php echo htmlspecialchars($result[$n]["ref"]); ?>"
+                        <?php echo render_csrf_data_attributes("ToggleCollectionResourceSelection_{$result[$n]["ref"]}"); ?>
                         <?php 
                         if (in_array($ref, $selection_collection_resources))
                             { ?>
                             checked
                             <?php 
-                            } ?> 
-                        onclick="return ToggleCollectionResourceSelection(event, <?php echo $USER_SELECTION_COLLECTION; ?>);"
+                            } ?>
                     >
                     <?php 
                     }

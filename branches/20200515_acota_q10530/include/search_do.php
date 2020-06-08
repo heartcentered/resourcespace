@@ -31,6 +31,7 @@
 * @param boolean     $return_refs_only
 * @param boolean     $editable_only
 * @param boolean     $returnsql
+* @param integer     $access                  Search for resources with this access
 * 
 * @return null|string|array
 */
@@ -50,7 +51,8 @@ function do_search(
     $stats_logging = true,
     $return_refs_only = false,
     $editable_only = false,
-    $returnsql = false
+    $returnsql = false,
+    $access = null
 )
     {
     debug_function_call("do_search", func_get_args());
@@ -61,7 +63,7 @@ function do_search(
            $superaggregationflag, $k, $FIXED_LIST_FIELD_TYPES,$DATE_FIELD_TYPES,$TEXT_FIELD_TYPES, $stemming,
            $open_access_for_contributor, $usersearchfilter, $search_filter_nodes,$userpermissions, $usereditfilter,
            $custom_access_overrides_search_filter, $userdata, $lang, $baseurl;
-		   
+        
     $alternativeresults = hook("alternativeresults", "", array($go));
     if ($alternativeresults)
         {
@@ -106,7 +108,7 @@ function do_search(
         "title"           => "title $sort,r.ref $sort",
         "file_path"       => "file_path $sort,r.ref $sort",
         "resourceid"      => "r.ref $sort",
-        "resourcetype"    => "resource_type $sort,r.ref $sort",
+        "resourcetype"    => "order_by ASC, r.ref $sort",
         "titleandcountry" => "title $sort,country $sort",
         "random"          => "RAND()",
         "status"          => "archive $sort",
@@ -192,7 +194,7 @@ function do_search(
         }
 
     # -- Build up filter SQL that will be used for all queries
-    $sql_filter=search_filter($search,$archive,$restypes,$starsearch,$recent_search_daylimit,$access_override,$return_disk_usage, $editable_only);
+    $sql_filter=search_filter($search,$archive,$restypes,$starsearch,$recent_search_daylimit,$access_override,$return_disk_usage, $editable_only, $access);
     debug("do_search: \$sql_filter = {$sql_filter}");
 
     # Initialise variables.
@@ -863,8 +865,7 @@ function do_search(
                 else
                     {
                     $quotedkeywords=split_keywords(substr($keyword,1,-1));
-                    } 
-                    
+                    }
 				$omit = false;
                 if (substr($keyword, 0, 1) == "-")
 					{
@@ -969,6 +970,15 @@ function do_search(
     //
     // *******************************************************************************
 
+
+    // *******************************************************************************
+    //                                                      order by RESOURCE TYPE
+    // *******************************************************************************
+
+    $sql_join .= " JOIN resource_type rty  on r.resource_type = rty.ref  ";
+
+    $select .= ", rty.order_by ";
+
     // *******************************************************************************
     //                                                       START add node conditions
     // *******************************************************************************
@@ -995,7 +1005,7 @@ function do_search(
 
     if(count($node_bucket_not)>0)
         {
-        $sql_filter='NOT EXISTS (SELECT `resource` FROM `resource_node` WHERE `ref`=`resource` AND `node` IN (' .
+        $sql_filter='NOT EXISTS (SELECT `resource` FROM `resource_node` WHERE r.ref=`resource` AND `node` IN (' .
             implode(',',$node_bucket_not) . ')) AND ' . $sql_filter;
         }
 
@@ -1527,10 +1537,12 @@ function do_search(
         $sql_join= $collection_join . $sql_join;
         }
 
+
+
     # --------------------------------------------------------------------------------
     # Special Searches (start with an exclamation mark)
     # --------------------------------------------------------------------------------
-
+ 
    $special_results=search_special($search,$sql_join,$fetchrows,$sql_prefix,$sql_suffix,$order_by,$orig_order,$select,$sql_filter,$archive,$return_disk_usage,$return_refs_only);
     if ($special_results!==false)
         {
@@ -1564,6 +1576,7 @@ function do_search(
         } # In case score hasn't been set (i.e. empty search)
 
     global $max_results;
+
     if (($t2!="") && ($sql!=""))
         {
         $sql=" AND " . $sql;
@@ -1577,8 +1590,9 @@ function do_search(
         $max_results=$fetchrows;
         }
 
+  
     $results_sql=$sql_prefix . "SELECT distinct $score score, $select FROM resource r" . $t . "  WHERE $t2 $sql GROUP BY r.ref, user_access, group_access ORDER BY $order_by limit $max_results" . $sql_suffix;
-
+    
     # Debug
     debug('$results_sql=' . $results_sql);
 

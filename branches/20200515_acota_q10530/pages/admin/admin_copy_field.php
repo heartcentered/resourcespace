@@ -1,12 +1,10 @@
 <?php
 include '../../include/db.php';
-include_once '../../include/general.php';
 include '../../include/authenticate.php';
 if(!checkperm('a'))
     {
     exit('Permission denied.');
     }
-include_once '../../include/resource_functions.php';
 
 $ref    = getvalescaped('ref', '');
 $copied = '';

@@ -6,7 +6,7 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; 
 
 if (!checkperm("a"))
@@ -80,7 +80,6 @@ if (getval("delete","")!="" && enforcePostRequest(false))
 	    //If we have a target type, move the current resources to the new resource type
 	    if($targettype!="" && $targettype!=$ref)
 		{
-		include "../../include/resource_functions.php"; 
 		foreach($affectedresources as $affectedresource)
 		    {update_resource_type($affectedresource,$targettype);}
 		}

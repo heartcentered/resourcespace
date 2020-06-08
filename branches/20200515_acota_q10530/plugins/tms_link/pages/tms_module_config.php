@@ -1,13 +1,11 @@
 <?php
 include '../../../include/db.php';
-include_once '../../../include/general.php';
 include '../../../include/authenticate.php';
 if(!checkperm('a'))
     {
     http_response_code(401);
     exit($lang["error-permissiondenied"]);
     }
-include_once '../../../include/render_functions.php';
 
 
 
