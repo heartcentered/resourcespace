@@ -2,7 +2,7 @@
 
 function HookRse_workflowViewPageevaluation()
     {
-    include (dirname(__file__) . "/../include/rse_workflow_functions.php");
+    include_once (dirname(__file__) . "/../include/rse_workflow_functions.php");
     global $lang;
     global $ref;
     global $resource;
@@ -51,7 +51,7 @@ function HookRse_workflowViewPageevaluation()
                        )
                     )
                     {
-                    update_archive_status($ref, $workflowaction["statusto"],$resource["archive"]);;
+                    update_archive_status($ref, $workflowaction["statusto"],$resource["archive"]);
                     hook("rse_wf_archivechange","",array($ref,$resource["archive"],$workflowaction["statusto"]));
                                                 
                     if (checkperm("z" . $workflowaction["statusto"]))
@@ -80,6 +80,7 @@ function HookRse_workflowViewRenderbeforeresourcedetails()
 
     global $lang, $ref, $resource, $baseurl_short, $search, $offset, $order_by, $archive, $sort, $edit_access, $curpos, $userref;
     
+    $validactions = rse_workflow_get_valid_actions(rse_workflow_get_actions(), false);
     if($resource["lock_user"] != 0 && $resource["lock_user"] != $userref)
         {
         return false;
