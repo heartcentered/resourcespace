@@ -398,6 +398,10 @@ function api_get_resource_data($resource)
     $access = get_resource_access($resource);
     if($access == 2)
         {return false;}
+
+
+    if($access == RESOURCE_ACCESS_INVALID_REQUEST)
+        {return false;}
     
     // Remove column data from inaccessible fields
     $joins = get_resource_table_joins();
@@ -424,6 +428,10 @@ function api_get_alternative_files($resource,$order_by="",$sort="",$type="")
     {
     global $disable_alternative_files, $alt_files_visible_when_restricted;
     $access = get_resource_access($resource);
+
+    if($access == RESOURCE_ACCESS_INVALID_REQUEST)
+        {return false;}
+
     if($disable_alternative_files || ($access!=0 && !($access==1 && $alt_files_visible_when_restricted)))
         {return false;}
     return get_alternative_files($resource,$order_by,$sort,$type);
@@ -529,6 +537,9 @@ function api_get_related_resources($ref)
     {
     global $enable_related_resources;
     $access = get_resource_access($ref);
+    if($access == RESOURCE_ACCESS_INVALID_REQUEST)
+        {return false;}
+
     if(!$enable_related_resources || $access == 2)
         {
         return array();

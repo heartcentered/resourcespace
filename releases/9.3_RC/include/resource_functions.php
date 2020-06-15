@@ -4472,6 +4472,8 @@ function get_resource_access($resource)
 	if (!is_array($resource))
         {
         $resourcedata=get_resource_data($resource,true);
+        if(!$resourcedata)
+            { return RESOURCE_ACCESS_INVALID_REQUEST; }
         }
 	else
         {
