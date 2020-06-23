@@ -4780,7 +4780,7 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
     # Checks the edit permissions (e0, e-1 etc.) and also the group edit filter which filters edit access based on resource metadata.
 	
     global $userref,$usergroup, $usereditfilter,$edit_access_for_contributor,
-    $search_filter_nodes, $userpermissions, $lang, $baseurl, $userdata;
+    $search_filter_nodes, $userpermissions, $lang, $baseurl, $userdata, $force_edit_access_for_contributor;
     $plugincustomeditaccess = hook('customediteaccess','',array($resource,$status,$resourcedata));
 
     if($plugincustomeditaccess)
@@ -4799,6 +4799,11 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
 
     # If $edit_access_for_contributor is true in config then users can always edit their own resources.
     if ($edit_access_for_contributor && $userref==$resourcedata["created_by"]) {return true;}
+
+    if($force_edit_access_for_contributor && $userref != $resourcedata["created_by"])
+        {
+        return false;
+        }
         
     # Must have edit permission to this resource first and foremost, before checking the filter.
     if ((!checkperm("e" . $status) && !checkperm("ert" . $resourcedata['resource_type']))
