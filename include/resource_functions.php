@@ -4894,17 +4894,16 @@ function get_edit_access($resource,$status=-999,$metadata=false,&$resourcedata="
 			}
 		}
 
-        if ($gotmatch) 
-            {
-            $gotmatch = !hook("denyafterusereditfilter");
-            }
-        
-        if(checkperm("ert" . $resourcedata['resource_type']))
-            {
-            return true;
-            }
+    if ($gotmatch) 
+        {
+        $gotmatch = !hook("denyafterusereditfilter");
+        }
+    
+    if(checkperm("ert" . $resourcedata['resource_type']))
+        {
+        return true;
+        }
 
-	# Default after all filter operations, allow edit.
     return $gotmatch;
     }
 
