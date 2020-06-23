@@ -1,4 +1,7 @@
 <?php
+/*
+IMPORTANT: User edit filters are tested in 001901_edit_filters_updated
+*/
 if('cli' != PHP_SAPI)
     {
     exit('This utility is command line only.');
@@ -39,12 +42,16 @@ if($resource_contributed_by_admin === false || $resource_contributed_by_general 
 
 setup_user($user_general_data);
 
+
+
+
 // A user can always edit its own user resource template
 if(!get_edit_access(0 - $user_general))
     {
     echo "User template - ";
     return false;
     }
+
 
 // Check defaults - a general user normally has edit access to Pending submission
 if(!get_edit_access($resource_contributed_by_general, -2))
@@ -53,12 +60,14 @@ if(!get_edit_access($resource_contributed_by_general, -2))
     return false;
     }
 
+
 // Check defaults - a general user normally has edit access to Pending review
 if(!get_edit_access($resource_contributed_by_general, -1))
     {
     echo "Pending review - ";
     return false;
     }
+
 
 // Check defaults - a general user normally doesn't have edit access to Active state
 if(get_edit_access($resource_contributed_by_general, 0))
@@ -67,13 +76,15 @@ if(get_edit_access($resource_contributed_by_general, 0))
     return false;
     }
 
-// Check defaults - a general user normally doesn't have edit access to a resource that is not contributed by the user
-// honouring the default access to Pending submission/review.
+
+// Use case - cannot edit in Pending submission/review if resource not contributed by user or not admin (t perm) and user
+// doesn't have force edit access to the resource type (ert perm)
 if(get_edit_access($resource_contributed_by_admin, -2))
     {
     echo "Pending submission (resource contributed by admin) - ";
     return false;
     }
+
 
 // Use case - ability for general users to edit their contributions when not having access to Active state (e0 perm)
 $edit_access_for_contributor = true;
@@ -88,6 +99,7 @@ if(get_edit_access($resource_contributed_by_admin, 0))
     echo "Edit access for contributor (no e0 perm) on someone else's resource - ";
     return false;
     }
+
 
 // Use case - ability for general users to edit only their contributions when having access to Active state (e0 perm)
 $userpermissions[] = "e0";
@@ -109,7 +121,44 @@ $edit_access_for_contributor = false;
 $force_edit_access_for_contributor = false;
 
 
+// Use case - general users don't have edit access to resource type
+$userpermissions[] = "XE1";
+if(get_edit_access($resource_contributed_by_general, -2))
+    {
+    echo "Deny edit access to resource type (XE1) - ";
+    return false;
+    }
+array_pop($userpermissions);
 
+
+// Use case - general users don't have edit access to resource types
+$userpermissions[] = "XE";
+if(get_edit_access($resource_contributed_by_general, -2))
+    {
+    echo "Deny edit access to all resource types (XE) - ";
+    return false;
+    }
+array_pop($userpermissions);
+
+
+// Use case - general users have access blocked to Pending submission (z-2)
+$userpermissions[] = "z-2";
+if(get_edit_access($resource_contributed_by_general, -2))
+    {
+    echo "Blocked access to workflow state 'Pending submission' (z-2) - ";
+    return false;
+    }
+array_pop($userpermissions);
+
+
+// Use case - edit access if force edit access to resource type
+$userpermissions[] = "ert1";
+if(!get_edit_access($resource_contributed_by_general, 0))
+    {
+    echo "Force edit access to resource type (ert1) - ";
+    return false;
+    }
+array_pop($userpermissions);
 
 
 
@@ -125,7 +174,5 @@ unset($resource_contributed_by_admin);
 unset($resource_contributed_by_general);
 $edit_access_for_contributor = false;
 $force_edit_access_for_contributor = false;
-
-// echo "userpermissions = " . json_encode($userpermissions) . PHP_EOL;
 
 return true;
