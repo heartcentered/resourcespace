@@ -196,109 +196,7 @@ $saved_search=$search;
 if (!$config_search_for_number || !is_numeric($search)) # Don't do this when the search query is numeric, as users typically expect numeric searches to return the resource with that ID and ignore country/date filters.
     {
     // For the simple search fields, collect from the GET and POST requests and assemble into the search string.
-    reset ($_POST);reset($_GET);
-
-    foreach (array_merge($_GET, $_POST) as $key=>$value)
-        {
-        if(is_string($value))
-          {
-          $value = trim($value);
-          }
-
-        if ($value!="" && substr($key,0,6)=="field_")
-            {
-            if ((strpos($key,"_year")!==false)||(strpos($key,"_month")!==false)||(strpos($key,"_day")!==false))
-                {
-                # Date field
-                
-                # Construct the date from the supplied dropdown values
-                $key_part=substr($key,0, strrpos($key, "_"));
-                $field=substr($key_part,6);
-                $value="";
-                if (strpos($search, $field.":")===false) 
-                    {
-                    $key_year=$key_part."_year";
-                    $value_year=getvalescaped($key_year,"");
-                    if ($value_year!="") $value=$value_year;
-                    else $value="nnnn";
-                    
-                    $key_month=$key_part."_month";
-                    $value_month=getvalescaped($key_month,"");
-                    if ($value_month=="") $value_month.="nn";
-                    
-                    $key_day=$key_part."_day";
-                    $value_day=getvalescaped($key_day,"");
-                    if ($value_day!="") $value.="|" . $value_month . "|" . $value_day;
-                    elseif ($value_month!="nn") $value.="|" . $value_month;
-                    $search=(($search=="")?"":join(", ",split_keywords($search)) . ", ") . $field . ":" . $value;
-                    }
-                                
-                }
-            elseif (strpos($key,"_drop_")!==false)
-                {
-                # Dropdown field
-                # Add keyword exactly as it is as the full value is indexed as a single keyword for dropdown boxes.
-                $search=(($search=="")?"":join(", ",split_keywords($search, false, false, false, false, true)) . ", ") . substr($key,11) . ":" . $value;
-                }       
-            elseif (strpos($key,"_cat_")!==false)
-                {
-                # Category tree field
-                # Add keyword exactly as it is as the full value is indexed as a single keyword for dropdown boxes.
-                $value=str_replace(",",";",$value);
-                if (substr($value,0,1)==";") {$value=substr($value,1);}
-                
-                $search=(($search=="")?"":join(", ",split_keywords($search, false, false, false, false, true)) . ", ") . substr($key,10) . ":" . $value;
-                }
-            else
-                {
-                # Standard field
-                $values =  explode(' ', mb_strtolower(trim_spaces(str_replace($config_separators, ' ', $value)), 'UTF-8'));
-                foreach ($values as $value)
-                    {
-                    # Standard field
-                    $search=(($search=="")?"":join(", ",split_keywords($search, false, false, false, false, true)) . ", ") . substr($key,6) . ":" . $value;
-                    }
-                }
-            }
-        // Nodes can be searched directly when displayed on simple search bar
-        // Note: intially they come grouped by field as we need to know whether if
-        // there is a OR case involved (ie. @@101@@102)
-        else if('' != $value && substr($key, 0, 14) == 'nodes_searched')
-            {
-            $node_ref = '';
-
-            foreach($value as $searched_field_nodes)
-                {
-                // Fields that are displayed as a dropdown will only pass one node ID
-                if(!is_array($searched_field_nodes) && '' == $searched_field_nodes)
-                    {
-                    continue;
-                    }
-                else if(!is_array($searched_field_nodes))
-                    {
-                    $node_ref .= ', ' . NODE_TOKEN_PREFIX . escape_check($searched_field_nodes);
-
-                    continue;
-                    }
-
-                // For fields that can pass multiple node IDs at a time
-                $node_ref .= ', ';
-
-                foreach($searched_field_nodes as $searched_node_ref)
-                    {
-                    $node_ref .= NODE_TOKEN_PREFIX . escape_check($searched_node_ref);
-                    }
-                }
-            $search = ('' == $search ? '' : join(', ', split_keywords($search,false,false,false,false,true))) . $node_ref;
-            }
-        }
-
-    $year=getvalescaped("basicyear","");
-    if ($year!="") {$search=(($search=="")?"":join(", ",split_keywords($search)) . ", ") . "basicyear:" . $year;}
-    $month=getvalescaped("basicmonth","");
-    if ($month!="") {$search=(($search=="")?"":join(", ",split_keywords($search)) . ", ") . "basicmonth:" . $month;}
-    $day=getvalescaped("basicday","");
-    if ($day!="") {$search=(($search=="")?"":join(", ",split_keywords($search)) . ", ") . "basicday:" . $day;}
+    $search = update_search_from_request($search);
     }
 
 $searchresourceid = "";
@@ -445,7 +343,6 @@ else
         {
         
         $hiddenfields=Array();
-        //$hiddenfields=explode(",",$hiddenfields);
         if ($key=="rttickall" && $value=="on"){$restypes="";break;} 
         if ((substr($key,0,8)=="resource")&&!in_array($key, $hiddenfields)) {if ($restypes!="") {$restypes.=",";} $restypes.=substr($key,8);}
         }
@@ -561,24 +458,36 @@ if(false === strpos($search, '!') || '!properties' == substr($search, 0, 11) )
 if( isset($_REQUEST["search"]) && $_REQUEST["search"] == "" )
     {
     rs_setcookie('search_form_submit', true,0,"","",false,false);
-    } 
-
-
+    }
 hook('searchaftersearchcookie');
+
+$rowstoretrieve = $per_page+$offset;
+
+// Do collections search first as this will determine the rows to fetch for do_search() - not for external shares
+if(($k=="" || $internal_share_access) && strpos($search,"!")===false && $archive_standard)
+    {
+    $collections=do_collections_search($search,$restypes,0,$order_by,$sort,$rowstoretrieve);
+    $colcount = count($collections);
+    $resourcestoretrieve = max(($rowstoretrieve-$colcount),0);
+    }
+else
+    {
+    $resourcestoretrieve = $rowstoretrieve;
+    $colcount = 0;
+    }
+
 if ($search_includes_resources || substr($search,0,1)==="!")
     {
     $search_includes_resources=true; // Always enable resource display for special searches.
     if (!hook("replacesearch"))
         {   
-        $result=do_search($search,$restypes,$order_by,$archive,$per_page+$offset,$sort,false,$starsearch,false,false,$daylimit, getvalescaped("go",""), true, false, $editable_only, false, $search_access);
+        $result=do_search($search,$restypes,$order_by,$archive,$resourcestoretrieve,$sort,false,$starsearch,false,false,$daylimit, getvalescaped("go",""), true, false, $editable_only, false, $search_access);
         }
     }
 else
     {
     $result=array(); # Do not return resources (e.g. for collection searching only)
     }
-
-if(($k=="" || $internal_share_access) && strpos($search,"!")===false && $archive_standard){$collections=do_collections_search($search,$restypes,0,$order_by,$sort);} // don't do this for external shares
 
 # Allow results to be processed by a plugin
 $hook_result=hook("process_search_results","search",array("result"=>$result,"search"=>$search));
@@ -971,7 +880,11 @@ if (!hook("replacesearchheader")) # Always show search header now.
     $resources_count=is_array($result)?count($result):0;
     if (isset($collections)) 
         {
-        $results_count=count($collections)+$resources_count;
+        $result_count=$colcount+$resources_count;
+        }
+    else
+        {
+        $result_count = $resources_count;
         }
     ?>
     <div class="BasicsBox">
@@ -995,11 +908,11 @@ if($responsive_ui)
             ?>
             <span class="Selected">
             <?php
-            echo number_format($results_count);
+            echo number_format($result_count);
             ?>
             </span>
             <?php
-            echo ($results_count==1) ? $lang['youfoundresult'] : $lang['youfoundresults'];
+            echo ($result_count==1) ? $lang['youfoundresult'] : $lang['youfoundresults'];
             } 
         else
             {
@@ -1030,7 +943,7 @@ if($responsive_ui)
         ?>
         <span class="Selected">
         <?php
-        echo number_format($results_count)?> </span><?php echo ($results_count==1) ? $lang["youfoundresult"] : $lang["youfoundresults"];
+        echo number_format($result_count)?> </span><?php echo ($result_count==1) ? $lang["youfoundresult"] : $lang["youfoundresults"];
         }
     else
         {
@@ -1288,11 +1201,8 @@ if($responsive_ui)
         <?php } ?>      
         
     <?php
-
-        
-    $results=(is_array($result) ? count($result) : 0);
-    $totalpages=ceil($results/$per_page);
-    if ($offset>$results) {$offset=0;}
+    $totalpages=ceil($result_count/$per_page);
+    if ($offset>$result_count) {$offset=0;}
     $curpage=floor($offset/$per_page)+1;
     
     ?>
@@ -1425,7 +1335,7 @@ if($responsive_ui)
 
     $list_displayed = false;
     # Listview - Display title row if listview and if any result.
-    if ($display=="list" && ((is_array($result) && count($result)>0) || (isset($collections) && is_array($collections) && count($collections)>0)))
+    if ($display=="list" && ((is_array($result) && count($result)>0) || (isset($collections) && is_array($collections) && $colcount>0)))
         {
         $list_displayed = true;
         ?>
@@ -1456,7 +1366,7 @@ if($responsive_ui)
         <?php
         }
         # Include public collections and themes in the main search, if configured.      
-        if ($offset==0 && isset($collections)&& strpos($search,"!")===false && $archive_standard && !hook('replacesearchpublic','',array($search,$collections)))
+        if (isset($collections)&& strpos($search,"!")===false && $archive_standard && !hook('replacesearchpublic','',array($search,$collections)))
             {
             include "../include/search_public.php";
             }
@@ -1508,26 +1418,28 @@ if($responsive_ui)
             }
      
         # loop and display the results
-        for ($n=$offset;(($n<count($result)) && ($n<($offset+$per_page)));$n++)
+        $startresource = max($offset-$colcount,0);
+        $endresource = $result_count-$colcount;
+        for ($n=$startresource;(($n<$endresource) && ($n<($resourcestoretrieve)));$n++)
             {
-        # Allow alternative configuration settings for this resource type.
-        resource_type_config_override($result[$n]["resource_type"]);
-        
-        if ($order_by=="resourcetype" && $display!="list")
-            {
-            if ($n==0 || ((isset($result[$n-1])) && $result[$n]["resource_type"]!=$result[$n-1]["resource_type"]))
+            # Allow alternative configuration settings for this resource type.
+            resource_type_config_override($result[$n]["resource_type"]);
+            
+            if ($order_by=="resourcetype" && $display!="list")
                 {
-                if($result[$n]["resource_type"]!="")
+                if ($n==0 || ((isset($result[$n-1])) && $result[$n]["resource_type"]!=$result[$n-1]["resource_type"]))
                     {
-                    echo "<h1 class=\"SearchResultsDivider\" style=\"clear:left;\">" . htmlspecialchars($rtypes[$result[$n]["resource_type"]]) .  "</h1>";
-                    }
-                else
-                    {
-                    echo "<h1 class=\"SearchResultsDivider\" style=\"clear:left;\">" . $lang['unknown'] .  "</h1>";
+                    if($result[$n]["resource_type"]!="")
+                        {
+                        echo "<h1 class=\"SearchResultsDivider\" style=\"clear:left;\">" . htmlspecialchars($rtypes[$result[$n]["resource_type"]]) .  "</h1>";
+                        }
+                    else
+                        {
+                        echo "<h1 class=\"SearchResultsDivider\" style=\"clear:left;\">" . $lang['unknown'] .  "</h1>";
+                        }
                     }
                 }
-            }
-            
+
             $ref = $result[$n]["ref"];
         
             $GLOBALS['get_resource_data_cache'][$ref] = $result[$n];
