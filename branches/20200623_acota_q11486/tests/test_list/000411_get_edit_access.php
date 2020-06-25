@@ -104,7 +104,7 @@ if(get_edit_access($resource_contributed_by_admin, 0))
 // Use case - ability for general users to edit only their contributions when having access to Active state (e0 perm)
 $userpermissions[] = "e0";
 $edit_access_for_contributor = true;
-$force_edit_access_for_contributor = true;
+$edit_only_own_contributions = true;
 if(!get_edit_access($resource_contributed_by_general, 0))
     {
     echo "Edit access for contributor (e0 perm) - ";
@@ -118,7 +118,7 @@ if(get_edit_access($resource_contributed_by_admin, 0))
     }
 array_pop($userpermissions);
 $edit_access_for_contributor = false;
-$force_edit_access_for_contributor = false;
+$edit_only_own_contributions = false;
 
 
 // Use case - general users don't have edit access to resource type
@@ -173,6 +173,6 @@ unset($get_user_by_username);
 unset($resource_contributed_by_admin);
 unset($resource_contributed_by_general);
 $edit_access_for_contributor = false;
-$force_edit_access_for_contributor = false;
+$edit_only_own_contributions = false;
 
 return true;
