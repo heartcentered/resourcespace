@@ -26,6 +26,13 @@ if(!isset($selected_nodes))
         }
     }
 
+// User set values are options selected by user - used to render what users selected before submitting the form and
+// receiving an error (e.g required field missing)
+if(isset($user_set_values[$field['ref']]) && is_array($user_set_values[$field['ref']]) && !empty($user_set_values[$field['ref']]))
+    {
+    $selected_nodes = $user_set_values[$field['ref']];
+    }
+
 foreach($selected_nodes as $node)
     {
     $node_data = array();
