@@ -2041,6 +2041,9 @@ function delete_collection_access_key($collection,$access_key)
 function collection_log($collection,$type,$resource,$notes = "")
 	{
 	global $userref;
+
+	if (!is_numeric($collection)) {return false;}
+
 	$modifiedcollogtype=hook("modifycollogtype","",array($type,$resource));
 	if ($modifiedcollogtype) {$type=$modifiedcollogtype;}
 	
@@ -2187,7 +2190,7 @@ function collection_set_themes ($collection, $categories = array())
 	
 function remove_all_resources_from_collection($ref){
     // abstracts it out of save_collection()
-    $removed_resources = sql_array('SELECT resource AS value FROM collection_resource WHERE collection = ' . escape_check($ref) . ';');
+    $removed_resources = sql_array("SELECT resource AS value FROM collection_resource WHERE collection = '" . escape_check($ref) . "';");
 
     collection_log($ref, LOG_CODE_COLLECTION_REMOVED_ALL_RESOURCES, 0);
     foreach($removed_resources as $removed_resource_id)
@@ -2195,8 +2198,8 @@ function remove_all_resources_from_collection($ref){
         collection_log($ref, 'r', $removed_resource_id, ' - Removed all resources from collection ID ' . $ref);
         }
 
-    sql_query('DELETE FROM collection_resource WHERE collection = ' . escape_check($ref));
-    sql_query("DELETE FROM external_access_keys WHERE collection='" . escape_check($ref) . "'");
+    sql_query("DELETE FROM collection_resource WHERE collection = '" . escape_check($ref) . "'");
+    sql_query("DELETE FROM external_access_keys WHERE collection = '" . escape_check($ref) . "'");
     }	
 
 if (!function_exists("get_home_page_promoted_collections")){
