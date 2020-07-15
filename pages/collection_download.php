@@ -93,13 +93,13 @@ for ($n=0;$n<count($result);$n++)
 	$sizes=get_all_image_sizes(false,$access>=1);
 
 	#check availability of original file 
-	$p=get_resource_path($ref,true,"",false,$result[$n]["file_extension"]);
+    $p=get_resource_path($ref,true,"",false,$result[$n]["file_extension"]);
+    debug("BANG path orig=" . $p . ", access $access");
 	if (file_exists($p) && (($access==0) || ($access==1 && $restricted_full_download)) && resource_download_allowed($ref,'',$result[$n]['resource_type']))
 		{
-		$available_sizes['original'][]=$ref;
+        $available_sizes['original'][]=$ref;
+        debug("BANG $ref full access to original");
 		}
-
-	$pextension = get_extension($result[$n], $size);
 
 	# check for the availability of each size and load it to the available_sizes array
 	foreach ($sizes as $sizeinfo)
@@ -127,7 +127,7 @@ if(intval($user_dl_limit) > 0)
     if($download_limit_check + count($result) > $user_dl_limit)
         {
         $dlsummary = $download_limit_check . "/" . $user_dl_limit;
-        $errormessage = $lang["download_limit_collection_error"] . " ". str_replace("%%DOWNLOADED%%",$download_limit_check,$lang['download_limit_summary']);
+        $errormessage = $lang["download_limit_collection_error"] . " " . str_replace(array("%%DOWNLOADED%%","%%LIMIT%%"),array($download_limit_check,$user_dl_limit),$lang['download_limit_summary']);
         if(getval("ajax","") != "")
             {
             error_alert(htmlspecialchars($errormessage), true,200);
@@ -171,7 +171,7 @@ if ($submitted != "")
         $collection_download_job_data = array(
             'collection'            => $collection,
             'collectiondata'        => $collectiondata,
-            'result'                => $result,
+            'result'                => array_column($result,"ref"),
             'size'                  => $size,
             'exiftool_write_option' => $exiftool_write_option,
             'useoriginal'           => $useoriginal,
@@ -207,8 +207,34 @@ if ($submitted != "")
 	for ($n=0;$n<count($result);$n++)
 		{
         $ref = $result[$n]['ref'];
-		$usesize = ($size == 'original') ? "" : $usesize=$size;
-		$use_watermark=check_use_watermark();
+        
+        if($size=="largest")
+            {
+            foreach($available_sizes as $available_size => $resources)
+                {
+                debug("BANG " . __LINE__ . " resource $ref checking size: " . $available_size);
+                if(in_array($ref,$resources))
+                    {   
+                        debug("BANG " . __LINE__ . " resource $ref ok for size: " . $available_size);
+                    $usesize = $available_size;
+                    if($available_size == 'original')
+                        {
+                        $usesize = "";
+                        // Has access to the original so no need to check previews
+                        break;
+                        }
+                    }
+                }
+            }
+        else
+            {
+            $usesize = ($size == 'original') ? "" : $usesize=$size;
+            }        
+
+        $use_watermark=check_use_watermark();
+            
+
+        $pextension = get_extension($result[$n], $usesize);
 		
 		# Find file to use
 		$f=get_resource_path($ref,true,$usesize,false,$pextension,-1,1,$use_watermark);
@@ -286,19 +312,46 @@ if ($submitted != "")
 		$copy=false; 
 		$ref=$result[$n]["ref"];
 		# Load access level
-		$access=get_resource_access($result[$n]);
+        $access=get_resource_access($result[$n]);
+        //resource_download_allowed($ref, $size, $resource_data['resource_type'], $alternative);
 		$use_watermark=check_use_watermark();
 
 		# Only download resources with proper access level
 		if ($access==0 || $access=1)
-			{
-			$pextension = get_extension($result[$n], $size);
-			$usesize = ($size == 'original') ? "" : $usesize=$size;
-			$p=get_resource_path($ref,true,$usesize,false,$pextension,-1,1,$use_watermark);
+			{			
+            if($size=="largest")
+                {
+                foreach($available_sizes as $available_size => $resources)
+                    {
+                    debug("BANG " . __LINE__ . " resource $ref checking size: " . $available_size);
+                    if(in_array($ref,$resources))
+                        {   
+                            debug("BANG " . __LINE__ . " resource $ref ok for size: " . $available_size);
+                        $usesize = $available_size;
+                        if($available_size == 'original')
+                            {
+                            // Has access to the original so no need to check previews
+                            $usesize = "";
+                            break;
+                            }
+                        }
+                    }
+                }
+            else
+                {
+                $usesize = ($size == 'original') ? "" : $usesize=$size;
+                }      
+            
+debug("BANG resource ". $ref . ", usesize: $usesize");
+            $pextension = get_extension($result[$n], $usesize);
+            $p=get_resource_path($ref,true,$usesize,false,$pextension,-1,1,$use_watermark);
 
 			# Determine whether target exists
 			$subbed_original = false;
-			$target_exists = file_exists($p);
+            $target_exists = file_exists($p);
+            
+
+//debug("BANG resource ". $ref . " size $usesize, exists at $p? " . ($target_exists ? "TRUE" : "FALSE"));
 			$replaced_file = false;
 
 			$new_file = hook('replacedownloadfile', '', array($result[$n], $usesize, $pextension, $target_exists));
@@ -320,6 +373,7 @@ if ($submitted != "")
 				$target_exists = file_exists($p);
 				}
 
+                debug("BANG resource ". $ref . " size $usesize, exists at $p? " . ($target_exists ? "TRUE" : "FALSE"));
 			# Process the file if it exists, and (if restricted access) that the user has access to the requested size
 			if ((($target_exists && $access==0) ||
 				($target_exists && $access==1 &&
@@ -350,7 +404,7 @@ if ($submitted != "")
 				if ($original_filenames_when_downloading)	
 					{
 					# Compute a filename for this resource		
-					$filename=get_download_filename($ref,$size,0,$pextension);	
+					$filename=get_download_filename($ref,$usesize,0,$pextension);	
 
 					collection_download_use_original_filenames_when_downloading($filename, $ref, $collection_download_tar, $filenames,$id);
 					}
@@ -608,6 +662,7 @@ if (!hook('replacesizeoptions'))
 
 if (array_key_exists('original',$available_sizes))
 	display_size_option('original', $lang['original'], true);
+	display_size_option('largest', $lang['imagesize-largest'], true);
 
 foreach ($available_sizes as $key=>$value)
 	{

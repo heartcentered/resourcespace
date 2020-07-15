@@ -6,7 +6,7 @@ Requires the following job data:
 $job_data['collection'] - 
 $job_data['collectiondata'] - 
 $job_data['result'] - Search result of !collectionX
-$job_data['size'] - 
+$job_data['size'] - requested size
 $job_data['exiftool_write_option']
 $job_data['useoriginal'] - 
 $job_data['id'] - 
@@ -14,7 +14,6 @@ $job_data['includetext'] -
 $job_data['count_data_only_types'] - 
 $job_data['usage'] - 
 $job_data['usagecomment'] - 
-$job_data['available_sizes'] - 
 $job_data['settings_id'] - 
 $job_data['include_csv_file'] - User input opting to include the CSV file in the downloaded archive
 */
@@ -53,7 +52,7 @@ if(!isset($collectiondata))
     {
     $collectiondata = get_collection($collection);
     }
-
+print_r($result);
 $collection_resources = $result;
 $modified_collection_resources = hook("modifycollectiondownload");
 if(is_array($modified_collection_resources))
@@ -85,11 +84,12 @@ $subbed_original_resources = array();
 
 for($n = 0; $n < count($collection_resources); $n++)
     {
-    resource_type_config_override($collection_resources[$n]['resource_type']);
+    $ref = $collection_resources[$n]["ref"];
+    $resource_data = get_resource_data($ref);
+    resource_type_config_override($resource_data['resource_type']);
 
     $copy = false; 
-    $ref = $collection_resources[$n]['ref'];
-    $access = get_resource_access($collection_resources[$n]);
+    $access = get_resource_access($resource_data);
     $use_watermark = check_use_watermark();
 
     // Do not download resources without proper access level
@@ -98,15 +98,62 @@ for($n = 0; $n < count($collection_resources); $n++)
         continue;
         }
 
-    $pextension = get_extension($collection_resources[$n], $size);
-    $usesize = ($size == 'original' ? '' : $usesize = $size);
+    # Get all possible sizes for this resource
+	$sizes=get_all_image_sizes(false,$access>=1);
+
+	#check availability of original file 
+    $p=get_resource_path($ref,true,"",false,$resource_data["file_extension"]);
+	if (file_exists($p) && (($access==0) || ($access==1 && $restricted_full_download)) && resource_download_allowed($ref,'',$resource_data['resource_type']))
+		{
+        $available_sizes['original'][]=$ref;
+		}
+
+	# check for the availability of each size and load it to the available_sizes array
+	foreach ($sizes as $sizeinfo)
+		{
+		$size_id=$sizeinfo['id'];
+		$size_extension = get_extension($resource_data, $size_id);
+		$p=get_resource_path($ref,true,$size_id,false,$size_extension);
+
+		if (resource_download_allowed($ref,$size_id,$result[$n]['resource_type']))
+			{
+			if (hook('size_is_available', '', array($resource_data, $p, $size_id)) || file_exists($p))
+				$available_sizes[$size_id][]=$ref;
+			}
+        }      
+
+    // Check which size to use
+    if($size=="largest")
+        {
+        foreach($available_sizes as $available_size => $resources)
+            {
+            debug("BANG " . __LINE__ . " resource $ref checking size: " . $available_size);
+            if(in_array($ref,$resources))
+                {   
+                    debug("BANG " . __LINE__ . " resource $ref ok for size: " . $available_size);
+                $usesize = $available_size;
+                if($available_size == 'original')
+                    {
+                    $usesize = "";
+                    // Has access to the original so no need to check previews
+                    break;
+                    }
+                }
+            }
+        }
+    else
+        {
+        $usesize = ($size == 'original') ? "" : $usesize=$size;
+        }
+
+    $pextension = get_extension($result[$n], $usesize);
     $p = get_resource_path($ref, true, $usesize, false, $pextension, -1, 1, $use_watermark);
 
     $subbed_original = false;
     $target_exists = file_exists($p);
     $replaced_file = false;
 
-    $new_file = hook('replacedownloadfile', '', array($collection_resources[$n], $usesize, $pextension, $target_exists));
+    $new_file = hook('replacedownloadfile', '', array($resource_data, $usesize, $pextension, $target_exists));
     if ($new_file != '' && $p != $new_file)
         {
         $p = $new_file;
