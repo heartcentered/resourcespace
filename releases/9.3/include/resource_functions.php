@@ -5538,7 +5538,7 @@ function get_total_disk_usage()
 	{
 	# Returns sum of all resource disk usage
 	global $fstemplate_alt_threshold;
-	return sql_value("select sum(disk_usage) value from resource where ref>'$fstemplate_alt_threshold'",0);
+	return sql_value("select ifnull(sum(disk_usage),0) value from resource where ref>'$fstemplate_alt_threshold'",0);
 	}
 
 function overquota()
