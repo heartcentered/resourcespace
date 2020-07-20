@@ -42,7 +42,7 @@ if ((!isset($suppress_headers) || !$suppress_headers) && !isset($nocache))
 # Error handling
 function errorhandler($errno, $errstr, $errfile, $errline)
     {
-    global $baseurl, $pagename, $show_report_bug_link, $email_errors, $show_error_messages,$show_detailed_errors, $use_error_exception;
+    global $baseurl, $pagename, $show_report_bug_link, $email_errors, $show_error_messages,$show_detailed_errors, $use_error_exception, $log_error_messages_url, $username, $plugins;;
 
     if (!error_reporting()) 
         {
@@ -93,6 +93,27 @@ function errorhandler($errno, $errstr, $errfile, $errline)
                 } ?>
         </div>
         <?php
+        }
+
+	// Optionally log errors to a cental server.
+    if (isset($log_error_messages_url))
+        {
+        // Prepare the post data.
+        $postdata = http_build_query(array(
+            'baseurl' => $baseurl,
+            'pagename' => (isset($pagename)?$pagename:''),
+            'error' => $error_info,
+            'username' => (isset($username)?$username:''),
+            'ip' => (isset($_SERVER["REMOTE_ADDR"])?$_SERVER["REMOTE_ADDR"]:''),
+            'user_agent' => (isset($_SERVER["HTTP_USER_AGENT"])?$_SERVER["HTTP_USER_AGENT"]:''),
+            'plugins' => (isset($plugins)?join(",",$plugins):'?')
+            ));
+
+        // Create a stream context with a low timeout.
+        $ctx = stream_context_create(array('http' => array('method' => 'POST', 'timeout' => 2, 'header'=> "Content-type: application/x-www-form-urlencoded\r\nContent-Length: " . strlen($postdata),'content' => $postdata)));
+               
+        // Attempt to POST but suppress errors; we don't want any errors here and the attempt must be aborted quickly.
+        echo @file_get_contents($log_error_messages_url,0,$ctx);
         }
 
     if ($email_errors)
