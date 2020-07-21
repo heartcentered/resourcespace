@@ -57,3 +57,7 @@ $lang["csv_upload_mapping_ignore"]              = "DO NOT USE";
 $lang["csv_upload_mapping_header"]              = "Column Header";
 $lang["csv_upload_mapping_csv_data"]            = "Sample data from CSV";
 $lang["csv_upload_using_config"]                = "Using existing CSV configuration";
+$lang["csv_upload_process_offline"]             = "Process CSV file offline? This should be used for large CSV files and you will be notified once the upload is complete";
+$lang["csv_upload_process_offline_disabled"]    = "Offline processing is not enabled on this system. To allow processing of CSVs offline please contact your system administrator";
+$lang["csv_upload_oj_complete"]                 = "CSV upload job complete";
+$lang["csv_upload_oj_failed"]                   = "CSV upload job failed";
