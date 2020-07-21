@@ -1385,6 +1385,7 @@ function resolve_users($users)
     {
     # Verify a supplied external access key
     
+    $resource = (int)$resource;
     # Option to plugin in some extra functionality to check keys
     if(hook("check_access_key", "", array($resource, $key)) === true)
         {
@@ -1406,7 +1407,6 @@ function resolve_users($users)
             return false;
             } // We want to authenticate the user if not already authenticated so we can show the page as internal
 
-    $resource_escaped = escape_check($resource);
     $key_escaped = escape_check($key);
 
     $keys = sql_query("
@@ -1416,7 +1416,7 @@ function resolve_users($users)
                    password_hash, 
                    access
               FROM external_access_keys
-             WHERE resource = '$resource_escaped'
+             WHERE resource = '$resource'
                AND access_key = '$key_escaped'
                AND (expires IS NULL OR expires > now())
                ORDER BY access");
@@ -1566,7 +1566,7 @@ function resolve_users($users)
             }
         
         # Set the 'last used' date for this key
-        sql_query("UPDATE external_access_keys SET lastused = now() WHERE resource = '$resource_escaped' AND access_key = '$key_escaped'");
+        sql_query("UPDATE external_access_keys SET lastused = now() WHERE resource = '$resource' AND access_key = '$key_escaped'");
         
         return true;
         }
