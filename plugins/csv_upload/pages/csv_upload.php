@@ -53,7 +53,10 @@ $csv_settings = array(
     "status_default" => $default_status,
     "access_column" => "",
     "access_default" => 0,
-    "fieldmapping" => array()
+    "fieldmapping" => array(),
+    "process_offline" => 0,
+    "csvchecksum"=> "",
+    "csv_filename" => isset($_REQUEST["name"]) ? $_REQUEST["name"] : ""
     );
 
 foreach($csv_settings as $csv_setting => $csv_setting_default)
@@ -76,8 +79,6 @@ $selected_columns[] = $csv_set_options["status_column"];
 $selected_columns[] = $csv_set_options["access_column"];
 $selected_columns = array_filter($selected_columns,"emptyiszero");
 
-rs_setcookie("saved_csv_options",json_encode($csv_set_options));
-
 $csvdir     = get_temp_dir() . DIRECTORY_SEPARATOR . "csv_upload" . DIRECTORY_SEPARATOR . $session_hash;
 if(!file_exists($csvdir))
     {
@@ -86,14 +87,20 @@ if(!file_exists($csvdir))
 $csvfile    = $csvdir . DIRECTORY_SEPARATOR  . "csv_upload.csv";
 if(isset($_FILES[$fd]) && $_FILES[$fd]['error'] == 0)
     {
-    // We have a valid CSV, save it to a temporary location	for processing
-	// Create target dir if necessary
+    // We have a valid CSV, get a checksum and save it to a temporary location for processing	
+    // Needs whole file checksum
+    $csvchecksum = get_checksum($csvfile, true);
+    $csv_set_options["csvchecksum"] = $csvchecksum;
+
+    // Create target dir if necessary
 	if (!file_exists($csvdir))
         {
         mkdir($csvdir,0777,true);
         }
     $result=move_uploaded_file($_FILES[$fd]['tmp_name'], $csvfile);
     }
+
+rs_setcookie("saved_csv_options",json_encode($csv_set_options));
 
 $csvuploaded = file_exists($csvfile);
 
@@ -606,6 +613,21 @@ switch($csvstep)
         <div class="BasicsBox">
             <form action="<?php echo $_SERVER["SCRIPT_NAME"]; ?>" id="upload_csv_form" method="post" enctype="multipart/form-data" onSubmit="return CentralSpacePost(this,true);">
                 <?php generateFormToken("upload_csv_form"); ?>
+
+                <div class="Question" >                                        
+                    <label for="process_offline"><?php echo $lang["csv_upload_process_offline"] ?></label>
+                    <?php 
+                    if($offline_job_queue)
+                        {
+                        echo "<input type=\"checkbox\" id=\"process_offline\" name=\"process_offline\" >";
+                        }
+                    else
+                        {
+                        echo "<div class='Fixed'>" . $lang["csv_upload_process_offline_disabled"] . "</div>";
+                        }?>
+                    <div class="clearerleft"> </div>
+                </div>
+
                 <input type="hidden" id="csvstep" name="csvstep" value="5" > 
 
                 <div class="QuestionSubmit NoPaddingSaveClear QuestionSticky">
@@ -623,6 +645,43 @@ switch($csvstep)
     case 5:
         // Process file
         $meta=meta_get_map();
+        // TODO: Check for duplicate CSV jobs or if the same CSV is being processed
+        if($csv_set_options["process_offline"] !== 0)
+            {            
+            // Move the CSV to a new location so that it doesn't get overwritten
+            $csvdir     = get_temp_dir() . DIRECTORY_SEPARATOR . "csv_upload" . DIRECTORY_SEPARATOR . $session_hash;
+            if(!file_exists($csvdir))
+                {
+                mkdir($csvdir,0777,true);
+                }
+            $offlinecsv = $csvdir . DIRECTORY_SEPARATOR . uniqid() . ".csv";
+            rename($csvfile,$offlinecsv);
+
+            $csv_upload_job_data = array(
+                'csvfile'           => $offlinecsv,
+                'csv_set_options'   => $csv_set_options     
+            );
+    
+            $csvjob = job_queue_add(
+                'csv_upload',
+                $csv_upload_job_data,
+                $userref,
+                '',
+                $lang["csv_upload_oj_complete"],
+                $lang["csv_upload_oj_failed"],
+                $csv_set_options["csvchecksum"]
+                );
+            if($csvjob)
+                {
+                echo "Offline job created (#" . $csvjob . ")";
+                }
+            elseif(is_string($csvjob))
+                {
+                echo "<div class='PageInfoMessage'>" . $lang["error"] . $csvjob . "</div>";
+                }
+            exit();
+            }
+
         $messages=array();
         // Ensure connection does not get dropped
         set_time_limit(0);
