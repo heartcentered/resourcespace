@@ -827,12 +827,20 @@ else if(1 == $resource['has_image'])
     		}
         	?>
         <!-- Available tools to manipulate previews -->
-        <div id="PreviewTools">
+        <div id="PreviewTools" onmouseenter="showHidePreviewTools();" onmouseleave="showHidePreviewTools();">
             <script>
+
+
+		
+
             function showHidePreviewTools()
                 {
                 var tools_wrapper = jQuery('#PreviewToolsOptionsWrapper');
                 var tools_options = tools_wrapper.find('.ToolsOptionLink');
+
+				// move tool bar behind image
+				jQuery("canvas").css("z-index", 1); // move image above preview tools bar so that bottom of image can be annotated
+				jQuery("div#PreviewTools").css("z-index", 0); // move previewtools under resource image using z-index	
 
                 tools_wrapper.toggleClass('Hidden');
 
@@ -842,9 +850,27 @@ else if(1 == $resource['has_image'])
             function toggleMode(element)
                 {
                 jQuery(element).toggleClass('Enabled');
+
+
                 }
+
+			// resets CSS properties to indicate RS Tagging is now available
+			function unsetVisualIndicator(element)
+				{
+				element.css('opacity', 1);
+				jQuery("#previewimagecopy").css('opacity', 1);
+				}
+
+
+			// sets css properties to indicate RS Tagging initalisation
+			function setVisualIndicator(element)
+				{
+				element.css('opacity', '0.2'); // transparent resource image
+				
+				}
+
             </script>
-            <div id="PreviewToolsOptionsWrapper">
+            <div id="PreviewToolsOptionsWrapper" class="Hidden">
             <?php
             if($annotate_enabled && file_exists($imagepath))
                 {
@@ -863,9 +889,14 @@ else if(1 == $resource['has_image'])
                     var img_copy_id        = 'previewimagecopy';
                     var img_src            = preview_image.attr('src');
 
+					
+					
                     // Setup Annotorious (has to be done only once)
                     if(!rs_tagging_plugin_added)
                         {
+						// indicate visually that tagging is being initialised
+						setVisualIndicator(preview_image);
+
                         anno.addPlugin('RSTagging',
                             {
                             annotations_endpoint: '<?php echo $baseurl; ?>/pages/ajax/annotations.php',
@@ -895,7 +926,14 @@ else if(1 == $resource['has_image'])
                     }
                     ?>
 			 rs_tagging_plugin_added = true;
-						
+			  // We have to wait for initialisation process to finish as this does ajax calls
+                        // in order to set itself up
+                        setTimeout(function ()
+                            {
+                            toggleAnnotationsOption(element);
+                            }, 
+                            1500);
+						return false;
                         }
 
                     // Feature enabled? Then disable it.
@@ -933,8 +971,23 @@ else if(1 == $resource['has_image'])
 
                     toggleMode(element);
 
+					// reset image css to indicate tagging is now available
+					unsetVisualIndicator(preview_image);
                     return false;
+					}
+					
+					<?php
+                if(checkPreviewToolsOptionUniqueness('annotate_enabled'))
+                    {
+                    ?>
+                    jQuery('#PreviewToolsOptionsWrapper').on('readyToUseAnnotorious', function ()
+                        {
+                        toggleAnnotationsOption(jQuery('.AnnotationsOption'));
+                        });
+                    <?php
                     }
+					?>
+					
                 </script>
                 <?php
                 }
