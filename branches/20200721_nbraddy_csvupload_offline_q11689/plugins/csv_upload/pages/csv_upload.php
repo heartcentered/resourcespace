@@ -31,14 +31,9 @@ if(getval("getconfig","") != "")
     exit();
     }
 
-if($csv_saved_options != "" && getval("resetconfig","") == "")
-    { 
-    $csv_set_options = json_decode($csv_saved_options, true);
-    $existing_config = true;
-    }
 
 $default_status = get_default_archive_state();
-$csv_settings = array(
+$csv_default_settings = array(
     "add_to_collection" => 0,
     "csv_update_col" => 0,
     "csv_update_col_id" => 0,
@@ -54,12 +49,17 @@ $csv_settings = array(
     "access_column" => "",
     "access_default" => 0,
     "fieldmapping" => array(),
-    "process_offline" => 0,
     "csvchecksum"=> "",
-    "csv_filename" => isset($_REQUEST["name"]) ? $_REQUEST["name"] : ""
+    "csv_filename" => ""
     );
 
-foreach($csv_settings as $csv_setting => $csv_setting_default)
+if($csv_saved_options != "" && getval("resetconfig","") == "")
+    { 
+    $csv_set_options = json_decode($csv_saved_options, true);
+    $existing_config = true;
+    }
+
+foreach($csv_default_settings as $csv_setting => $csv_setting_default)
     {
     $setoption = isset($_POST[$csv_setting]) ? $_POST[$csv_setting] : "";
     if($setoption != "")
@@ -71,7 +71,7 @@ foreach($csv_settings as $csv_setting => $csv_setting_default)
         $csv_set_options[$csv_setting] = $csv_setting_default;
         }
     }
-
+    
 $selected_columns = array();
 $selected_columns[] = $csv_set_options["resource_type_column"];
 $selected_columns[] = $csv_set_options["id_column"];
@@ -84,6 +84,7 @@ if(!file_exists($csvdir))
     {
     mkdir($csvdir,0777,true);
     }
+
 $csvfile    = $csvdir . DIRECTORY_SEPARATOR  . "csv_upload.csv";
 if(isset($_FILES[$fd]) && $_FILES[$fd]['error'] == 0)
     {
@@ -91,6 +92,7 @@ if(isset($_FILES[$fd]) && $_FILES[$fd]['error'] == 0)
     // Needs whole file checksum
     $csvchecksum = get_checksum($csvfile, true);
     $csv_set_options["csvchecksum"] = $csvchecksum;
+    $csv_set_options["csv_filename"] = $_FILES[$fd]["name"];   
 
     // Create target dir if necessary
 	if (!file_exists($csvdir))
@@ -614,12 +616,13 @@ switch($csvstep)
             <form action="<?php echo $_SERVER["SCRIPT_NAME"]; ?>" id="upload_csv_form" method="post" enctype="multipart/form-data" onSubmit="return CentralSpacePost(this,true);">
                 <?php generateFormToken("upload_csv_form"); ?>
 
-                <div class="Question" >                                        
+                <div class="Question" >
                     <label for="process_offline"><?php echo $lang["csv_upload_process_offline"] ?></label>
                     <?php 
                     if($offline_job_queue)
-                        {
-                        echo "<input type=\"checkbox\" id=\"process_offline\" name=\"process_offline\" >";
+                        {?>
+                        <input type="checkbox" id="process_offline" name="process_offline" value="1">
+                        <?php
                         }
                     else
                         {
@@ -645,8 +648,8 @@ switch($csvstep)
     case 5:
         // Process file
         $meta=meta_get_map();
-        // TODO: Check for duplicate CSV jobs or if the same CSV is being processed
-        if($csv_set_options["process_offline"] !== 0)
+        $csv_set_options["process_offline"] = getval("process_offline","") != "";
+        if($csv_set_options["process_offline"])
             {            
             // Move the CSV to a new location so that it doesn't get overwritten
             $csvdir     = get_temp_dir() . DIRECTORY_SEPARATOR . "csv_upload" . DIRECTORY_SEPARATOR . $session_hash;
@@ -656,6 +659,7 @@ switch($csvstep)
                 }
             $offlinecsv = $csvdir . DIRECTORY_SEPARATOR . uniqid() . ".csv";
             rename($csvfile,$offlinecsv);
+
 
             $csv_upload_job_data = array(
                 'csvfile'           => $offlinecsv,
@@ -673,29 +677,33 @@ switch($csvstep)
                 );
             if($csvjob)
                 {
-                echo "Offline job created (#" . $csvjob . ")";
+                echo str_replace("%%JOBREF%%", $csvjob, $lang["csv_upload_oj_created"]);
                 }
             elseif(is_string($csvjob))
                 {
                 echo "<div class='PageInfoMessage'>" . $lang["error"] . $csvjob . "</div>";
                 }
-            exit();
             }
-
-        $messages=array();
-        // Ensure connection does not get dropped
-        set_time_limit(0);
-
-        csv_upload_process($csvfile,$meta,$resource_types,$messages,0,true,$csv_set_options);
-        ?>
-        <div class="BasicsBox">
-            <textarea rows="20" cols="100"><?php
-            foreach ($messages as $message)
+        else
+            {
+            $messages=array();
+            // Processing immediately. Ensure connection does not get dropped
+            set_time_limit(0);
+            csv_upload_process($csvfile,$meta,$resource_types,$messages,0,true,$csv_set_options);
+            }
+        if(count($messages) > 0)   
+            {
+            ?>
+            <div class="BasicsBox">
+                <textarea rows="20" cols="100"><?php
+                foreach ($messages as $message)
                     {
                     echo $message . PHP_EOL;
                     } ?>
-            </textarea>
-        </div>
+                </textarea>
+            </div>
+            <?php
+            }?>
 
         <div class="BasicsBox">
             <div class="VerticalNav">
