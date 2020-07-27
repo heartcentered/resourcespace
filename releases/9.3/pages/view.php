@@ -13,7 +13,7 @@ $ref=getval("ref",0,true);
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key($ref,$k))) {include "../include/authenticate.php";}
 include_once "../include/image_processing.php";
 
-
+bad_function();
 // Set a flag for logged in users if $external_share_view_as_internal is set and logged on user is accessing an external share
 $internal_share_access = ($k!="" && $external_share_view_as_internal && isset($is_authenticated) && $is_authenticated);
 
