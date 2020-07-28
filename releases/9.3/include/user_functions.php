@@ -1421,7 +1421,8 @@ function resolve_users($users)
                    password_hash, 
                    access
               FROM external_access_keys
-             WHERE resource = '$resource'
+             WHERE user IN (SELECT ref FROM user)
+               AND resource = '$resource'
                AND access_key = '$key_escaped'
                AND (expires IS NULL OR expires > now())
                ORDER BY access");
