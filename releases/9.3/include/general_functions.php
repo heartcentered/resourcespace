@@ -3843,16 +3843,16 @@ if (!function_exists("daily_stat")){
         # the daily_stat table contains a counter for each 'activity type' (i.e. download) for each object (i.e. resource)
         # per day.
         $date=getdate();$year=$date["year"];$month=$date["mon"];$day=$date["mday"];
-        
-    
+            
         # Set object ref to zero if not set.
-        
         if ($object_ref=="") {$object_ref=0;}
-    
         
         # Find usergroup
         global $usergroup;
-        if (!isset($usergroup)) {$usergroup=0;}
+        if ((!isset($usergroup)) || ($usergroup == "")) 
+            {
+            $usergroup=0;
+            }
         
         # External or not?
         global $k;$external=0;
