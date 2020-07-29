@@ -208,7 +208,6 @@ function tile_config_pending($tile,$tile_id,$tile_width,$tile_height)
 			}
 		}
 	?>
-	<!-- <h2 class="title notitle"> <?php echo $lang[strtolower($tile["txt"])]; ?></h2> -->
 	<p class="tile_corner_box">
 		<span aria-hidden="true" class="fa fa-clone"></span>
 		<?php echo $count; ?>
@@ -558,15 +557,19 @@ function tile_featured_collection_thumbs($tile, $tile_id, $tile_width, $tile_hei
     {
     global $baseurl_short, $lang, $dash_tile_shadows;
 
-    if(0 < $promoted_image)
+    if($promoted_image > 0)
         {
         $promoted_image_data = get_resource_data($promoted_image);
 		
-        if(false !== $promoted_image_data)
+        if($promoted_image_data !== false)
             {
             $preview_resource = $promoted_image_data;
             }
-        
+        else
+			{
+			return false; // Promoted image could not be found.
+			}
+
 		$preview_resource_mod=hook('modify_promoted_image_preview_resource_data','',array($promoted_image));
 		if($preview_resource_mod!==false)
 			{

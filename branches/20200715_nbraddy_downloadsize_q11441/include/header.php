@@ -130,7 +130,7 @@ if ($enable_ckeditor){?>
 	<script type="text/javascript" src="<?php echo $baseurl_short;?>lib/plupload_2.1.8/jquery.plupload.queue/jquery.plupload.queue.min.js?<?php echo $css_reload_key;?>"></script>
 <?php } ?>
 <?php
-if($videojs && ($keyboard_navigation_video_search || $keyboard_navigation_video_view || $keyboard_navigation_video_preview))
+if ($keyboard_navigation_video_search || $keyboard_navigation_video_view || $keyboard_navigation_video_preview)
     {
     ?>
 	<script type="text/javascript" src="<?php echo $baseurl_short?>lib/js/videojs-extras.js?<?php echo $css_reload_key?>"></script>
@@ -492,7 +492,7 @@ include_once __DIR__ . '/../pages/ajax/message.php';
 <?php hook("midheader"); ?>
 <div id="HeaderNav2" class="HorizontalNav HorizontalWhiteNav">
 <?php
-if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login))
+if(!($pagename == "terms" && isset($_SERVER["HTTP_REFERER"]) && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login))
     {
         include (dirname(__FILE__) . "/header_links.php");
     }
@@ -524,7 +524,7 @@ if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false 
         'document_viewer'
     );
 
-if($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login)
+if($pagename == "terms" && isset($_SERVER["HTTP_REFERER"]) && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login)
     {
         array_push($omit_searchbar_pages, 'terms');
         $collections_footer = false;

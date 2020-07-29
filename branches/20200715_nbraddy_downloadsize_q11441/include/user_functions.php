@@ -192,86 +192,86 @@ function setup_user($userdata)
 			# set this to be the user's current collection
 			sql_query("update user set current_collection='$usercollection' where ref='$userref'");
 			}
+        }
 
-        $USER_SELECTION_COLLECTION = get_user_selection_collection($userref);
-        if(is_null($USER_SELECTION_COLLECTION))
-            {
-            $USER_SELECTION_COLLECTION = create_collection($userref, "Selection Collection (for batch edit)", 0, 1);
-            update_collection_type($USER_SELECTION_COLLECTION, COLLECTION_TYPE_SELECTION);
-            }
-		}
+    $USER_SELECTION_COLLECTION = get_user_selection_collection($userref);
+    if(is_null($USER_SELECTION_COLLECTION))
+        {
+        $USER_SELECTION_COLLECTION = create_collection($userref, "Selection Collection (for batch edit)", 0, 1);
+        update_collection_type($USER_SELECTION_COLLECTION, COLLECTION_TYPE_SELECTION);
+        }
 
-        $newfilter = false;
-        if ($search_filter_nodes)
+    $newfilter = false;
+    if ($search_filter_nodes)
+        {
+        if(isset($userdata["search_filter_o_id"]) && is_numeric($userdata["search_filter_o_id"]) && $userdata['search_filter_o_id'] > 0)
             {
-            if(isset($userdata["search_filter_o_id"]) && is_numeric($userdata["search_filter_o_id"]) && $userdata['search_filter_o_id'] > 0)
-                {
-                // User search filter override
-                $usersearchfilter = $userdata["search_filter_o_id"];
-                $newfilter = true;
-                }
-            elseif(isset($userdata["search_filter_id"]) && is_numeric($userdata["search_filter_id"]) && $userdata['search_filter_id'] > 0)
-                {
-                // Group search filter
-                $usersearchfilter = $userdata["search_filter_id"];
-                $newfilter = true;
-                }
+            // User search filter override
+            $usersearchfilter = $userdata["search_filter_o_id"];
+            $newfilter = true;
             }
+        elseif(isset($userdata["search_filter_id"]) && is_numeric($userdata["search_filter_id"]) && $userdata['search_filter_id'] > 0)
+            {
+            // Group search filter
+            $usersearchfilter = $userdata["search_filter_id"];
+            $newfilter = true;
+            }
+        }
         
-        if(!$newfilter)
-            {
-            // Old style search filter that hasn't been migrated
-            $usersearchfilter=isset($userdata["search_filter_override"]) && $userdata["search_filter_override"]!='' ? $userdata["search_filter_override"] : $userdata["search_filter"];
-            }
+    if(!$newfilter)
+        {
+        // Old style search filter that hasn't been migrated
+        $usersearchfilter=isset($userdata["search_filter_override"]) && $userdata["search_filter_override"]!='' ? $userdata["search_filter_override"] : $userdata["search_filter"];
+        }
             
-        $usereditfilter         = ($search_filter_nodes && isset($userdata["edit_filter_id"]) && is_numeric($userdata["edit_filter_id"]) && $userdata['edit_filter_id'] > 0) ? $userdata['edit_filter_id'] : $userdata["edit_filter"];
-        $userderestrictfilter   = ($search_filter_nodes && isset($userdata["derestrict_filter_id"]) && is_numeric($userdata["derestrict_filter_id"]) && $userdata['derestrict_filter_id'] > 0) ? $userdata['derestrict_filter_id'] : $userdata["derestrict_filter"];;
+    $usereditfilter         = ($search_filter_nodes && isset($userdata["edit_filter_id"]) && is_numeric($userdata["edit_filter_id"]) && $userdata['edit_filter_id'] > 0) ? $userdata['edit_filter_id'] : $userdata["edit_filter"];
+    $userderestrictfilter   = ($search_filter_nodes && isset($userdata["derestrict_filter_id"]) && is_numeric($userdata["derestrict_filter_id"]) && $userdata['derestrict_filter_id'] > 0) ? $userdata['derestrict_filter_id'] : $userdata["derestrict_filter"];;
 
-        $hidden_collections=explode(",",$userdata["hidden_collections"]);
-        $userresourcedefaults=$userdata["resource_defaults"];
-        $userrequestmode=trim($userdata["request_mode"]);
-        $user_dl_limit=trim($userdata["download_limit"]);
-        $user_dl_days=trim($userdata["download_log_days"]);
+    $hidden_collections=explode(",",$userdata["hidden_collections"]);
+    $userresourcedefaults=$userdata["resource_defaults"];
+    $userrequestmode=trim($userdata["request_mode"]);
+    $user_dl_limit=trim($userdata["download_limit"]);
+    $user_dl_days=trim($userdata["download_log_days"]);
 
-        if((int)$user_dl_limit > 0)
+    if((int)$user_dl_limit > 0)
+        {
+        // API cannot be used by these users as would open up opportunities to bypass limits
+        if(defined("API_CALL"))
             {
-            // API cannot be used by these users as would open up opportunities to bypass limits
-            if(defined("API_CALL"))
-                {
-                return false;
-                }
+            return false;
             }
+        }
 
-    	$userpreferences = ($user_preferences) ? sql_query("SELECT user, `value` AS colour_theme FROM user_preferences WHERE user = '" . escape_check($userref) . "' AND parameter = 'colour_theme';","preferences") : FALSE;
-    	$userpreferences = ($userpreferences && isset($userpreferences[0])) ? $userpreferences[0]: FALSE;
+    $userpreferences = ($user_preferences) ? sql_query("SELECT user, `value` AS colour_theme FROM user_preferences WHERE user = '" . escape_check($userref) . "' AND parameter = 'colour_theme';","preferences") : FALSE;
+    $userpreferences = ($userpreferences && isset($userpreferences[0])) ? $userpreferences[0]: FALSE;
 
-        # Some alternative language choices for basket mode / e-commerce
-        if ($userrequestmode==2 || $userrequestmode==3)
-			{
-			$lang["addtocollection"]=$lang["addtobasket"];
-			$lang["action-addtocollection"]=$lang["addtobasket"];
-			$lang["addtocurrentcollection"]=$lang["addtobasket"];
-			$lang["requestaddedtocollection"]=$lang["buyitemaddedtocollection"];
-			$lang["action-request"]=$lang["addtobasket"];
-			$lang["managemycollections"]=$lang["viewpurchases"];
-			$lang["mycollection"]=$lang["yourbasket"];
-			$lang["action-removefromcollection"]=$lang["removefrombasket"];
-			$lang["total-collections-0"] = $lang["total-orders-0"];
-			$lang["total-collections-1"] = $lang["total-orders-1"];
-			$lang["total-collections-2"] = $lang["total-orders-2"];
-			
-			# The request button (renamed "Buy" by the line above) should always add the item to the current collection.
-			$request_adds_to_collection=true;
-			}        
+    # Some alternative language choices for basket mode / e-commerce
+    if ($userrequestmode==2 || $userrequestmode==3)
+        {
+        $lang["addtocollection"]=$lang["addtobasket"];
+        $lang["action-addtocollection"]=$lang["addtobasket"];
+        $lang["addtocurrentcollection"]=$lang["addtobasket"];
+        $lang["requestaddedtocollection"]=$lang["buyitemaddedtocollection"];
+        $lang["action-request"]=$lang["addtobasket"];
+        $lang["managemycollections"]=$lang["viewpurchases"];
+        $lang["mycollection"]=$lang["yourbasket"];
+        $lang["action-removefromcollection"]=$lang["removefrombasket"];
+        $lang["total-collections-0"] = $lang["total-orders-0"];
+        $lang["total-collections-1"] = $lang["total-orders-1"];
+        $lang["total-collections-2"] = $lang["total-orders-2"];
+        
+        # The request button (renamed "Buy" by the line above) should always add the item to the current collection.
+        $request_adds_to_collection=true;
+        }        
 
-        # Apply config override options
-        $config_options=trim($userdata["config_options"]);
-        if ($config_options!="")
-            {
-            // We need to get all globals as we don't know what may be referenced here
-            extract($GLOBALS, EXTR_REFS | EXTR_SKIP);
-            eval($config_options);
-            }
+    # Apply config override options
+    $config_options=trim($userdata["config_options"]);
+    if ($config_options!="")
+        {
+        // We need to get all globals as we don't know what may be referenced here
+        extract($GLOBALS, EXTR_REFS | EXTR_SKIP);
+        eval($config_options);
+        }
     return true;
     }
     
@@ -540,7 +540,6 @@ function save_user($ref)
         $password               = trim(getvalescaped('password', ''));
         $fullname               = trim(getvalescaped('fullname', ''));
         $email                  = trim(getval('email', '')); //To be escaped on usage in DB
-        $expires                = "'" . getvalescaped('account_expires', '') . "'";
         $usergroup              = trim(getvalescaped('usergroup', ''));
         $ip_restrict            = trim(getvalescaped('ip_restrict', ''));
         $search_filter_override = trim(getvalescaped('search_filter_override', ''));
@@ -571,9 +570,15 @@ function save_user($ref)
                 }
             }
 
-        if($expires == "''")
+        # Get valid expiry date
+        $expires=getvalescaped("account_expires","");
+        if($expires == "" || strtotime($expires)==false)
             {
             $expires = 'null';
+            }
+        else   
+            {
+            $expires = "'" . date("Y-m-d",strtotime($expires)) . "'";
             }
 
         $passsql = '';
@@ -1488,6 +1493,7 @@ function resolve_users($users)
  */
 function check_access_key($resource,$key)
     {
+    $resource = (int)$resource;
     # Option to plugin in some extra functionality to check keys
     if(hook("check_access_key", "", array($resource, $key)) === true)
         {
@@ -1509,7 +1515,6 @@ function check_access_key($resource,$key)
             return false;
             } // We want to authenticate the user if not already authenticated so we can show the page as internal
 
-    $resource_escaped = escape_check($resource);
     $key_escaped = escape_check($key);
 
     $keys = sql_query("
@@ -1519,7 +1524,8 @@ function check_access_key($resource,$key)
                    password_hash, 
                    access
               FROM external_access_keys
-             WHERE resource = '$resource_escaped'
+             WHERE user IN (SELECT ref FROM user)
+               AND resource = '$resource'
                AND access_key = '$key_escaped'
                AND (expires IS NULL OR expires > now())
                ORDER BY access");
@@ -1637,8 +1643,6 @@ function check_access_key($resource,$key)
                     }
                 $emulate_plugins_set=true;                  
                 }
-                
-            }
             
             if($external_share_groups_config_options || stripos(trim(isset($userinfo[0]["config_options"])),"external_share_groups_config_options=true")!==false)
                 {
@@ -1651,6 +1655,7 @@ function check_access_key($resource,$key)
                 eval($config_options);
 
                 }
+            }
         
         # Special case for anonymous logins.
         # When a valid key is present, we need to log the user in as the anonymous user so they will be able to browse the public links.
@@ -1669,7 +1674,7 @@ function check_access_key($resource,$key)
             }
         
         # Set the 'last used' date for this key
-        sql_query("UPDATE external_access_keys SET lastused = now() WHERE resource = '$resource_escaped' AND access_key = '$key_escaped'");
+        sql_query("UPDATE external_access_keys SET lastused = now() WHERE resource = '$resource' AND access_key = '$key_escaped'");
         
         return true;
         }

@@ -17,7 +17,7 @@
  */
 function errorhandler($errno, $errstr, $errfile, $errline)
     {
-    global $baseurl, $pagename, $show_report_bug_link, $email_errors, $show_error_messages,$show_detailed_errors, $use_error_exception;
+    global $baseurl, $pagename, $show_report_bug_link, $email_errors, $show_error_messages,$show_detailed_errors, $use_error_exception,$log_error_messages_url, $username, $plugins;
 
     if (!error_reporting()) 
         {
@@ -70,6 +70,36 @@ function errorhandler($errno, $errstr, $errfile, $errline)
         <?php
         }
 
+    // Optionally log errors to a cental server.
+    if (isset($log_error_messages_url))
+        {
+        // Work out the backtrace
+        ob_flush();ob_start();
+        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        $backtrace = ob_get_contents();
+        ob_end_clean();
+
+        // Prepare the post data.
+        $postdata = http_build_query(array(
+            'baseurl' => $baseurl,
+            'pagename' => (isset($pagename)?$pagename:''),
+            'error' => $error_info,
+            'username' => (isset($username)?$username:''),
+            'ip' => (isset($_SERVER["REMOTE_ADDR"])?$_SERVER["REMOTE_ADDR"]:''),
+            'user_agent' => (isset($_SERVER["HTTP_USER_AGENT"])?$_SERVER["HTTP_USER_AGENT"]:''),
+            'plugins' => (isset($plugins)?join(",",$plugins):'?'),
+            'query_string' => (isset($_SERVER["QUERY_STRING"])?$_SERVER["QUERY_STRING"]:''),
+            'backtrace' => $backtrace
+            ));
+
+        // Create a stream context with a low timeout.
+        $ctx = stream_context_create(array('http' => array('method' => 'POST', 'timeout' => 2, 'header'=> "Content-type: application/x-www-form-urlencoded\r\nContent-Length: " . strlen($postdata),'content' => $postdata)));
+		
+        // Attempt to POST but suppress errors; we don't want any errors here and the attempt must be aborted quickly.
+		echo @file_get_contents($log_error_messages_url,0,$ctx);
+        }
+
+    // Optionally e-mail errors to a configured address
     if ($email_errors)
         {
         global $email_notify, $email_from, $email_errors_address, $applicationname;
@@ -596,7 +626,7 @@ function sql_query($sql,$cache="",$fetchrows=-1,$dbstruct=true, $logthis=2, $rec
 	// Write to the cache
 	if ($cache_write)
 		{
-		if (!file_exists($storagedir . "/tmp")) {mkdir($storagedir . "/tmp",0777);}
+		if (!file_exists($storagedir . "/tmp")) {mkdir($storagedir . "/tmp",0777,true);}
 		if (!file_exists($cache_location)) {mkdir($cache_location,0777);}
 		$cachedata=array();
 		$cachedata["query"]=$sql;
@@ -731,8 +761,8 @@ function clear_query_cache($cache)
 		{
 		if (substr($file,0,strlen($cache)+1)==$cache . "_")
 			{
-			unlink($cache_location . "/" . $file);
-			}
+            if (file_exists($cache_location . "/" . $file)) {@unlink($cache_location . "/" . $file);} // Note genuine need for the '@' here as the file can still be deleted in between the check for the file and the delete operation, which would throw an error. This seems unlikely but has been shown to happen regularly.
+            }			
 		}
 	
 	$query_cache_already_completed_this_time[]=$cache;

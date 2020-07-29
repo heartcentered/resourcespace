@@ -7,15 +7,15 @@
  */
 include_once "../include/db.php";
 
+$ref=getval("ref",0,true);
+
 # External access support (authenticate only if no key provided, or if invalid access key provided)
-$k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref",""),$k))) {include "../include/authenticate.php";}
+$k=getvalescaped("k","");if (($k=="") || (!check_access_key($ref,$k))) {include "../include/authenticate.php";}
 include_once "../include/image_processing.php";
 
 
 // Set a flag for logged in users if $external_share_view_as_internal is set and logged on user is accessing an external share
 $internal_share_access = ($k!="" && $external_share_view_as_internal && isset($is_authenticated) && $is_authenticated);
-
-$ref=getvalescaped("ref","",true);
 
 # Update hit count
 update_hitcount($ref);
@@ -65,8 +65,8 @@ if ($go!="")
 			}
 		elseif($curpos!="")
 			{
-			if (($go=="previous") && ($curpos>0)) {$ref=$result[$curpos-1]["ref"];if (($pos-1)<$offset) {$offset=$offset-$per_page;}}
-			if (($go=="next") && ($curpos<($n))) {$ref=$result[$curpos]["ref"];if (($curpos)>=($offset+$per_page)) {$offset=$curpos+1;}}  # move to next page if we've advanced far enough
+			if (($go=="previous") && ($curpos>0) && isset($result[$curpos-1]["ref"])) {$ref=$result[$curpos-1]["ref"];if (($pos-1)<$offset) {$offset=$offset-$per_page;}}
+			if (($go=="next") && ($curpos<($n)) && isset($result[$curpos]["ref"])) {$ref=$result[$curpos]["ref"];if (($curpos)>=($offset+$per_page)) {$offset=$curpos+1;}}  # move to next page if we've advanced far enough
 			}
 		else
 			{
@@ -624,7 +624,7 @@ else
 <?php
 
 # Try to find a preview file.
-$flvfile = get_resource_path(
+$video_preview_file = get_resource_path(
     $ref,
     true,
     'pre',
@@ -635,29 +635,22 @@ $flvfile = get_resource_path(
 # Default use_watermark if required by related_resources
 $use_watermark = false;
 
-if(!file_exists($flvfile) && 'flv' != $ffmpeg_preview_extension)
-    {
-    $flvfile = get_resource_path($ref, true, 'pre', false, 'flv');
-    } # Try FLV, for legacy systems.
 
-if(!file_exists($flvfile))
-    {
-    $flvfile = get_resource_path($ref, true, '', false, $ffmpeg_preview_extension);
-    }
+$videopreviewfile = get_resource_path($ref, true, '', false, $ffmpeg_preview_extension);
 
 if (file_exists("../players/type" . $resource["resource_type"] . ".php"))
 	{
 	include "../players/type" . $resource["resource_type"] . ".php";
 	}
-elseif (hook("replacevideoplayerlogic","",array($flvfile))){ }
-elseif ((!(isset($resource['is_transcoding']) && $resource['is_transcoding']!=0) && file_exists($flvfile)))
+elseif (hook("replacevideoplayerlogic","",array($video_preview_file))){ }
+elseif ((!(isset($resource['is_transcoding']) && $resource['is_transcoding']!=0) && file_exists($videopreviewfile)))
 	{
 	# Include the player if a video preview file exists for this resource.
 	$download_multisize=false;
 	?>
 	<div id="previewimagewrapper">
 	<?php 
-    if(!hook("customflvplay"))
+    if(!hook("customflvplay")) // Note: Legacy hook name; video_player.php no longer deals with FLV files.
 	    {
 		include "video_player.php";
 	    }
@@ -665,12 +658,9 @@ elseif ((!(isset($resource['is_transcoding']) && $resource['is_transcoding']!=0)
 		{				
 		display_field_data($previewcaption, true);
 		}
-	?></div><?php
-	
-	# If configured, and if the resource itself is not an FLV file (in which case the FLV can already be downloaded), then allow the FLV file to be downloaded.
-	if ($flv_preview_downloadable && $resource["file_extension"]!="flv") {$flv_download=true;}
+	?></div><?php	
 	}
-elseif ($videojs && $use_mp3_player && file_exists($mp3realpath) && !hook("replacemp3player"))
+elseif ($use_mp3_player && file_exists($mp3realpath) && !hook("replacemp3player"))
 	{?>
 	<div id="previewimagewrapper">
 	<?php 
@@ -686,21 +676,6 @@ elseif ($videojs && $use_mp3_player && file_exists($mp3realpath) && !hook("repla
 		}
 	?></div><?php
 	}	
-elseif ($resource['file_extension']=="swf" && $display_swf){
-	$swffile=get_resource_path($ref,true,"",false,"swf");
-	if (file_exists($swffile))
-		{?>
-		<div id="previewimagewrapper">
-		<?php include "swf_play.php"; 
-		if(isset($previewcaption))
-			{
-			echo "<div class=\"clearerleft\"> </div>";					
-			display_field_data($previewcaption, true);
-			}
-		?>
-		</div><?php
-		}
-	}
 else if(1 == $resource['has_image'])
     {
     $use_watermark = check_use_watermark();
@@ -1420,33 +1395,34 @@ elseif (strlen($resource["file_extension"])>0 && !($access==1 && $restricted_ful
 		}
 	} 
 elseif (strlen($resource["file_extension"])>0 && ($access==1 && $restricted_full_download==false))
-	{
-	# Files without multiple download sizes (i.e. no alternative previews generated).
-	$path=get_resource_path($ref,true,"",false,$resource["file_extension"]);
-	$downloadthissize=resource_download_allowed($ref,"",$resource["resource_type"]);
-	if (file_exists($path))
-		{
-		$counter++;
-		hook("beforesingledownloadsizeresult");
-			if(!hook("origdownloadlink"))
-			{
-			?>
-			<tr class="DownloadDBlend">
-			<td class="DownloadFileName"><h2><?php echo (isset($original_download_name)) ? str_replace_formatted_placeholder("%extension", $resource["file_extension"], $original_download_name, true) : str_replace_formatted_placeholder("%extension", $resource["file_extension"], $lang["originalfileoftype"]); ?></h2></td>
-			<td class="DownloadFileSize"><?php echo formatfilesize(filesize_unlimited($path))?></td>
-			<?php
-			add_download_column($ref, "", $downloadthissize);
-			?>
-			</tr>
-			<?php # hook origdownloadlink
-			}
-		}
-	else
-		{
-		$nodownloads=true;
-		}
-	} 
-	
+    {
+    # Files without multiple download sizes (i.e. no alternative previews generated).
+    $path=get_resource_path($ref,true,"",false,$resource["file_extension"]);
+    $downloadthissize=resource_download_allowed($ref,"",$resource["resource_type"]);
+    if (file_exists($path))
+        {
+        $counter++;
+        hook("beforesingledownloadsizeresult");
+        if(!hook("origdownloadlink"))
+            {
+            ?>
+            <tr class="DownloadDBlend">
+            <td class="DownloadFileName"><h2><?php echo (isset($original_download_name)) ? str_replace_formatted_placeholder("%extension", $resource["file_extension"], $original_download_name, true) : str_replace_formatted_placeholder("%extension", $resource["file_extension"], $lang["originalfileoftype"]); ?></h2></td>
+            <td class="DownloadFileSize"><?php echo formatfilesize(filesize_unlimited($path))?></td>
+            <?php
+            $size_info = array('id' => '', 'extension' => $resource['file_extension']);
+            add_download_column($ref, $size_info, $downloadthissize);
+            ?>
+            </tr>
+            <?php # hook origdownloadlink
+            }
+        }
+    else
+        {
+        $nodownloads=true;
+        }
+    } 
+
 if(($nodownloads || $counter == 0) && !checkperm('T' . $resource['resource_type'] . '_'))
 	{
 	hook('beforenodownloadresult');
@@ -1502,13 +1478,13 @@ if(($nodownloads || $counter == 0) && !checkperm('T' . $resource['resource_type'
 	<?php
 	}
 	
-if (isset($flv_download) && isset($flvfile) && $flv_download && file_exists($flvfile) && resource_download_allowed($ref,"pre",$resource["resource_type"]))
+if ($flv_preview_downloadable && isset($video_preview_file) && file_exists($video_preview_file) && resource_download_allowed($ref,"pre",$resource["resource_type"]))
     {
-	# Allow the FLV preview to be downloaded. $flv_download is set when showing the FLV preview video above.
+	# Allow the video preview to be downloaded.
 	?>
 	<tr class="DownloadDBlend">
-	<td class="DownloadFileName"><h2><?php echo (isset($ffmpeg_preview_download_name)) ? $ffmpeg_preview_download_name : str_replace_formatted_placeholder("%extension", $ffmpeg_preview_extension, $lang["cell-fileoftype"]); ?></h2></td>
-	<td class="DownloadFileSize"><?php echo formatfilesize(filesize_unlimited($flvfile))?></td>
+	<td class="DownloadFileName" colspan="2"><h2><?php echo (isset($ffmpeg_preview_download_name)) ? $ffmpeg_preview_download_name : str_replace_formatted_placeholder("%extension", $ffmpeg_preview_extension, $lang["cell-fileoftype"]); ?></h2></td>
+	<td class="DownloadFileSize"><?php echo formatfilesize(filesize_unlimited($video_preview_file))?></td>
 	<td <?php hook("modifydownloadbutton") ?> class="DownloadButton">
 	<?php if ($terms_download || $save_as){?>
 		<a href="<?php echo generateURL($baseurl . "/pages/terms.php",$urlparams,array("url"=>generateURL($baseurl . "/pages/download_progress.php",$urlparams,array("ext"=>$ffmpeg_preview_extension,"size"=>"pre")))) ?>"  onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["action-download"] ?></a>
@@ -1531,11 +1507,6 @@ hook('additionalresourcetools2', '', array($resource, $access));
 	
 include "view_alternative_files.php";
 
-if (!$videojs && $use_mp3_player && file_exists($mp3realpath) && $access==0)
-	{
-	//Legacy custom mp3 player support - need to show in this location
-    include "mp3_play.php";
-	}
 ?>
 
 
@@ -2218,8 +2189,8 @@ if($annotate_enabled)
 <script>
 jQuery('document').ready(function()
     {
-    /* Call SelectTab upon page load to select first tab*/
-    SelectTab();
+	/* Call SelectTab upon page load to select first tab*/
+    SelectMetaTab(0,<?php echo ($modal ? "true" : "false") ?>);
     registerCollapsibleSections(false);
     });
 </script>
