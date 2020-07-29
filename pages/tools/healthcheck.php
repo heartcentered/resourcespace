@@ -6,9 +6,31 @@
 # Performs some basic system checks. Useful for remote monitoring of ResourceSpace installations.
 #
 
+// Check required PHP extensions before using any
+$extensions_required = array();
+$extensions_required["curl"] = "curl_init";
+$extensions_required["gd"] = "imagecrop";
+$extensions_required["xml"] = "xml_parser_create";
+$extensions_required["mbstring"] = "mb_strtoupper";
+$extensions_required["ldap"] = "ldap_bind";
+$extensions_required["intl"] = "locale_get_default";
+$extensions_required["json"] = "json_decode";
+$extensions_required["zip"] = "zip_open";
+
+$missingmodules = array();
+foreach($extensions_required as $module=> $required_fn)
+    {
+    if(!function_exists($required_fn))
+        {
+        $missingmodules[] = $module;
+        }
+    }
+if(count($missingmodules)>0)
+    {
+    exit("FAIL - missing PHP modules: " . implode(",",$missingmodules));
+    }
+
 include "../../include/db.php";
-
-
 
 # Check database connectivity.
 $check=sql_value("select count(*) value from resource_type",0);
@@ -17,7 +39,7 @@ if ($check<=0) exit("FAIL - SQL query produced unexpected result");
 # Check write access to filestore
 if (!is_writable($storagedir)) {exit("FAIL - $storagedir is not writeable.");}
 $hash=md5(time());
-$file=$storagedir . "/write_text.txt";
+$file=$storagedir . "/write_test_$hash.txt";
 file_put_contents($file,$hash);$check=file_get_contents($file);unlink($file);
 if ($check!==$hash) {exit("FAIL - test write to disk returned a different string ('$hash' vs '$check')");}
 

@@ -89,8 +89,8 @@ for ($n=0;$n<count($result);$n++)
 	# Load access level (0,1,2) for this resource
 	$access=get_resource_access($result[$n]);
 	
-	# get all possible sizes for this resource
-	$sizes=get_all_image_sizes(false,$access>=1);
+    # Get all possible sizes for this resource. If largest available has been requested then include internal or user could end up with no file depite being able to see the preview
+	$sizes=get_all_image_sizes($size=="largest",$access>=1);
 
 	#check availability of original file 
     $p=get_resource_path($ref,true,"",false,$result[$n]["file_extension"]);
@@ -121,7 +121,7 @@ for ($n=0;$n<count($result);$n++)
         }
     }
     
-if(intval($user_dl_limit) > 0)
+if(isset($user_dl_limit) && intval($user_dl_limit) > 0)
     {
     $download_limit_check = get_user_downloads($userref,$user_dl_days);
     if($download_limit_check + count($result) > $user_dl_limit)
@@ -168,10 +168,16 @@ if ($submitted != "")
 
     if(!$collection_download_tar && $offline_job_queue)
         {
+        foreach ($result as $key => $resdata)
+            {
+             // Only need to store resource IDS, not full search data
+            $jobresult[$key] = array("ref" => $resdata["ref"]);
+            }
+
         $collection_download_job_data = array(
             'collection'            => $collection,
             'collectiondata'        => $collectiondata,
-            'result'                => array_column($result,"ref"),
+            'result'                => $jobresult,
             'size'                  => $size,
             'exiftool_write_option' => $exiftool_write_option,
             'useoriginal'           => $useoriginal,
@@ -228,7 +234,7 @@ if ($submitted != "")
             }
         else
             {
-            $usesize = ($size == 'original') ? "" : $usesize=$size;
+            $usesize = ($size == 'original') ? "" : $size;
             }        
 
         $use_watermark=check_use_watermark();
@@ -377,7 +383,7 @@ debug("BANG resource ". $ref . ", usesize: $usesize");
 			# Process the file if it exists, and (if restricted access) that the user has access to the requested size
 			if ((($target_exists && $access==0) ||
 				($target_exists && $access==1 &&
-					(image_size_restricted_access($size) || ($usesize='' && $restricted_full_download))) 
+					(image_size_restricted_access($size) || ($usesize=='' && $restricted_full_download))) 
 					) && resource_download_allowed($ref,$usesize,$result[$n]['resource_type']))
 				{
 				$used_resources[]=$ref;
@@ -400,14 +406,8 @@ debug("BANG resource ". $ref . ", usesize: $usesize");
 				# if the tmpfile is made, from here on we are working with that. 
 				
 				# If using original filenames when downloading, copy the file to new location so the name is included.
-				$filename = '';
-				if ($original_filenames_when_downloading)	
-					{
-					# Compute a filename for this resource		
-					$filename=get_download_filename($ref,$usesize,0,$pextension);	
-
-					collection_download_use_original_filenames_when_downloading($filename, $ref, $collection_download_tar, $filenames,$id);
-					}
+				$filename=get_download_filename($ref,$usesize,0,$pextension);
+				collection_download_use_original_filenames_when_downloading($filename, $ref, $collection_download_tar, $filenames,$id);
 
                 if (hook("downloadfilenamealt")) $filename=hook("downloadfilenamealt");
 

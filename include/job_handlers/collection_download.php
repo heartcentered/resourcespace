@@ -6,7 +6,7 @@ Requires the following job data:
 $job_data['collection'] - 
 $job_data['collectiondata'] - 
 $job_data['result'] - Search result of !collectionX
-$job_data['size'] - requested size
+$job_data['size'] - Requested size
 $job_data['exiftool_write_option']
 $job_data['useoriginal'] - 
 $job_data['id'] - 
@@ -22,7 +22,7 @@ include_once __DIR__ . '/../csv_export_functions.php';
 
 global $lang, $baseurl, $offline_job_delete_completed, $exiftool_write_option, $usage, $usagecomment,
 $text, $collection_download_settings, $pextension, $scramble_key, $archiver_fullpath,$archiver_listfile_argument,
-$collection_download_settings,$restricted_full_download;
+$collection_download_settings,$restricted_full_download, $download_file_lifetime;
 
 foreach($job_data as $arg => $value)
     {
@@ -81,14 +81,15 @@ $deletion_array = array();
 $filenames = array(); # set up an array to store the filenames as they are found (to analyze dupes)
 $used_resources = array();
 $subbed_original_resources = array();
-
 for($n = 0; $n < count($collection_resources); $n++)
     {
     $ref = $collection_resources[$n]["ref"];
     $resource_data = get_resource_data($ref);
+    $collection_resources[$n]["resource_type"] = $resource_data['resource_type']; // Update as used in other functions
     resource_type_config_override($resource_data['resource_type']);
 
     $copy = false; 
+    $ref = $collection_resources[$n]['ref'];
     $access = get_resource_access($resource_data);
     $use_watermark = check_use_watermark();
 
@@ -98,8 +99,8 @@ for($n = 0; $n < count($collection_resources); $n++)
         continue;
         }
 
-    # Get all possible sizes for this resource
-	$sizes=get_all_image_sizes(false,$access>=1);
+    # Get all possible sizes for this resource. If largest available has been requested then include internal or user could end up with no file depite being able to see the preview
+    $sizes=get_all_image_sizes($size=="largest",$access>=1);
 
 	#check availability of original file 
     $p=get_resource_path($ref,true,"",false,$resource_data["file_extension"]);
@@ -115,7 +116,7 @@ for($n = 0; $n < count($collection_resources); $n++)
 		$size_extension = get_extension($resource_data, $size_id);
 		$p=get_resource_path($ref,true,$size_id,false,$size_extension);
 
-		if (resource_download_allowed($ref,$size_id,$result[$n]['resource_type']))
+		if (resource_download_allowed($ref,$size_id,$resource_data['resource_type']))
 			{
 			if (hook('size_is_available', '', array($resource_data, $p, $size_id)) || file_exists($p))
 				$available_sizes[$size_id][]=$ref;
@@ -143,10 +144,10 @@ for($n = 0; $n < count($collection_resources); $n++)
         }
     else
         {
-        $usesize = ($size == 'original') ? "" : $usesize=$size;
+        $usesize = ($size == 'original') ? "" : $size;
         }
 
-    $pextension = get_extension($result[$n], $usesize);
+    $pextension = get_extension($resource_data, $usesize);
     $p = get_resource_path($ref, true, $usesize, false, $pextension, -1, 1, $use_watermark);
 
     $subbed_original = false;
@@ -161,11 +162,11 @@ for($n = 0; $n < count($collection_resources); $n++)
         $replaced_file = true;
         $target_exists = file_exists($p);
         }
-    else if(!$target_exists && $useoriginal == 'yes' && resource_download_allowed($ref,'',$collection_resources[$n]['resource_type']))
+    else if(!$target_exists && $useoriginal == 'yes' && resource_download_allowed($ref,'',$resource_data['resource_type']))
         {
         // this size doesn't exist, so we'll try using the original instead
-        $p = get_resource_path($ref, true, '', false, $collection_resources[$n]['file_extension'], -1, 1, $use_watermark);
-        $pextension = $collection_resources[$n]['file_extension'];
+        $p = get_resource_path($ref, true, '', false, $resource_data['file_extension'], -1, 1, $use_watermark);
+        $pextension = $resource_data['file_extension'];
         $subbed_original_resources[] = $ref;
         $subbed_original = true;
         $target_exists = file_exists($p);
@@ -182,7 +183,7 @@ for($n = 0; $n < count($collection_resources); $n++)
                     && (image_size_restricted_access($size) || ($usesize == '' && $restricted_full_download))
                 )
             )
-            && resource_download_allowed($ref, $usesize, $collection_resources[$n]['resource_type'])
+            && resource_download_allowed($ref, $usesize, $resource_data['resource_type'])
         )
     )
         {
@@ -209,7 +210,8 @@ for($n = 0; $n < count($collection_resources); $n++)
     // If using original filenames when downloading, copy the file to new location so the name is included.
     $filename = '';
     # Compute a filename for this resource
-    $filename=get_download_filename($ref,$size,0,$pextension);
+    debug("BANG usesize = " . $usesize);
+    $filename=get_download_filename($ref,$usesize,0,$pextension);
 
     if($GLOBALS["original_filenames_when_downloading"])
         {
@@ -311,6 +313,6 @@ message_add($job["user"], $job_success_text, $download_url);
 
 $delete_job_data=array();
 $delete_job_data["file"]=$zipfile;
-$delete_date = date('Y-m-d H:i:s',time()+(60*60*24)); // Delete file after 1 day
+$delete_date = date('Y-m-d H:i:s',time()+(60*60*24*(int)$download_file_lifetime)); // Delete file after set number of days
 $job_code=md5($zipfile);
 job_queue_add("delete_file",$delete_job_data,"",$delete_date,"","",$job_code);

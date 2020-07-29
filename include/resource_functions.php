@@ -19,7 +19,7 @@ $GLOBALS['get_resource_path_fpcache'] = array();
 * @param boolean $generate         Generate folder if not found
 * @param string  $extension        Extension of the file we are looking for. For original file, this would be the file
 *                                  extension, otherwise use the preview extension (e.g image preview will have JPG
-*                                  while video preview can have FLV/MP4 or others)
+*                                  while video preview can have MP4 or others)
 * @param boolean $scramble         Set to TRUE to get the scrambled folder (requires scramble key for it to work)
 * @param integer $page             For documents, use the page number we are trying to get the preview of.
 * @param boolean $watermarked      Get the watermark version?
@@ -475,7 +475,10 @@ function create_resource($resource_type,$archive=999,$user=-1)
 		global $userref;
 		$user = $userref;
 		}
-        
+    
+    // Archive cannot be blank
+    if (!isset($archive) || $archive == "") {$archive = 0;}
+
 	sql_query("insert into resource(resource_type,creation_date,archive,created_by) values ('$resource_type',now(),'" . escape_check($archive) . "','$user')");
 	
 	$insert=sql_insert_id();
@@ -2337,7 +2340,7 @@ function update_field($resource, $field, $value, array &$errors = array(), $log=
 			{
 			$truncated_value="null";
 			}		
-		sql_query("update resource set field".$field."=" . (($value=="")?"NULL":"'" . $truncated_value . "'") ." where ref='$resource'");
+		sql_query("update resource set field".$field."=" . (($value=="")?"NULL":"'" . escape_check($truncated_value) . "'") ." where ref='" . escape_check($resource) . "'");
 		}			
 	
     # Add any onchange code
@@ -3143,11 +3146,48 @@ function copy_resource($from,$resource_type=-1)
 	
 	return $to;
 	}
-	
-function resource_log($resource, $type, $field, $notes="", $fromvalue="", $tovalue="", $usage=-1, $purchase_size="", $purchase_price=0)
-	{
-	global $userref,$k,$lang,$resource_log_previous_ref, $internal_share_access;
     
+/**
+ * Log resource activity
+ *
+ * 
+ * @param   int     $resource - resource ref                            -- resource_log.resource
+ * @param   string  $type - log code defined in include/definitions.php -- resource_log.type
+ * @param   int     $field - resource type field                        -- resource_log.resource_type_field
+ * @param   string  $notes - text notes                                 -- resource_log.notes
+ * @param   string  $fromvalue - original value                         -- resource_log.previous_value
+ * @param   string  $tovalue - new value
+ * @param   int     $usage                                              -- resource_log.usageoption
+ * @param   string  $purchase_size                                      -- resource_log.purchase_size
+ * @param   float   $purchase_price                                     -- resource_log.purchase_price
+ * 
+ * @return int (or false)
+ */
+
+function resource_log($resource, $type, $field, $notes="", $fromvalue="", $tovalue="", $usage=-1, $purchase_size="", $purchase_price=0.00)
+    {
+    global $userref,$k,$lang,$resource_log_previous_ref, $internal_share_access;
+
+    // Param type checks
+    $param_str = array($type,$notes,$fromvalue,$tovalue,$purchase_size);
+    $param_num = array($resource,$field,$usage,$purchase_price);
+ 
+    foreach($param_str as $par)
+        {
+        if (!is_string($par))
+            {
+            return false;
+            } 
+        }
+ 
+    foreach($param_num as $par)
+        {
+        if (!is_numeric($par))
+            {
+            return false;
+            } 
+        }
+ 
     // If it is worthy of logging, update the modified date in the resource table
     update_timestamp($resource);
     
@@ -3933,9 +3973,49 @@ function get_alternative_files($resource,$order_by="",$sort="",$type="")
 
 	return sql_query("select ref,name,description,file_name,file_extension,file_size,creation_date,alt_type from resource_alt_files where resource='".escape_check($resource)."' $extrasql order by ".escape_check($ordersort)." name asc, file_size desc");
 	}
-	
+
+/**
+* Add alternative file
+* 
+* @param integer $resource
+* @param string  $name
+* @param string  $description
+* @param string  $file_name
+* @param string  $file_extension
+* @param integer $file_size
+* @param string  $alt_type
+* 
+* @return integer
+*/
 function add_alternative_file($resource,$name,$description="",$file_name="",$file_extension="",$file_size=0,$alt_type='')
 	{
+    debug_function_call("add_alternative_file", func_get_args());
+
+    $try_trim_str = function(string $s)
+        {
+        $str_len = mb_strlen($s);
+        if($str_len <= 255)
+            {
+            return $s;
+            }
+
+        $extension = pathinfo($s, PATHINFO_EXTENSION);
+        if(is_null($extension) || $extension == "")
+            {
+            return mb_strcut($s, 0, 255);
+            }
+        
+        $ext_len = mb_strlen(".{$extension}");
+        $len = 255 - $ext_len;
+        $s = mb_strcut($s, 0, $len);
+        $s .= ".{$extension}";
+
+        return $s;
+        };
+
+    $name = $try_trim_str($name);
+    $file_name = $try_trim_str($file_name);
+
 	sql_query("insert into resource_alt_files(resource,name,creation_date,description,file_name,file_extension,file_size,alt_type) values ('" . escape_check($resource) . "','" . escape_check($name) . "',now(),'" . escape_check($description) . "','" . escape_check($file_name) . "','" . escape_check($file_extension) . "','" . escape_check($file_size) . "','" . escape_check($alt_type) . "')");
 	return sql_insert_id();
 	}
@@ -5295,8 +5375,7 @@ function update_disk_usage_cron()
 function get_total_disk_usage()
     {
     global $fstemplate_alt_threshold;
-    $used = sql_value("select sum(disk_usage) value from resource where ref>'$fstemplate_alt_threshold'",0);
-    return (int)$used;
+    return sql_value("select ifnull(sum(disk_usage),0) value from resource where ref>'$fstemplate_alt_threshold'",0);
     }
 
 function overquota()
@@ -5439,7 +5518,7 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			{
 			if(!$o_size)
 				{
-				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
+				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check((int)$filesize) . "')");
 				}
 			else
 				{
@@ -5458,7 +5537,7 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			{
 			if(!$o_size)
 				{	
-				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
+				sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check((int)$filesize) . "')");
 				}
 			else
 				{
@@ -5499,7 +5578,7 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 			    # Size could be calculated after all
 			    if(!$o_size)
 					{
-					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check($filesize) . "')");
+					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}', '". escape_check($sw) ."', '". escape_check($sh) ."', '" . escape_check((int)$filesize) . "')");
 					}
 				else
 					{
@@ -5514,7 +5593,7 @@ function get_original_imagesize($ref="",$path="", $extension="jpg", $forcefromfi
 				if(!$o_size)
 					{
 					# Insert a dummy row to prevent recalculation on every view.
-					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}','0', '0', '" . escape_check($filesize) . "')");
+					sql_query("insert into resource_dimensions (resource, width, height, file_size) values('{$ref_escaped}','0', '0', '" . escape_check((int)$filesize) . "')");
 					}
 				else
 					{
@@ -7554,14 +7633,14 @@ function metadata_field_edit_access($field)
     return (!checkperm("F*") || checkperm("F-" . $field))&& !checkperm("F" . $field);
     }
 
-    function get_download_filename($ref,$size,$alternative,$ext)
+function get_download_filename($ref,$size,$alternative,$ext)
     {
     # Constructs a filename for download
     global $original_filenames_when_downloading,$download_filenames_without_size,$download_id_only_with_size,
     $download_filename_id_only,$download_filename_field,$prefix_resource_id_to_filename,$filename_field,
     $prefix_filename_string, $filename,$server_charset;
     
-    $filename = $ref . $size . ($alternative>0?"_" . $alternative:"") . "." . $ext;
+    $filename = (($download_filenames_without_size || $size == "") ? "" : "_" . $size . "") . ($alternative>0 ? "_" . $alternative : "") . "." . $ext;
     
     if ($original_filenames_when_downloading)
         {
@@ -7590,36 +7669,29 @@ function metadata_field_edit_access($field)
             # append preview size to base name if not the original
             if($size != '' && !$download_filenames_without_size)
                 {
-                    $filename = strip_extension(mb_basename($origfile),true) . '-' . $size . '.' . $ext;
+                $filename = strip_extension(mb_basename($origfile),true) . '-' . $size . '.' . $ext;
                 }
             else
                 {
-                    $filename = strip_extension(mb_basename($origfile),true) . '.' . $ext;
-                }
-
-            if($prefix_resource_id_to_filename)
-                {
-                $filename = $prefix_filename_string . $ref . "_" . $filename;
+                $filename = strip_extension(mb_basename($origfile),true) . '.' . $ext;
                 }
             }
         }
 
-    if ($download_filename_id_only){
-        if(!hook('customdownloadidonly', '', array($ref, $ext, $alternative))) {
+    elseif ($download_filename_id_only)
+        {
+        if(!hook('customdownloadidonly', '', array($ref, $ext, $alternative)))
+            {
             $filename=$ref . "." . $ext;
 
-            if($size != '' && $download_id_only_with_size) {
+            if($size != '' && $download_id_only_with_size)
+                {
                 $filename = $ref . '-' . $size . '.' . $ext;
+                }            
             }
-
-            if(isset($prefix_filename_string) && trim($prefix_filename_string) != '') {
-                $filename = $prefix_filename_string . $filename;
-            }
-
         }
-    }
     
-    if (isset($download_filename_field))
+    elseif (isset($download_filename_field))
         {
         $newfilename=get_data_by_field($ref,$download_filename_field);
         if ($newfilename)
@@ -7627,18 +7699,23 @@ function metadata_field_edit_access($field)
             $filename = trim(nl2br(strip_tags($newfilename)));
             if($size != "" && !$download_filenames_without_size)
                 {
-                    $filename = strip_extension(mb_basename(substr($filename, 0, 200)),true) . '-' . $size . '.' . $ext;
+                $filename = strip_extension(mb_basename(substr($filename, 0, 200)),true) . '-' . $size . '.' . $ext;
                 }
             else
                 {
-                    $filename = strip_extension(mb_basename(substr($filename, 0, 200)),true) . '.' . $ext;
-                }
-
-            if($prefix_resource_id_to_filename)
-                {
-                $filename = $prefix_filename_string . $ref . '_' . $filename;
+                $filename = strip_extension(mb_basename(substr($filename, 0, 200)),true) . '.' . $ext;
                 }
             }
+        }
+
+    if($prefix_resource_id_to_filename)
+        {
+        $filename = $ref . (substr($filename,0,1) == "." ? "" : '_') . $filename;
+        }
+    
+    if(isset($prefix_filename_string) && trim($prefix_filename_string) != '')
+        {
+        $filename = $prefix_filename_string . $filename;
         }
 
     # Remove critical characters from filename
@@ -7675,22 +7752,30 @@ function metadata_field_edit_access($field)
 */
 function get_resource_type_from_extension($extension, array $resource_type_extension_mapping, $default)
     {
+    $resource_types = sql_array("SELECT ref AS value FROM resource_type");
     foreach($resource_type_extension_mapping as $resource_type_id => $allowed_extensions)
         {
         if (!checkperm('T' . $resource_type_id))
             {
             if(in_array(strtolower($extension), $allowed_extensions))
                 {
-                $resource_types = sql_array("SELECT ref AS value FROM resource_type");
-                if(in_array($resource_type_id, $resource_types))
+                    if(in_array($resource_type_id, $resource_types))
                     {
                     return $resource_type_id;
                     }
                 }
             }
         }
-
-    return $default;
+    if(in_array($default, $resource_types))
+        {
+        return $default;
+        }
+    else
+        {
+        // default resource type does not exist so use the first available type
+        sort($resource_types,SORT_NUMERIC);
+        return $resource_types[0];
+        }
     }
 
 /**

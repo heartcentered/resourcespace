@@ -537,8 +537,8 @@ function create_collection($userid,$name,$allowchanges=0,$cant_delete=0,$ref=0,$
 		}
 
 	# Creates a new collection and returns the reference
-	sql_query("insert into collection (" . ($ref!=0?"ref,":"") . "name,user,created,allow_changes,cant_delete,session_id,public" . $themecolumns . ") values (" . ($ref!=0?"'" . escape_check($ref) . "',":"") . "'" . escape_check($name) . "','$userid',now(),'" . escape_check($allowchanges) . "','" . escape_check($cant_delete) . "'," . (($rs_session=="")?"NULL":"'" . $rs_session . "'") . "," . ($public ? "1" : "0" ) . $categorysql . ")");
-	//echo "insert into collection (" . ($ref!=0?"ref,":"") . "name,user,created,allow_changes,cant_delete,session_id,public" . $themecolumns . ") values (" . ($ref!=0?"'" . $ref . "',":"") . "'" . escape_check($name) . "','$userid',now(),'$allowchanges','$cant_delete'," . (($rs_session=="")?"NULL":"'" . $rs_session . "'") . "," . ($public ? "1" : "0" ) . $categorysql . ")" . "\n";
+	sql_query("insert into collection (" . ($ref!=0?"ref,":"") . "name,user,created,allow_changes,cant_delete,session_id,public" . $themecolumns . ") values (" . ($ref!=0?"'" . escape_check($ref) . "',":"") . "'" . escape_check($name) . "','$userid',now(),'" . escape_check($allowchanges) . "','" . escape_check($cant_delete) . "'," . (($rs_session=="")?"NULL":"'" . (int)$rs_session . "'") . "," . ($public ? "1" : "0" ) . $categorysql . ")");
+
 	$ref=sql_insert_id();
 
 	index_collection($ref);	
@@ -625,6 +625,10 @@ function search_public_collections($search="", $order_by="name", $sort="ASC", $e
 	global $userref;
 	$sql="";
 	$keysql="";
+
+    // Check for valid values of 'sort' only
+    if (!in_array($sort,array("ASC","DESC"))) {$sort="ASC";}
+
 	# Keywords searching?
 	$keywords=split_keywords($search);  
 	if (strlen($search)==1 && !is_numeric($search)) 
@@ -1765,7 +1769,7 @@ function add_saved_search_items($collection, $search = "", $restypes = "", $arch
         $search_all_workflow_states = false;
         }
    
-    $results=do_search($search, $restypes, $order_by, $archivesearch,-1,$sort,false,$starsearch,false,false,$daylimit,"","","","","",$res_access);
+    $results=do_search($search, $restypes, $order_by, $archivesearch,-1,$sort,false,$starsearch,false,false,$daylimit,false,true,false,false,false,$res_access);
 
 	if(!is_array($results) || count($results) == 0)
         {
@@ -2103,7 +2107,11 @@ function update_collection_order($neworder,$collection,$offset=0)
 function get_collection_resource_comment($resource,$collection)
 	{
 	$data=sql_query("select *,use_as_theme_thumbnail from collection_resource where collection='" . escape_check($collection) . "' and resource='" . escape_check($resource) . "'","");
-	return $data[0];
+    if (!isset($data[0]))
+		{
+		return false;
+		}
+    return $data[0];
 	}
 	
 /**
@@ -2408,6 +2416,9 @@ function delete_collection_access_key($collection,$access_key)
 function collection_log($collection,$type,$resource,$notes = "")
 	{
 	global $userref;
+
+	if (!is_numeric($collection)) {return false;}
+
 	$modifiedcollogtype=hook("modifycollogtype","",array($type,$resource));
 	if ($modifiedcollogtype) {$type=$modifiedcollogtype;}
 	
@@ -2484,9 +2495,14 @@ function collection_max_access($collection)
 /**
  * Returns the minimum access (the least permissive) that the current user has to the resources in $collection.
  *
- * @param  integer $collection
- * @return integer
+ *  Can be passed a collection ID or the results of a collection search, the result will be the most restrictive 
+ *  access that is found.
+ * 
+ * @param  integer|array $collection    Collection ID as an integer or the result of a search as an array
+ * 
+ * @return integer                      0 - Open, 1 - restricted, 2 - Confidential
  */
+
 function collection_min_access($collection)
     {
     $minaccess = 0;
@@ -2561,7 +2577,7 @@ function collection_set_themes ($collection, $categories = array())
  */
 function remove_all_resources_from_collection($ref){
     // abstracts it out of save_collection()
-    $removed_resources = sql_array('SELECT resource AS value FROM collection_resource WHERE collection = ' . escape_check($ref) . ';');
+    $removed_resources = sql_array("SELECT resource AS value FROM collection_resource WHERE collection = '" . escape_check($ref) . "';");
 
     collection_log($ref, LOG_CODE_COLLECTION_REMOVED_ALL_RESOURCES, 0);
     foreach($removed_resources as $removed_resource_id)
@@ -2569,8 +2585,8 @@ function remove_all_resources_from_collection($ref){
         collection_log($ref, 'r', $removed_resource_id, ' - Removed all resources from collection ID ' . $ref);
         }
 
-    sql_query('DELETE FROM collection_resource WHERE collection = ' . escape_check($ref));
-    sql_query("DELETE FROM external_access_keys WHERE collection='" . escape_check($ref) . "'");
+    sql_query("DELETE FROM collection_resource WHERE collection = '" . escape_check($ref) . "'");
+    sql_query("DELETE FROM external_access_keys WHERE collection = '" . escape_check($ref) . "'");
     }	
 
 function get_home_page_promoted_collections()
@@ -2672,9 +2688,9 @@ function get_session_collections($rs_session,$userref="",$create=false)
 	$extrasql="";
 	if($userref!="")
 		{
-		$extrasql="and user='" . escape_check($userref) ."'";	
+		$extrasql="AND user='" . escape_check($userref) ."'";	
 		}
-	$collectionrefs=sql_array("select ref value from collection where session_id='" . escape_check($rs_session) . "' " . $extrasql,"");
+	$collectionrefs=sql_array("SELECT ref value FROM collection WHERE session_id='" . escape_check($rs_session) . "' AND type = '" . COLLECTION_TYPE_STANDARD . "' " . $extrasql,"");
 	if(count($collectionrefs)<1 && $create)
 		{
 		$collectionrefs[0]=create_collection($userref,"Default Collection",0,1); # Do not translate this string!	
@@ -2887,7 +2903,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         }
 
      // Remove all resources from collection
-     if(0 < $count_result && ($k=="" || $internal_share_access) && isset($emptycollection) && $remove_resources_link_on_collection_bar && collection_writeable($collection_data['ref']))
+     if(!checkperm("b") && 0 < $count_result && ($k=="" || $internal_share_access) && isset($emptycollection) && $remove_resources_link_on_collection_bar && collection_writeable($collection_data['ref']))
      {
      $data_attribute['url'] = generateURL($baseurl_short . "pages/collections.php",$urlparams,array("emptycollection"=>$collection_data['ref'],"removeall"=>"true","ajax"=>"true","submitted"=>"removeall"));
      $options[$o]['value']     = 'empty_collection';
@@ -3036,6 +3052,7 @@ function compile_collection_actions(array $collection_data, $top_actions, $resou
         && ($k=="" || $internal_share_access) 
         && $manage_collections_share_link
         && $allow_share
+        && !checkperm("b")
         && (checkperm('v')
             || checkperm ('g') 
             || collection_min_access($collection_data['ref'])<=1 
@@ -3837,7 +3854,7 @@ function collection_download_process_command_to_file($use_zip_extension, $collec
     {
     global $config_windows, $cmdfile;
 
-    # 
+
     //update_progress_file("writing zip command");  
     if (!$use_zip_extension && !$collection_download_tar)
         {
@@ -4069,14 +4086,15 @@ function update_collection_type($cid, $type)
 */
 function get_user_selection_collection($user)
     {
+    global $rs_session;
     if(!is_numeric($user))
         {
         return null;
         }
-
-    $sql = sprintf("SELECT ref AS `value` FROM collection WHERE `user` = '%s' AND `type` = '%s' ORDER BY ref ASC",
+    $sql = sprintf("SELECT ref AS `value` FROM collection WHERE `user` = '%s' AND `type` = '%s' %s ORDER BY ref ASC",
         escape_check($user),
-        COLLECTION_TYPE_SELECTION
+        COLLECTION_TYPE_SELECTION,
+        ((isset($rs_session) && $rs_session != "") ? " AND session_id='" . $rs_session . "'"  : "")
     );
 
     return sql_value($sql, null);

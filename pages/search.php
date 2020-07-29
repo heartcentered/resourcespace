@@ -41,7 +41,7 @@ if ($k=="" || $internal_share_access)
 
 // Disable checkboxes for external users.
 $use_selection_collection = true;
-if($k != "" && !$internal_share_access)
+if($k != "" && !$internal_share_access || (isset($anonymous_login) && $username == $anonymous_login && !$anonymous_user_session_collection))
     {
     $use_selection_collection = false;
     }
@@ -236,8 +236,8 @@ if ($order_by=="")
         }
     }
 
-$per_page=getvalescaped("per_page",$default_perpage);
-if(empty($per_page))
+$per_page=getvalescaped("per_page",$default_perpage, true); // force numeric value
+if(empty($per_page) || $per_page < 1)
     {
     $per_page=$default_perpage;
     }
@@ -448,6 +448,11 @@ foreach($checkparams as $checkparam)
         }
     }
 
+// If a "fieldX" order_by is used, check it's a valid value.
+if (substr($order_by,0,5)=="field" && !in_array(substr($order_by,5),get_resource_table_joins()))
+    {
+    exit($lang['error_invalid_input'] . ":- <pre>order_by : " . htmlspecialchars($order_by) . "</pre>");
+    }
 
 if(false === strpos($search, '!') || '!properties' == substr($search, 0, 11) )
     {
@@ -856,7 +861,7 @@ hook('searchresultsheader');
 
 #if (is_array($result)||(isset($collections)&&(count($collections)>0)))
 
-if($enable_themes && $enable_theme_breadcrumbs && !$search_titles && isset($theme_link) && $k=="")
+if((isset($collectiondata) && array_key_exists("name",$collectiondata)) && $enable_themes && $enable_theme_breadcrumbs && !$search_titles && isset($theme_link) && $k=="")
     {
     // Show the themes breadcrumbs if they exist, but not if we are using the search_titles
     renderBreadcrumbs(
@@ -1157,6 +1162,7 @@ if($responsive_ui)
         if(!isset($collectiondata) || !$collectiondata)
             {
             $collectiondata = array();
+            $collectionsearch = false;
             }
 
         $url=generateURL($baseurl . "/pages/search.php",$searchparams); // Moved above render_actions as $url is used to render search actions
@@ -1226,14 +1232,14 @@ if($responsive_ui)
     // Show collection title and description.
     if ($collectionsearch)
         {
-        if ($show_collection_name)
+        if ((isset($collectiondata) && array_key_exists("name",$collectiondata)) && $show_collection_name)
             { ?>
             <div class="RecordHeader">
                 <h1 class="SearchTitle">
                 <?php echo i18n_get_collection_name($collectiondata); ?>
                 </h1>
             <?php
-            if(trim($collectiondata['description']) != "")
+            if((isset($collectiondata) && array_key_exists("description",$collectiondata)) && trim($collectiondata['description']) != "")
                 {
                 echo "<p>" . htmlspecialchars($collectiondata['description']) . "</p>";
                 }
