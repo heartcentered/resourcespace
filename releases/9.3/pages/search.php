@@ -339,11 +339,9 @@ if ($order_by=="")
         }
     }
    
-$per_page=getvalescaped("per_page",$default_perpage, true); // force numeric value
-if(empty($per_page) || $per_page < 1)
-    {
-    $per_page=$default_perpage;
-    }
+$per_page=getvalescaped("per_page",$default_perpage, true); 
+$per_page= (!in_array($per_page,$results_display_array)) ? $default_perpage : $per_page;
+
 rs_setcookie('per_page', $per_page,0,"","",false,false);
 
 // Clear special selection collection if user runs a new search. Paging is not a new search. Also we allow for users that
