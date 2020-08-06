@@ -1,5 +1,5 @@
 <?php
-$on_upload = ($pagename ==  "upload_plupload");
+$on_upload = ($pagename ==  "upload_batch");
 if(!hook("replaceuploadoptions")):	
 if ($on_upload || $ref<0)
 	{

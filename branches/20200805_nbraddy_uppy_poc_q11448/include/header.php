@@ -137,6 +137,12 @@ if ($keyboard_navigation_video_search || $keyboard_navigation_video_view || $key
     <?php
     }
 
+?>
+
+<script type="text/javascript" src="<?php echo $baseurl_short;?>lib/js/uppy_bundle_test.js?<?php echo $css_reload_key;?>"></script>
+
+<?php
+
 if($simple_search_pills_view)
     {
     ?>
@@ -266,6 +272,12 @@ $extrafooterhtml="";
 echo get_plugin_css();
 // after loading these tags we change the class on them so a new set can be added before they are removed (preventing flickering of overridden theme)
 ?>
+
+<link rel="stylesheet" href="<?php echo $baseurl?>/css/uppy.min.css?css_reload_key=<?php echo $css_reload_key?>">
+
+
+
+
 <script>jQuery('.plugincss').attr('class','plugincss0');</script>
 <?php
 
@@ -434,7 +446,7 @@ else
     <?php } ?>
         
     		
-	<?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php } ?>    
+	<?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_batch.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php } ?>    
         
     <?php
     if(!hook('replaceheaderfullnamelink'))

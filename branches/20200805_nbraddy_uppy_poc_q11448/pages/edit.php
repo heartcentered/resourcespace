@@ -600,7 +600,7 @@ if ((getval("autosave","")!="") || (getval("tweak","")=="" && getval("submitted"
                             redirect(generateURL($baseurl_short . "pages/view.php",$urlparams, array("refreshcollectionframe"=>"true")));
                             exit();
                             }
-                        redirect(generateURL($baseurl_short . "pages/upload_plupload.php",array_merge($urlparams,$uploadparams)) . hook("addtouploadurl"));
+                        redirect(generateURL($baseurl_short . "pages/upload_batch.php",array_merge($urlparams,$uploadparams)) . hook("addtouploadurl"));
                         }
                     elseif (getval("local","") != "" || $uploader == "local")// Test if fetching resource from local upload folder.
                         {
@@ -613,7 +613,7 @@ if ((getval("autosave","")!="") || (getval("tweak","")=="" && getval("submitted"
                     else
                         {
                         // Default
-                        redirect(generateURL($baseurl_short . "pages/upload_plupload.php",array_merge($urlparams,$uploadparams)) . hook("addtouploadurl"));
+                        redirect(generateURL($baseurl_short . "pages/upload_batch.php",array_merge($urlparams,$uploadparams)) . hook("addtouploadurl"));
                         }
                     }
                 }
