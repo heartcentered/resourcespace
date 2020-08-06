@@ -1,0 +1,6 @@
+A log storing all e-mails sent, mainly for diagnosis purposes.
+ref,int(11),
+date,datetime,
+mail_to,varchar(100),
+mail_from,int(11),
+subject,varchar(150),

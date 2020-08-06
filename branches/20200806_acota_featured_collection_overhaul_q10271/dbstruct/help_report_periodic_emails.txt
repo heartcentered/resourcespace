@@ -1,0 +1,9 @@
+Users that have subscribed to receive a report regularly.
+ref,int(11),
+user,int(11),
+send_all_users,int(11),
+user_groups,varchar(255),
+report,int(11),
+period,int(11),
+email_days,int(11),
+last_sent,datetime,
