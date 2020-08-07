@@ -1511,7 +1511,6 @@ $lang['map_osmhot'] = 'Humanitarian';
 $lang['map_osmmtb'] = 'Mountain Bike Map of Europe';
 $lang['map_osmhikebike'] = 'Hike & Bike Map';
 $lang['map_otm'] = 'OSM Topographic';
-$lang['map_omsroads'] = 'OpenMapSurfer Roads';
 
 // Thunderforest basemap group.
 $lang['map_tf_group'] = 'Thunderforest';
