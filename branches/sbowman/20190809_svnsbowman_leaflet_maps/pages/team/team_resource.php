@@ -6,7 +6,7 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";if (!checkperm("t")) {exit ("Permission denied.");}
 
 include "../../include/header.php";
@@ -26,12 +26,14 @@ include "../../include/header.php";
 			<li><i aria-hidden="true" class="fa fa-fw fa-file"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/edit.php?ref=-<?php echo $userref?>&amp;noupload=true" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["addresource"]?></a></li>
 		<?php endif // Test if Add Single Resource is allowed. ?>
 
-		<?php if($upload_methods['in_browser_upload']): // Test if Add Resource Batch - In Browser is allowed. ?>
-            <li><i aria-hidden="true" class="fa fa-fw fa-upload"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/edit.php?ref=-<?php echo $userref?>&amp;uploader=plupload" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["addresourcebatchbrowser"]?></a></li>
-                <?php endif // Test if Add Resource Batch - In Browser is allowed. ?>
+		<?php if($upload_methods['in_browser_upload']): // Test if Add Resource Batch - In Browser is allowed. 
+			$url = ($upload_then_edit) ? "upload_plupload.php" : "edit.php?ref=-$userref&amp;uploader=plupload";
+		?>
+            <li><i aria-hidden="true" class="fa fa-fw fa-upload"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/<?php echo $url?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["addresourcebatchbrowser"]?></a></li>
+        <?php endif // Test if Add Resource Batch - In Browser is allowed. ?>
 
 		<?php if($upload_methods['fetch_from_ftp']): // Test if Add Resource Batch - Fetch from FTP server is allowed. ?>
-			<li><i aria-hidden="true" class="fa fa-fw fa-exchange"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/edit.php?ref=-<?php echo $userref?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["addresourcebatchftp"]?></a></li>
+			<li><i aria-hidden="true" class="fa fa-fw fa-exchange"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/edit.php?ref=-<?php echo $userref?>&uploader=ftp" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["addresourcebatchftp"]?></a></li>
 		<?php endif // Test if Add Resource Batch - Fetch from FTP server is allowed. ?>
 
 		<?php if($upload_methods['fetch_from_local_folder']): // Test if Add Resource Batch - Fetch from local upload folder is allowed. ?>
@@ -80,7 +82,9 @@ include "../../include/header.php";
 
 		<li><i aria-hidden="true" class="fa fa-fw fa-filter"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/search.php?search=<?php echo urlencode("!unused")?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["viewuncollectedresources"]?></a></li>
 		
-		<?php if (checkperm("i")) { ?><li><i aria-hidden="true" class="fa fa-fw fa-archive"></i>&nbsp;<a href="<?php echo $baseurl?>/pages/team/team_archive.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["managearchiveresources"]?></a></li><?php } ?>
+		<li><i aria-hidden="true" class="fas fa-exclamation-triangle"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/search.php?search=!integrityfail" onClick="return CentralSpaceLoad(this,true);" title="<?php echo $lang["team_resource_integrity_fail_info"]?>"><?php echo $lang["team_resource_integrity_fail"]?></a></li>
+		
+        <?php if (checkperm("i")) { ?><li><i aria-hidden="true" class="fa fa-fw fa-archive"></i>&nbsp;<a href="<?php echo $baseurl?>/pages/team/team_archive.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["managearchiveresources"]?></a></li><?php } ?>
 			
 		<?php if (checkperm("k")): // Check if user can manage keywords and fields ?>
 			<li><i aria-hidden="true" class="fa fa-fw fa-link"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/team/team_related_keywords.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["managerelatedkeywords"]?></a></li>

@@ -6,20 +6,23 @@
 */
 
 include_once "../../include/db.php";
-include_once "../../include/general.php";
+
 include_once "../../include/authenticate.php";
 header("Content-type: text/javascript");
 ?>
 
 function ToggleBrowseBar(forcestate, noresize) 
 	{
+    console.debug("ToggleBrowseBar(forcestate = %o, noresize = %o)", forcestate, noresize);
     var browseopen = (typeof browse_show === "undefined" || browse_show == 'hide') || (forcestate !== "undefined" && forcestate == 'open')
+    console.debug("browseopen = %o", browseopen);
 	if (browseopen)
 		{
         jQuery('#BrowseBar').show();
 		if(typeof noresize === 'undefined' || noresize == false)
             {
             myLayout.sizePane("west", <?php echo $browse_default_width; ?>);
+            jQuery('#BrowseBarContent').width(browse_width-40);
             }
 		browse_show = 'show';
         SetCookie('browse_show', 'show');
@@ -48,7 +51,7 @@ function renderBrowseItem(node, parent)
     if(node.expandable != "false")
         {
         var expand = "<div class='BrowseBarStructure BrowseBarExpand'><a href='#' class='browse_expand browse_closed' onclick='toggleBrowseElements(\"%BROWSE_ID%\", false, true);return false;'></a></div>";
-        expand = expand.replace("%BROWSE_ID%",node.id);
+        expand = expand.replace("%BROWSE_ID%",node.id);        
         }
     else
         {
@@ -81,10 +84,19 @@ function renderBrowseItem(node, parent)
             linkfunction = "return CentralSpaceLoad(this,true);";
             }
         
-        link = "<a class='browse_droplink'  href='%BROWSE_LINK%' onclick='" + linkfunction + "'><div class='BrowseBarStructure BrowseType%BROWSE_CLASS%'></div><div class='BrowseBarLink' >%BROWSE_NAME%</div></a>";
+        link = "<a class='browse_droplink'  href='%BROWSE_LINK%' onclick='" + linkfunction + "'><div class='BrowseBarStructure BrowseType%BROWSE_CLASS%'>%ICON_HTML%</div><div class='BrowseBarLink' >%BROWSE_NAME%</div></a>";
         link = link.replace("%BROWSE_CLASS%",node.class);
         link = link.replace("%BROWSE_LINK%",node.link);  
-        link = link.replace("%BROWSE_NAME%",node.name);
+        link = link.replace("%BROWSE_NAME%",node.name);      
+        
+        iconhtml = "";
+        if(node.icon)
+            {
+            iconhtml = node.icon;
+            }
+        
+        link = link.replace("%ICON_HTML%",iconhtml);
+        
         brwstmplt = brwstmplt.replace("%BROWSE_TEXT%",link);  
         }
     else
@@ -103,6 +115,7 @@ function renderBrowseItem(node, parent)
 
 function toggleBrowseElements(browse_id, reload, useraction)
     {
+    console.debug("toggleBrowseElements(browse_id = %o, reload = %o, useraction = %o)", browse_id, reload, useraction);
     if (typeof reload === 'undefined') {reload = false;}
     if (typeof useraction === 'undefined') {useraction = false;}
 
@@ -196,7 +209,7 @@ function toggleBrowseElements(browse_id, reload, useraction)
             });
 
         browseopen = remaining;
-        SetCookie('browseopen',browseopen);
+        SetCookie('browseopen',encodeURIComponent(browseopen));
         return true;
         }
         
@@ -217,6 +230,7 @@ function toggleBrowseElements(browse_id, reload, useraction)
 
     refreshicon.addClass("fa-spin");
     b_loading.push(browse_id);
+    console.debug("b_loading = %o", b_loading);
     
     if(typeof browsepostload === "undefined")
         {
@@ -235,7 +249,6 @@ function toggleBrowseElements(browse_id, reload, useraction)
     var post_data = {
                     id: browse_id,
                     };
-    
     jQuery.ajax({
         type:"GET",
         url: url,
@@ -263,7 +276,7 @@ function toggleBrowseElements(browse_id, reload, useraction)
             if (browseopen.indexOf(browse_id)==-1)
                 {
                 browseopen.push(browse_id);
-                SetCookie('browseopen',browseopen);
+                SetCookie('browseopen',encodeURIComponent(browseopen));
                 }
 
             openclose.removeClass("browse_closed");
@@ -290,41 +303,50 @@ function toggleBrowseElements(browse_id, reload, useraction)
 
             browsepostload[browse_id].forEach(function (childitem)
                 {
-                //console.log('Finished loading ' + browse_id + ', loading child item ' + childitem);
+                console.debug("Finished loading %o, loading child item %o", browse_id, childitem);
                 toggleBrowseElements(childitem, true);
                 });
                 
             if(browse_toload.length == 0)
                 {
-                //console.log("Finished browse_bar reload, initialising drop"); 
+                console.debug("Finished browse_bar reload, initialising drop"); 
                 BrowseBarInit();
                 browse_clicked = false;
                 }
             else
                 {
-                //console.log("Still to load: " + browse_toload);    
+                console.debug("Still to load: %o", browse_toload);
                 }
             })
         .fail(function(xhr, status, error)
             {
             if (xhr.status=="403")
                 {				
-                window.location = baseurl_short + "login.php";		
+                window.location = baseurl_short + "login.php";
                 }
             else
-                {			
-                styledalert(errorpageload + status, response);		
+                {
+                var loadindex = b_loading.indexOf(browse_id);
+                if (loadindex > -1)
+                    {
+                    b_loading.splice(loadindex, 1);
+                    }
+                browse_clicked = false;
+                styledalert('<?php echo htmlspecialchars($lang["error"]); ?> ' + xhr.status, '<?php echo htmlspecialchars($lang['error_generic']); ?> : ' + error);	 refreshicon.removeClass("fa-spin");
                 }
             });
-    
-    return true;          
+
+    return true;
     }
-    
+
 function ReloadBrowseBar()
     {
-    var allopen = jQuery.cookie("browseopen") ? jQuery.cookie("browseopen").split(/,/) : new Array();
-            
+    console.debug("ReloadBrowseBar()");
+    var allopen = jQuery.cookie("browseopen") ? decodeURIComponent(jQuery.cookie("browseopen")).split(/,/) : new Array();  
+    console.debug("allopen = %o", allopen);
+
     browse_toload = allopen;   
+    console.debug("browse_toload = %o", browse_toload);
     allopen.forEach(function (item)
         {
         toggleBrowseElements(item, true);

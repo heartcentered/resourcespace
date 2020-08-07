@@ -1,11 +1,7 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php"; 
-include "../include/resource_functions.php";
-include "../include/search_functions.php";
-include_once "../include/collections_functions.php";
-include_once '../include/render_functions.php';
 
 $ref=getvalescaped("ref","",true);
 // Fetch resource data
@@ -28,7 +24,7 @@ $minaccess=get_resource_access($ref);
 // Check if sharing permitted
 if (!can_share_resource($ref,$minaccess)) {exit($lang["error-permissiondenied"]);}
 
-$user_select_internal=checkperm("noex");
+$user_select_internal=checkperm("noex") ||  intval($user_dl_limit) > 0;
 
 $errors="";
 if (getval("save","")!="" && enforcePostRequest(getval("ajax", false)))
@@ -106,10 +102,11 @@ if (getval("save","")!="" && enforcePostRequest(getval("ajax", false)))
 include "../include/header.php";
 ?>
 <div class="BasicsBox">
-<p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
+<p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short; ?>pages/resource_share.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoshareresource"]; ?></a></p>
+
 <h1><?php echo $lang["emailresourcetitle"]?></h1>
 
-<p><?php echo text("introtext")?></p>
+<p><?php echo text("introtext");render_help_link("user/sharing-resources");?></p>
 
 <form method=post id="resourceform" action="<?php echo $baseurl_short?>pages/resource_email.php?search=<?php echo urlencode($search)?>&offset=<?php echo $offset?>&order_by=<?php echo $order_by?>&sort=<?php echo $sort?>&archive=<?php echo $archive?>">
 <input type=hidden name=ref value="<?php echo htmlspecialchars($ref)?>">
@@ -154,7 +151,7 @@ if ($share_resource_include_related && $enable_related_resources && checkperm("s
 				?>
 				<div class="sharerelatedtype">
 				<?php
-				$restypename=sql_value("select name as value from resource_type where ref = '$rtype'","");
+				$restypename=sql_value("select name as value from resource_type where ref = '$rtype'","", "schema");
 				$restypename = lang_or_i18n_get_translated($restypename, "resourcetype-", "-2");
 				?><!--Panel for related resources-->
 				

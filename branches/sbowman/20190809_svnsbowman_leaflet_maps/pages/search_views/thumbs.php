@@ -1,8 +1,27 @@
 <?php 
 if (!hook("renderresultthumb")) 
     {
+    # Establish various metrics for use in thumbnail rendering
+    # Note that only $resolved_title_trim is currently used
+    $resolved_title_trim=0; 
+    $resolved_title_height=0;
+    $resolved_title_wordwrap=0; 
+    if ($display == "xlthumbs") 
+        {
+        $resolved_title_trim=$xl_search_results_title_trim;
+        $resolved_title_height = 350 + (28 * count($xl_thumbs_display_fields));
+        $resolved_title_wordwrap = $xl_search_results_title_wordwrap;
+        } 
+    else 
+        {
+        $resolved_title_trim=$search_results_title_trim;
+        $resolved_title_height = 202 + (28 * count($thumbs_display_fields));
+        $resolved_title_wordwrap = $search_results_title_wordwrap;
+        }
+
     $thumbs_displayed_fields_height = ($display == "xlthumbs" ? 350 : 202) + (28 * count($thumbs_display_fields));
-    if($annotate_enabled)
+
+    if($annotate_enabled || (isset($annotate_enabled_adjust_size_all) && $annotate_enabled_adjust_size_all == true))
         {
         $thumbs_displayed_fields_height += 28;
         }
@@ -23,9 +42,21 @@ if (!hook("renderresultthumb"))
         }
     hook('thumbs_resourceshell_height');
     
+    if($display_resource_id_in_thumbnail) #[t20844]
+        { 
+        $thumbs_displayed_fields_height += 29;
+        $br = '<br />';
+        }; 
+
+    $class = array();
+    if($use_selection_collection && in_array($ref, $selection_collection_resources))
+        {
+        $class[] = "Selected";
+        }
     ?>
-    <!--Resource Panel-->
-    <div class="ResourcePanel <?php echo ($display == 'xlthumbs' ? 'ResourcePanelLarge' : '') ?> ArchiveState<?php echo $result[$n]['archive'];?> <?php hook('thumbsviewpanelstyle'); ?> ResourceType<?php echo $result[$n]['resource_type']; ?>" id="ResourceShell<?php echo htmlspecialchars($ref)?>" <?php echo hook('resourcepanelshell_attributes')?>
+
+    <!--Resource Panel -->    
+    <div class="ResourcePanel <?php echo implode(" ", $class); ?> <?php echo ($display == 'xlthumbs' ? 'ResourcePanelLarge' : '') ?> ArchiveState<?php echo $result[$n]['archive'];?> <?php hook('thumbsviewpanelstyle'); ?> ResourceType<?php echo $result[$n]['resource_type']; ?>" id="ResourceShell<?php echo htmlspecialchars($ref)?>" <?php echo hook('resourcepanelshell_attributes')?>
     style="height: <?php echo $thumbs_displayed_fields_height; ?>px;"
     >
         <?php  
@@ -53,10 +84,12 @@ if (!hook("renderresultthumb"))
                 $use_watermark=false;   
                 }
 
+            $image_size = $display == "xlthumbs" ? ($retina_mode ? "scr" : "pre") : ($retina_mode ? "pre" : "thm");
+
             $thm_url = get_resource_path(
                 $ref,
-                false,
-                ($display == "xlthumbs" ? ($retina_mode ? 'scr' : 'pre') : ($retina_mode ? 'pre' : 'thm')),
+                true,
+                $image_size,
                 false,
                 $result[$n]['preview_extension'],
                 true,
@@ -65,53 +98,28 @@ if (!hook("renderresultthumb"))
                 $result[$n]['file_modified']
             );
 
+            // If no screen size found try preview
+            if ($image_size == "scr" && !file_exists($thm_url))
+                {
+                $image_size = "pre";
+                $thm_url=get_resource_path($ref,true,$image_size ,false,$result[$n]['preview_extension'],true,1,$use_watermark,$result[$n]['file_modified']);
+                }
+
+            // If no preview size found try thumbnail
+            if ($image_size == "pre" && !file_exists($thm_url))     
+                {
+                $image_size = "thm";
+                $thm_url=get_resource_path($ref,true,$image_size ,false,$result[$n]['preview_extension'],true,1,$use_watermark,$result[$n]['file_modified']);
+                }
+
+            $thm_url=get_resource_path($ref,false,$image_size ,false,$result[$n]['preview_extension'],true,1,$use_watermark,$result[$n]['file_modified']);
+                
             if(isset($result[$n]['thm_url']))
                 {
                 $thm_url = $result[$n]['thm_url'];
                 } # Option to override thumbnail image in results, e.g. by plugin using process_Search_results hook above
 
-                $show_flv=false;
-                $use_mp3_player=false;
-                if((in_array($result[$n]["file_extension"],$ffmpeg_supported_extensions) || $result[$n]["file_extension"]=="flv") && $video_player_thumbs_view){ 
-                    $flvfile=get_resource_path($ref,true,"pre",false,$ffmpeg_preview_extension);
-                    if (!file_exists($flvfile)){
-                        $flvfile=get_resource_path($ref,true,"",false,$ffmpeg_preview_extension);
-                    }
-                    elseif(!(isset($result[$n]['is_transcoding']) && $result[$n]['is_transcoding']!=0) && file_exists($flvfile) && (strpos(strtolower($flvfile),".".$ffmpeg_preview_extension)!==false)){
-                        $show_flv=true;
-                    }
-                }
-                else
-                    {
-                    // Set $use_mp3_player switch if appropriate
-                    $use_mp3_player = ($mp3_player_thumbs_view && !(isset($result[$n]['is_transcoding']) && $result[$n]['is_transcoding']==1) && ((in_array($result[$n]["file_extension"],$ffmpeg_audio_extensions) || $result[$n]["file_extension"]=="mp3") && $mp3_player));
-                    if ($use_mp3_player)
-                        {
-                        $mp3realpath=get_resource_path($ref,true,"",false,"mp3");
-                        if (file_exists($mp3realpath))
-                            {$mp3path=get_resource_path($ref,false,"",false,"mp3");}
-                        }
-                    }
-                if(isset($flvfile) && hook("replacevideoplayerlogic","",array($flvfile,$result,$n))){
-                
-                }
-                elseif($show_flv){
-                    # Include the Flash player if an FLV file exists for this resource.
-                    if(!hook("customflvplay")){
-                        include "video_player.php";
-                    }
-                }
-                elseif ($use_mp3_player && file_exists($mp3realpath) && !hook("custommp3player"))
-                    {
-                    $thumb_path=get_resource_path($ref,true,"pre",false,"jpg");
-                    if(file_exists($thumb_path))
-                        {$thumb_url=get_resource_path($ref,false,"pre",false,"jpg"); }
-                    else
-                        {$thumb_url=$baseurl_short . "gfx/" . get_nopreview_icon($result[$n]["resource_type"],$result[$n]["file_extension"],false);}
-
-                    include "mp3_play.php";
-                    }
-                else { ?>
+                ?>
                 <a
                     class="<?php echo ($display == 'xlthumbs' ? 'ImageWrapperLarge' : 'ImageWrapper') ?>"
                     href="<?php echo $url?>"  
@@ -160,12 +168,13 @@ if (!hook("renderresultthumb"))
                         />
                         <?php 
                         }
-                    hook("aftersearchimg","",array($result[$n]))?>
+                   hook("aftersearchimg","",array($result[$n], $thm_url, $display))
+                   ?>
                 </a>
-                <?php } ?>
             <?php 
             } ?> 
         <!-- END HOOK Renderimagethumb-->
+
         <?php 
 
         if (!hook("replaceicons")) 
@@ -236,7 +245,9 @@ if (!hook("renderresultthumb"))
                 {
                 if (!hook("replaceresourcepanelinfo"))
                     { ?>
-                    <div class="ResourcePanelInfo ResourceTypeField<?php echo $df[$x]['ref']?>">
+                    <div class="ResourcePanelInfo ResourceTypeField<?php echo $df[$x]['ref']?>"
+                    title="<?php echo str_replace(array("\"","'"),"",htmlspecialchars(i18n_get_translated(strip_tags(strip_tags_and_attributes($value)))))?>"
+                    >
                         <div class="extended">
                         <?php 
                         if ($x==0)
@@ -244,7 +255,6 @@ if (!hook("renderresultthumb"))
                             <a 
                                 href="<?php echo $url?>"  
                                 onClick="return <?php echo ($resource_view_modal?"Modal":"CentralSpace") ?>Load(this,true);" 
-                                title="<?php echo str_replace(array("\"","'"),"",htmlspecialchars(i18n_get_translated(strip_tags(strip_tags_and_attributes($value)))))?>"
                             >
                             <?php 
                             } //end link
@@ -270,19 +280,19 @@ if (!hook("renderresultthumb"))
                 {
                 if (!hook("replaceresourcepanelinfonormal"))
                     { ?>
-                    <div class="ResourcePanelInfo  ResourceTypeField<?php echo $df[$x]['ref']?>">
+                    <div class="ResourcePanelInfo  ResourceTypeField<?php echo $df[$x]['ref']?>"
+                    title="<?php echo str_replace(array("\"","'"),"",htmlspecialchars(i18n_get_translated(strip_tags(strip_tags_and_attributes($value)))))?>"
+                    >
                         <?php 
                         if ($x==0)
                             { // add link if necessary ?>
                             <a 
                                 href="<?php echo $url?>"  
                                 onClick="return <?php echo ($resource_view_modal?"Modal":"CentralSpace") ?>Load(this,true);" 
-                                title="<?php echo str_replace(array("\"","'"),"",htmlspecialchars(i18n_get_translated(strip_tags(strip_tags_and_attributes($value)))))?>"
-
                             >
                             <?php 
                             } //end link
-                        echo highlightkeywords(tidy_trim(TidyList(i18n_get_translated(strip_tags(strip_tags_and_attributes($value)))),$search_results_title_trim),$search,$df[$x]['partial_index'],$df[$x]['name'],$df[$x]['indexed']);
+                        echo highlightkeywords(tidy_trim(TidyList(i18n_get_translated(strip_tags(strip_tags_and_attributes($value)))),$resolved_title_trim),$search,$df[$x]['partial_index'],$df[$x]['name'],$df[$x]['indexed']);
                         if ($x==0)
                             { // add link if necessary ?>
                             </a>
@@ -301,10 +311,12 @@ if (!hook("renderresultthumb"))
         ?>
         <!-- Checkboxes -->
         <div class="ResourcePanelIcons">
-            <?php
-            if(!hook("thumbscheckboxes"))
+        <?php
+        hook("thumblistextras");  // add icons for resourceconnect
+
+        if($use_selection_collection)
             {
-            if ($use_checkboxes_for_selection)
+            if(!hook("thumbscheckboxes"))
                 {
                 if(!in_array($result[$n]['resource_type'],$collection_block_restypes))  
                     {?>
@@ -312,39 +324,40 @@ if (!hook("renderresultthumb"))
                         type="checkbox" 
                         id="check<?php echo htmlspecialchars($ref)?>" 
                         class="checkselect" 
+                        data-resource="<?php echo htmlspecialchars($result[$n]["ref"]); ?>"
+                        <?php echo render_csrf_data_attributes("ToggleCollectionResourceSelection_{$result[$n]["ref"]}"); ?>
                         <?php 
-                        if (in_array($ref,$collectionresources))
+                        if (in_array($ref, $selection_collection_resources))
                             { ?>
                             checked
                             <?php 
-                            } ?> 
-                        onclick="if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')){ AddResourceToCollection(event,<?php echo htmlspecialchars($ref)?>); } else if (jQuery('#check<?php echo htmlspecialchars($ref)?>').prop('checked')==false){ RemoveResourceFromCollection(event,<?php echo htmlspecialchars($ref)?>); }"
+                            } ?>
                     >
                     <?php 
                     }
                 else
                     {
                     ?>
-                    <input type="checkbox" style="opacity: 0;">
+                    <input type="checkbox" class="checkselect" style="opacity: 0;">
                     <?php
                     }
-                }
-            } # end hook thumbscheckboxes
+                } # end hook thumbscheckboxes
+            }
         if(!hook("replacethumbsidinthumbnail"))
             {
             if ($display_resource_id_in_thumbnail && $ref>0) 
-                { echo "<span class='ResourcePanelResourceID'>" . htmlspecialchars($ref) . "</span>"; } 
+                { echo "<span class='ResourcePanelResourceID'>" . htmlspecialchars($ref) . "</span>$br"; } 
             else 
-                { ?>&nbsp;<?php }
+                { ?><?php }
             } # end hook("replacethumbsidinthumbnail")
 
         if (!hook("replaceresourcetools"))
             { 
             include "resource_tools.php";
             } // end hook replaceresourcetools ?>
-        </div>  
-    </div>
 
+    </div>
+</div>
     <?php 
     } # end hook renderresultthumb
 

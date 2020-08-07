@@ -92,7 +92,7 @@ function updateSelectedKeywords_<?php echo $js_keywords_suffix; ?>(user_action)
         hidden_input_elements += '<input id="<?php echo $hidden_input_elements_name; ?>_' + keyword_index + '" type="hidden" name="<?php echo $hidden_input_elements_name; ?>[<?php echo $field["ref"]; ?>][]" value="' + keyword_index + '">';
 
         html += '<div class="keywordselected">' + keyword_value;
-        html += '<a href="#"';
+        html += '<a href="#" class="RemoveKeyword"';
         html += ' onClick="removeKeyword_<?php echo $js_keywords_suffix; ?>(\'' + escape(keyword_index) + '\', true); return false;"';
         html += '>x</a></div>';
         
@@ -186,6 +186,7 @@ function selectKeyword_<?php echo $js_keywords_suffix; ?>(event, ui)
         // Add the word.
         args = {
             field: '<?php echo $field["ref"]; ?>',
+            ajax: true,
             keyword: keyword,
             <?php echo generateAjaxToken("selectKeyword_{$js_keywords_suffix}"); ?>
             };
@@ -196,7 +197,12 @@ function selectKeyword_<?php echo $js_keywords_suffix; ?>(event, ui)
             data    : args,
             dataType: 'json',
             async: false,
-            success : function(result) {
+            success : function(result, status, xhr) {
+                if (xhr.status == 302)
+                    {
+                    location.href = xhr.getResponseHeader("Location");
+                    }
+
                 if(typeof result.new_node_id === 'undefined')
                     {
                     styledalert('Error', 'Could not determine new node ID!');

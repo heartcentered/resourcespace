@@ -2,9 +2,8 @@
 // Generic modal page to create new resource types or metadata fields
 
 include_once __DIR__ . "/../../include/db.php";
-include_once __DIR__ . "/../../include/general.php";
+
 include_once __DIR__ . "/../../include/authenticate.php";
-include_once __DIR__ . "/../../include/collections_functions.php";
 
 $newtype = getval("type","");
 
@@ -74,7 +73,25 @@ switch ($newtype)
         ?>
 		<input type="text" class="medwidth" name="<?php echo $newparam ?>" id="<?php echo $newparam ?>" value="">
 		<div class="clearerleft"> </div>
-	</div>
+    </div>
+    
+    <?php if ($newtype=="resource_type_field") { ?>
+        <div class="Question">
+        <label><?php echo $lang["property-field_type"] ?></label>    
+        <select name="field_type" class="medwidth">
+         
+         <?php
+         foreach($field_types as $field_type=>$field_type_description)
+             {
+             ?>
+             <option value="<?php echo $field_type ?>"><?php echo $lang[$field_type_description] ; ?></option>
+             <?php
+             }
+         ?>
+         </select>
+         </div>
+    <?php } ?>
+
 	<div class="Question">
 		<label />
 		<input type="submit" class="medcomplementwidth" value="<?php echo $lang["save"]?>" />

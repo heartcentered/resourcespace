@@ -23,9 +23,9 @@ function HookAnnotateViewRenderinnerresourcepreview()
 
     $download_multisize=true;
 
-    $flvfile = get_resource_path($ref, true, 'pre', false, $ffmpeg_preview_extension);
+    $video_preview_file = get_resource_path($ref, true, 'pre', false, $ffmpeg_preview_extension);
 
-    if(file_exists($flvfile))
+    if(file_exists($video_preview_file))
         {
         return false;
         }
@@ -78,10 +78,12 @@ function HookAnnotateViewRenderinnerresourcepreview()
                 {
                 $multipage_document = true;
                 }
-                ?>
+
+            $modal = (getval("modal", "") == "true" ? "true" : "false");
+            ?>
             <div id="wrapper" class="annotate-view-wrapper">
                 <div>
-                <img id="toAnnotate" onload="annotate(<?php echo $ref?>,'<?php echo $k?>','<?php echo $w?>','<?php echo $h?>',<?php echo getvalescaped("annotate_toggle",true)?>);" src="<?php echo $imageurl?>" id="previewimage" class="Picture" GALLERYIMG="no" style="display:block;"   />
+                <img id="toAnnotate" onload="annotate(<?php echo $ref?>,'<?php echo $k?>','<?php echo $w?>','<?php echo $h?>',<?php echo getvalescaped("annotate_toggle",true)?>, 1, <?php echo $modal; ?>);" src="<?php echo $imageurl?>" id="previewimage" class="Picture" GALLERYIMG="no" style="display:block;"   />
                 </div>
 
                 <div class="annotate-view-preview-links" >
@@ -125,7 +127,7 @@ function HookAnnotateViewRenderinnerresourcepreview()
                 if($annotate_pdf_output)
                     {
                     ?>
-                    &nbsp;&nbsp;<a style="display:inline;float:right;" class="nowrap" href="<?php echo $baseurl_short?>plugins/annotate/pages/annotate_pdf_config.php?ref=<?php echo $ref?>&ext=<?php echo $resource["preview_extension"]?>&k=<?php echo $k?>&search=<?php echo urlencode($search)?>&offset=<?php echo $offset?>&order_by=<?php echo $order_by?>&sort=<?php echo $sort?>&archive=<?php echo $archive?>" onClick="return CentralSpaceLoad(this);">&gt;&nbsp;<?php echo $lang["pdfwithnotes"]?></a>
+                    &nbsp;&nbsp;<a style="display:inline;float:right;" class="nowrap" href="<?php echo $baseurl_short?>plugins/annotate/pages/annotate_pdf_config.php?ref=<?php echo $ref?>&ext=<?php echo $resource["preview_extension"]?>&k=<?php echo $k?>&search=<?php echo urlencode($search)?>&offset=<?php echo $offset?>&order_by=<?php echo $order_by?>&sort=<?php echo $sort?>&archive=<?php echo $archive?>" onClick="return CentralSpaceLoad(this);"><?php echo LINK_CARET . $lang["pdfwithnotes"]?></a>
                     <?php
                     }
                     ?>

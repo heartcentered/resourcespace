@@ -6,9 +6,8 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";if (!checkperm("t")) {exit ("Permission denied.");}
-include "../../include/resource_functions.php";
 
 if ($send_statistics) {send_statistics();}
 
@@ -37,8 +36,11 @@ include "../../include/header.php";
 
 
 <div class="BasicsBox"> 
-  <h1><?php echo $lang["teamcentre"]?></h1>
-  <?php if (getval("modal","")=="") { ?><p><?php echo text("introtext")?></p><?php } ?>
+  <h1><?php echo $lang["teamcentre"];?></h1>
+  <?php if (getval("modal","")=="") 
+    { 
+    ?><p><?php echo text("introtext");render_help_link('resourceadmin/quick-start-guide');?></p><?php 
+    }?>
   
 	<div class="VerticalNav">
 	<ul>

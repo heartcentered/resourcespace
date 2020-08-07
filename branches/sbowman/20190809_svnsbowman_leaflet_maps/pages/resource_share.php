@@ -1,11 +1,7 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include "../include/search_functions.php";
-include "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once '../include/render_functions.php';
 
 $ref        = getvalescaped('ref', '', true);
 $user_group = getvalescaped('usergroup', '', true);
@@ -21,6 +17,7 @@ $starsearch   = getvalescaped("starsearch", "");
 $default_sort_direction = (substr($order_by,0,5) == "field") ? "ASC" : "DESC";
 $sort         = getval("sort", $default_sort_direction);
 $ajax         = filter_var(getval("ajax", false), FILTER_VALIDATE_BOOLEAN);
+$modal = (getval("modal", "") == "true");
 
 # Check if editing existing external share
 $editaccess   = getvalescaped("editaccess", "");
@@ -42,7 +39,7 @@ if (!can_share_resource($ref,$minaccess))
     $error      = $lang["error-permissiondenied"];
     }
 	
-$internal_share_only=checkperm("noex");
+$internal_share_only = checkperm("noex") || (isset($user_dl_limit) && intval($user_dl_limit) > 0);
         
 # Process deletion of access keys
 $deleteaccess = getvalescaped('deleteaccess', '');
@@ -83,10 +80,29 @@ if($editing && !$editexternalurl)
     }
     ?>
 <div class="BasicsBox">
-    <p><a href="<?php echo $baseurl_short . 'pages/view.php?' . $query_string ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
-
-    <h1><?php echo $page_header ?></h1>
-
+    <?php
+    if(!$modal)
+        {
+        ?>
+        <p><a href="<?php echo $baseurl_short . 'pages/view.php?' . $query_string ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
+        <?php
+        }
+        ?>
+    <div class="RecordHeader">
+        <div class="BackToResultsContainer">
+            <div class="backtoresults">
+            <?php
+            if($modal)
+                {
+                ?>
+                <a href="#" class="closeLink fa fa-times" onclick="ModalClose();"></a>
+                <?php
+                }
+                ?>
+            </div>
+        </div>
+        <h1><?php echo $page_header; render_help_link("user/resource-sharing");?></h1>
+    </div>
         <form method="post" id="resourceshareform" action="<?php echo $baseurl_short?>pages/resource_share.php?ref=<?php echo urlencode($ref)?>">
             <input type="hidden" name="ref" id="ref" value="<?php echo htmlspecialchars($ref) ?>">
             <input type="hidden" name="generateurl" id="generateurl" value="<?php echo $generateurl ? "true" :"" ?> ">
@@ -95,9 +111,18 @@ if($editing && !$editexternalurl)
             <input type="hidden" name="editexpiration" id="editexpiration" value="">
             <input type="hidden" name="editgroup" id="editgroup" value="">
             <input type="hidden" name="editaccesslevel" id="editaccesslevel" value="">
+            <input type="hidden" name="editexternalurl" id="editexternalurl" value="">
 			<input type="hidden" name="user" id="user" value="">
 			<input type="hidden" name="deleteusercustomaccess" id="deleteusercustomaccess" value="">
-            <?php generateFormToken("resourceshareform"); ?>
+            <?php
+            if($modal)
+                {
+                ?>
+                <input type="hidden" name="modal" value="true">
+                <?php
+                }
+            generateFormToken("resourceshareform");
+            ?>
             <div class="VerticalNav">
                 <ul>
                 <?php
@@ -105,31 +130,20 @@ if($editing && !$editexternalurl)
                     {
                     if ($email_sharing) 
                         { ?>
-                        <li><i aria-hidden="true" class="fa fa-fw fa-envelope"></i>&nbsp;<a href="<?php echo $baseurl_short . 'pages/resource_email.php?' . $query_string ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["emailresourcetitle"]?></a></li> 
+                        <li><i aria-hidden="true" class="fa fa-fw fa-envelope"></i>&nbsp;<a href="<?php echo $baseurl_short . 'pages/resource_email.php?' . $query_string ?>" onclick="return CentralSpaceLoad(this, true);"><?php echo $lang["emailresourcetitle"]?></a></li> 
                         <?php 
-                        }
-                    if(!$internal_share_only && !$hide_resource_share_generate_url) 
-						{ ?>
-                        <li><i aria-hidden="true" class="fa fa-fw fa-link"></i>&nbsp;<a href="<?php echo $baseurl_short . 'pages/resource_share.php?' . $query_string . '&generateurl=true' ?>" onClick="return CentralSpaceLoad(this,true);" ><?php echo $lang["generateurl"]?></a></li> 
-                        <?php 
-                        }
-					else // Just show the internal share URL straight away as there is no generate link
-						{ ?>
-                        <h2><?php echo $lang["generateurl"]; ?></h2><br /><p><?php echo $lang["generateurlinternal"];?></p>
-                        <p><input class="URLDisplay" type="text" value="<?php echo $baseurl?>/?r=<?php echo $ref?>"></p>
-                        <?php
                         }
                     }
-                if (!$internal_share_only && ($editing || ($generateurl && getval("deleteaccess","") == "")))
+                if(!$editing)
+                    { ?>
+                    <p><?php echo $lang["generateurlinternal"];?></p>
+                    <p><input class="URLDisplay" type="text" value="<?php echo $baseurl?>/?r=<?php echo $ref?>"></p>
+                    <?php
+                    }
+
+                if (($editing || (getval("deleteaccess","") == "")))
                     {
-                    if(!$editing)
-                        { ?>
-                        <p><?php echo $lang["generateurlinternal"];?></p>
-                        <p><input class="URLDisplay" type="text" value="<?php echo $baseurl?>/?r=<?php echo $ref?>"></p>
-                        <?php
-                        }
-                                 
-                    if ($access=="" || ($editing && !$editexternalurl))
+                    if (($access=="" || ($editing && !$editexternalurl)) && !$internal_share_only)
                         {
                         ?>                    
                         <p><?php if (!$editing || $editexternalurl){ echo $lang["selectgenerateurlexternal"]; } ?></p>
@@ -141,19 +155,23 @@ if($editing && !$editexternalurl)
                             <?php
                             if ($editing  && !$editexternalurl)
                                 { ?>
-                                <input name="editexternalurl" type="submit" value="&nbsp;&nbsp;<?php echo $lang["save"]?>&nbsp;&nbsp;" />
+                                <input name="editexternalurl" type="button" value="&nbsp;&nbsp;<?php echo $lang["save"]?>&nbsp;&nbsp;"
+                                onclick="
+                                document.getElementById('editexternalurl').value = '<?php echo $lang["save"]; ?>';
+                                return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('resourceshareform'), true);">
                                 <?php
                                 }
                             else
                                 { ?>
-                                <input name="generateurl" type="submit" value="&nbsp;&nbsp;<?php echo $lang["generateexternalurl"]?>&nbsp;&nbsp;" />
+                                <input name="generateurl" type="button" value="&nbsp;&nbsp;<?php echo $lang["generateexternalurl"]?>&nbsp;&nbsp;"
+                                onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('resourceshareform'), true);">
                                 <?php 
                                 }
                             ?>
                         </div>
                         <?php
                         }
-                    else if('' == getvalescaped('editaccess', ''))
+                    else if('' == getvalescaped('editaccess', '') && !$internal_share_only)
                         {
                         // Access has been selected. Generate a new URL.
                         $generated_access_key = '';
@@ -197,7 +215,7 @@ if($editing && !$editexternalurl)
                     }
                     ?>
                 </ul>
-            </div>
+            
         <?php 
         # Do not allow access to the existing shares if the user has restricted access to this resource.
         if (!$internal_share_only && $minaccess==0)
@@ -308,7 +326,7 @@ if($editing && !$editexternalurl)
 			    function resourceShareDeleteShare(access_key) {
 			        if (confirm('<?php echo $lang["confirmdeleteaccessresource"]?>')) {
 			            document.getElementById('deleteaccess').value = access_key;
-			            document.getElementById('resourceshareform').submit(); 
+                        <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('resourceshareform'),true);
 			        }
 			        return false;
 			    }
@@ -317,7 +335,7 @@ if($editing && !$editexternalurl)
 			        document.getElementById('editexpiration').value = expires;
 			        document.getElementById('editaccesslevel').value = access;
 			        document.getElementById('editgroup').value = user_group;
-			        CentralSpacePost(document.getElementById('resourceshareform'),true);
+			        <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('resourceshareform'),true);
 			        return false;
 			    }
 				function resourceShareDeleteUserCustomAccess(user) {
@@ -366,17 +384,17 @@ if($editing && !$editexternalurl)
 							<td><?php echo htmlspecialchars($ca["usergroup"]); ?></td>
 							<td><?php echo htmlspecialchars($custexpires); ?></td>
 							<td><?php echo htmlspecialchars($custaccess); ?></td>
-							<td><div class="ListTools"><a href="#" onClick="return resourceShareDeleteUserCustomAccess(<?php echo get_user_by_username($ca["user"]) ?>);"><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a> </td>
+							<td><div class="ListTools"><a href="#" onClick="return resourceShareDeleteUserCustomAccess(<?php echo get_user_by_username($ca["user"]) ?>);"><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a></div></td>
 						</tr>
 						<?php
 						}
 					?></table>
 				</div> <!-- end Listview --><?php
 				}
-		?>
-        </form>
+		    ?>
+        </div>
+    </form>
 </div> <!-- BasicsBox -->
 
 <?php
 include "../include/footer.php";
-?>

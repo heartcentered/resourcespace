@@ -1,6 +1,5 @@
 <?php
 include '../include/db.php';
-include_once '../include/general.php';
 
 $k   = getvalescaped('k', '');
 $ref = getvalescaped('ref', '', true);
@@ -10,9 +9,6 @@ if('' == $k || !check_access_key($ref, $k))
     {
     include '../include/authenticate.php';
     }
-
-include_once '../include/resource_functions.php';
-include_once '../include/collections_functions.php';
 include_once '../include/pdf_functions.php';
 
 $resource = get_resource_data($ref);
@@ -36,12 +32,13 @@ if(substr($order_by, 0, 5) == 'field')
     }
 
 $sort               = getval('sort', $default_sort_direction);
-$metadata           = get_resource_field_data($ref, false, true, -1, getval('k', '') != ''); 
+$metadata           = get_resource_field_data($ref, false, true, NULL, getval('k', '') != ''); 
 $filename           = $ref;
 $download           = getval('download', '') != '';
 $download_file_type = getval('fileType_option', '');
 $language           = getval('language', 'en');
 $language           = resolve_pdf_language();
+$modal              = (getval("modal", "") == "true");
 
 $data_only          = 'true' === trim(getval('data_only', ''));
 $pdf_template       = getvalescaped('pdf_template', '');
@@ -69,7 +66,7 @@ if ($download && $download_file_type == 'text')
 
 // Process PDF file download
 if($download && $download_file_type === 'pdf') {
-	$html2pdf_path = dirname(__FILE__) . '/../lib/html2pdf/html2pdf.class.php';
+	$html2pdf_path = dirname(__FILE__) . '/../lib/html2pdf/vendor/autoload.php';
 	ob_start();
 	if(!file_exists($html2pdf_path)) {
 		die('html2pdf class file is missing. Please make sure you have it under lib folder.');
@@ -190,11 +187,17 @@ include "../include/header.php";
 
 <body>
 	<div class="BasicsBox">
-	<p><a href="<?php echo $baseurl_short; ?>pages/view.php?ref=<?php echo urlencode($ref); ?>&search=<?php echo urlencode($search); ?>&offset=<?php echo urlencode($offset); ?>&order_by=<?php echo urlencode($order_by); ?>&sort=<?php echo urlencode($sort); ?>&archive=<?php echo urlencode($archive); ?>"  onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]; ?></a></p>
-
+    <?php
+    if(!$modal)
+        {
+        ?>
+        <p><a href="<?php echo $baseurl_short; ?>pages/view.php?ref=<?php echo urlencode($ref); ?>&search=<?php echo urlencode($search); ?>&offset=<?php echo urlencode($offset); ?>&order_by=<?php echo urlencode($order_by); ?>&sort=<?php echo urlencode($sort); ?>&archive=<?php echo urlencode($archive); ?>"  onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]; ?></a></p>
+        <?php
+        }
+        ?>
 	<h1><?php echo $lang["downloadingmetadata"]?></h1>
 
-	<p><?php echo $lang["file-contains-metadata"]?></p>
+	<p><?php echo $lang["file-contains-metadata"];render_help_link("user/resource-tools");?></p>
 
 	<form id="metadataDownloadForm" name="metadataDownloadForm" method=post action="<?php echo $baseurl_short; ?>pages/metadata_download.php" >
 		<?php generateFormToken("metadataDownloadForm"); ?>

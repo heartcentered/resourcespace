@@ -1,13 +1,10 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref","",true),$k))) {include "../include/authenticate.php";}
 
-include "../include/search_functions.php";
-include_once "../include/collections_functions.php";
-include_once '../include/resource_functions.php';
 include_once '../include/annotation_functions.php';
 
 # Save Existing Thumb Cookie Status Then Hide the collection Bar 
@@ -23,19 +20,57 @@ rs_setcookie("thumbs", $thumbs, 1000,"","",false,false);
 
 $ref=getvalescaped("ref","",true);
 $search=getvalescaped("search","");
-$offset=getvalescaped("offset","",true);
+$offset=getvalescaped("offset",0,true);
 $order_by=getvalescaped("order_by","");
 $archive=getvalescaped("archive","",true);
 $restypes=getvalescaped("restypes","");
 $starsearch=getvalescaped("starsearch","");
-$page=getvalescaped("page",1);
+$page=getvalescaped("page",1,true);
 $alternative=getvalescaped("alternative", -1, true);
 if (strpos($search,"!")!==false) {$restypes="";}
+
+check_order_by_in_table_joins($order_by);
 
 $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
 if($sort != 'ASC' && $sort != 'DESC') {$sort = $default_sort_direction;}
+
+# Get alternative files and configure next and previous buttons relative to the current file
+if($alternative != "-1")
+	{
+        $alt_order_by="";$alt_sort="";
+        if ($alt_types_organize)
+            {
+                $alt_order_by="alt_type";
+                $alt_sort="asc";
+            }
+        $altfiles=get_alternative_files($ref,$alt_order_by,$alt_sort);
+        for ($n=0;$n<count($altfiles);$n++)			
+			{	
+                if ($altfiles[$n]["ref"] == $alternative)
+                {
+                    if ($n == count($altfiles) - 1)
+                    {
+                        $alt_next = $altfiles[$n]["ref"];
+                    }
+                    else
+                    {
+                        $alt_next = $altfiles[++$n]["ref"];
+                        --$n;
+                    }
+                    if ($n == "0")
+                    {
+                        $alt_previous = $altfiles[$n]["ref"];
+                    }
+                    else
+                    {
+                        $alt_previous = $altfiles[--$n]["ref"];
+                        ++$n;
+                    }
+                }
+            }
+    }
 
 # next / previous resource browsing
 $go=getval("go","");
@@ -171,13 +206,49 @@ if($annotate_enabled)
 }
 ?>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<a class="prevLink fa fa-arrow-left" onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/preview.php?from=<?php echo urlencode(getval("from",""))?>&ref=<?php echo urlencode($ref) ?>&k=<?php echo urlencode($k)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?><?php if($saved_thumbs_state=="show"){?>&thumbs=show<?php } ?>&archive=<?php echo urlencode($archive)?>&go=previous&<?php echo hook("nextpreviousextraurl") ?>" title="<?php echo $lang["previousresult"]?>"></a>
-&nbsp;
-<a  class="upLink" onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/search.php?<?php if (strpos($search,"!")!==false) {?>search=<?php echo urlencode($search)?>&k=<?php echo urlencode($k)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?><?php } ?><?php if($saved_thumbs_state=="show"){?>&thumbs=show<?php } ?>&<?php echo hook("searchextraurl") ?>"><?php echo $lang["viewallresults"]?></a>
-&nbsp;
-<a class="nextLink fa fa-arrow-right" onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/preview.php?from=<?php echo urlencode(getval("from",""))?>&ref=<?php echo urlencode($ref) ?>&k=<?php echo urlencode($k)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?><?php if($saved_thumbs_state=="show"){?>&thumbs=show<?php } ?>&archive=<?php echo urlencode($archive)?>&go=next&<?php echo hook("nextpreviousextraurl") ?>" title="<?php echo $lang["nextresult"] ?>"></a>
-
+<?php 
+# If viewing alternative files allow tabbing through them, else tab through resources in the collection
+if ($alternative != "-1")
+    {
+    $thumbs_show="";
+    if ($saved_thumbs_state=="show")
+        {
+        $thumbs_show="show";
+        }
+    $defaultparams = array(
+        "ref"         =>  $ref,
+        "k"           =>  $k,
+        "from"        =>  getval("from",""),
+        "search"      =>  $search,
+        "offset"      =>  $offset,
+        "order_by"    =>  $order_by,
+        "sort"        =>  $sort,
+        "archive"     =>  $archive,
+        "thumbs"      =>  $thumbs_show);
+        
+         ?>
+         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+         <a class="prevLink fa fa-arrow-left" onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/preview.php", $defaultparams, isset($alt_previous)?array("alternative"=>$alt_previous):"");?>" title="<?php echo $lang["previousresult"]?>"></a>
+         &nbsp;
+         <a class="enterLink" href="<?php echo generateURL($baseurl_short . "pages/view.php", $defaultparams, array("from"=>""))."&".hook("viewextraurl");?>"><?php echo $lang["vieworiginalresource"]?></a>
+         &nbsp;
+         <a class="prevLink fa fa-arrow-right" onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/preview.php", $defaultparams, isset($alt_next)?array("alternative"=>$alt_next):"");?>" title="<?php echo $lang["nextresult"]?>"></a><?php
+    }
+else
+    {
+      # View All Results buttons will not be shown for a single resource available to external users
+     if ($search != "" || ($search == "" && $k == "")) 
+         {
+         ?>
+         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+         <a class="prevLink fa fa-arrow-left" onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/preview.php?from=<?php echo urlencode(getval("from",""))?>&ref=<?php echo urlencode($ref) ?>&k=<?php echo urlencode($k)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?><?php if($saved_thumbs_state=="show"){?>&thumbs=show<?php } ?>&archive=<?php echo urlencode($archive)?>&go=previous&<?php echo hook("nextpreviousextraurl") ?>" title="<?php echo $lang["previousresult"]?>"></a>
+          &nbsp;
+         <a  class="upLink" onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/search.php?<?php if (strpos($search,"!")!==false) {?>search=<?php echo urlencode($search)?>&k=<?php echo urlencode($k)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?><?php } ?><?php if($saved_thumbs_state=="show"){?>&thumbs=show<?php } ?>&<?php echo hook("searchextraurl") ?>"><?php echo $lang["viewallresults"]?></a>
+          &nbsp;
+         <a class="nextLink fa fa-arrow-right" onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/preview.php?from=<?php echo urlencode(getval("from",""))?>&ref=<?php echo urlencode($ref) ?>&k=<?php echo urlencode($k)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?><?php if($saved_thumbs_state=="show"){?>&thumbs=show<?php } ?>&archive=<?php echo urlencode($archive)?>&go=next&<?php echo hook("nextpreviousextraurl") ?>" title="<?php echo $lang["nextresult"] ?>"></a><?php
+         }
+    }
+?>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 <?php
@@ -212,13 +283,13 @@ if (!hook("replacepreviewpager")){
 
 <td valign="middle"><?php if ($resource['file_extension']!="jpg" && $previouspage!=-1 &&resource_download_allowed($ref,"scr",$resource["resource_type"])) { ?><a onClick="return CentralSpaceLoad(this);" href="<?php echo $baseurl_short?>pages/preview.php?ref=<?php echo urlencode($ref) ?>&alternative=<?php echo urlencode($alternative)?>&ext=<?php echo urlencode($ext)?>&k=<?php echo urlencode($k)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?><?php if($saved_thumbs_state=="show"){?>&thumbs=show<?php } ?>&archive=<?php echo urlencode($archive)?>&page=<?php echo urlencode($previouspage)?>" class="PDFnav  pagePrev">&lt;</a><?php } 
 elseif ($nextpage!=-1 && resource_download_allowed($ref,"scr",$resource["resource_type"]) || $use_watermark) { ?><a href="#" class="PDFnav pagePrev">&nbsp;&nbsp;&nbsp;</a><?php } ?></td>
-<?php $flvfile=get_resource_path($ref,true,"pre",false,$ffmpeg_preview_extension,-1,1,false,"",$alternative);
-if (!file_exists($flvfile)) {$flvfile=get_resource_path($ref,true,"",false,$ffmpeg_preview_extension,-1,1,false,"",$alternative);}
-if (!(isset($resource['is_transcoding']) && $resource['is_transcoding']==1) && file_exists($flvfile) && (strpos(strtolower($flvfile),".".$ffmpeg_preview_extension)!==false))
+<?php $video_preview_file=get_resource_path($ref,true,"pre",false,$ffmpeg_preview_extension,-1,1,false,"",$alternative);
+if (!file_exists($video_preview_file)) {$video_preview_file=get_resource_path($ref,true,"",false,$ffmpeg_preview_extension,-1,1,false,"",$alternative);}
+if (!(isset($resource['is_transcoding']) && $resource['is_transcoding']==1) && file_exists($video_preview_file) && (strpos(strtolower($video_preview_file),".".$ffmpeg_preview_extension)!==false))
 	{
-	# Include the Flash player if an FLV file exists for this resource.
+	# Include the video player if a video preview exists for this resource.
 	$download_multisize=false;
-    if(!hook("customflvplay"))
+    if(!hook("customflvplay")) // Note - legacy hook name, FLV files no longer used
         {
         include "video_player.php";
         }

@@ -1,11 +1,7 @@
 <?php
 include_once "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include_once "../include/collections_functions.php";
-include_once "../include/resource_functions.php";
-include_once "../include/render_functions.php";
-include_once "../include/search_functions.php";
 
 if(!$enable_themes)
     {
@@ -80,7 +76,6 @@ function DisplayTheme($themes=array(), $simpleview=false)
 						if(file_exists(get_resource_path($theme_image,true,"pre",false)))
 							{
 							$theme_image_path=get_resource_path($theme_image,false,"pre",false);
-							$theme_image_detail= get_resource_data($theme_image);
 							break;
 							}
 						}
@@ -94,7 +89,7 @@ function DisplayTheme($themes=array(), $simpleview=false)
 						}?> <?php echo strip_tags_and_attributes(htmlspecialchars(str_replace(" ","",i18n_get_collection_name($getthemes[$m]))))?>">					
 					<a href="<?php echo $baseurl_short?>pages/search.php?search=!collection<?php echo $getthemes[$m]["ref"]?>" onclick="return CentralSpaceLoad(this,true);" class="FeaturedSimpleLink <?php if($themes_simple_images){echo " TileContentShadow";} ?>" id="featured_tile_<?php echo $getthemes[$m]["ref"]; ?>">
 					<div id="FeaturedSimpleTileContents_<?php echo $getthemes[$m]["ref"] ; ?>"  class="FeaturedSimpleTileContents">
-                        <h2><span class="fa fa-th-large"></span><?php echo i18n_get_collection_name($getthemes[$m]); ?></h2>
+                        <h2><span class="fa fa-cube"></span><?php echo i18n_get_collection_name($getthemes[$m]); ?></h2>
 					</div>
 					</a>
                     <div id="FeaturedSimpleTileActions_<?php echo md5($getthemes[$m]['ref']); ?>" class="FeaturedSimpleTileActions"  style="display:none;">
@@ -382,7 +377,7 @@ function DisplayTheme($themes=array(), $simpleview=false)
                     <script>
                     jQuery('#<?php echo $action_selection_id ?>').bind({
                         mouseenter:function(e){
-                        LoadActions('themes','<?php echo $action_selection_id ?>','collection','<?php echo $getthemes[$m]["ref"] ?>','<?php echo $CSRF_token_identifier; ?>','<?php echo generateCSRFToken($usersession,"theme_actions"); ?>');
+                        LoadActions('themes','<?php echo $action_selection_id ?>','collection','<?php echo $getthemes[$m]["ref"] ?>');
                         }});
                     </script>
                     <?php
@@ -513,22 +508,8 @@ if(!hook('replacethemesbacklink'))
                 'href'  => generateURL("{$baseurl_short}pages/themes.php", $links_trail_params, $links_trail_additional_params)
                 );
             }
-
-        if($themes_show_background_image)
-            {
-            ?>
-            <div id="" class="BreadcrumbsBox">
-            <?php
-            renderBreadcrumbs($links_trail);
-            ?>
-            </div>
-            <div class="clearerleft"></div>
-            <?php
-            }
-        else
-            {
-            renderBreadcrumbs($links_trail);
-            }
+        
+        renderBreadcrumbs($links_trail, '', 'BreadcrumbsBoxTheme');
         }
     } # end hook('replacethemesbacklink')
 
@@ -577,8 +558,6 @@ elseif ($themes_category_split_pages && !$theme_direct_jump)
                             if(file_exists(get_resource_path($theme_image,true,"pre",false)))
                                 {
                                 $theme_image_path=get_resource_path($theme_image,false,"pre",false);
-                                
-                                $theme_image_detail= get_resource_data($theme_image);
                                 break;
                                 }
                             }
@@ -991,7 +970,6 @@ if ($header=="" && !isset($themes[0]))
                                 if(file_exists(get_resource_path($theme_image,true,"pre",false)))
                                     {
                                     $theme_image_path=get_resource_path($theme_image,false,"pre",false);
-                                    $theme_image_detail= get_resource_data($theme_image);
                                     break;
                                     }
                                 }
@@ -1164,7 +1142,6 @@ if($simpleview && $themes_show_background_image)
     <script>
     var SlideshowImages = new Array();
     var SlideshowCurrent = -1;
-    var SlideshowTimer = 0;
     var big_slideshow_timer = <?php echo $slideshow_photo_delay; ?>;
 
 <?php

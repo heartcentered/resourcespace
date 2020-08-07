@@ -6,9 +6,8 @@
  * @Subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";if (!checkperm("u")) {exit ("Permission denied.");}
-include_once "../../include/collections_functions.php";
 
 $offset=getvalescaped("offset",0);
 $find=getvalescaped("find","");
@@ -93,7 +92,7 @@ include "../../include/header.php";
 <?php
 		}
 ?><h1><?php echo $lang["manageusers"]?></h1>
-  <p><?php echo text("introtext")?></p>
+  <p><?php echo text("introtext");render_help_link('systemadmin/creating-users');?></p>
 
 <?php if (isset($error)) { ?><div class="FormError">!! <?php echo $error?> !!</div><?php } ?>
 

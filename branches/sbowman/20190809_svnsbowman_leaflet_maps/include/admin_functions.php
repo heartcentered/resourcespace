@@ -1,4 +1,11 @@
 <?php
+/**
+ * Apply new order to metadata fields
+ *
+ * @param  array $neworder  Field IDs in new order
+ *
+ * @return void
+ */
 function update_resource_type_field_order($neworder)
 	{
 	global $lang;
@@ -14,9 +21,17 @@ function update_resource_type_field_order($neworder)
 	}
 	$updatesql.= "else order_by END)";
 	sql_query($updatesql);
+	clear_query_cache("schema");
 	log_activity($lang['resourcetypefieldreordered'],LOG_CODE_REORDERED,implode(', ',$neworder),'resource_type_field','order_by');
 	}
 	
+/**
+ * Apply a new order to resource types
+ *
+ * @param  array $neworder  Resource type IDs in new order
+ *
+ * @return void
+ */
 function update_resource_type_order($neworder)
 	{
 	global $lang;
@@ -32,5 +47,6 @@ function update_resource_type_order($neworder)
 	}
 	$updatesql.= "else order_by END)";
 	sql_query($updatesql);
+	clear_query_cache("schema");
 	log_activity($lang['resourcetypereordered'],LOG_CODE_REORDERED,implode(', ',$neworder),'resource_type','order_by');
 	}

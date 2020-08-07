@@ -8,28 +8,48 @@
  *
  */
 
+
+/**
+ * Return a private scramble key for this user.
+ *
+ * @param  integer $user The user ID
+ * @return void
+ */
 function get_api_key($user)
     {
-    // Return a private scramble key for this user.
     global $api_scramble_key;
     return hash("sha256", $user . $api_scramble_key);
     }
 
+    
+
+/**
+ * Check a query is signed correctly.
+ *
+ * @param  string $username The username of the calling user
+ * @param  string $querystring The query being passed to the API
+ * @param  string $sign The signature to check
+ * @return void
+ */
 function check_api_key($username,$querystring,$sign)
     {
-    // Check a query is signed correctly.
-    
     // Fetch user ID and API key
     $user=get_user_by_username($username); if ($user===false) {return false;}
     $private_key=get_api_key($user);
-    
+        
+    $aj = strpos($querystring,"&ajax=");
+    if($aj != false)
+        {
+        $querystring = substr($querystring,0,$aj);
+        }
+
     # Sign the querystring ourselves and check it matches.
-    
     # First remove the sign parameter as this would not have been present when signed on the client.
     $s=strpos($querystring,"&sign=");
+
     if ($s===false || $s+6+strlen($sign)!==strlen($querystring)) {return false;}
     $querystring=substr($querystring,0,$s);
-    
+
     # Calculate the expected signature.
     $expected=hash("sha256",$private_key . $querystring);
     
@@ -37,14 +57,24 @@ function check_api_key($username,$querystring,$sign)
     return $expected==$sign;
     }
 
+
+    
+/**
+ * Execute the specified API function.
+ *
+ * @param  string $query The query string passed to the API
+ * @param  boolean $pretty Should the JSON encoded result be 'pretty' i.e. formatted for reading?
+ * @return void
+ */
 function execute_api_call($query,$pretty=false)
     {
-    // Execute the specified API function.
     $params=array();parse_str($query,$params);
     if (!array_key_exists("function",$params)) {return false;}
     $function=$params["function"];
     if (!function_exists("api_" . $function)) {return false;}
-    
+
+    global $lang;
+
     // Construct an array of the real params, setting default values as necessary
     $setparams = array();
     $n = 0;    
@@ -52,23 +82,38 @@ function execute_api_call($query,$pretty=false)
     foreach ($fct->getParameters() as $fparam)
         {
         $paramkey = $n + 1;
-        debug ("API Checking for parameter " . $fparam->getName() . " (param" . $paramkey . ")");
-        if (array_key_exists("param" . $paramkey,$params) && $params["param" . $paramkey] != "")
+        $param_name = $fparam->getName();
+        debug ("API Checking for parameter " . $param_name . " (param" . $paramkey . ")");
+        if (array_key_exists("param" . $paramkey,$params))
             {
-            debug ("API " . $fparam->getName() . " -   value has been passed : '" . $params["param" . $paramkey] . "'");
+            debug ("API " . $param_name . " -   value has been passed : '" . $params["param" . $paramkey] . "'");
             $setparams[$n] = $params["param" . $paramkey];
             }
-        
+        else if(array_key_exists($param_name, $params))
+            {
+            debug("API: {$param_name} - value has been passed (by name): '{$params[$param_name]}'");
+
+            if($fparam->hasType() && $fparam->isArray() && gettype($params[$param_name]) != "array")
+                {
+                $error = str_replace(
+                    array("%arg", "%expected-type", "%type"),
+                    array($param_name, "array", gettype($params[$param_name])),
+                    $lang["error-type-mismatch"]);
+                return json_encode($error);
+                }
+
+            $setparams[$n] = $params[$param_name];
+            }
         elseif ($fparam->isOptional())
             {
             // Set default value if nothing passed e.g. from API test tool
-            debug ("API " . $fparam->getName() . " -  setting default value = '" . $fparam->getDefaultValue() . "'");
+            debug ("API " . $param_name . " -  setting default value = '" . $fparam->getDefaultValue() . "'");
             $setparams[$n] = $fparam->getDefaultValue();
             }
         else
             {
              // Set as empty
-            debug ("API " . $fparam->getName() . " -  setting null value = '" . $fparam->getDefaultValue() . "'");
+            debug ("API " . $param_name . " -  setting null value = '" . $fparam->getDefaultValue() . "'");
             $setparams[$n] = "";    
             }
         $n++;
@@ -76,24 +121,27 @@ function execute_api_call($query,$pretty=false)
     
     debug("API - calling api_" . $function);
     $result = call_user_func_array("api_" . $function, $setparams);
+
     if($pretty)
         {
             debug("API: json_encode() using JSON_PRETTY_PRINT");
-            return json_encode($result,(defined('JSON_PRETTY_PRINT')?JSON_PRETTY_PRINT:0));
+            $json_encoded_result = json_encode($result,(defined('JSON_PRETTY_PRINT')?JSON_PRETTY_PRINT:0));
         }
     else
         {
             debug("API: json_encode()");
             $json_encoded_result = json_encode($result);
-
-            if(json_last_error() !== JSON_ERROR_NONE)
-                {
-                debug("API: JSON error: " . json_last_error_msg());
-                debug("API: JSON error when \$result = " . print_r($result, true));
-                }
-
-            return $json_encoded_result;
         }
+    if(json_last_error() !== JSON_ERROR_NONE)
+        {
+        debug("API: JSON error: " . json_last_error_msg());
+        debug("API: JSON error when \$result = " . print_r($result, true));
+
+        $json_encoded_result = json_encode($result,JSON_UNESCAPED_UNICODE);
+        }
+
+    return $json_encoded_result;
+
     }
     
 /**
@@ -137,7 +185,7 @@ function iiif_get_canvases($identifier, $iiif_results,$sequencekeys=false)
         $canvases[$position]["height"] = intval($image_size[2]);
         $canvases[$position]["width"] = intval($image_size[1]);
 				
-		// "If the largest image’s dimensions are less than 1200 pixels on either edge, then the canvas’s dimensions should be double those of the image." - From http://iiif.io/api/presentation/2.1/#canvas
+		// "If the largest imageï¿½s dimensions are less than 1200 pixels on either edge, then the canvasï¿½s dimensions should be double those of the image." - From http://iiif.io/api/presentation/2.1/#canvas
 		if($image_size[1] < 1200 || $image_size[2] < 1200)
 			{
 			$image_size[1] = $image_size[1] * 2;
@@ -287,6 +335,13 @@ function iiif_get_image($identifier,$resourceid,$position, array $size_info)
     return $images;  
 	}
 
+/**
+ * Handle a IIIF error.
+ *
+ * @param  integer $errorcode The error code
+ * @param  array $errors An array of errors
+ * @return void
+ */
 function iiif_error($errorcode = 404, $errors = array())
     {
     global $iiif_debug;

@@ -6,10 +6,8 @@ if (file_exists("../include/config.php")){
 }
 */
 include_once "../../../include/db.php";
-include_once "../../../include/general.php";
+
 include_once "../../../include/authenticate.php";
-include_once "../../../include/resource_functions.php";
-include_once "../../../include/collections_functions.php";
 include_once "../../../include/image_processing.php";
 
 include_once "../include/transform_functions.php";
@@ -127,7 +125,7 @@ if (count($resources) == 0){
 					
 					# delete existing resource_dimensions
     					sql_query("delete from resource_dimensions where resource='$resource'");
-    					sql_query("insert into resource_dimensions (resource, width, height, file_size) values ('$resource', '$newfilewidth', '$newfileheight', '$newfilesize')");
+    					sql_query("insert into resource_dimensions (resource, width, height, file_size) values ('$resource', '$newfilewidth', '$newfileheight', '" . (int)$newfilesize . "')");
 
 					resource_log($resource,'t','','batch transform');
 					echo "<img src='" . get_resource_path($resource,false,"thm",false,'jpg',-1,1) . "' /><br />\n";

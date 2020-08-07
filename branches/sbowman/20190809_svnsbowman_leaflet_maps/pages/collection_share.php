@@ -1,23 +1,30 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include "../include/search_functions.php";
-include "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once '../include/render_functions.php';
 
 // Fetch vars
-$ref        = getvalescaped('ref', '', true);
-$user_group = getvalescaped('usergroup', '', true);
 
-# if bypass sharing page option is on, redirect to e-mail
-if ($bypass_share_screen)
-	{
-	redirect('pages/collection_email.php?ref='.$ref ) ;
-	}
+$collection_url	= getvalescaped('collection', '', true);
+$col_order_by	= getvalescaped('col_order_by', '', true);
+$find			= getvalescaped('find', '', true);
+$offset			= getvalescaped('offset', '', true);
+$order_by		= getvalescaped('order_by', '', true);
+$ref			= getvalescaped('ref', '', true);
+$restypes		= getvalescaped('restypes', '', true);
+$search			= getvalescaped('search', '', true);
+$sort			= getvalescaped('sort', '', true);
+$starsearch		= getvalescaped('starsearch', '', true);
+$user_group		= getvalescaped('usergroup', '', true);
+
 
 $collection=get_collection($ref);
+
+# if bypass sharing page option is on, redirect to e-mail
+if ($bypass_share_screen && $collection["type"] != COLLECTION_TYPE_SELECTION)
+    {
+    redirect('pages/collection_email.php?ref='.$ref ) ;
+    }
 
 # Check access
 if (!collection_readable($ref)) {exit($lang["no_access_to_collection"]);}
@@ -28,13 +35,36 @@ if (checkperm("b") || !$allow_share) {
         $error=$lang["error-permissiondenied"];
         }
 
-$internal_share_only=checkperm("noex");
+$internal_share_only = checkperm("noex") || (isset($user_dl_limit) && intval($user_dl_limit) > 0);
 
 # Check if editing existing external share
 $editaccess=getvalescaped("editaccess","");
 ($editaccess=="")?$editing=false:$editing=true;
 
 $editexternalurl = (getval("editexternalurl","")!="");
+$deleteaccess = (getval("deleteaccess", "") != "");
+$generateurl = (getval("generateurl", "") != "");
+$access=getvalescaped("access","");
+
+// Special collection being shared - we need to make a copy of it and disable internal access
+$share_selected_resources = false;
+if($collection["type"] == COLLECTION_TYPE_SELECTION)
+    {
+    $share_selected_resources = true;
+
+    // disable a few options
+    $hide_internal_sharing_url = true;
+    $email_sharing = false;
+    $home_dash = false;
+
+    // Prevent users from sharing the real collection. Copy it instead
+    if(($generateurl && !$editing) || $editexternalurl || $deleteaccess)
+        {
+        $ref = create_collection($userref, $collection["name"]);
+        copy_collection($collection["ref"], $ref);
+        $collection = get_collection($ref);
+        }
+    }
 	
 #Check if any resources are not active
 $collectionstates=is_collection_approved($ref);
@@ -76,7 +106,7 @@ if(!$allow_custom_access_share && isset($customgroupaccess) && isset($customuser
 
 
 # Process deletion of access keys
-if (getval("deleteaccess","")!="" && !isset($show_error) && enforcePostRequest(getval("ajax", false)))
+if ($deleteaccess && !isset($show_error) && enforcePostRequest(getval("ajax", false)))
         {
         delete_collection_access_key($ref,getvalescaped("deleteaccess",""));
         }
@@ -104,7 +134,7 @@ include "../include/header.php";
 	<input type="hidden" name="editgroup" id="editgroup" value="">
 	<input type="hidden" name="generateurl" id="generateurl" value="">
     <?php generateFormToken("collectionform"); ?>
-	<h1><?php echo $lang["sharecollection"]; if($editing && !$editexternalurl){echo " - ".$lang["editingexternalshare"]." ".$editaccess;}?></h1>
+	<h1><?php echo $lang["sharecollection"]; if($editing && !$editexternalurl){echo " - ".$lang["editingexternalshare"]." ".$editaccess;};render_help_link("user/sharing-resources");?></h1>
 	<?php
 	if(isset($warningtext))
 		{
@@ -117,7 +147,7 @@ include "../include/header.php";
 	
 	if(!$editing || $editexternalurl)
 		{?>
-		<?php if ($email_sharing) { ?><li><i aria-hidden="true" class="fa fa-fw fa-envelope"></i>&nbsp;<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/collection_email.php?ref=<?php echo urlencode($ref) ?>"><?php echo $lang["emailcollectiontitle"]?></a></li><?php } ?>
+		<?php if ($email_sharing) { ?><li><i aria-hidden="true" class="fa fa-fw fa-envelope"></i>&nbsp;<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/collection_email.php?ref=<?php echo urlencode($ref); ?>&search=<?php echo urlencode($search); ?>&collection=<?php echo urlencode($collection_url); ?>&restypes=<?php echo urlencode($restypes); ?>&starsearch=<?php echo urlencode($starsearch); ?>&order_by=<?php echo urlencode($order_by); ?>&col_order_by=<?php echo urlencode($col_order_by); ?>&sort=<?php echo urlencode($sort); ?>&offset=<?php echo urlencode($offset); ?>&find=<?php echo urlencode($find); ?>&k=<?php echo urlencode($k); ?>"><?php echo $lang["emailcollectiontitle"]?></a></li><?php } ?>
 
 		<?php
 		# Share as a dash tile.
@@ -147,7 +177,7 @@ include "../include/header.php";
 	if (!$internal_share_only && ($editing || getval("generateurl","")!=""))
 		{
 			global $ignore_collection_access;
-		if (!($hide_internal_sharing_url) && (!$editing || $editexternalurl) && $collection["public"]==1 || $ignore_collection_access)
+        if (!($hide_internal_sharing_url) && (!$editing || $editexternalurl) && $collection["public"]==1 || $ignore_collection_access)
 			{
 			?>
 			<p><?php echo $lang["generateurlinternal"]?></p>
@@ -156,7 +186,6 @@ include "../include/header.php";
 			<?php
 			}
 			
-		$access=getvalescaped("access","");
 		$expires=getvalescaped("expires","");
         $sharepwd = getvalescaped('sharepassword', '');
 		if ($access=="" || ($editing && !$editexternalurl))
@@ -295,8 +324,8 @@ include "../include/header.php";
 				<td><div class="ListTitle"><a target="_blank" href="<?php echo $baseurl . "?c=" . urlencode($ref) . "&k=" . urlencode($keys[$n]["access_key"]) ?>"><?php echo htmlspecialchars($keys[$n]["access_key"]) ?></a></div></td>
 				<td><?php echo htmlspecialchars(resolve_users($keys[$n]["users"]))?></td>
 				<td><?php echo htmlspecialchars($keys[$n]["emails"]) ?></td>
-				<td><?php echo htmlspecialchars(nicedate($keys[$n]["maxdate"],true));	?></td>
-				<td><?php echo htmlspecialchars(nicedate($keys[$n]["lastused"],true)); ?></td>
+				<td><?php echo htmlspecialchars(nicedate($keys[$n]["maxdate"],true, true, true));	?></td>
+				<td><?php echo htmlspecialchars(nicedate($keys[$n]["lastused"],true, true, true)); ?></td>
 				<td><?php echo htmlspecialchars(($keys[$n]["expires"]=="")?$lang["never"]:nicedate($keys[$n]["expires"],false)) ?></td>
 				<td><?php echo htmlspecialchars(($keys[$n]["access"]==-1)?"":$lang["access" . $keys[$n]["access"]]); ?></td>
 				<?php

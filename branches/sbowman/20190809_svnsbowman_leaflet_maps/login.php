@@ -1,8 +1,5 @@
 <?php
 include "include/db.php";
-include_once 'include/general.php';
-include_once "include/resource_functions.php";
-include_once "include/collections_functions.php";
 include_once "include/login_functions.php";
 
 $url=getval("url","index.php");
@@ -74,6 +71,11 @@ elseif (array_key_exists("username",$_POST) && getval("langupdate","")=="")
 	if ($result['valid'])
 		{
         set_login_cookies($result["ref"],$session_hash,$language, $user_preferences);
+
+        # Set 'user_local_timezone' in cookie like 'user preferences page' does
+        $login_lang = getval("user_local_timezone", "");        
+        rs_setcookie('user_local_timezone', $login_lang, 365);
+
 		# If the redirect URL is the collection frame, do not redirect to this as this will cause
 		# the collection frame to appear full screen.
 		if (strpos($url,"pages/collections.php")!==false) {$url="index.php";}
@@ -123,6 +125,13 @@ if(getval("logout", "") != "" && array_key_exists("user", $_COOKIE))
         trigger_error($lang["error-csrf-verification-failed"]);
         }
 
+    // Clear out special "COLLECTION_TYPE_SELECTION" collection
+    $user_selection_collection = get_user_selection_collection(sql_value("SELECT ref AS `value` FROM user WHERE session = '{$session}'", null));
+    if(!is_null($user_selection_collection) && count(get_collection_resources($user_selection_collection)) > 0)
+        {
+        remove_all_resources_from_collection($user_selection_collection);
+        }
+
     sql_query("UPDATE user SET logged_in = 0, session = NULL, csrf_token = NULL WHERE session = '{$session}'");
     hook("removeuseridcookie");
     #blank cookie
@@ -130,6 +139,7 @@ if(getval("logout", "") != "" && array_key_exists("user", $_COOKIE))
 
     # Also blank search related cookies
     rs_setcookie('search', '');
+    rs_setcookie('search_form_submit', '');
     rs_setcookie('saved_offset', '');
     rs_setcookie('saved_archive', '');
     rs_setcookie('restypes', '');
@@ -139,7 +149,7 @@ if(getval("logout", "") != "" && array_key_exists("user", $_COOKIE))
     rs_setcookie('saved_offset', '', 0, $baseurl_short . 'pages');
     rs_setcookie('saved_archive', '', 0, $baseurl_short . 'pages');
     rs_setcookie('restypes', '', 0, $baseurl_short . 'pages');
-    
+
     unset($username);
 	
 	hook("postlogout");
@@ -178,8 +188,8 @@ if (!hook("replaceloginform")) {
   <h1><?php echo text("welcomelogin")?></h1>
   <p><?php echo text(getvalescaped("text","defaultintro"))?></p>
   <p>
-  <?php if ($allow_account_request) { ?><a id="account_apply" href="pages/user_request.php"><?php echo LINK_CARET . $lang["nopassword"]?> </a><?php } ?>
-  <?php if ($allow_password_reset) { ?><br/><a id="account_pw_reset" href="pages/user_password.php"><?php echo LINK_CARET . $lang["forgottenpassword"]?></a><?php } ?>
+  <?php if ($allow_account_request) { ?><a id="account_apply" href="<?php echo $baseurl_short?>pages/user_request.php"><?php echo LINK_CARET . $lang["nopassword"]?> </a><?php } ?>
+  <?php if ($allow_password_reset) { ?><br/><a id="account_pw_reset" href="<?php echo $baseurl_short?>pages/user_password.php"><?php echo LINK_CARET . $lang["forgottenpassword"]?></a><?php } ?>
   <?php hook("loginformlink") ?> 
   </p>
   <?php if ($error!="") { ?><div class="FormIncorrect"><?php echo $error?></div><?php } ?>
@@ -190,7 +200,7 @@ if (!hook("replaceloginform")) {
 
 <?php if ($disable_languages==false) { ?>	
 		<div class="Question">
-			<label for="language"><?php echo $lang["language"]?> </label>
+            <label for="language"><?php echo $lang["language"]?></label>
 			<select id="language" class="stdwidth" name="language" onChange="document.getElementById('langupdate').value='YES';document.getElementById('loginform').submit();">
 			<?php reset ($languages); foreach ($languages as $key=>$value) { ?>
 			<option value="<?php echo $key?>" <?php if ($language==$key) { ?>selected<?php } ?>><?php echo $value?></option>
@@ -204,18 +214,38 @@ if (!hook("replaceloginform")) {
             <label for="user_local_timezone"><?php echo $lang["local_tz"]; ?></label>
             <select id="user_local_tz" class="stdwidth" name="user_local_timezone">
             <?php
+
+            $user_local_timezone = getval('user_local_timezone', '');
+
             foreach(timezone_identifiers_list() as $timezone)
                 {
-                ?>
-                <option value="<?php echo $timezone; ?>"><?php echo $timezone; ?></option>
-                <?php
+                if($user_local_timezone == $timezone)
+                    {
+                    ?>
+                    <option value="<?php echo $timezone; ?>" selected><?php echo $timezone; ?></option>
+                    <?php
+                    }
+                else
+                    {
+                    ?>
+                    <option value="<?php echo $timezone; ?>"><?php echo $timezone; ?></option>
+                    <?php
+                    }                
                 }
-                ?>
+            
+            ?>
             </select>
             <script>
             jQuery(document).ready(function() {
                 var user_local_tz = detect_local_timezone();
-                jQuery('#user_local_tz').val(user_local_tz);
+                <?php 
+
+                if(!isset($user_local_timezone) || $user_local_timezone == '') 
+                    {
+                    ?>jQuery('#user_local_tz').val(user_local_tz);<?php
+                    }
+
+                ?>
             });
             </script>
             <div class="clearerleft"></div>

@@ -1,6 +1,6 @@
 <?php
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; if (!checkperm("c")) {exit ("Permission denied.");}
 
 include "../../include/header.php";
@@ -17,7 +17,7 @@ $entercolname = getvalescaped("entercolname","");
 	?>
 
 	<h1><?php echo $titleh1 ?></h1>
-	<h2><?php echo $titleh2 ?></h2>
+	<h2><?php echo $titleh2;render_help_link('user/alternative-upload-methods');?></h2>
 
 	<form method="post" action="<?php echo $baseurl_short?>pages/team/team_batch_select.php?resource_type=<?php echo $resource_type?>">
         <?php generateFormToken("team_batch"); ?>

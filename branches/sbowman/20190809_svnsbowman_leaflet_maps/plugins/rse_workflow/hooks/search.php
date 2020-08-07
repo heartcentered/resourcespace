@@ -1,40 +1,22 @@
 <?php
-function HookRse_workflowSearchSearchparameterhandler()
+function HookRse_workflowSearchRender_search_actions_add_option(array $options, array $urlparams)
     {
-    global $archive, $archive_choices;
+    global $internal_share_access;
 
-    // This applies only when doing a Simple Search
-    if(getval('search_using_allowed_workflow_states', 0, true) == 0)
+    $k = trim((isset($urlparams["k"]) ? $urlparams["k"] : ""));
+
+    if($k != "" && $internal_share_access === false)
         {
-        return;
+        return false;
         }
 
-    // When doing an Advanced Search, this is not needed!
-    if(
-        is_array($archive_choices)
-        && count(array_filter($archive_choices, function($value) { return $value != ''; })) > 0)
+    $wf_actions_options = rse_workflow_compile_actions($urlparams);
+
+    if(isset($GLOBALS["hook_return_value"]) && is_array($GLOBALS["hook_return_value"]))
         {
-        return;
+        // @see hook() for an explanation about the hook_return_value global
+        $options = $GLOBALS["hook_return_value"];
         }
 
-    $workflow_states = rse_workflow_get_archive_states();
-
-    $simple_search_states = array();
-    foreach($workflow_states as $workflow_state_ref => $workflow_state_detail)
-        {
-        if($workflow_state_detail['simple_search_flag'] == 0)
-            {
-            continue;
-            }
-
-        $simple_search_states[] = $workflow_state_ref;
-        }
-
-    if(count($simple_search_states) > 0)
-        {
-        $simple_search_states = implode(',', $simple_search_states);
-        $archive = $simple_search_states;
-        }
-
-    return;
+    return array_merge($options, $wf_actions_options);
     }

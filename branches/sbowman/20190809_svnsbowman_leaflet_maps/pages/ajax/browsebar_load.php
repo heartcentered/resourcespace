@@ -1,11 +1,6 @@
 <?php
 include '../../include/db.php';
-include_once '../../include/general.php';
 include '../../include/authenticate.php';
-include_once "../../include/render_functions.php";
-include_once "../../include/collections_functions.php";
-include_once "../../include/search_functions.php";
-include_once "../../include/resource_functions.php";
 
 // generate JSON data to populate bar
 
@@ -167,7 +162,7 @@ switch ($returntype)
             $fielddata = get_resource_type_field($returnid);
             if(!$fielddata["browse_bar"] || !metadata_field_view_access($returnid) || !in_array($fielddata["type"],$FIXED_LIST_FIELD_TYPES) || $fielddata["type"] == FIELD_TYPE_DYNAMIC_KEYWORDS_LIST)
                 {
-                continue;
+                break;
                 }
 
             if(checkperm("k") || checkperm('a') || ($fielddata["type"] == FIELD_TYPE_DYNAMIC_KEYWORDS_LIST && !checkperm ("bdk" . $returnid)))
@@ -226,7 +221,7 @@ switch ($returntype)
             $fielddata = get_resource_type_field($browse_field);            
             if(!$fielddata["browse_bar"] || !metadata_field_view_access($browse_field) || !in_array($fielddata["type"],$FIXED_LIST_FIELD_TYPES) || $fielddata["type"] == FIELD_TYPE_DYNAMIC_KEYWORDS_LIST)
                 {
-                continue;
+                break;
                 }
 
             if(checkperm("k") || checkperm('a') || ($fielddata["type"] == FIELD_TYPE_DYNAMIC_KEYWORDS_LIST && !checkperm ("bdk" . $returnid)))
@@ -421,6 +416,19 @@ switch ($returntype)
             $tgturl = generateURL($baseurl_short . "pages/search.php", $tgtparams);
             $return_items[$n]["link"] = $tgturl;
             $return_items[$n]["modal"] = false;
+            
+            // Set an icon 
+            switch($showstate)
+                {
+                case -2: $icon="file-import"; break;
+                case -1: $icon="eye"; break;
+                case 0: $icon="check"; break;
+                case 1: $icon="clock"; break;
+                case 2: $icon="archive"; break;
+                case 3: $icon="trash"; break;
+                default: $icon="cogs"; # All additional workflow states show gears icon to indicate workflow
+                }
+            $return_items[$n]["icon"] = "<i class='fa fa-fw fa-" . $icon  . "'></i>";
             $n++;
             }
 

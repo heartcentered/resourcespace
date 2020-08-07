@@ -6,7 +6,7 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; 
 include "../../include/api_functions.php"; 
 
@@ -49,12 +49,34 @@ elseif (getval("save","")!="" && enforcePostRequest(getval("ajax", false)))
 			redirect ($backurl!=""?$backurl:$baseurl_short ."pages/team/team_user.php?nc=" . time());
 			exit();
 			}
-		$message=$lang["changessaved"];
+		if (getval("save","")!="" && $modal)
+			{
+			# close Modal and return to action list
+			echo "<script>ModalClose()</script>";
+			exit();
+			}	
+		
 		}
 	}
 
 # Fetch user data
 $user=get_user($ref);
+if ($user===false)
+    {
+    $error = $lang['accountdoesnotexist'];
+    if(getval("ajax","") != "")
+        {
+        error_alert($error, false);
+        }
+    else
+        {
+        include __DIR__ . "/../../include/header.php";
+        $onload_message = array("title" => $lang["error"],"text" => $error);
+        include __DIR__ . "/../../include/footer.php";
+        }
+    exit();
+    }
+    
 if (($user["usergroup"]==3) && ($usergroup!=3)) {redirect($baseurl_short ."login.php?error=error-permissions-login&url=".urlencode($url));}
 
 if (!checkperm_user_edit($user))
@@ -67,11 +89,7 @@ if (!checkperm_user_edit($user))
 
 include "../../include/header.php";
 
-if ($user == ''){
-	echo $lang["accountdoesnotexist"];
-	include "../../include/footer.php";
-	exit();
-	}
+
 
 // Log in as this user. A user key must be generated to enable login using the MD5 hash as the password.
 if(getval('loginas', '') != '')
@@ -121,7 +139,7 @@ if(!$modal)
 	<?php
 	}
 	?>
-<h1><?php echo $lang["edituser"]?> <?php global $display_useredit_ref; echo $display_useredit_ref ? $ref : ""; ?></h1>
+<h1><?php echo $lang["edituser"];render_help_link('systemadmin/creating-users');?> <?php global $display_useredit_ref; echo $display_useredit_ref ? $ref : ""; ?></h1>
 </div>
 <?php if (isset($error)) { ?><div class="FormError">!! <?php echo $error?> !!</div><?php } ?>
 <?php if (isset($message)) { ?><div class="PageInfoMessage"><?php echo $message?></div><?php } ?>
@@ -194,36 +212,73 @@ if (($user["login_tries"]>=$max_login_attempts_per_username) && (strtotime($user
 <div class="Question"><label><?php echo $lang["ipaddressrestriction"]?><br/><?php echo $lang["wildcardpermittedeg"]?> 194.128.*</label><input name="ip_restrict" type="text" class="stdwidth" value="<?php echo form_value_display($user,"ip_restrict") ?>"><div class="clearerleft"> </div></div>
 
 <?php
-if ($search_filter_nodes && ($user['search_filter_o_id'] == "" || (is_numeric($user['search_filter_o_id']) && $user['search_filter_o_id'] > 0)))
-			{
-            // Show filter selector if already migrated or no filter has been set
-			$search_filters = get_filters($order = "name", $sort = "ASC");
-			?>
-			<div class="Question">
-				<label for="search_filter_o_id"><?php echo $lang["searchfilteroverride"]; ?></label>
-				<select name="search_filter_o_id" class="stdwidth">
-					<?php
-					echo "<option value='0' >" . $lang["filter_none"] . "</option>";
-					foreach	($search_filters as $search_filter)
-						{
-						echo "<option value='" . $search_filter['ref'] . "' " . ($user['search_filter_o_id'] == $search_filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($search_filter['name']) . "</option>";
-						}?>
-				</select>
-				<div class="clearerleft"></div>
-			</div>
-			<?php	
-			}
-		else
-			{
-			?>
-            <input type="hidden" name="search_filter_o_id" value="0" />
-			<div class="Question">
-				<label for="search_filter"><?php echo $lang["searchfilteroverride"]; ?></label>
-				<input name="search_filter_override" type="text" class="stdwidth" value="<?php echo form_value_display($user,"search_filter_override")?>">
-				<div class="clearerleft"></div>
-			</div>
-			<?php
-			}
+if($search_filter_nodes)
+    {
+    if (is_numeric($user['search_filter_o_id']) && $user['search_filter_o_id'] > 0)
+        {
+        //Filter is set and migrated
+        $search_filter_migrated = true;
+        $search_filter_set      = true;
+        }
+    else if ($user['search_filter_override'] != "" && ($user['search_filter_o_id'] == 0 || $user['search_filter_o_id'] == NULL))
+        {
+        // Filter requires migration
+        $search_filter_migrated = false;
+        $search_filter_set      = true;
+
+        // Attempt to migrate filter
+        $migrateresult = migrate_filter($user['search_filter_override']);
+        $notification_users = get_notification_users();
+        if(is_numeric($migrateresult))
+            {
+            message_add(array_column($notification_users,"ref"), $lang["filter_migrate_success"] . ": '" . $user['search_filter_override'] . "'",generateURL($baseurl . "/pages/team/team_user_edit.php",array("ref"=>$user['ref'])));
+            
+            // Successfully migrated - now use the new filter
+            sql_query("UPDATE user SET search_filter_o_id='" . $migrateresult . "' WHERE ref='" . $user['ref'] . "'");
+            
+            $search_filter_migrated = true;
+            $user['search_filter_o_id'] = $migrateresult;
+            debug("FILTER MIGRATION: Migrated filter - new filter id#" . $usersearchfilter);
+            }
+        }
+    else if ($user['search_filter_override'] == "" && $user['search_filter_o_id'] == 0)
+        {
+        // Filter is not set (migrated by convention)
+        $search_filter_migrated = true;
+        $search_filter_set      = false;
+        }
+    }
+
+if ($search_filter_nodes)
+    {
+    // Show filter selector if already migrated or no filter has been set
+    $search_filters = get_filters("name","ASC");
+    $filters[] = array("ref" => -1, "name" => $lang["disabled"]);
+    ?>
+    <div class="Question">
+        <label for="search_filter_o_id"><?php echo $lang["searchfilteroverride"]; ?></label>
+        <select name="search_filter_o_id" class="stdwidth">
+            <?php
+            echo "<option value='0' >" . $lang["filter_none"] . "</option>";
+            foreach	($search_filters as $search_filter)
+                {
+                echo "<option value='" . $search_filter['ref'] . "' " . ($user['search_filter_o_id'] == $search_filter['ref'] ? " selected " : "") . ">" . i18n_get_translated($search_filter['name']) . "</option>";
+                }?>
+        </select>
+        <div class="clearerleft"></div>
+    </div>
+    <?php	
+    }
+if((strlen($user['search_filter_override']) != "" && (!(is_numeric($user['search_filter_o_id']) || $user['search_filter_o_id'] < 1))) || !$search_filter_nodes)
+    {
+    ?>
+    <div class="Question">
+        <label for="search_filter"><?php echo $lang["searchfilteroverride"]; ?></label>
+        <input name="search_filter_override" type="text" class="stdwidth" <?php echo ($search_filter_nodes ? "readonly" : "");?>value="<?php echo form_value_display($user,"search_filter_override")?>">
+        <div class="clearerleft"></div>
+    </div>
+    <?php
+    }
             
 hook("additionaluserfields");
 if (!hook("replacecomments"))

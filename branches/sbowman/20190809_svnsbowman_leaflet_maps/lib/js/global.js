@@ -32,6 +32,8 @@ function is_touch_device()
         || (navigator.msMaxTouchPoints > 0);
     }
 
+
+
 function SetCookie (cookieName,cookieValue,nDays,global)
 	{
 	var today = new Date();
@@ -59,21 +61,21 @@ function SetCookie (cookieName,cookieValue,nDays,global)
     expired_date.setTime(today.getTime() + 3600000 * 24 * -1);
     if (window.location.protocol === "https:")
         {
-        document.cookie = cookieName + "=" + escape(cookieValue) + ";expires=" + expired_date.toGMTString()+";secure";
+        document.cookie = cookieName + "=" + encodeURI(cookieValue) + ";expires=" + expired_date.toGMTString()+";secure";
         }
     else
         {
-        document.cookie = cookieName + "=" + escape(cookieValue) + ";expires=" + expired_date.toGMTString();
+        document.cookie = cookieName + "=" + encodeURI(cookieValue) + ";expires=" + expired_date.toGMTString();
         }
 
     // Set cookie
 	if (window.location.protocol === "https:")
         {
-        document.cookie = cookieName+"="+escape(cookieValue)+";expires="+expire.toGMTString()+path+";secure";
+        document.cookie = cookieName+"="+encodeURI(cookieValue)+";expires="+expire.toGMTString()+path+";secure";
         }
     else
         {
-        document.cookie = cookieName+"="+escape(cookieValue)+";expires="+expire.toGMTString()+path;
+        document.cookie = cookieName+"="+encodeURI(cookieValue)+";expires="+expire.toGMTString()+path;
         }
 	}
 
@@ -87,7 +89,7 @@ function getCookie(c_name)
 		x=x.replace(/^\s+|\s+$/g,"");
 		if (x==c_name)
 		{
-			return unescape(y);
+			return decodeURI(y);
 		}
 	}
 }
@@ -120,7 +122,7 @@ function ClearLoadingTimers()
 function ReloadSearchBar()
 	{
 	var SearchBar=jQuery('#SearchBarContainer');
-	SearchBar.load(baseurl_short+"pages/ajax/reload_searchbar.php?pagename="+pagename, function (response, status, xhr)
+	SearchBar.load(baseurl_short+"pages/ajax/reload_searchbar.php?ajax=true&pagename="+pagename, function (response, status, xhr)
 			{
 			if (status=="error")
 				{				
@@ -272,7 +274,12 @@ function CentralSpaceLoad (anchor,scrolltop,modal)
 
 	CentralSpace.load(url, function (response, status, xhr)
 		{
-		if (status=="error")
+        if(xhr.status == 403)
+            {
+            CentralSpaceHideLoading();
+            styledalert(errortext,xhr.responseText);
+            }
+        else if (status=="error")
 			{
 			CentralSpaceHideLoading();
 			CentralSpace.html(errorpageload  + xhr.status + " " + xhr.statusText + "<br>" + response);
@@ -425,8 +432,9 @@ top.window.onpopstate = function(event)
 
 
 /* AJAX posting of a form, result are displayed in the CentralSpace area. */
-function CentralSpacePost (form,scrolltop,modal)
+function CentralSpacePost (form,scrolltop,modal,update_history)
 	{
+	update_history = (typeof update_history !== "undefined" ? update_history : true);
 	ajaxinprogress=true;
 	var url=form.action;
 	var CentralSpace=jQuery('#CentralSpace');// for ajax targeting top div
@@ -500,7 +508,7 @@ function CentralSpacePost (form,scrolltop,modal)
 		    }
 			    
 		// Change the browser URL and save the CentralSpace HTML state in the browser's history record.
-		if(typeof(top.history.pushState)=='function' && !modal)
+		if(update_history && typeof(top.history.pushState)=='function' && !modal)
 			{
 			top.history.pushState(document.title+'&&&'+data, applicationname, form.action);
 			}
@@ -531,7 +539,7 @@ function CentralSpacePost (form,scrolltop,modal)
 			    
 		return false;
 		})
-	.fail(function(result) {
+	.fail(function(result,textStatus) {
 		if (result.status>0)                        
 			{
             CentralSpaceHideLoading();
@@ -540,13 +548,16 @@ function CentralSpacePost (form,scrolltop,modal)
                 // This is used for edit conflicts - show the response
                 CentralSpace.append(result.responseText);
                 }
+            else if(result.status == 403)
+                {
+                styledalert(errortext,result.responseText);
+                }
             else
                 {
                 CentralSpace.html(errorpageload + result.status + ' ' + result.statusText + '<br>URL:  ' + url + '<br>POST data: ' + jQuery(form).serialize());
                 }
 			}
 		});
-
 	ajaxinprogress=false;
     
     // Reload Browse bar item if required
@@ -610,6 +621,8 @@ function CollectionDivLoad (anchor,scrolltop)
 	
 	jQuery('#CollectionDiv').load(url, function ()
 		{
+        jQuery("#CollectionDiv").trigger("CollectionDiv_loaded");
+
 		if(collection_bar_hide_empty){
 			CheckHideCollectionBar();
 			}
@@ -644,7 +657,7 @@ function ReloadLinks()
         return false;
         }
         
-    nav2.load(baseurl_short+"pages/ajax/reload_links.php", function (response, status, xhr)
+    nav2.load(baseurl_short+"pages/ajax/reload_links.php?ajax=true", function (response, status, xhr)
         {
         // 403 is returned when user is logged out and ajax request! @see revision #12655
         if(xhr.status == 403)
@@ -701,15 +714,16 @@ function registerCollapsibleSections(use_cookies)
 			{
 			cur    = jQuery(this).next();
 			cur_id = cur.attr("id");
+            var cur_state = null;
 
 			if (cur.is(':visible'))
 				{
 				if(use_cookies)
 					{
-					//console.log('collapsed');
 					SetCookie(cur_id, 'collapsed');
 					}
 
+                cur_state = "collapsed";
 				jQuery(this).removeClass('expanded');
 				jQuery(this).addClass('collapsed');
 				}
@@ -717,15 +731,18 @@ function registerCollapsibleSections(use_cookies)
 				{
 				if(use_cookies)
 					{
-					//console.log('expanded');
 					SetCookie(cur_id, 'expanded');
 					}
+
+                cur_state = "expanded";
 				jQuery(this).addClass('expanded');
 				jQuery(this).removeClass('collapsed');
 				}
 
 			cur.stop(); // Stop existing animation if any
 			cur.slideToggle();
+
+            jQuery("#" + cur_id).trigger("ToggleCollapsibleSection", [{section_id: cur_id, state: cur_state}]);
 
 			return false;
 			}).each(function()
@@ -893,7 +910,7 @@ function ModalLoad(url,jump,fittosize,align)
 			}            
     modalurl=url;
     
-	return CentralSpaceLoad(url,false,true); 
+	return CentralSpaceLoad(url,jump,true); 
 	}
 	
 function ModalPost(form,jump,fittosize)
@@ -1000,12 +1017,21 @@ function ModalClose()
 function ActivateHeaderLink(activeurl)
 		{
         var matchedstring=0;
-        activelink='';
-		jQuery('#HeaderNav2 li a').each(function(){
+		activelink='';
+		
+		// Was the 'recent' link clicked?
+		var recentlink=(decodeURIComponent(activeurl).indexOf('%21last')>-1 ||
+		decodeURIComponent(activeurl).indexOf('!last')>-1);
+
+		jQuery('#HeaderNav2 li a').each(function() { 
             // Remove current class from all header links
             jQuery(this).removeClass('current');
 
-			if(decodeURIComponent(activeurl).indexOf(this.href)>-1){
+			if(decodeURIComponent(activeurl).indexOf(this.href)>-1
+
+			// Set "recent" rather than "search results" when the search is for recent items.
+			|| (recentlink && this.href.indexOf('%21last')>-1))
+				{
                     if (this.href.length>matchedstring) {
                     // Find longest matched URL
                     matchedstring=this.href.length;
@@ -1062,6 +1088,10 @@ function styledalert(title,text,minwidth){
                 }
             }
         });
+
+    jQuery("#modal_dialog").bind('clickoutside',function(){
+        jQuery( this ).dialog( "close" );
+    });
     
     }
 
@@ -1225,23 +1255,31 @@ function StripResizeResults(targetImageHeight)
         }
     }
 
-function LoadActions(pagename,id,type,ref, csrfidentifier,token)
+function LoadActions(pagename,id,type,ref, extra_data)
     {
     CentralSpaceShowLoading();
-    var actionspace=jQuery('#' + id);
+
+    if(typeof id === "object")
+        {
+        var actionspace = id;
+        }
+    else
+        {
+        var actionspace=jQuery('#' + id);
+        }
+
     url = baseurl_short+"pages/ajax/load_actions.php";
-    var post_data = {
-                    actiontype: type,
-                    ref: ref,
-                    page: pagename
-                    };
-                    
-    post_data[csrfidentifier] = token;
-    
+    var data = {
+        actiontype: type,
+        ref: ref,
+        page: pagename
+    };
+    var data_obj = Object.assign({}, data, extra_data);
+
     jQuery.ajax({
-            type:'POST',
+            type:'GET',
             url: url,
-            data: post_data,
+            data: data_obj,
             async:false            
 			}).done(function(response, status, xhr)
                 {
@@ -1251,7 +1289,6 @@ function LoadActions(pagename,id,type,ref, csrfidentifier,token)
                     }
                 else
                     {
-                    // Load completed	
                     actionspace.html(response);
                   }
                 CentralSpaceHideLoading();
@@ -1302,6 +1339,14 @@ function toggleFieldLock(field)
         //console.log('Locking field ' + field);
 		SetCookie('lockedfields',lockedfields);
         }
+    if(lockedfields.length > 0)
+        {
+        jQuery(".save_auto_next").show();
+        }
+    else
+        {
+        jQuery(".save_auto_next").hide();
+        }
     return true;
     }
 
@@ -1313,11 +1358,12 @@ function toggleFieldLock(field)
 function headerLinksDropdown()
     {
     var containerWidth = jQuery("#HeaderLinksContainer").innerWidth() - 30;
-    var links = document.getElementsByClassName("HeaderLink");
+    var links =  jQuery("#HeaderLinksContainer").find(".HeaderLink"); // get elements that are links in the header bar
     var linksWidth = 0;
     var caretCreated = false;
 
-    if (jQuery(window).width() <= 1279 || jQuery('#Header').hasClass('HeaderLarge'))
+    jQuery("#OverFlowLinks").remove(); // remove the drop-down menu div
+    if (jQuery(window).width() < 1200 || jQuery('#Header').hasClass('HeaderLarge'))
         {
         return;
         }
@@ -1329,17 +1375,20 @@ function headerLinksDropdown()
 
     for (var i = 0; i < links.length; i++)
         {
-        linksWidth += jQuery(links.item(i)).outerWidth();
+		linksWidth += jQuery(links[i]).outerWidth();
 
         if (linksWidth > containerWidth)
             {
             if (!caretCreated)
                 {
-                jQuery(links.item(i- 1)).after('<li id="OverflowListElement"><a href="#" id="DropdownCaret" onclick="showHideLinks();"><span class="fa fa-caret-down"></span></a><div id="OverFlowLinks"><ul id="HiddenLinks"></ul></div></li>');
-                
-                caretCreated = true;
+				jQuery(links[i- 1]).after('<li id="OverflowListElement"><a href="#" id="DropdownCaret" onclick="showHideLinks();"><span class="fa fa-caret-down"></span></a></li>');
+				// append a div to the document.body element that will contain the drop-down menu items
+				jQuery(document.body).append('<div id="OverFlowLinks"><ul id="HiddenLinks"></ul></div>'); 
+				caretCreated = true;
                 }
-            jQuery(links.item(i)).detach().appendTo('#HiddenLinks');
+            // remove the li element from header links and append it to drop-down link list    
+            jQuery(links[i]).remove();    
+            jQuery(links[i]).appendTo('#HiddenLinks');
             }
         }
     }
@@ -1351,11 +1400,12 @@ function headerLinksDropdown()
 */
 function showHideLinks()
     {
-    jQuery('#OverFlowLinks').fadeToggle();
-    if (jQuery('#Header .HeaderSearchForm').length)
-        {
-        jQuery('#OverFlowLinks').css('right', 422);
-        }
+    jQuery('div#OverFlowLinks').fadeToggle();
+	jQuery('div#OverFlowLinks').css('right', 230);
+	jQuery('div#OverFlowLinks').css('top', 40);
+	jQuery('div#OverFlowLinks').css('z-index', 1000);
+	jQuery('div#OverFlowLinks ul#HiddenLinks').css('margin', '0 0 0 0.2em');
+	jQuery('div#OverFlowLinks ul#HiddenLinks').css('text-align', 'left');
     }
 
 /*
@@ -1415,4 +1465,132 @@ function UICenterScrollBottom()
 function detect_local_timezone()
     {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
+	}
+
+
+	
+
+/**
+ * 
+ * @summary Escape characters in a string that may cause the string to be interpreted as HTML in the browser. If regex pattern parameter use this to escape characters, otherwise use default regex pattern provided.
+ * 
+ * @param {string} string - string potentially containing characters to escape - required
+ * @param {string} pattern - regex pattern containing HTML characters to escape - not required
+ * 
+ * @var  {array} entityMap - array of HTML entities with their escaped versions
+ * @var {string} default_pattern  - default regex pattern to use if no pattern passed
+ * 
+ * @returns {string} escaped_string - string with characters escaped 
+ * 
+ * @see upload_plupload.php plupload.addFileFilter()
+ * 
+ */	
+
+function escape_HTML(string, pattern)
+	{
+
+	var entityMap = {
+		'&': '&amp;',
+		'<': '&lt;',
+		'>': '&gt;',
+		'"': '&quot;',
+		"'": '&#39;',
+		'/': '&#x2F;',
+		'`': '&#x60;',
+		'=': '&#x3D;'
+		};
+
+	var default_pattern = "[&<>\"'`=]";
+
+	// if regex pattern is not passed as argument use default pattern
+	pattern =  (pattern === undefined) ? default_pattern : pattern;
+
+	pattern = new RegExp(pattern, "g");	
+
+	var escaped_string = string.replace(pattern, function (s) 
+		{
+		return entityMap[s];
+		});
+
+	return escaped_string;
+	}
+
+/* Manage .TabBar clicks so the show/hide the correct .TabbedPanel within .TabBar */
+
+function SelectMetaTab(tabnum,modal)
+{
+	if (modal)
+		{
+		jQuery('#Modaltabswitch'+tabnum).siblings().removeClass('TabSelected');
+		jQuery('#Modaltabswitch'+tabnum).addClass('TabSelected');
+		jQuery('div.TabbedPanel').hide();
+		jQuery('#Modaltab'+tabnum).show();
+		}
+	else
+		{
+		jQuery('#tabswitch'+tabnum).siblings().removeClass('TabSelected');
+		jQuery('#tabswitch'+tabnum).addClass('TabSelected');
+		jQuery('div.TabbedPanel').hide();
+		jQuery('#tab'+tabnum).show();
+		}
+}
+
+// unset cookie
+function unsetCookie(cookieName, cpath)
+	{
+	document.cookie = cookieName + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;path=' + cpath;	
+	}
+
+
+/**
+* Check if system upgrade is in progress. Reloads the page if it is to show user current status.
+* 
+* @return void
+*/
+function check_upgrade_in_progress()
+    {
+    jQuery.ajax({
+        type: 'GET',
+        url: baseurl + "/pages/ajax/message.php",
+        data: {
+            ajax: true,
+            check_upgrade_in_progress: true
+        },
+        dataType: "json"
+        })
+        .done(function(response)
+            {
+            if(response.status != "success")
+                {
+                return;
+                }
+
+            if(response.data.upgrade_in_progress)
+                {
+                window.location.reload(true);
+                return;
+                }
+            });
+    
+    return;
+    }
+
+/**
+* Add hidden input dynamically to help further requests maintain modals.
+* 
+* @param   {string}     form                The form ID to which to append the hidden input
+* @param   {boolean}    decision_factor     TRUE to add it, FALSE otherwise
+* 
+* @return boolean
+*/
+function add_hidden_modal_input(form, decision_factor)
+    {
+    if(!decision_factor)
+        {
+        return false;
+        }
+
+    jQuery('<input type="hidden" name="modal" value="true">').appendTo("#" + form);
+
+    return true;
     }

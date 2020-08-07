@@ -1,5 +1,7 @@
 name: remote_assist
-desc: Adds a box on the home page showing various options for assistance.
+title: Remote Assist
+desc: Displays options for assistance in the welcome text area on the home page.
+icon: fa fa-hands-helping
 author: Montala Limited
-version: 2.0
+version: 3.1
 category: User interface

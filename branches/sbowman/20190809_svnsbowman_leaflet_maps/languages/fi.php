@@ -80,7 +80,7 @@ $lang["fieldtype-category_tree"]="Kategoriapuu";
 $lang["fieldtype-dynamic_keywords_list"]="Dynaaminen avainsanalista";
 
 # Property labels (for the default properties)
-$lang["documentation-permissions"]="Katso <a href=../../documentation/permissions.txt target=_blank>käyttöoikeuksia käsittelevä ohjetiedosto</a>, jossa on lisätietoa käyttöoikeuksista.";
+$lang["documentation-permissions"]="Katso <a href=https://www.resourcespace.com/knowledge-base/ target=_blank>Knowledge Base</a>, jossa on lisätietoa käyttöoikeuksista.";
 $lang["property-reference"]="Viittaus";
 $lang["property-name"]="Nimi";
 $lang["property-permissions"]="Käyttöoikeudet";
@@ -324,7 +324,7 @@ $lang["showthumbnails"]="Näytä esikatselukuvat";
 $lang["toggle"]="Vaihda";
 $lang["resize"]="Muuta kokoa";
 $lang["contactsheet"]="Yhteydenottolomake";
-$lang["mycollection"]="Kokoelmani";
+$lang["mycollection"]="Oletuskokoelma";
 $lang["editresearchrequests"]="Muokkaa tutkimuspyyntöjä";
 $lang["research"]="Tutkimus";
 $lang["savedsearch"]="Tallennettu haku";
@@ -645,7 +645,7 @@ $lang["backtohome"]="Takaisin kotisivulle";
 $lang["backtohelphome"]="Takaisin ohjeiden kotisivulle";
 $lang["backtosearch"]="Takaisin hakutuloksiini";
 $lang["backtoview"]="Resurssinäkymä";
-$lang["backtoeditresource"]="Takaisin resurssin muokkaamiseen";
+$lang["backtoeditmetadata"]="Takaisin resurssin muokkaamiseen";
 $lang["backtouser"]="Takaisin käyttäjän sisäänkirjautumiseen";
 $lang["termsandconditions"]="Säännöt ja ehdot";
 $lang["iaccept"]="Hyväksyn";
@@ -924,7 +924,7 @@ $lang["phpextensions"]="PHP-tiedostopäätteet";
 # Setup Script
 $lang["setup-alreadyconfigured"]="ResourceSpace-asennuksen asetukset on jo tehty. Asetukset voi tehdä uudestaan poistamalla tiedoston <pre>include/config.php</pre> ja avaamalla tämän sivun uudestaan selaimella.";
 $lang["setup-successheader"]="Onnittelut!";
-$lang["setup-successdetails"]="ResourceSpacen alustavat asetukset ovat valmiina. Tiedostosta 'include/default.config.php' näkee muita asetusvaihtoehtoja.";
+$lang["setup-successdetails"]="ResourceSpacen alustavat asetukset ovat valmiina. Tiedostosta 'include/config.default.php' näkee muita asetusvaihtoehtoja.";
 $lang["setup-successnextsteps"]="Seuraavat askeleet:";
 $lang["setup-successremovewrite"]="Voit nyt poistaa kirjoitusoikeuden kansiosta 'include/'.";
 $lang["setup-visitwiki"]='Lisätietoa asetuksista wikissä osoitteessa <a target="_blank" href="https://www.resourcespace.com/knowledge-base">ResourceSpace Knowledge Base</a>.';

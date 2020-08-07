@@ -1,5 +1,4 @@
 <?php
-include_once 'search_functions.php';
 include_once 'render_functions.php';
 
 # Store key variables to revert later so that we don't interfere with values that still need to be processed by search.php
@@ -188,8 +187,6 @@ $found_year="";if (isset($set_fields["basicyear"])) {$found_year=$set_fields["ba
 $found_month="";if (isset($set_fields["basicmonth"])) {$found_month=$set_fields["basicmonth"];}
 $found_day="";if (isset($set_fields["basicday"])) {$found_day=$set_fields["basicday"];}
 
-
-
 ?>
 <div id="SearchBox" <?php
     if(isset($slimheader) && $slimheader && isset($slimheader_fixed_position) && $slimheader_fixed_position)
@@ -210,10 +207,6 @@ $found_day="";if (isset($set_fields["basicday"])) {$found_day=$set_fields["basic
 <div class="SearchSpace" <?php if (!$basic_simple_search){?>id="searchspace"<?php } ?>>
 
 <?php if (!hook("searchbarreplace")) { ?>
-
-  <?php if (!hook("replacesimplesearchheader") && !$header_search){?><h2><?php echo $lang["simplesearch"]?></h2><?php } ?>
-
-    <?php if (!$header_search) { ?><p><label for="ssearchbox"><?php echo text("searchpanel")?></label></p><?php }?>
     
     <form id="simple_search_form" method="post" action="<?php echo $baseurl?>/pages/search.php" onSubmit="return CentralSpacePost(this,true);">
     <?php
@@ -222,7 +215,8 @@ $found_day="";if (isset($set_fields["basicday"])) {$found_day=$set_fields["basic
     if(!hook("replacesearchbox") && !$header_search)
         {
         ?>
-        <input id="ssearchbox" <?php if ($hide_main_simple_search){?>type="hidden"<?php } ?> name="search" type="text" class="SearchWidth" value="<?php echo htmlspecialchars(stripslashes(@$quicksearch))?>">
+        <input id="ssearchbox" <?php if ($hide_main_simple_search){?>type="hidden"<?php } ?> name="search" type="text" class="SearchWidth" value="<?php echo htmlspecialchars(stripslashes(@$quicksearch))?>" placeholder="<?php echo htmlspecialchars($lang["searchbutton"]); ?>">
+        <button class="fas fa-search fa-flip-horizontal search-icon" type="submit"></button>
         <script>
         <?php
         $autocomplete_src = '';
@@ -250,7 +244,7 @@ $found_day="";if (isset($set_fields["basicday"])) {$found_day=$set_fields["basic
                         {
                         if(event.key == 'Enter' && event.which === 13)
                             {
-                            document.getElementById('simple_search_form').submit();
+                            document.getElementById("searchbutton").click();
                             }
                         });
                     }
@@ -389,7 +383,6 @@ if (!$basic_simple_search)
             if ($searchbar_selectall) {$clear_function.="resetTickAllColl();";}
             }
        
-
     }
 elseif($restypes=='')
     {
@@ -406,7 +399,7 @@ elseif($restypes=='')
     if($search_includes_themes){$restypes.=($restypes=='' ? '' : ','). "themes";}
     
     ?>
-    <input type="hidden" name="restypes" id="restypes" value="<?php echo $restypes?>" />
+    <input type="hidden" name="restypes" id="restypes" value="<?php echo htmlspecialchars($restypes); ?>" />
     <?php
     }
     
@@ -435,7 +428,7 @@ elseif($restypes=='')
 
     if(!$basic_simple_search)
         {
-        $searchbuttons .= "<input name=\"Clear\" id=\"clearbutton\" class=\"searchbutton\" type=\"button\" value=\"&nbsp;&nbsp;".$lang['clearbutton']."&nbsp;&nbsp;\" onClick=\"";
+        $searchbuttons .= "<input name=\"Clear\" id=\"clearbutton\" class=\"searchbutton\" type=\"button\" value=\"&nbsp;&nbsp;".$lang['clearbutton']."&nbsp;&nbsp;\" onClick=\"unsetCookie('search_form_submit','" . $baseurl_short ."');";
 
         if($simple_search_pills_view)
             {
@@ -711,8 +704,8 @@ elseif($restypes=='')
               <option selected="selected" value=""><?php echo $lang["anyyear"]?></option>
               <?php
               
-              
               $y=date("Y");
+              $y += $maxyear_extends_current;
               for ($n=$y;$n>=$minyear;$n--)
                     {
                     ?><option <?php if ($n==$found_year) { ?>selected<?php } ?>><?php echo $n?></option><?php
@@ -746,16 +739,11 @@ elseif($restypes=='')
                 }               
                 ?>
     
-        
-
-    
-    
     <?php if (isset($resourceid_simple_search) and $resourceid_simple_search){ ?>
              <div class="SearchItem"><?php echo $lang["resourceid"]?><br />
              <input id="searchresourceid" name="searchresourceid" type="text" class="SearchWidth" value="" />
              </div>
     <?php } ?>
-
 
     </div>
 
@@ -787,10 +775,6 @@ elseif($restypes=='')
         
     <?php } ?>
     
-    
-    
-    
-    
     <?php hook("searchbarbeforebuttons"); ?>
         
     <?php if ($searchbar_buttons_at_bottom){ echo $searchbuttons; } ?>
@@ -821,7 +805,6 @@ elseif($restypes=='')
 
       <h2><?php echo $lang["login"]?></h2>
 
-  
     <form id="anonymous_login_form" method="post" action="<?php echo $baseurl?>/login.php">
         <div class="SearchItem"><?php echo $lang["username"]?><br/><input type="text" name="username" id="name" class="SearchWidth" /></div>
         <div class="SearchItem"><?php echo $lang["password"]?><br/><input type="password" name="password" id="password" class="SearchWidth" /></div>

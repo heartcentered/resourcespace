@@ -8,17 +8,16 @@
 
 
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";if (!checkperm("R")) {exit ("Permission denied.");}
 include "../../include/request_functions.php";
-include_once "../../include/collections_functions.php";
 include "../../include/header.php";
 
 $offset=getvalescaped("offset",0);
 ?>
 
 <div class="BasicsBox"> 
-  <h1><?php echo $lang["managerequestsorders"]?></h1>
+  <h1><?php echo $lang["managerequestsorders"];render_help_link('resourceadmin/user-resource-requests');?></h1>
 
 <?php 
 $requests=get_requests();
@@ -63,7 +62,7 @@ for ($n=$offset;(($n<count($requests)) && ($n<($offset+$per_page)));$n++)
 	<td><?php echo $requests[$n]["ref"]?></td>
 	<td><?php echo $requests[$n]["username"] ?></td>
 	<td><?php echo $requests[$n]["fullname"] ?></td>
-	<td><?php echo nicedate($requests[$n]["created"],true)?></td>
+	<td><?php echo nicedate($requests[$n]["created"],true, true, true);?></td>
 	<td><?php echo $requests[$n]["c"] ?></td>
 	<td><?php echo $lang["resourcerequesttype" . $requests[$n]["request_mode"]] ?></td>
 	<td><?php echo $requests[$n]["assigned_to_username"] ?></td>

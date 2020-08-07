@@ -1,25 +1,10 @@
 <?php
 include "../../../include/db.php";
-include_once "../../../include/general.php";
+
 include "../../../include/authenticate.php";
-
-if(!checkperm('r'))
-    {
-    exit('Permission denied.');
-    }
-
-include_once "../../../include/resource_functions.php";
 
 $ref      = getvalescaped('ref', '');
 $resource = getvalescaped('resource', '');
-
-# Check access
-$edit_access = get_edit_access($resource);
-if(!$edit_access)
-    {
-    # Should never arrive at this page without edit access
-    exit("Access denied");
-    }
 
 # Set default values for the creation of a new record
 $new_record = true;
@@ -63,7 +48,8 @@ if(getval('submitted', '') != '' && enforcePostRequest(false))
         $usage_medium = escape_check(join(', ', $_POST['usage_medium']));
         }
 
-    if($new_record)
+    $resource_data = get_resource_data($resource);
+    if($new_record && $resource_data !== false && resource_download_allowed($resource, "", $resource_data["resource_type"]))
         {
         # New record 
         sql_query("INSERT INTO resource_usage(resource, usage_location, usage_medium, description, usage_date) VALUES ('$resource', '$usage_location', '$usage_medium', '$description', '$usage_date')");
@@ -72,7 +58,7 @@ if(getval('submitted', '') != '' && enforcePostRequest(false))
 
         resource_log($resource, '', '', $lang['new_usage'] . ' ' . $ref);
         }
-    else
+    else if(!$new_record && get_edit_access($resource))
         {
         # Existing record   
         sql_query("UPDATE resource_usage SET usage_location = '$usage_location', usage_medium = '$usage_medium', description = '$description', usage_date = '$usage_date' WHERE ref = '$ref' AND resource = '$resource'");
@@ -117,13 +103,14 @@ include "../../../include/header.php";
 
     <div class="Question">
         <label><?php echo $lang['usage_medium']; ?></label>
+        <fieldset class="MultiRTypeSelect">
         <?php
         $s = trim_array(explode(',', $usage_data['usage_medium']));
         foreach($resource_usage_mediums as $medium)
             {
             ?>
             <input type="checkbox" name="usage_medium[]" value="<?php echo $medium; ?>" <?php if(in_array($medium, $s)) { ?>checked<?php } ?>>&nbsp;<?php echo $medium; ?>
-            &nbsp;&nbsp;&nbsp;
+            <br>
             <?php
             }
 
@@ -135,11 +122,12 @@ include "../../../include/header.php";
                 {
                 ?>
                 <input type="checkbox" name="usage_medium[]" value="<?php echo $old_medium; ?>" checked>&nbsp;<?php echo $old_medium; ?>
-                &nbsp;&nbsp;&nbsp;
+                <br>
                 <?php
                 }
             }
         ?>
+        </fieldset>
         <div class="clearerleft"></div>
     </div>
 

@@ -6,9 +6,31 @@
 # Performs some basic system checks. Useful for remote monitoring of ResourceSpace installations.
 #
 
+// Check required PHP extensions before using any
+$extensions_required = array();
+$extensions_required["curl"] = "curl_init";
+$extensions_required["gd"] = "imagecrop";
+$extensions_required["xml"] = "xml_parser_create";
+$extensions_required["mbstring"] = "mb_strtoupper";
+$extensions_required["ldap"] = "ldap_bind";
+$extensions_required["intl"] = "locale_get_default";
+$extensions_required["json"] = "json_decode";
+$extensions_required["zip"] = "zip_open";
+
+$missingmodules = array();
+foreach($extensions_required as $module=> $required_fn)
+    {
+    if(!function_exists($required_fn))
+        {
+        $missingmodules[] = $module;
+        }
+    }
+if(count($missingmodules)>0)
+    {
+    exit("FAIL - missing PHP modules: " . implode(",",$missingmodules));
+    }
+
 include "../../include/db.php";
-include_once "../../include/general.php";
-include_once "../../include/resource_functions.php";
 
 # Check database connectivity.
 $check=sql_value("select count(*) value from resource_type",0);
@@ -17,16 +39,13 @@ if ($check<=0) exit("FAIL - SQL query produced unexpected result");
 # Check write access to filestore
 if (!is_writable($storagedir)) {exit("FAIL - $storagedir is not writeable.");}
 $hash=md5(time());
-$file=$storagedir . "/write_text.txt";
-file_put_contents($file,$hash);$check=file_get_contents($file);unlink($file);
+$file=$storagedir . "/write_test_$hash.txt";
+if(file_put_contents($file,$hash) === false)
+    {
+    exit("FAIL - Unable to save the hash in file '{$file}'. File permissions are: " . fileperms($file));
+    }
+$check=file_get_contents($file);unlink($file);
 if ($check!==$hash) {exit("FAIL - test write to disk returned a different string ('$hash' vs '$check')");}
-
-
-# Check free disk space is sufficient.
-$avail=disk_total_space($storagedir);
-$free=disk_free_space($storagedir);
-if (($free/$avail)<0.05) {exit("FAIL - less than 5% disk space free.");} 
-
 
 // Check write access to sql_log
 if($mysql_log_transactions)
@@ -48,13 +67,6 @@ if($debug_log)
         exit("FAIL - invalid \$debug_log_location specified in config file: " . $debug_log_location); 
         }        
     }
-
-// Check that the cron process executed within the last 5 days (allows for a window of downtime, for migration, etc.).
-$last_cron=strtotime(sql_value("select value from sysvars where name='last_cron'",""));
-$diff_days=(time()-$last_cron) / (60 * 60 * 24);
-if ($diff_days>5) {exit("FAIL - cron was executed " . round($diff_days,0) . " days ago.");}
-
-
 
 // All is well.
 
@@ -91,12 +103,28 @@ elseif (preg_match('/\nRevision: (\d+)/i', $svninfo, $matches)!=0)
 # Send the message (note the O and K are separate, so that if served as plain text the remote check doesn't erroneously report all well)
 echo("O" . "K" . $version);
 
+// Check that the cron process executed within the last 5 days (allows for a window of downtime, for migration, etc.).
+$last_cron=strtotime(sql_value("select value from sysvars where name='last_cron'",""));
+$diff_days=(time()-$last_cron) / (60 * 60 * 24);
+if ($diff_days>5) 
+    {
+    echo "WARNING - cron was executed " . round($diff_days,0) . " days ago.";
+    }
+
+# Check free disk space is sufficient.
+$avail=disk_total_space($storagedir);
+$free=disk_free_space($storagedir);
+if (($free/$avail)<0.05)
+    {
+    echo "WARNING - less than 5% disk space free.";
+    } 
+
 // Warning if quota set and nearing quota limit
 if (isset($disksize))
 	{
 	$avail=$disksize*(1000*1000*1000); # Get quota in bytes
 	$used=get_total_disk_usage();      # Total usage in bytes
-    $percent=ceil(($used/$avail)*100);
+    $percent=ceil(((int)$used/$avail)*100);
     echo " " . $percent . "% used";
 	if ($percent>=95) {echo " WARNING nearly full";}
 	}

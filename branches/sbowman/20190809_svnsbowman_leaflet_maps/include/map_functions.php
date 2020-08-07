@@ -1,6 +1,70 @@
 <?php
-// Leaflet.js Map Functions
-// Last Update: 11/25/2019, Steve D. Bowman
+// Leaflet.js Map Library Files and Functions
+
+global $baseurl, $map_default_cache, $map_layer_cache, $map_zoomnavbar, $map_kml;
+
+// Load Leaflet and plugin files.
+?>
+<!--Leaflet.js v1.6.0 files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.min.js"></script>
+
+<!--Leaflet Providers v1.9.0 plugin files-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.9.0/leaflet-providers.babel.min.js"></script>
+
+<!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
+<?php if ($map_default_cache || $map_layer_cache)
+    { ?>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/pouchdb-7.1.1/pouchdb-7.1.1.min.js"></script>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-PouchDBCached-1.0.0/L.TileLayer.PouchDBCached.min.js"></script> <?php
+    } ?>
+
+<!--Leaflet MarkerCluster v1.4.1 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/MarkerCluster.Default.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-markercluster-1.4.1/dist/leaflet.markercluster.min.js"></script>
+
+<!--Leaflet ColorMarkers v1.0.0 plugin file-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-colormarkers-1.0.0/js/leaflet-color-markers.min.js"></script>
+
+<!--Leaflet NavBar v1.0.1 plugin files-->
+<?php if ($map_zoomnavbar)
+    { ?>
+    <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-NavBar-1.0.1/src/Leaflet.NavBar.css"/>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-NavBar-1.0.1/src/Leaflet.NavBar.min.js"></script> <?php
+    } ?>
+
+<!--Leaflet Omnivore v0.3.1 plugin file-->
+<?php if ($map_kml)
+    { ?>
+    <script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-omnivore-0.3.1/leaflet-omnivore.min.js"></script> <?php
+    } ?>
+
+<!--Leaflet EasyPrint v2.1.9 plugin file-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.js"></script>
+
+<!--Leaflet StyledLayerControl v5/16/2019 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/css/styledLayerControl.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-StyledLayerControl-5-16-2019/src/styledLayerControl.min.js"></script>
+
+<!--Leaflet Zoomslider v0.7.1 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-zoomslider-0.7.1/src/L.Control.Zoomslider.min.js"></script>
+
+<!--Leaflet Shades v1.0.2 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/src/css/leaflet-shades.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-shades-1.0.2/leaflet-shades.min.js"></script>
+
+<!--Leaflet EasyPrint v2.1.9 plugin file-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-easyPrint-2.1.9/dist/bundle.js"></script>
+
+<!--Leaflet Control Geocoder 1.10.0 plugin files-->
+<link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-control-geocoder-1.10.0/dist/Control.Geocoder.css"/>
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-control-geocoder-1.10.0/dist/Control.Geocoder.min.js"></script>
+
+<!--Polyfill for Internet Explorer and Edge browser compatibility-->
+<script crossorigin="anonymous" src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2Ces2016%2Ces5%2Ces6%2Ces2017%2Cdefault%2Ces2018%2Ces7"></script>
+<?php
 
 // To add additional basemap sources, see http://leaflet-extras.github.io/leaflet-providers/preview/index.html for the provider names, attribution, maximum zoom level, and any other required provider parameters, and add to the appropriate basemap group below or create a new basemap group.  Will also need to add additional code into the <!--Determine basemaps and map groups for user selection--> section on each PHP page using Leaflet maps (../pages/geo_search.php), the Leaflet Providers section in ../include/config.default.php, and the appropriate providers group section in ../languages/en.php.
 

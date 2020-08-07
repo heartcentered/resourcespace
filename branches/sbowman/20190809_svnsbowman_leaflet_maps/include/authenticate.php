@@ -6,7 +6,13 @@ $autologgedout=false;
 $nocookies=false;
 $is_authenticated=false;
 
-if (!function_exists("ip_matches")){
+/**
+ * Does the provided $ip match the string $ip_restrict? Used for restricting user access by IP address.
+ *
+ * @param  string $ip
+ * @param  string $ip_restrict
+ * @return void
+ */
 function ip_matches($ip, $ip_restrict)
 	{
 	global $system_login;
@@ -41,7 +47,7 @@ function ip_matches($ip, $ip_restrict)
 		}
 	return false;
 	}
-}
+
 
 if (array_key_exists("user",$_COOKIE) || array_key_exists("user",$_GET) || isset($anonymous_login) || hook('provideusercredentials'))
     {
@@ -192,7 +198,7 @@ if (!$valid && !isset($system_login))
     $path = $_SERVER["REQUEST_URI"];
     
     if(strpos($path,"/ajax") !== false)
-        {		
+        {
         if(isset($_COOKIE["user"]))
             {
             http_response_code(401);
@@ -203,36 +209,31 @@ if (!$valid && !isset($system_login))
             http_response_code(403);
             exit($lang['error-permissiondenied']);
             }
-        
-        // This is a call to a page intended to be loaded via ajax - probably now failed due to auto logout
-        if(isset($_SERVER['HTTP_REFERER']) && strpos($_SERVER['HTTP_REFERER'],"login.php") === false)
-            {
-            $path = str_replace($baseurl,$baseurl_short,$_SERVER['HTTP_REFERER']);
-            }
-        else
-            {
-            $path = $baseurl_short;
-            }
         }
     
     $path=str_replace("ajax=","ajax_disabled=",$path);# Disable forwarding of the AJAX parameter if this was an AJAX load, otherwise the redirected page will be missing the header/footer.
-	?>
-	<script type="text/javascript">
-	<?php 
-	if (isset($anonymous_login)) 
-	    {
-	    ?>    
-	    top.location.href="<?php echo $baseurl?>/login.php?logout=true<?php if ($autologgedout) { ?>&auto=true<?php } ?><?php if ($nocookies) { ?>&nocookies=true<?php } ?>";
-	    </script>
-	    <?php
-        exit();
-        }
-    else 
+    
+    $redirparams = array();
+
+    $redirparams["url"]         = isset($anonymous_login) ? "" : $path;
+    $redirparams["auto"]        = $autologgedout ? "true" : "";
+    $redirparams["nocookies"]   = $nocookies ? "true" : "";
+    
+    if(strpos($path, "ajax") !== false || getval("ajax","") != "")
         {
-        ?>    
-        top.location.href="<?php echo $baseurl?>/login.php?url=<?php echo urlencode($path)?><?php if ($autologgedout) { ?>&auto=true<?php } ?><?php if ($nocookies) { ?>&nocookies=true<?php } ?>";
+        // Perform a javascript redirect as may be directly loading content directly into div.
+        $url = generateURL($baseurl . "/login.php",$redirparams);
+        ?>
+        <script>
+        top.location.href="<?php echo $url ?>";
         </script>
         <?php
+        exit();
+        }
+    else
+        {
+        $url = generateURL($baseurl . "/login.php",$redirparams);
+        redirect($url);
         exit();
         }
     }   
@@ -288,7 +289,7 @@ else
 
 // don't update this table if the System is doing its own operations
 if (!isset($system_login)){
-	sql_query("update user set lang='$language', last_active=now(),logged_in=1,last_ip='" . get_ip() . "',last_browser='" . $last_browser . "' where ref='$userref'",false,-1,true,0);
+	sql_query("update user set lang='$language', last_active=now(),logged_in=1,last_ip='" . escape_check(get_ip()) . "',last_browser='" . $last_browser . "' where ref='$userref'",false,-1,true,0);
 }
 
 # Add group specific text (if any) when logged in.
@@ -315,7 +316,7 @@ else
 			$pagefilter,
 			$usergroup
 		);
-		$results = sql_query($site_text_query,false,-1,true,0);
+		$results = sql_query($site_text_query,"sitetext",-1,true,0);
 
 		for($n = 0; $n < count($results); $n++)
 			{
@@ -335,7 +336,7 @@ else
 
 # Load group specific plugins and reorder plugins list
 $plugins= array();
-$active_plugins = (sql_query("SELECT name,enabled_groups, config, config_json, disable_group_select FROM plugins WHERE inst_version>=0 ORDER BY priority"));
+$active_plugins = (sql_query("SELECT name,enabled_groups, config, config_json, disable_group_select FROM plugins WHERE inst_version>=0 ORDER BY priority","plugins"));
 
 
 foreach($active_plugins as $plugin)
@@ -395,13 +396,14 @@ if(
 
     if(filter_var(getval("ajax", false), FILTER_VALIDATE_BOOLEAN))
         {
+        include_once dirname(__FILE__) . "/ajax_functions.php";
         $return['error'] = array(
             'title'  => $lang["error-csrf-verification"],
             'detail' => $lang["error-csrf-verification-failed"]);
 
-        echo json_encode($return);
+        echo json_encode(array_merge($return, ajax_response_fail(ajax_build_message($lang["error-csrf-verification-failed"]))));
         exit();
         }
 
-    trigger_error($lang["error-csrf-verification-failed"]);
+    exit($lang["error-csrf-verification-failed"]);
     }

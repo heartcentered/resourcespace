@@ -1,14 +1,11 @@
 <?php 
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
 if (checkperm("b"))
     {exit("Permission denied");}
-include_once "../include/collections_functions.php";
-include "../include/search_functions.php";
-include "../include/resource_functions.php";
-include "../include/render_functions.php";
 
+$k=getvalescaped("k","");
 $offset=getvalescaped("offset",0);
 $find=getvalescaped("find",getvalescaped("saved_find",""));rs_setcookie('saved_find', $find);
 $col_order_by=getvalescaped("col_order_by",getvalescaped("saved_col_order_by","created"));rs_setcookie('saved_col_order_by', $col_order_by);
@@ -145,15 +142,7 @@ if(($purge != "" || $deleteall != "") && enforcePostRequest(false)) {
 	
 	if ($purge!=""){$deletecollection=$purge;}
 	if ($deleteall!=""){$deletecollection=$deleteall;}
-	
-	if (!function_exists("do_search")) {
-		include "../include/search_functions.php";
-	}
-	
-	if (!function_exists("delete_resource")) {
-		include "../include/resource_functions.php";
-	}
-	
+		
 	# Delete all resources in collection
 	if (!checkperm("D")) {
 		$resources=do_search("!collection" . $deletecollection);
@@ -196,7 +185,7 @@ if ($deleteempty!="" && enforcePostRequest(false)) {
 	$deleted_usercoll = false;
 		
 	for ($n = 0; $n < count($collections); $n++) {
-		// if count is zero and not My Collection and collection is owned by user:
+		// if count is zero and not Default Collection and collection is owned by user:
 		if ($collections[$n]['count'] == 0 && $collections[$n]['cant_delete'] != 1 && $collections[$n]['user']==$userref) {
 			delete_collection($collections[$n]['ref']);
 			if ($collections[$n]['ref'] == $usercollection) {
@@ -241,7 +230,7 @@ include "../include/header.php";
 ?>
   <div class="BasicsBox">
     <h1><?php echo $lang["managemycollections"]?></h1>
-    <p class="tight"><?php echo text("introtext")?></p><br />
+    <p class="tight"><?php echo text("introtext");render_help_link("collections-public-and-themes");?></p><br />
 <div class="BasicsBox">
     <form method="post" action="<?php echo $baseurl_short?>pages/collection_manage.php">
 		<?php generateFormToken("find"); ?>
@@ -355,19 +344,34 @@ if (!hook('collectionaccessmode')) {
 
 <td class="collectionin"><input type="checkbox" onClick='UpdateHiddenCollections(this, "<?php echo $collections[$n]['ref'] ?>", {<?php echo generateAjaxToken("colactions"); ?>});' <?php if(!in_array($collections[$n]['ref'],$hidden_collections)){echo "checked";}?>></td>
 
-<?php hook('beforecollectiontoolscolumn'); ?>
-	<td class="tools">	
-        <div class="ListTools">
-        <?php
-		hook('legacy_list_tools', '', array($collections[$n]));
-		render_actions($collections[$n], false, false);
-		?>
-		</div>
-	</td>
-	</tr>
-	<input type=hidden name="deleteempty" id="collectiondeleteempty" value="">
-	<?php
+<?php hook('beforecollectiontoolscolumn');
+$action_selection_id = 'collections_action_selection' . $collections[$n]['ref']  . "_bottom_" . $collections[$n]["ref"] ;
+hook('render_collections_list_tools', '', array($collections[$n])); ?>
+<td class="tools">	
+    <div class="ListTools">
+    <?php hook('legacy_list_tools', '', array($collections[$n])); ?>
+        <div class="ActionsContainer">
+            <select class="collectionactions" id="<?php echo $action_selection_id ?>" onchange="action_onchange_<?php echo $action_selection_id ?>(this.value);">
+            <option>
+                <?php echo $lang["actions-select"]?>
+            </option>
+            </select>
+        </div>
+    </div>
+</div>
+</td>
+</tr>
+<script>
+  jQuery('#<?php echo $action_selection_id ?>').bind({
+    mouseenter:function(e){
+      LoadActions('collections','<?php echo $action_selection_id ?>','collection','<?php echo $collections[$n]['ref'] ?>');
     }
+  }
+);
+</script>
+<input type=hidden name="deleteempty" id="collectiondeleteempty" value="">
+<?php
+}
 ?>
 </table>
 </div>

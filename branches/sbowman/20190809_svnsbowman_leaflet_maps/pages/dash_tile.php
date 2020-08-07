@@ -6,13 +6,10 @@
  */
 
 include "../include/db.php";
-include_once "../include/general.php";
+
 $k=getvalescaped("k","");
 include "../include/authenticate.php";
-include_once "../include/collections_functions.php";
-include_once "../include/search_functions.php";
 include_once "../include/dash_functions.php";
-include_once '../include/render_functions.php';
 
 if(!checkPermission_dashcreate()){exit($lang["error-permissiondenied"]);}
 global $baseurl,$baseurl_short,$userref,$managed_home_dash;
@@ -197,7 +194,7 @@ if($submitdashtile && enforcePostRequest(false))
 		}
 	include "../include/header.php";
 	?>
-	<h1><?php echo $lang["createnewdashtile"];?></h1>
+	<h1><?php echo $lang["createnewdashtile"];render_help_link("user/create-dash-tile");?></h1>
 	<?php 
 	if($error)
 		{?>
@@ -305,6 +302,7 @@ $validpage = false;
 if($create)
 	{
 	$tile_type                    = getvalescaped("tltype","");
+    $tile_style                   = getvalescaped('tlstyle', "");
 	$tile_nostyle                 = getvalescaped("nostyleoptions",FALSE);
 	$allusers                     = getvalescaped("all_users",FALSE);
 	$url                          = getvalescaped("url","");
@@ -319,6 +317,11 @@ if($create)
     // Promoted resources can be available for search tiles (srch) and feature collection tiles (fcthm)
     $promoted_resource = getvalescaped('promoted_resource', FALSE);
 
+    if(!allow_tile_colour_change($tile_type, $tile_style))
+        {
+        $tile_nostyle = true;
+        }
+
 	if($tile_type=="srch")
 		{
 		$srch=getvalescaped("link","");
@@ -330,12 +333,13 @@ if($create)
 		$title=getvalescaped("title","");
 		$resource_count=getvalescaped("resource_count",0,TRUE);
 
+        unset($tile_style);
+
 		$link=$srch."&order_by=" . urlencode($order_by) . "&sort=" . urlencode($sort) . "&archive=" . urlencode($archive) . "&daylimit=" . urlencode($daylimit) . "&k=" . urlencode($k) . "&restypes=" . urlencode($restypes);
 		$title=preg_replace("/^.*search=/", "", $srch);
 		
 		if(substr($title,0,11)=="!collection")
 			{
-			include_once "../include/collections_functions.php";
 			$col= get_collection(preg_replace("/^!collection/", "", $title));
 			$promoted_resource = true;
 			$title=$col["name"];
@@ -436,7 +440,7 @@ if(!$validpage)
 	}
 ?>
 <div class="BasicsBox">
-<h1><?php echo $pagetitle?></h1>
+<h1><?php echo $pagetitle;render_help_link("user/create-dash-tile");?></h1>
 <form id="create_dash" name="create_dash" method="post">
 	<input type="hidden" name="tltype" value="<?php echo htmlspecialchars($tile_type)?>" />
 	<input type="hidden" name="url" value="<?php echo htmlspecialchars($url); ?>" />
@@ -459,7 +463,7 @@ if(!$validpage)
 	echo $formextra;
 
 	if($modifylink)
-		{ 
+		{
 		?>
 		<div class="Question">
 			<label for="link"><?php echo $lang["dashtilelink"];?></label> 
@@ -501,7 +505,7 @@ if(!$validpage)
 		<?php
 		}
 
-if('' != $tile_type)
+if('' != $tile_type && $tile_type !== "conf")
     {
     ?>
     <!-- Dash tile size selector -->

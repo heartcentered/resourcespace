@@ -4,9 +4,7 @@ from outputting stray characters that will mess up the binary download
 we will clear the buffer and start over right before we download the file*/
 ob_start(); $nocache=true;
 include_once dirname(__FILE__) . '/../include/db.php';
-include_once dirname(__FILE__) . '/../include/general.php';
 include_once dirname(__FILE__) . '/../include/resource_functions.php';
-include_once dirname(__FILE__) . '/../include/search_functions.php';
 ob_end_clean(); 
 
 $k="";
@@ -42,6 +40,7 @@ $usage          = getvalescaped('usage', '-1');
 $usagecomment   = getvalescaped('usagecomment', '');
 $ext            = getvalescaped('ext', '');
 $snapshot_frame = getvalescaped('snapshot_frame', 0, true);
+$modal          = (getval("modal","")=="true");
 
 if(!preg_match('/^[a-zA-Z0-9]+$/', $ext))
     {
@@ -59,7 +58,11 @@ if('' != $userfiledownload)
     $downloadkey    = strip_extension($filedetails[1]);
     $ext            = safe_file_name(substr($filedetails[1], strlen($downloadkey) + 1));
     $path           = get_temp_dir(false, 'user_downloads') . '/' . $ref . '_' . md5($username . $downloadkey . $scramble_key) . '.' . $ext;
-
+    $rqstname       = getval("filename","");
+    if($rqstname!="")
+        {
+        $filename   = safe_file_name($rqstname) . "." . $ext;
+        }
     hook('modifydownloadpath');
     }
 elseif(getval("slideshow",0,true) != 0)
@@ -98,14 +101,23 @@ else
 
     if(!$allowed || $ref <= 0)
         {
-        debug("PAGES/DOWNLOAD.PHP: Permission denied!");
-        # This download is not allowed. How did the user get here?
-        exit('Permission denied');
+        $error = $lang['error-permissiondenied'];
+        if(getval("ajax","") != "")
+            {
+            error_alert($error, true,200);
+            }
+        else
+            {
+            include "../include/header.php";
+            $onload_message = array("title" => $lang["error"],"text" => $error);
+            include "../include/footer.php";
+            }
+        exit();
         }
 
     // additional access check, as the resource download may be allowed, but access restriction should force watermark.  
-    $access        = get_resource_access($ref);  
-    $use_watermark = check_use_watermark($ref);
+    $access        = get_resource_access($ref);
+    $use_watermark = check_use_watermark(getval("dl_key",""),$ref);
 
     // If no extension was provided, we fallback to JPG.
     if('' == $ext)
@@ -114,6 +126,13 @@ else
         }
 
     $noattach = getval('noattach','');
+
+    // Where we are getting mp3 preview for videojs, clear size as we want to get the auto generated mp3 file rather than a custom size.
+    if ($size == 'videojs' && $ext == 'mp3')
+    {
+        $size="";
+    }
+    
     $path     = get_resource_path($ref, true, $size, false, $ext, -1, $page, $use_watermark && $alternative == -1, '', $alternative);
 
     // Snapshots taken for videos? Make sure we convert to the real snapshot file
@@ -204,7 +223,10 @@ if('' == $noattach)
         }
     
     // We compute a file name for the download.
-    $filename = get_download_filename($ref, $size, $alternative, $ext);
+    if(!isset($filename) || $filename == "")
+        {
+        $filename = get_download_filename($ref, $size, $alternative, $ext);
+        }
     }
 
 // Set appropriate headers for attachment or streamed file
@@ -229,7 +251,7 @@ header("Content-Type: {$mime}");
 debug("PAGES/DOWNLOAD.PHP: Set MIME type to '{$mime}'");
 
 // Check if http_range is sent by browser (or download manager)
-if(isset($_SERVER['HTTP_RANGE']))
+if(isset($_SERVER['HTTP_RANGE']) && strpos($_SERVER['HTTP_RANGE'],"=")!==false) # Check it's set and also contains the expected = delimiter
     {
     debug("PAGES/DOWNLOAD.PHP: HTTP_RANGE is set to '{$_SERVER['HTTP_RANGE']}'");
 

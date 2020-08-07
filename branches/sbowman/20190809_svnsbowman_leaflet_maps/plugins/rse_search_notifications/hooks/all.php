@@ -8,7 +8,7 @@ function HookRse_search_notificationsAllRender_search_actions_add_option($option
 
     if($k != '')
         {
-        return array();
+        return;
         }
 
     // Prevent watch if search criteria are absent
@@ -29,12 +29,19 @@ function HookRse_search_notificationsAllRender_search_actions_add_option($option
         )
     );
 
+    if(isset($GLOBALS["hook_return_value"]) && is_array($GLOBALS["hook_return_value"]))
+        {
+        // @see hook() for an explanation about the hook_return_value global
+        $options = $GLOBALS["hook_return_value"];
+        }
+
     $option = array(
         'value'     => 'watch_this_search',
         'label'     => $lang['search_notifications_watch_this_search'],
         'data_attr' => array(
-            'url' => $data_attr_url
-        )
+            'url' => $data_attr_url,
+        ),
+        'category' => ACTIONGROUP_ADVANCED
     );
 
     array_push($options, $option);
@@ -49,5 +56,11 @@ function HookRse_search_notificationsAllRender_actions_add_collection_option($to
         return;
         }
 
-	return (HookRse_search_notificationsAllRender_search_actions_add_option($options));
+    if(isset($GLOBALS["hook_return_value"]) && is_array($GLOBALS["hook_return_value"]))
+        {
+        // @see hook() for an explanation about the hook_return_value global
+        $options = $GLOBALS["hook_return_value"];
+        }
+
+	return HookRse_search_notificationsAllRender_search_actions_add_option($options);
 	}

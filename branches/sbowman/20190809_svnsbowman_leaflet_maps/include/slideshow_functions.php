@@ -39,6 +39,9 @@ function set_slideshow($ref, $resource_ref = NULL, $homepage_show = 1, $featured
 
     sql_query($query);
 
+    // Clear cache
+    clear_query_cache("slideshow");
+
     $new_ref = sql_insert_id();
     if(is_null($ref) && $new_ref != 0)
         {
@@ -52,6 +55,7 @@ function set_slideshow($ref, $resource_ref = NULL, $homepage_show = 1, $featured
 
         return $new_ref;
         }
+
 
     return false;
     }
@@ -76,6 +80,10 @@ function delete_slideshow($ref)
     sql_query($query);
 
     log_activity("Deleted slideshow image", LOG_CODE_DELETED, null, 'slideshow', 'ref', $ref);
+
+    // Clear cache
+    clear_query_cache("slideshow");
+
 
     return true;
     }
@@ -126,6 +134,9 @@ function reorder_slideshow_images(array $from, array $to)
             $from['homepage_show'],
             $from['featured_collections_show'],
             $from['login_show']);
+    
+            // Clear cache
+            clear_query_cache("slideshow");
 
         return true;
         }

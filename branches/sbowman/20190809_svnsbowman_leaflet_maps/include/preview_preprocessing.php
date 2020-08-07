@@ -319,7 +319,8 @@ if ( (($extension=="pages") || ($extension=="numbers") || (!isset($unoconv_path)
     
 /* ----------------------------------------
     Unoconv is a python-based utility to run files through OpenOffice. It is available in Ubuntu.
-    This adds conversion of office docs to PDF format and adds them as alternative files
+    This adds conversion of office docs to PDF format and adds them as alternative files (this behaviour can be disabled by
+    adding the extension to non_image_types list)
     One could also see the potential to base previews on the PDFs for paging and better quality for most of these formats.
    ----------------------------------------
 */
@@ -344,7 +345,40 @@ if (in_array($extension,$unoconv_extensions) && $extension!='pdf' && isset($unoc
     $path_parts=pathinfo($file);
     $basename_minus_extension=remove_extension($path_parts['basename']);
     $pdffile=$path_parts['dirname']."/".$basename_minus_extension.".pdf";
-    if (file_exists($pdffile))
+
+    $no_alt_condition = (
+        $GLOBALS['non_image_types_generate_preview_only']
+        && in_array($extension, $GLOBALS['non_image_types']) 
+        && in_array($extension, config_merge_non_image_types())
+    );
+
+    if(file_exists($pdffile) && $no_alt_condition)
+        {
+        // Set vars so we continue generating previews as if this is a PDF file
+        $extension = "pdf";
+        $file = $pdffile;
+        $unoconv_fake_pdf_file = true;
+
+        // We need to avoid a job spinning off another job because create_previews() can run as an offline job and it 
+        // includes preview_preprocessing.php.
+        global $offline_job_queue, $offline_job_in_progress;
+
+        if($offline_job_queue && !$offline_job_in_progress)
+            {
+            $extract_text_job_data = array(
+                'ref'       => $ref,
+                'extension' => $extension,
+                'path'      => $file,
+            );
+
+            job_queue_add('extract_text', $extract_text_job_data);
+            }
+        else
+            {
+            extract_text($ref, $extension, $pdffile);
+            }
+        }
+    else if (file_exists($pdffile))
         {
         # Attach this PDF file as an alternative download.
         sql_query("delete from resource_alt_files where resource = '".$ref."' and unoconv='1'");    
@@ -976,18 +1010,31 @@ if ((!isset($newfile)) && (!in_array($extension, $ffmpeg_audio_extensions))&& (!
             sql_query("update resource_alt_files set page_count=$pagecount where ref=$alternative");
             }
         else if (isset($pagecount)){
-            sql_query("update resource_dimensions set page_count=$pagecount where resource=$ref");
+
+            $pagecount_escaped = escape_check($pagecount);
+            $ref_escaped = escape_check($ref);
+            $sql = "SELECT count(*) AS value FROM `resource_dimensions` WHERE resource = '$ref_escaped'";
+            $query = sql_value($sql, 0);
+
+            if($query == 0)
+                {
+                sql_query("INSERT INTO resource_dimensions (resource, page_count) VALUES ('{$ref_escaped}', '{$pagecount_escaped}')");
+                }
+            else
+                {
+                sql_query("UPDATE resource_dimensions SET page_count = '{$pagecount_escaped}' WHERE resource = '{$ref_escaped}'");
+                }            
             }
     }
     else
         {
         # Not a PDF file, so single extraction only.
-            create_previews_using_im($ref,false,$extension,$previewonly,false,$alternative);
+            create_previews_using_im($ref,false,$extension,$previewonly,false,$alternative,$ingested, $onlysizes);
             }
     }
 
 $non_image_types = config_merge_non_image_types();
-    
+
 # If a file has been created, generate previews just as if a JPG was uploaded.
 if (isset($newfile))
     {
@@ -1010,5 +1057,10 @@ if (isset($newfile))
         && file_exists($file_used_for_previewonly))
         {
         unlink($file_used_for_previewonly);
+        }
+
+    if(isset($unoconv_fake_pdf_file) && $unoconv_fake_pdf_file)
+        {
+        unlink($file);
         }
     }

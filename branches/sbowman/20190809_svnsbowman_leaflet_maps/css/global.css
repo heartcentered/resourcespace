@@ -1,7 +1,14 @@
+/*
+ * Global Style Document for ResourceSpace
+ *
+ * Standard structural styling
+ * 
+ */
 
-h2,h3,h4,h5,h6,.Title, .ListviewTitleStyle{font-family:Tahoma, Arial, Helvetica, sans-serif;}
-
-.ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button,.ui-widget, body, input, textarea, select {font-family: Tahoma, Arial, Helvetica, sans-serif;}
+/* Default font-family */
+body, input, textarea, select, h2, h3, h4, h5, h6, .Title, .ListviewTitleStyle, .ui-widget input, .ui-widget select, .ui-widget textarea, .ui-widget button, .ui-widget {
+    font-family: Tahoma, Arial, Helvetica, sans-serif;
+}
 
 select {font-size:1em; height:1.8rem;}
 
@@ -9,15 +16,13 @@ select {font-size:1em; height:1.8rem;}
 html {height:100%;}
 body {width:100%;height:100%; margin:0;padding:0;font-size:15px;text-align: center; line-height: 1.4;}
 
-.ui-dialog .ui-dialog-buttonpane { text-align: center;}
-.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {  float: none;}
+.ui-dialog .ui-dialog-buttonpane {text-align: center;}
+.ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset {float: none;}
 .ui-dialog .ui-dialog-buttonpane .ui-dialog-buttonset .ui-button{width:100%;}
-
 
 /*Basic tag setup for creating standards across platforms and browsers*/
 p, h1, h2, h3, h4, h5 {padding:0; margin:0; vertical-align:top;}
 p {padding:0 0 1em; margin:0; font-size:1em;}
-p.tight {padding:0 0 0.75em;}
 h1 {padding:0.5em 0;margin:0;font-weight: normal;font-size: 1.5rem;}
 h2 {padding:0.1em 0;margin:0;font-weight: normal;font-size:1.5em;}
 h3 {font-size:1.25em; padding:0.5em 0 0.5em 0; margin:0;font-weight:normal;}
@@ -31,29 +36,30 @@ ul ul, ul ol, ol ul, ol ol {margin:0 0 0 2.5em;padding:1em 0 0em;}
 li {padding:0em 0 1em;margin:0;}
 blockquote {padding:0 0 2em; margin:0em 2.5em;}
 blockquote blockquote {padding:1em 0 2em; margin:0em 2.5em;}
-a:link {text-decoration:none;}
-a:visited {text-decoration:none;}
-a:hover {text-decoration:underline;}
-a:active {text-decoration:underline;}
-input[readonly] {border: none; background: none;}
+a:link, a:visited {text-decoration:none;}
+a:hover, a:active {text-decoration:underline;}
 input,textarea {box-sizing: border-box;-moz-box-sizing: border-box;-webkit-box-sizing: border-box;}
 option {font-size:1em;}
+
+p.tight {padding:0 0 0.75em;}
+input[readonly] {background: none;}
 input.defaultbutton {position: absolute; left: -100%; width: 0; height: 0;}
 
 /* Form elements */
 input, textarea, button, select, .RecordPanel .RecordDownloadSpace .DownloadDBlend a, .sp-replacer {
-    font-size: 0.875rem;   
-    border-radius: 4px; 
+    font-size: 0.875rem;
+    border-radius: 4px;
 }
 
-input[type="text"], input[type=submit], input[type=button], input[type="password"], input[type="url"],input[type="email"], textarea, button, select {
-    padding: 5px 8px 5px 8px;
+input[type="text"], input[type=submit], input[type=button], input[type="password"], input[type="url"],input[type="email"], input[type="number"], textarea, button, select {
+    padding: 4px 6px 4px 6px;
     vertical-align: middle;
-    min-height: 30px;
+    min-height: 28px;
 }
 
-input[type="text"], input[type="password"], textarea, select, .sp-replacer {
+input[type="text"], input[type="password"], input[type="number"], textarea, select, .sp-replacer {
     border: 1px solid rgba(0,0,0,0.25);
+    box-shadow: inset 0px 1px 2px 0px rgba(0,0,0,0.1);
  }
 
 .TopInpageNavLeft select, .TopInpageNavLeft select:focus {
@@ -83,6 +89,17 @@ button, input[type=submit], input[type=button], .RecordPanel .RecordDownloadSpac
     text-align: center;
 }
 
+#ResourceDownloadOptions td.DownloadFileName.AlternativeFile a 
+{
+    background-color: transparent;
+    border-top: none;
+    box-shadow: none;
+}
+
+.RecordPanel:not(.RecordPanelLarge) .DownloadFileSizePicker > #size {
+    max-width: 230px;
+}
+
 button:hover, input[type=submit]:hover, input[type=button]:hover, .RecordPanel .RecordDownloadSpace .DownloadDBlend a:hover,.UploadButton a {
     background: #1378BF;
     box-shadow: 0 1px 3px rgba(0,0,0,0.25);
@@ -104,7 +121,7 @@ select, .sp-replacer {
     background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMiIgaGVpZ2h0PSIxMyIgdmlld0JveD0iMCAwIDIyIDEzIj4KICA8ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgLTQpIj4KICAgIDxyZWN0IHdpZHRoPSIyMiIgaGVpZ2h0PSIxMSIgeT0iMiIvPgogICAgPHBvbHlsaW5lIHN0cm9rZT0iIzJFOTlFNiIgc3Ryb2tlLXdpZHRoPSIyIiBwb2ludHM9IjkuNTk2IDEuNDc1IDkuNTk2IDguNTk2IDIuNDc1IDguNTk2IiB0cmFuc2Zvcm09InJvdGF0ZSg0NSA2LjAzNiA1LjAzNikiLz4KICA8L2c+Cjwvc3ZnPgo=);
     background-repeat: no-repeat;
     background-position: right 65%;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px 1px rgba(0,0,0,0.1);
     position: relative;
     z-index: 0;
     padding-right: 30px;
@@ -172,10 +189,8 @@ select::-ms-expand
 #TextHeader a {text-decoration:none;}
 #TextDesc{font-size:1em;float:left;display:block;clear:left;}
 
-
 .headerlink {margin:20px 25px; position: absolute; display: block; width: 400px; height: 55px;  top: 0px; left: 0px;}
 .TeamCentreAlertIcon { position: relative; top: 3px;}
-
 
 .ui-layout-container{overflow:auto;}
 #HeaderNav1, #HeaderNav2 {padding:0;}
@@ -225,6 +240,7 @@ h2#CollectionsPanelHeader {display:none;}
     height: 70px;
     }
 
+/* Fix for .svg files */
 img[src$=".svg"]
     {
     height: 100% !important; 
@@ -301,19 +317,22 @@ div#CentralSpaceContainer.SlimHeaderFixedPosition { margin-top: 100px; }
 
 .CollectionPanelShell {padding:5px;float: left;margin: 0px 10px 10px 0px;width: 110px;text-align: left;border-radius: 4px;}
 .CollectionPanelInfo{width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.CollectionPanelThumb{max-height: 75px;}
 .CollectionResourceAlign {width:110px;height:90px;text-align: center;vertical-align: middle;}
 
 #CollectionMinTitle{float: left;margin: 4px 10px 0px 25px;}
 #CollectionMinDropTitle{float: left;padding:0.2em 0em;margin-top: 6px;}
-#CollectionMinDrop{float: left;margin: 6px 0px 0px;padding:0.2em 0em}
+#CollectionMinDrop{float: left;margin: 4px 0px 0px;padding:0.2em 0em}
 #CollectionMinDrop form{margin:0;padding:0}
 #CollectionMinitems{float: left;margin: 5px 10px 0px;padding:0.35em 0em}
-#CollectionMinRightNav{float: right;margin: 5px 25px 0px 0px;padding:0.25em 0em}
+#CollectionMinRightNav{float: right;margin: 4px 25px 0px 0px;padding:0.2em 0em}
 #CollectionMinRightNav #toggleThumbsLink, #CollectionMinRightNav .ActionsContainer {float:right;}
-#CollectionMinRightNav .ActionsContainer {margin-right:25px;}
+#CollectionMinRightNav.CollectionBasket #toggleThumbsLink {float: none;}
 .CollectionTitleLinks a {margin: 5px 4px;}
+#CollectionMinDiv .ToggleThumbsContainer {float: left; padding: 0 12px 0 24px; margin-top: 9px;border-right: 1px solid #E0E0E0;}
+#CollectionMinDiv #CollectionMinDropTitle {margin-left: 12px;}
 
-#CollectionMinDrop .SearchWidth {width: 150px;margin:0; min-height: 20px;}
+#CollectionMinDrop .SearchWidth {width: 190px;margin:0; min-height: 20px;}
 #CollectionMinDrop .SearchWidthExp {width: 200px;font-size: 0.7em ;margin:0;padding: 0;}
 #CollectionMinRightNav ul {padding:0em 0;margin:0;list-style:none;}
 #CollectionMinRightNav li {display:inline;padding:0 0.35em 0 0.5em;margin:0px;}
@@ -337,7 +356,6 @@ div#CentralSpaceContainer.SlimHeaderFixedPosition { margin-top: 100px; }
 #CentralSpace .ChosenDateRangeDay {width:95px !important;}
 #CentralSpace .ChosenDateRangeYear {width:100px !important;}
 
-
 /*Right Search Box layout*/
 #SearchBox {float: right; width: 295px;text-align:left; height: inherit; overflow-x: hidden;}
 #SearchBoxPanel {width: 100%;}
@@ -345,22 +363,22 @@ div#CentralSpaceContainer.SlimHeaderFixedPosition { margin-top: 100px; }
 #SearchBox .PopupCategoryTree {display: none; text-align: left; z-index: 999; padding: 5px; background: none;}
 
 /*Resource Panel layout*/
-.ResourcePanel {padding:0;margin:0 14px 14px 0;width: 174px;float:left;height:230px;position:relative; overflow: hidden;}
+.ResourcePanel {padding:0;margin:0 14px 14px 0;width: 175px;float:left;position:relative; overflow: hidden;}
 .ResourcePanelPreview {height: 156px;width: 156px;margin: 3px;}
 .ResourcePanelInfo {margin: 5px;overflow:hidden;white-space:nowrap;padding:0;text-align:justify;text-overflow: ellipsis;}   
 .ResourcePanelCountry {margin-right: 5px;margin-left: 5px;margin-bottom: 0px;float: left;clear: left;display:inline;}   
-.ResourcePanelIcons {padding: 5px;text-align:right;position:absolute;bottom:0;right:0;width:166px;} 
+.ResourcePanelIcons {padding: 5px;text-align:right;bottom:0;right:0;width:166px;} 
 .ResourcePanelSmallIcons {padding-left: 5px;}   
-.ImageWrapper {height:174px;display:block;padding:0;vertical-align: middle;text-align: center;clear: right;}
+.ImageWrapper {height:175px;display:block;padding:0;vertical-align: middle;text-align: center;clear: right;}
 .ImageWrapperSmall {height:75px;display:block;padding:0;;vertical-align: middle;text-align: center;clear: right;}
 .ImageWrapperLarge {height:320px; display:block; padding:0; vertical-align: middle; text-align:center; clear:right;}
+.ImageColourWrapper {display: inline-block;}
 
 .ResourceAlign {width:172px;height:177px;text-align: center;vertical-align: middle;}
 .ResourceTypeIcon { height: 16px;width:16px;float:right;margin-right:5px;margin-top:6px; }
 .ResourcePanelShell a:link, .ResourcePanelShell a:visited {text-decoration:none;}
 .ResourcePanelShell a:hover, .ResourcePanelShell a:active {text-decoration:underline;}
 .ResourcePanelShell.ui-draggable {text-align: left;}
-
 
 .ResourcePanelShellSmall {padding:0;float: left;margin: 0px 15px 10px 0px;width: 105px;}
 .ResourcePanelSmall {padding:0;margin:0;width: 105px;padding-bottom:5px;}
@@ -390,7 +408,7 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .Listview {overflow-x:auto; margin: 0 0 25px 0;}
 .ListviewTight {margin: 5px 10px 5px 0;}
 .Listview table{ width:100%;}
-.Listview td {padding:6px 8px 6px 8px;vertical-align: top;}
+.Listview td, .Listview th {padding:6px 8px 6px 8px;vertical-align: top;}
 .ListTools {text-align: right;}
 .ListTitle {font-weight: bold;}
 .Listview .IconStar {width:11px;height:12px;padding: 0;display: block;float:left;}
@@ -415,12 +433,27 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 #CentralSpaceLogin form {margin:0;padding:0;}
 .Question{padding: 0.7em 0em 0.7em 0.5em;}
 .QuestionSubmit{ padding: 1em 0em 1em 0.5em;}
+.QuestionSubmit.QuestionSticky {
+    position: -webkit-sticky; 
+    position: sticky;
+    bottom: 0;
+    background-color: #f2f2f2;
+    border-top: 1px solid #c1c1c1;
+    box-shadow: 0px -12px 15px -12px #bbbbbb;
+}
+/* IE does not support position: sticky so fall back to standard styling */
+@media all and (-ms-high-contrast:none) {
+    .QuestionSubmit.QuestionSticky {
+        border-top: none;
+        box-shadow: none;
+    }
+}
 .Question label, .QuestionSubmit label{ width: 300px;float: left;margin-top: 0.3em;padding-right:10px;}
 .Question .customFieldLabel { width: auto; margin: 0;}
 .Question .customFieldset { padding: 0; border: 0;}
 .Question #capswarning { margin-left: 190px; display: none; color: red;font-weight: bold;}
 .Question .Lineup {margin: 3px 0px;}
-.Question .stdwidth,.stdwidth{width: 420px;font-size: 1em;margin: 3px 0px;}
+.Question .stdwidth,.stdwidth, .dynamickeywords {width: 420px;font-size: 1em;margin: 3px 0px;}
 .Question select {margin: 3px 0px;}
 .Question .medwidth,.medwidth{width: 285px;font-size: 1em;margin: 3px 0px;}
 .Question .shrtwidth,.shrtwidth{width: 145px;font-size: 1em;margin: 0px;}
@@ -461,19 +494,21 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
     margin-left:2px;
     border-left: none;
 }
+.BackToResultsContainer {display: inline;}
 .backtoresults .nextLink,.backtoresults .prevLink,.backtoresults .maxLink {font-size:1.1em;}
 .backtoresults .maxLink {padding-left:20px;}
 .backtoresults .closeLink {padding-left:5px;font-size:1.3em;}
 
 .backtoresults .prevLink:hover,.backtoresults .nextLink:hover,.backtoresults .closeLink:hover,.backtoresults .maxLink:hover {text-decoration:none;}
+.RequiredFieldLabel {display: inline-block; margin-left: 10px;}
 
 .RecordPanel .RecordResouce {position:relative;clear: left;} 
 .RecordPanel .Picture {margin: 0 auto;display: block;width: auto;max-width: 720px;}
 #previewimagewrapper {float:left;margin: 0px 15px 15px 0px; position: relative; min-width: 720px;}
 
 /* Larger layout changes */
-.RecordPanelLarge #previewimagewrapper {float: none; text-align: center; margin: 0px 15px 10px 0;}
-.RecordPanel.RecordPanelLarge .Picture {display: inline-block; max-width: unset;}
+.RecordPanelLarge #previewimagewrapper {float: none; text-align: center; margin: 0 0 10px 0;}
+.RecordPanel.RecordPanelLarge .Picture {display: inline-block; max-width: 100%;}
 .RecordPanel.RecordPanelLarge .RecordDownload {width: 100%;}
 .RecordPanel.RecordPanelLarge #ResourceDownloadOptions {
     width: 70%;
@@ -507,9 +542,9 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .RecordPanel .Col {float: left;width: 352px;margin-bottom: 10px;}
 .RecordPanel .ColNarrow {float: left;width: 171px;margin-bottom: 10px;}
 .RecordPanel .buffer {margin-right: 10px;}
-.RecordPanel .itemNarrow {word-wrap: break-word; float: left;width: 170px;margin-right: 5px;position:relative; padding-top: 10px;padding-left: 10px;} 
+.RecordPanel .itemNarrow {word-wrap: break-word; float: left;width: 170px;margin-right: 5px;position:relative; margin-top: 10px;padding-left: 10px;} 
 .RecordPanel .SearchSimilar {float: left;width: 120px;margin: 0px 10px 2px 0px;padding: 0px;}
-.RecordPanel .item {word-wrap: break-word; float: left;margin: 10px;width: 100%;position:relative;}
+.RecordPanel .item {word-wrap: break-word; float: left;margin-left: 10px;margin-top: 10px;margin-right: 10px;position:relative;}
 .RecordPanel .item h3, .RecordPanel .itemNarrow h3, th {font-size: 1em;margin: 0px;padding: 0px;text-transform: uppercase; font-size: 0.875rem; color: #999;}
 .RecordPanel .item p, .RecordPanel .itemNarrow p {margin: 0px;padding: 0px;}
 .RecordPanel .RecordDownload {float: left;width: 445px;margin: 0 0 10px 0;}
@@ -531,7 +566,6 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .RecordPanel h2{font-size:1.25em; padding:0; margin:0.2em 0 0.2em 0;font-weight:normal;}
 .RecordPanel p{padding:0; margin:0.5em 0 0.5em 0;}
 
-
 /* Basic page */
 .BasicsBox {margin: 15px 15px 10px 0px;}
 .BasicsBox h1 {padding: 0px 0px 0.5em;}
@@ -551,7 +585,7 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 /*Home styling */
 .HomePanel {margin:15px 15px 0 0;width: 250px;float: left;} 
 .HomePanelIN {padding: 15px;min-height: 150px;}
-.HomePanel h2 {display:block;margin: 5px 0px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.HomePanel h2 {display:block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 .HomePanel p {margin: 0; padding: 5px 0 4px 0;}
 .HomePicturePanel {    margin:0px 15px 10px 0px;float: left;width: 517px;}
 .HomePicturePanelIN img {width:517px; height:350px;}
@@ -561,7 +595,6 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 #SlideshowContainer #HomeSiteText {width: 100%;clear: left;}
 a.HomePanel {text-decoration:none;}
 a.HomePanel {cursor:pointer;}
-
 
 .TabBar {padding:8px 0 0 0;margin-bottom: -1px; background-color: #ededed;}
 .Tab a {margin:0 5px 0 0;padding:5px 1rem;display:inline-block; border-top-right-radius:5px;border-top-left-radius:5px;}
@@ -575,7 +608,6 @@ a.HomePanel {cursor:pointer;}
 }
 .TabSelected {margin-right: 5px;}
 .TabSelected a { margin: 0;}
-
 
 .infotable {border-top: 1px solid #999999;}
 .infotable td,.infotable th {border-bottom: 1px solid #999999;}
@@ -603,8 +635,8 @@ behavior: url('../css/iepngfix.htc');
 .NewFlag {display:inline;font-size:0.6em;margin-left:5px;padding:1px 3px 1px 3px;}
 .Breadcrumbs {float:left;margin-top:4px;}
 .SearchBreadcrumbs {margin-top:15px;}
-.SearchTitle {padding: 0px;margin-top:15px;}
-.SearchTitle + p{padding-bottom: 0px;}
+.SearchTitle {padding: 0px;margin-top:-10px;margin-bottom:5px;}
+.SearchTitle + p{padding-bottom: 7px;}
 .SearchBreadcrumbs + .RecordHeader .SearchTitle {margin-top:0px;}
 
 .CategoryBox {overflow:auto;width:414px;height:80px;padding:2px;font-size:1em;}
@@ -621,7 +653,6 @@ behavior: url('../css/iepngfix.htc');
 }
 
 .URLDisplay {width: 100%;font-size: 1em;}
-
 
 /* Autocomplete dropdown CSS */
 div.autocomplete {
@@ -651,10 +682,10 @@ div.autocomplete ul li {
 #UserRatingMessage {padding-left: 10px;}
 
 /* CSS for the lightbox (for resource feedback) */
-#lightbox{  position: absolute; left: 0; width: 100%; z-index: 100; text-align: center; line-height: 0;}
+#lightbox{  position: absolute; left: 0; width: 100%; z-index: 120; text-align: center; line-height: 0;}
 #lightbox img{ width: auto; height: auto;}
 #lightbox a img{ border: none; }
-.lightboxOverlay {z-index: 10;}
+.lightboxOverlay {z-index: 110;}
 
 #outerImageContainer{ position: relative; width: 250px; height: 250px; margin: 0 auto; }
 #imageContainer{ padding: 10px; }
@@ -715,10 +746,10 @@ div.autocomplete ul li {
     width:200px;padding:30px;
     z-index:99999;
     display:none;
+    border-radius:5px;
     }
 
-
-.plupload_container {min-height:500px;}
+.plupload_container {min-height:450px;}
 .plupload_droptext {font-size:20px;line-height:400px;}
 .plupload_wrapper, .plupload_header_title {font-family: inherit;}
 .plupload_header {display:none;}
@@ -729,11 +760,12 @@ div.autocomplete ul li {
     {
     margin-top:10px;
     }
-
     
 .ui-layout-pane
     {
     overflow: auto;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
     }
 
 .InfoBoxResourceTypeIcon
@@ -755,13 +787,13 @@ div.autocomplete ul li {
 
 h2.CollapsibleSectionHead, h1.CollapsibleSectionHead
     {
-    padding: 0.1em 0 0.5em 0;
+    padding: 0.7em 0 0.5em 0;
     }
 
 .CollapsibleSection 
     {
     margin-bottom: 10px;
-    margin:10px 15px 15px 0;
+    margin:10px 15px 0 0;
     }
 
 /* Resource commenting */
@@ -789,7 +821,7 @@ h2.CollapsibleSectionHead, h1.CollapsibleSectionHead
 .CommentFormEmail{margin-top: 5px; margin-left: 5px; width: 220px;}
 .CommentFormWebsiteURL{margin-top: 5px; margin-left: 5px; width: 189px;}
 .CommentFormSubmit{margin-top: 5px; margin-bottom: 5px;}
-.CommentFormBody {width: 600px; height: 60px;}
+.CommentFormBody {width: 600px; height: 60px; font-size: 1em;}
 .CommentRespond {display: inline-block; width: auto; margin-right: 12px;}
 
 .collectionscompactstylespacer {height:25px;}
@@ -803,6 +835,7 @@ h2.CollapsibleSectionHead, h1.CollapsibleSectionHead
     clear:none;
     }
 
+/* Search bar resource types */
 #searchbarrt
     {
     margin-top:10px;    
@@ -810,9 +843,9 @@ h2.CollapsibleSectionHead, h1.CollapsibleSectionHead
 
 #themeselect
     {
-width: 200px;
-font-size: 1em;
-margin-bottom:10px;
+    width: 200px;
+    font-size: 1em;
+    margin-bottom:10px;
     }
 #themeviewall
     {
@@ -820,26 +853,14 @@ margin-bottom:10px;
     margin-bottom:10px;
     }
 
+/* Search view icons */
 .smalllisticon, .smalllisticonactive, .xlthumbsicon, .xlthumbsiconactive, .smallthumbsicon, .smallthumbsiconactive, .largethumbsicon, .largethumbsiconactive, .stripicon, .stripiconactive
     {
-    width: 24px;
-    display: block;
-    height: 24px;
-    float:left;
     padding-left: 3px;
-    }
-
-/* astec migrated 072515 - not sure who's edit this is*/
-.InpageNavLeftBlock
-    {
-    text-align:left;
-    margin-right: 15px;
-    }
-
-.icondisplay
-    {
-    margin-right: 10px;
-    margin-top: 3px;
+    width: 24px;
+    height: 24px;
+    display: block;
+    float: left;
     }
 
 .smalllisticon{background: url(../gfx/interface/listicon.svg) no-repeat 0px; opacity: 0.65;}
@@ -853,12 +874,19 @@ margin-bottom:10px;
 .stripicon{background: url(../gfx/interface/stripicon.svg) no-repeat 0px; opacity: 0.65;}
 .stripiconactive{background: url(../gfx/interface/stripiconactive.svg) no-repeat 0px;}
 
+.icondisplay
+    {
+    margin-right: 10px;
+    margin-top: 3px;
+    }
+
 #searchSortOrderContainer, #resultsdisplay, .InpageNavLeftBlock {
     vertical-align: top;
 }
 
 #SearchResultFound {
     padding-top: 3px;
+    min-width: 90px;
 }
 
 #contactadminbox  textarea{
@@ -876,7 +904,24 @@ margin-bottom:10px;
     width: 150px;
     }
 
-#ssearchbox {margin-top:10px;}
+#ssearchbox {
+    margin-top:8px;
+    padding: 4px 30px 4px 6px;
+}
+
+.search-icon,
+.search-icon:hover,
+.search-icon:active {
+    float: left;
+    position: relative;
+    color: gray;
+    margin-top: -31px;
+    margin-left: 220px;
+    font-size: 17px;
+    background-color: unset;
+    box-shadow: none;
+    padding: 0 5px;
+}
 
 .CollectionsCompactToolsContainerDummy, .CollectionsCompactToolsContainer {display:inline-block;}
 #GeoDragMode{margin-bottom: 10px;}
@@ -998,8 +1043,27 @@ a.HomePanel:hover {
     width: 515px;
 }
 
+.DashTileActions {
+    position: absolute;
+    color: #fff;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background: #000;
+    height: 20px;
+    text-align: right;
+    z-index:3;
+}
+
+.DashTileActions .tool {
+    margin-left: 8px;
+    vertical-align: middle;
+    display: inline-block;
+    padding-right: 5px;    
+}
+
 .tools a{white-space: nowrap;}
-#trash_bin_delete_dialog {display:none !important;}
+#trash_bin_delete_dialog {display:none !important; }
 .no-close .ui-dialog-titlebar-close {display: none;}
 
 /* Plugin Categories Styling */
@@ -1019,6 +1083,13 @@ a.HomePanel:hover {
     font-size: 0.7em;
 }
 
+/* Plugin icon styling */
+.plugin-icon {
+    font-size: 28px;
+    width: 100%;
+    text-align: center;
+}
+
 /* Maintenance Page */
 #system_down_container {
         width: 500px;
@@ -1034,7 +1105,7 @@ a.HomePanel:hover {
 .trash_bin {
     width: 10%;
     min-width: 100px;
-    padding-top: 8%; 
+    padding-top: 150px; 
     display: none;
     position: fixed;
     top: 0px;
@@ -1053,13 +1124,11 @@ a.HomePanel:hover {
     font-size: 100px;
 }
 
-.ui-state-active, .ui-state-hover {
-    opacity: 0.5 !important;
-}
-
 div.video-js {margin:auto;}
 .video-thumbs .vjs-control-bar {font-size:7px;}
 .video-thumbs .vjs-control-bar .vjs-live-controls {display:none;}
+
+/* Modals */
 
 #modal_overlay {
     position: fixed; 
@@ -1071,14 +1140,13 @@ div.video-js {margin:auto;}
     display:none;
     z-index: 100;
 }
-#modal_outer
-    {
+#modal_outer {
     z-index: 101;
-    }
+}
 #modal
     {
     position:absolute;
-    width: 1235px;
+    max-width: 1235px;
     text-align:left;
     opacity: 1;
     display:none;
@@ -1130,6 +1198,7 @@ div.video-js {margin:auto;}
 #modal_dialog, .ui-dialog
     {
     z-index: 103;
+    word-break: break-word;
     }
         
 #modal_dialog .MessageText {
@@ -1202,7 +1271,6 @@ div.MessageBox a {
     text-decoration: underline !important;
 }
 
-
 .FeaturedSimpleLinks {
     display: table;
     width:100%;
@@ -1215,7 +1283,6 @@ div.MessageBox a {
     border-radius:5px;
     overflow: hidden;
 }
-
 
 .FeaturedSimpleTileImage .HomePanelIN {
     background: none;  
@@ -1240,7 +1307,6 @@ div.MessageBox a {
     z-index: 1;
 }
  
- 
 a.FeaturedSimpleLink:hover, a.FeaturedSimpleLink:active  { 
     text-decoration:none;
 }
@@ -1254,8 +1320,7 @@ a.FeaturedSimpleLink:hover, a.FeaturedSimpleLink:active  {
 
 .FeaturedSimpleTile .FeaturedSimpleTileContents h2{
     background: transparent;
-    margin: auto;  
-    max-width: 215px;    
+    max-width: 220px;    
     white-space: normal;
 }
 
@@ -1415,15 +1480,24 @@ UL.jqueryFileTree A:hover {font-weight:bold;}
 
 /* Pill-like display for keywords */
 .ResponsiveViewFullSite { display: none; }
-.Question .customFieldLabel, .keywordselected {
+.Question .customFieldLabel {
     float:none;
     border-radius:4px;
     padding:3px 6px;
     margin-left:5px;
 }
+
+.keywordselected {
+    display: inline-block;
+    margin: 0 5px 5px 0;
+    float: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    line-height: 20px;
+}
 .customFieldset input[type=checkbox] {margin:0 2px 0 0;}
-.keywordselected {display:inline;}
 .keywordselected a {padding-left:8px;}
+.RemoveKeyword {font-weight: bold; font-size: 1.2em;}
 
 #photoholder {  
     margin-top: 15px;
@@ -1489,17 +1563,20 @@ a.Enabled, a:visited.Enabled {
 .ListTools a, .SingleLine {
     white-space: nowrap;
 }
+.TableOrderBy {
+    width:100px;
+}
 
 
 /* Breadcrumbs */
 .BreadcrumbsBox {
-    display: inline-block;
+    display: table;
     border-radius: 4px;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
-    margin: 0em 1em 1em 0em;
+    margin: 1em 1em 0em 0em;;
     padding: 0.66em;
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(0, 0, 0, 0.33);
 }
 .BreadcrumbsBox > .SearchBreadcrumbs{
     margin: 0;
@@ -1561,7 +1638,8 @@ a.Enabled, a:visited.Enabled {
 }
 
 #preview {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2)
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    max-height: 250px;
 }
 
 /* Configuration options */
@@ -1604,78 +1682,57 @@ select.MultiSelect:before {
     box-shadow: none;
 }
 
-
-#BrowseBarContainer{
+/* Browse Bar */
+#BrowseBarContainer {
     overflow: hidden;
     white-space: nowrap;
 }
-
-#BrowseBar{
+#BrowseBar {
     text-align: left;
     white-space: nowrap;
     height: 100%;
     float: left;
 }
-
-
-.ui-layout-west
-    {
-    overflow-x: hidden;
-    }
-
-.ui-layout-resizer-west
-    {
-    transform: translateX(-37px); 
-} 
-
-#BrowseBarContent{
+#BrowseBarContent {
     height: 100%;
-    margin-left: 10px;
     float: left;
     overflow-x: hidden;
     overflow-y: auto;
-    min-width: 140px;
-    padding-top: 10px;
+    min-width: 265px;
 }
-
-.BrowseRowInner{
-    display: table-row;
-}
-
-.BrowseBarStructure{
+.BrowseBarStructure {
     display: table-cell;
     min-width: 6px;
     font-family: "Font Awesome 5 Free";
     font-weight: 600;
     padding-left: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
 }
-
+.BrowseRowInner {
+    display: table-row;
+}
 .BrowseBarExpand + a .BrowseTypeNode, .BrowseBarExpand + a .BrowseTypeRestype, .BrowseBarExpand + .BrowseTypeField, .BrowseBarExpand + a .BrowseTypeFeatured{
     padding-left: 5px;
 }
-
 .BrowseLine + .BrowseTypeNode, .BrowseLine + .BrowseTypeRestype, .BrowseLine + .BrowseTypeField, .BrowseLine + .BrowseTypeNew{
-    margin-left: 6px;
+    padding-left: 6px;
 }
-
 .BrowseBarLink{
     display: table-cell;
-    vertical-align: top;
     white-space: normal;
     padding-left: 4px;
+    font-size: 90%;
 }
-
 #BrowseBar .BrowseLine {
     border-right: 1px solid;
     width: 6px;
 }
-
 #BrowseBarTabContainer{
     display: inline-block;
     right: 0px;
     height: 100%;
 }
-
 #BrowseBarTab {    
     position: relative;
     float: right;
@@ -1686,8 +1743,6 @@ select.MultiSelect:before {
     border-bottom-right-radius: 10px;
     width: 30px;
 }
-
-
 .BrowseBarTabText {
     margin-bottom: 10px;
     margin-left: 26px;
@@ -1698,64 +1753,72 @@ select.MultiSelect:before {
     transform-origin: left bottom;
     font-size: 1.2em;
 }
-
-
 #BrowseBarContainer a:hover, .BrowseBarItem a:hover, #BrowseBarContainer a:visited, .BrowseBarItem a:visited{
     text-decoration: none;
     cursor: pointer;
     opacity: 1;
 }
-
-.browse_closed:after {
-    content: "\f0fe";
-    }
-
-.browse_expanded:after {
-    content: "\f146";
-    }
-
-.BrowseTypeRestype:after, .BrowseTypeField:after, .BrowseTypeFeatured:after, .BrowseTypeState:after{
+.BrowseTypeRestype:after, .BrowseTypeField:after, .BrowseTypeFeatured:after{
     content: "\f07b";
-    }  
+}
+
+.BrowseBarRoot {
+    text-transform: uppercase;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.1);
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.BrowseBarItem {
+    padding-left: 10px;
+}
+
+#BrowseBarContainer .BrowseBarItem:first-child {
+    padding-top: 0px;
+}
+
+.BrowseBarRoot .BrowseBarLink {
+    cursor: pointer;  
+}
 
 .BrowseOpen .BrowseTypeRestype:after, .BrowseOpen .BrowseTypeField:after, .BrowseOpen .BrowseTypeFeatured:after, .BrowseOpen.BrowseTypeState:after{
     content: "\f07c";
-    }      
+}
+.browse_closed:after {
+    content: "\f054";
+}
+.browse_expanded:after {
+    content: "\f078";
+} 
 
 .BrowseTypeNode:after {
     content: "\f02b";
-    }
-
-    
+} 
 .BrowseTypeCol:after {
-    content: "\f009";
-    } 
-    
+    content: "\f1b2";
+} 
 .BrowseTypeNew:after {
     content: "\f055";
-    }  
-    
+}  
 a.BrowseRefresh{
     display:none;
     font-size: 0.8em;
-    }
-
+}
 .BrowseOpen .BrowseRefresh{
     display: table-cell;
     padding-left: 5px;
-    }
+}
+.ui-layout-west{overflow-x: hidden;}
+.ui-layout-resizer-west{transform: translateX(-37px);} 
 
 /* Fix scrollbars on Header */
 #Header {
     overflow: hidden;
 }
 
-#RecordDownloadSummary, #ResourceWorkflowActions {
-    width: 445px;
-}
-
-.RecordPanelLarge #RecordDownloadSummary, .RecordPanelLarge #ResourceWorkflowActions {
-    width: 49.4%;
+.RecordPanelLarge #ResourceWorkflowActions, .RecordPanelLarge #RecordDownloadSummary {
+    width: 100%;
 }
 
 .UploadButton a
@@ -1769,3 +1832,36 @@ a.BrowseRefresh{
     {
     opacity:1 !important;
     }
+
+.HelpLink {
+    font-size: 1rem;
+    vertical-align: text-top;
+}
+
+.FieldDisabled
+    {
+    text-decoration: line-through;
+    }
+.ResourceLocked{
+    float:left;
+}
+
+.ResourceLocked:before{
+    content: "\f023";
+    font: normal normal normal 14px "Font Awesome 5 Free";
+    font-weight: 600;
+    padding-right:12px;
+    display: inline-block; width:0.6em;
+}  
+
+.ResourceUnlocked:before{
+    content: "\f09c";
+    font: normal normal normal 14px "Font Awesome 5 Free";
+    font-weight: 600;
+    padding-right:12px;
+    display: inline-block; width:0.6em;
+}  
+
+.userselect {
+    z-index:500;
+}

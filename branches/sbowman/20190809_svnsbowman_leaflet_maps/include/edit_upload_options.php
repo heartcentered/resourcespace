@@ -35,7 +35,11 @@ if ($on_upload || $ref<0)
             for($n = 0; $n < count($types); $n++)
                 {
                 // skip showing a resource type that we do not to have permission to change to (unless it is currently set to that). Applies to upload only
-                if((checkperm("XU{$types[$n]['ref']}") || in_array($types[$n]['ref'], $hide_resource_types)))
+                if(checkperm("XU{$types[$n]['ref']}") 
+                    || 
+                    in_array($types[$n]['ref'], $hide_resource_types)
+                    || (checkperm("XE") && !checkperm("XE-" . $types[$n]['ref']))
+                    )
                     {
                     continue;
                     }
@@ -108,7 +112,7 @@ if ($on_upload || $ref<0)
         { 
         $non_col_options=0;
         # Add Resource Batch: specify default content - also ask which collection to add the resource to.
-        if ($enable_add_collection_on_upload) 
+        if ($enable_add_collection_on_upload)
             {
             $collection_add=getvalescaped("collection_add","");
             ?>
@@ -131,7 +135,7 @@ if ($on_upload || $ref<0)
             
             if ($upload_force_mycollection)
                 {
-                $list=get_user_collections($userref,"My Collection");}
+                $list=get_user_collections($userref,"Default Collection");}
             else
                 {
                 //If the user is attached to a collection that is not allowed to add resources to,
@@ -207,7 +211,7 @@ if ($on_upload || $ref<0)
                 if (!isset($list[$n]['savedsearch'])||(isset($list[$n]['savedsearch'])&&$list[$n]['savedsearch']==null))
                     {
                     #show only active collections if a start date is set for $active_collections 
-                    if (strtotime($list[$n]['created']) > ((isset($active_collections))?strtotime($active_collections):1) || ($list[$n]['name']=="My Collection" && $list[$n]['user']==$userref))
+                    if (strtotime($list[$n]['created']) > ((isset($active_collections))?strtotime($active_collections):1) || ($list[$n]['name']=="Default Collection" && $list[$n]['user']==$userref))
                         { if ($list[$n]["ref"]==$usercollection) {$currentfound=true;} 
                         if($hide_collection)
                             {

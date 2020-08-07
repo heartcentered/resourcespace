@@ -7,28 +7,29 @@ global $k,$lang,$show_resourceid,$show_access_field,$show_resource_type,$show_hi
 $modal=(getval("modal","")=="true");
 
 // -----------------------  Tab calculation -----------------
-$fields_tab_names = array();
-	
-foreach ($fields as $field) {
-	$fields_tab_names[] = $field['tab_name'];
-	$resources_per_tab_name[$field['tab_name']][] = $field['ref'];
-}
 
-$fields_tab_names = array_values(array_unique($fields_tab_names));
+$fields_tab_names = tab_names($fields);
 
 // Clean the tabs by removing the ones that would just be empty:
 $tabs_with_data = array();
-foreach ($fields_tab_names as $tabname) {
-	for ($i = 0; $i < count($fields); $i++) { 
-		
-		$displaycondition = check_view_display_condition($fields, $i);
-	
-		if($displaycondition && $tabname == $fields[$i]['tab_name'] && $fields[$i]['value'] != '' && $fields[$i]['value'] != ',' && $fields[$i]['display_field'] == 1 && ($access == 0 || ($access == 1 && !$field['hide_when_restricted']))) {
-			$tabs_with_data[] = $tabname;
-		}
+foreach ($fields_tab_names as $tabname)
+    {
+    for ($i = 0; $i < count($fields); $i++)
+        {
+        if (trim($fields[$i]['tab_name']) == "")
+            {
+            $fields[$i]["tab_name"] = $lang["default"];
+            }
 
-	}
-}
+        $displaycondition = check_view_display_condition($fields, $i, $fields_all);
+
+        if($displaycondition && $tabname == $fields[$i]['tab_name'] && $fields[$i]['value'] != '' && $fields[$i]['value'] != ',' && $fields[$i]['display_field'] == 1 && ($access == 0 || ($access == 1 && !$fields[$i]['hide_when_restricted'])))
+            {
+            $tabs_with_data[] = $tabname;
+            }
+    	}
+    }
+
 $fields_tab_names = array_intersect($fields_tab_names, $tabs_with_data);
 
 if ($sort_tabs)
@@ -38,7 +39,7 @@ if ($sort_tabs)
 
 if(isset($related_type_show_with_data)) {
 	// Get resource type tab names, excluding the current resource type (if any set):
-	$resource_type_tab_names = sql_array("SELECT tab_name as value FROM resource_type WHERE ref<>'" . $resource['resource_type'] . "'", "");
+	$resource_type_tab_names = sql_array("SELECT tab_name as value FROM resource_type WHERE ref<>'" . $resource['resource_type'] . "'", "schema");
 	$resource_type_tab_names = array_values(array_unique($resource_type_tab_names));
 
 	// These are the tab names which will be rendered for the resource specified:
@@ -71,10 +72,18 @@ if((isset($fields_tab_names) && !empty($fields_tab_names)) && count($fields) > 0
 	<div class="TabBar">
 	
 	<?php
-		foreach ($fields_tab_names as $tabname) { ?>
-
+		foreach ($fields_tab_names as $tabname) { 
+            if ($modal) 
+                {
+                $tabOnClick="SelectMetaTab(".$tabcount.",true);";
+                }
+            else
+                {
+                $tabOnClick="SelectMetaTab(".$tabcount.",false);";
+                }
+            ?>
 			<div id="<?php echo ($modal ? "Modal" : "")?>tabswitch<?php echo $tabcount; ?>" class="Tab<?php if($tabcount == 0) { ?> TabSelected<?php } ?>">
-				<a href="#" onclick="Select<?php echo ($modal ? "Modal" : "")?>Tab(<?php echo $tabcount; ?>);return false;"><?php echo i18n_get_translated($tabname)?></a>
+            <a href="#" onclick="<?php echo $tabOnClick?>"><?php echo i18n_get_translated($tabname)?></a>
 			</div>
 		
 		<?php 
@@ -82,17 +91,6 @@ if((isset($fields_tab_names) && !empty($fields_tab_names)) && count($fields) > 0
 		} ?>
 
 	</div> <!-- end of TabBar -->
-	<script type="text/javascript">
-	function Select<?php echo ($modal ? "Modal" : "")?>Tab(tab) {
-		// Deselect all tabs
-		<?php for($n = 0; $n < $tabcount; $n++) { ?>
-		document.getElementById("<?php echo ($modal ? "Modal" : "")?>tab<?php echo $n; ?>").style.display="none";
-		document.getElementById("<?php echo ($modal ? "Modal" : "")?>tabswitch<?php echo $n; ?>").className="Tab";
-		<?php } ?>
-		document.getElementById("<?php echo ($modal ? "Modal" : "")?>tab" + tab).style.display="block";
-		document.getElementById("<?php echo ($modal ? "Modal" : "")?>tabswitch" + tab).className="Tab TabSelected";
-	}
-	</script>
 
 <?php
 } ?>
@@ -130,7 +128,7 @@ foreach($fields_tab_names as $tabname)
     {
     for($i = 0; $i < count($fields); $i++)
         {
-        $displaycondition = check_view_display_condition($fields, $i);
+        $displaycondition = check_view_display_condition($fields, $i, $fields_all);
 
         if($fields[$i]['resource_type'] == '0' || $fields[$i]['resource_type'] == $resource['resource_type'])
             {
@@ -169,7 +167,7 @@ if(empty($fields_tab_names))
     {
     for($i = 0; $i < count($fields); $i++)
         {
-        $displaycondition = check_view_display_condition($fields, $i);
+        $displaycondition = check_view_display_condition($fields, $i, $fields_all);
 
         if($displaycondition)
             {

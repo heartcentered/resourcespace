@@ -1,8 +1,6 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
-include_once "../include/collections_functions.php";
-include_once "../include/search_functions.php";
+
 $ref=getval("ref","",true);
 $k=getvalescaped("k","");if ($k=="" || !check_access_key_collection($ref,$k)) {include "../include/authenticate.php";}
 
@@ -71,7 +69,7 @@ include "../include/header.php";
 	}?>
 		
 		
-  <h1><?php echo $lang["requestcollection"]?></h1>
+  <h1><?php echo $lang["requestcollection"];render_help_link("resourceadmin/user-resource-requests");?></h1>
   <p><?php echo text("introtext")?></p>
   
 	<form method="post" onsubmit="return CentralSpacePost(this,true);" action="<?php echo $baseurl_short?>pages/collection_request.php">  

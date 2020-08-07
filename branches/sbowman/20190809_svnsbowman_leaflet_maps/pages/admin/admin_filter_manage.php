@@ -1,6 +1,6 @@
 <?php
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";
 
 if (!checkperm("a"))
@@ -37,7 +37,7 @@ include "../../include/header.php";
         <div class="BasicsBox">
 
 
-            <h1><?php echo $lang["filter_manage"] ?></h1>
+            <h1><?php echo $lang["filter_manage"];render_help_link("systemadmin/search-filters");?></h1>
             	
             <div class="Listview">
             <table id="filter_list_table" border="0" cellspacing="0" cellpadding="0" class="ListviewStyle">
