@@ -1,4 +1,11 @@
 <?php
+
+function HookAction_datesAllInitialise()
+    {
+    global $action_dates_fieldvars;
+    config_register_core_fieldvars("Action dates plugin",$action_dates_fieldvars);
+    }
+
 function HookAction_datesCronCron()
 	{
 	global $lang, $action_dates_restrictfield,$action_dates_deletefield, $resource_deletion_state,
@@ -12,7 +19,7 @@ function HookAction_datesCronCron()
     global $userref;
     $userref=0;
 
-	$allowable_fields=sql_array("select ref as value from resource_type_field where type in (4,6,10)");
+	$allowable_fields=sql_array("select ref as value from resource_type_field where type in (4,6,10)", "schema");
 	
 	# Check that this is a valid date field to use
 	if(in_array($action_dates_restrictfield, $allowable_fields))
@@ -158,11 +165,11 @@ function HookAction_datesCronCron()
         
         
     // Perform additional actions based on fields
-    foreach($action_dates_extra_config as $action_dates_extra_config)
+    foreach($action_dates_extra_config as $action_dates_extra_config_setting)
         {
-        $datefield = get_resource_type_field($action_dates_extra_config["field"]);
+        $datefield = get_resource_type_field($action_dates_extra_config_setting["field"]);
         $field = $datefield["ref"];
-        $newstatus = $action_dates_extra_config["status"];
+        $newstatus = $action_dates_extra_config_setting["status"];
         if(in_array($datefield['type'],$DATE_FIELD_TYPES))
             {
             echo "action_dates: Checking dates for field " . $datefield["title"] . PHP_EOL;

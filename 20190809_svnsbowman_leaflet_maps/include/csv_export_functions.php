@@ -6,12 +6,12 @@
 /**
 * Generates the CSV content of the metadata for resources passed in the array
 *
-* @param $resources
+* @param array $resources
 * @return string
 */
 function generateResourcesMetadataCSV(array $resources,$personal=false,$alldata=false)
     {
-    global $lang, $csv_export_add_original_size_url_column;
+    global $lang, $csv_export_add_original_size_url_column, $file_checksums;
     $return                 = '';
     $csv_field_headers      = array();
     $resources_fields_data  = array();
@@ -33,7 +33,13 @@ function generateResourcesMetadataCSV(array $resources,$personal=false,$alldata=
             $resources_fields_data[$resource['ref']]["created_by"] = (trim($udata["fullname"]) != "" ? $udata["fullname"] :  $udata["username"]);
             }
 
-        foreach(get_resource_field_data($resource['ref'], false, true, -1, '' != getval('k', '')) as $field_data)
+        if ($alldata && $file_checksums)
+            {
+            $csv_field_headers["file_checksum"] = $lang["filechecksum"];
+            $resources_fields_data[$resource['ref']]["file_checksum"] = $resdata["file_checksum"];
+            }
+
+        foreach(get_resource_field_data($resource['ref'], false, true, NULL, '' != getval('k', ''), true,true) as $field_data)
             {
             // If $personal=true, return personal_data fields only.
             // If $alldata=false, return only fields marked as 'Include in CSV export'
@@ -97,7 +103,7 @@ function generateResourcesMetadataCSV(array $resources,$personal=false,$alldata=
                 {
                 if($column_header == $field_name)
                     {
-                    $csv_row .= '"' . str_replace(array("\n","\r","\""),"",tidylist(i18n_get_translated($field_value))) . '",';
+                    $csv_row .= '"' . str_replace(array("\n","\r","\""),array("","","\"\""),i18n_get_translated($field_value)) . '",';
                     }
                 }
             }

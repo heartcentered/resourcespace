@@ -4,7 +4,6 @@
 #
 
 include '../../../include/db.php';
-include_once '../../../include/general.php';
 include '../../../include/authenticate.php'; if (!checkperm('a')) {exit ($lang['error-permissiondenied']);}
 
 global $baseurl;
@@ -16,7 +15,7 @@ $plugin_page_heading = $lang['youtube_publish_configuration'];
 
 // Build the $page_def array of descriptions of each configuration variable the plugin uses.
 
-$page_def[] = config_add_section_header($lang['youtube_publish_oauth2_advice']);
+$page_def[] = config_add_section_header($lang['youtube_publish_oauth2_advice'], $lang["youtube_publish_oauth2_advice_desc"]);
 
 
 $page_def[] = config_add_section_header($lang['youtube_publish_authentication']);

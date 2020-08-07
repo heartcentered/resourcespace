@@ -9,9 +9,8 @@
 #
 $cwd = dirname(__FILE__);
 include "$cwd/../../include/db.php";
-include_once "$cwd/../../include/general.php";
+
 include "$cwd/../../include/image_processing.php";
-include "$cwd/../../include/resource_functions.php";
 
 // Allow access from UI (legacy mode) only if authenticated and admin
 if('cli' != PHP_SAPI)
@@ -35,11 +34,11 @@ if(array_key_exists('recreate', $cli_options))
 $recreate = (bool) getvalescaped("recreate", $recreate);
 if($recreate)
     {
-    $resources=sql_query("select ref,file_extension from resource where length(file_extension)>0 order by ref ASC");
+    $resources=sql_query("SELECT ref,file_extension FROM resource WHERE ref>0 AND integrity_fail=0 AND length(file_extension)>0 ORDER by ref ASC");
     }
 else
     {
-    $resources=sql_query("select ref,file_extension from resource where length(file_extension)>0 and (file_checksum is null or file_checksum = '')");
+    $resources=sql_query("SELECT ref,file_extension FROM resource WHERE ref>0 AND integrity_fail=0 AND length(file_extension)>0 AND (file_checksum IS NULL OR file_checksum = '')");
     }
 
 for($n = 0; $n < count($resources); $n++)

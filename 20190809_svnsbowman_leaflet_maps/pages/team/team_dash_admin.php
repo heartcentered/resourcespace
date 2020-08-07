@@ -1,10 +1,8 @@
 <?php
 include "../../include/db.php";
-include_once "../../include/general.php";
 include "../../include/authenticate.php";
 if(!checkPermission_dashadmin()){exit($lang["error-permissiondenied"]);}
 include "../../include/dash_functions.php";
-include '../../include/render_functions.php';
 
 
 $user_groups = array(ucfirst($lang['all_users']));
@@ -85,7 +83,7 @@ if(getvalescaped("quicksave",FALSE))
 include "../../include/header.php";
 ?>
 <div class="BasicsBox"> 
-    <h1><?php echo $lang['manage_dash_tiles']; ?></h1>
+    <h1><?php echo $lang['manage_dash_tiles'];render_help_link('user/manage-dash-tile');?></h1>
     <p>
         <a href="<?php echo $baseurl_short?>pages/team/team_home.php" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang['backtoteamhome']; ?></a>
     </p>

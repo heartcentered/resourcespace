@@ -1,21 +1,21 @@
 <?php
 
 if ((substr($search,0,11)!="!collection")&&($collections!="")&&is_array($collections)) {
-    
-for ($n=0;$n<count($collections);$n++)
+	
+$shownresults=false;
+for ($n=$offset;(($n<$result_count && $n < $colcount) && ($n<($rowstoretrieve)));$n++)
 	{
 	$resources=do_search("!collection".$collections[$n]['ref'],"","relevance","",5);	
 	$hook_result=hook("process_search_results","",array("result"=>$resources,"search"=>"!collection".$collections[$n]['ref']));
 	if ($hook_result!==false) {$resources=$hook_result;}
 	
 	$pub_url="search.php?search=" . urlencode("!collection" . $collections[$n]["ref"]);
-	if ($display=="thumbs")
+	if ($display=="thumbs" || $display=="xlthumbs")
 		{
+		$shownresults=true;
 		?>
 
-		<div class="ResourcePanel"
-			style="height: <?php echo 180+(28*count($thumbs_display_fields)) ?>px;"
-			>
+		<div class="ResourcePanel">
 	
 		<div class="ImageWrapper" style="position: relative;height:150px;">
 		<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $pub_url?>" title="<?php echo htmlspecialchars(str_replace(array("\"","'"),"",i18n_get_collection_name($collections[$n]))) ?>">
@@ -63,19 +63,14 @@ for ($n=0;$n<count($collections);$n++)
 		<?php hook("searchiconpublic");?>
 		<div class="clearer"></div>
 		</div><!-- End of ResourcePanel -->
-	<?php } 
-	
-	
-	
-	
-
-	
+    <?php } 
+    
 	if ($display=="list")
 		{
 		?>
 		<tr <?php hook("collectionlistrowstyle");?>>
 		<?php hook ("listsearchpubliccheckboxes");
-		if ($use_checkboxes_for_selection){echo "<td></td>";}
+		if ($use_selection_collection){echo "<td></td>";}
 		if (!isset($collections[$n]['savedsearch'])||(isset($collections[$n]['savedsearch'])&&$collections[$n]['savedsearch']==null))
 			{
 			$collection_prefix = $lang["collection"] . ": ";
@@ -94,8 +89,6 @@ for ($n=0;$n<count($collections);$n++)
 			}
 				
 		?>
-		<td>-</td>
-
 		<?php if ($id_column){?><td><?php echo $collections[$n]['ref']?></td><?php } ?>
 		<?php if ($resource_type_column){?><td><?php echo $collection_tag?></td><?php } ?>
 		<?php if ($date_column){?><td><?php echo nicedate($collections[$n]["created"],false,true)?></td><?php } ?>
@@ -109,5 +102,12 @@ for ($n=0;$n<count($collections);$n++)
 		</tr>
 	<?php } ?>		
 	
-<?php } ?>
+<?php } 
+
+if (($display=="thumbs" || $display=="xlthumbs") && $shownresults)
+	{
+	# If any collection results were displayed, carriage return before the results so the collections are visibly separate.
+	?><br style="clear:both;" /><?php
+	}
+?>
 <?php } /* end if not a collection search */ ?>

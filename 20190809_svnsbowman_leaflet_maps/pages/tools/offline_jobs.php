@@ -1,9 +1,8 @@
 <?php
 include_once dirname(__FILE__) . "/../../include/db.php";
-include_once dirname(__FILE__) . "/../../include/general.php";
+
 include_once dirname(__FILE__) . "/../../include/reporting_functions.php";
-include_once dirname(__FILE__) . "/../../include/resource_functions.php";
-include_once dirname(__FILE__) . "/../../include/search_functions.php";
+
 set_time_limit(0);
 
 // This MUST only be done by having access to the server
@@ -43,16 +42,24 @@ if(PHP_SAPI == 'cli')
 if($offline_job_queue)
     {
     # Run offline jobs (may be useful in the event a cron job hasn't yet been created for the new offline_jobs.php)
-    $offlinejobs=job_queue_get_jobs("", STATUS_ACTIVE);
+    $offlinejobs=job_queue_get_jobs("", STATUS_ACTIVE, "","","ref", "ASC");
 
     foreach($offlinejobs as $offlinejob)
         {
+        if(!empty($jobs) && !in_array($offlinejob["ref"], $jobs))
+            {
+            continue;
+            }
+
         $clear_job_process_lock = false;
         if(PHP_SAPI == 'cli' && $clear_lock && in_array($offlinejob['ref'], $jobs))
             {
             $clear_job_process_lock = true;
             }
-
+        if($offlinejob["start_date"] > date('Y-m-d H:i:s',time()))
+            {
+            continue;
+            }
         job_queue_run_job($offlinejob, $clear_job_process_lock);	
         }
     }

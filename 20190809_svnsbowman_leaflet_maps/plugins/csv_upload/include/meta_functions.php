@@ -6,7 +6,7 @@ function meta_get_map()		// returns array of [resource_type][table][attributes],
 	
 	$meta=array();
 	
-	foreach (sql_query("SELECT ref, upper(title) AS `name`, `type`, title as `nicename`, resource_type, required FROM resource_type_field WHERE name IS NOT NULL AND `name` <> '' AND (resource_type IN (SELECT ref FROM resource_type) OR resource_type = 0)") as $field)
+	foreach (sql_query("SELECT ref, upper(title) AS `name`, `type`, title as `nicename`, resource_type, required FROM resource_type_field WHERE name IS NOT NULL AND `name` <> '' AND (resource_type IN (SELECT ref FROM resource_type) OR resource_type = 0)", "schema") as $field)
 	{
 		# Get translated - support i18n - upload columns must be in user's local language.
 		$field['name']=trim(i18n_get_translated($field['name']));
@@ -53,14 +53,4 @@ function meta_get_map()		// returns array of [resource_type][table][attributes],
 	}
 	
 	return $meta;	
-}
-
-function meta_get_resource_types()		// returns associative array of resource_type->name
-{
-	$resource_types = array();	
-	foreach (sql_query("select name,ref from resource_type order by ref") as $resource_type) 
-	{
-		$resource_types[$resource_type['ref']]=$resource_type['name'];
-	}
-	return $resource_types;
 }

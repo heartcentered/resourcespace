@@ -43,7 +43,16 @@ function tms_convert_value($value, $key, array $module)
     $tms_rs_mapping_index = array_search($key, array_column($module['tms_rs_mappings'], 'tms_column'));
     if($tms_rs_mapping_index !== false)
         {
-        return mb_convert_encoding($value, 'UTF-8', $module['tms_rs_mappings'][$tms_rs_mapping_index]['encoding']);
+	$mappings=$module['tms_rs_mappings'];
+	$mappings=array_values($mappings);
+        if(strtoupper($mappings[$tms_rs_mapping_index]["encoding"]) != "UTF-8")
+            {
+            return mb_convert_encoding($value, 'UTF-8', $mappings[$tms_rs_mapping_index]['encoding']);
+            }
+        else
+            {
+            return $value;
+            }
         }
 
     // Default to the old way of detecting the encoding if we can't figure out the expected encoding of the tms column data.
@@ -106,10 +115,21 @@ function tms_link_get_tms_data($resource, $tms_object_id = "", $resourcechecksum
             return $lang["tms_link_no_tms_data"];
             }
 
-        $columnsql = '';
+        $columnsql = $module['tms_uid_field'];
         foreach($module['tms_rs_mappings'] as $tms_rs_mapping)
             {
-            $columnsql .= (trim($columnsql) == '' ? $tms_rs_mapping['tms_column'] : ", {$tms_rs_mapping['tms_column']}");
+            if(trim($columnsql) != '')
+                {
+                $columnsql .= ", ";
+                } 
+            if(strtoupper($tms_rs_mapping["encoding"]) != "UTF-8")
+                {
+                $columnsql .= "CAST (" . $tms_rs_mapping['tms_column'] . " AS VARBINARY(MAX)) " . $tms_rs_mapping['tms_column'];
+                }
+            else
+                {
+                $columnsql .= $tms_rs_mapping['tms_column'];
+                }  
             }
         $tmssql = "SELECT {$columnsql} FROM {$module['module_name']} {$conditionsql};";
         $tmsresultset = odbc_exec($conn, $tmssql);
@@ -260,7 +280,21 @@ function tms_link_create_tms_thumbnail($resource, $alternative=-1)
   if($conn)
     {
     // Check if we already have a TMS ID
-    $tms_object_id=get_data_by_field($resource, $tms_link_object_id_field);
+    $modules_mappings = tms_link_get_modules_mappings();
+    foreach($modules_mappings as $module)
+        {
+        if($module['tms_uid_field'] == "ObjectID")
+            {
+            $idfield = $module['rs_uid_field'];
+            break;
+            }
+        }
+
+    if(!isset($idfield))
+        {
+        return false;
+        }
+    $tms_object_id = get_data_by_field($resource, $idfield);
     if($tms_object_id==""){return false;} // No TMS ID found, we can't add the image to TMS    
 	
 	// Get TMS Path ID of filestore path

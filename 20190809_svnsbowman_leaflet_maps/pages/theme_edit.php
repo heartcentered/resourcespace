@@ -1,19 +1,10 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include "../include/resource_functions.php";
-include "../include/search_functions.php";
 if (!$enable_theme_category_edit){ die ('$enable_theme_category_edit=false');}
 
-function save_themename()
-	{
-		global $baseurl, $link, $themename, $collection_column;
-		$sql="update collection set	" . $collection_column . "='" . getvalescaped("rename","") . "' where " . $collection_column . "='" . escape_check($themename)."'";
-		sql_query($sql);
-		hook("after_save_themename");
-		redirect("pages/" . $link);
-	}
+
 
 $themes=array();
 $themecount=0;
@@ -82,7 +73,7 @@ if(!$modal)
 	}
 ?>
 <div class="BasicsBox">
-<h1><?php echo $lang["edit_theme_category"] ?></h1>
+<h1><?php echo $lang["edit_theme_category"];render_help_link("collections-public-and-themes"); ?></h1>
 <p><?php echo text("introtext")?></p>
 	<form method=post id="themeform" action="<?php echo $baseurl_short?>pages/theme_edit.php">
 		<input type="hidden" name="collection_column" id="collection_column" value="<?php echo $collection_column?>">

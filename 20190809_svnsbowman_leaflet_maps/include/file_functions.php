@@ -7,7 +7,7 @@
  */
 function safe_file_name($name)
     {
-    // Returns a file name stipped of all non alphanumeric values
+    // Returns a file name stripped of all non alphanumeric values
     // Spaces are replaced with underscores
     $alphanum = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-';
     $name = str_replace(' ', '_', $name);
@@ -78,4 +78,36 @@ function isPathWhitelisted($path, array $whitelisted_paths)
         }
 
     return false;
+    }
+
+
+/**
+* Return a checksum for the given file path.
+* 
+* @param  string  $path     Path to file
+* @param  bool  $forcefull  Force use of whole file and ignore $file_checksums_50k setting
+* 
+* @return string
+*/
+function get_checksum($path, $forcefull = false)
+    {
+    debug("get_checksum( \$path = {$path} );");
+    global $file_checksums_50k;
+    if (!is_readable($path))
+        {
+        return false;    
+        }
+
+    # Generate the ID
+    if ($file_checksums_50k && !$forcefull)
+        {
+        # Fetch the string used to generate the unique ID
+        $use=filesize_unlimited($path) . "_" . file_get_contents($path,null,null,0,50000);
+        $checksum=md5($use);
+        }
+    else
+        {
+        $checksum=md5_file($path);
+        }
+    return $checksum;
     }

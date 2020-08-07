@@ -1,66 +1,13 @@
 <?php
 include_once "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php"; if (!checkperm("s")) {exit ("Permission denied.");}
-include_once "../include/search_functions.php";
-include_once "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once dirname(__FILE__) . '/../include/render_functions.php';
 
-function get_search_default_restypes()
-	{
-	global $search_includes_resources, $collection_search_includes_resource_metadata;
-	$defaultrestypes=array();
-	if($search_includes_resources)
-		{
-		$defaultrestypes[] = "Global";
-		}
-	  else
-		{
-		$defaultrestypes[] = "Collections";
-		if($search_includes_user_collections){$defaultrestypes[] = "mycol";}
-		if($search_includes_public_collections){$defaultrestypes[] = "pubcol";}
-		if($search_includes_themes){$defaultrestypes[] = "themes";}
-		}	
-	return $defaultrestypes;
-	}
-	
-function get_search_open_sections()
-    {
-    global $search_includes_resources, $collection_search_includes_resource_metadata;
 
-    $advanced_search_section = getvalescaped('advancedsearchsection', '');
-
-    if('' != $advanced_search_section || '' != getval('resetform', ''))
-        {
-        if (isset($default_advanced_search_mode)) 
-            {
-            $opensections = $default_advanced_search_mode;
-            }
-        else
-            {
-            if($search_includes_resources)
-                {
-                $opensections = array('Global', 'Media');
-                }
-            else
-                {
-                $opensections=array('Collections');
-                }
-            }
-        }
-    else
-        {
-        $opensections = explode(',', $advanced_search_section);
-        }
-
-    return $opensections;
-    }
 
 $selected_archive_states=array();
 
-
-$archivechoices=getvalescaped("archive",getvalescaped("saved_archive",array(0)));
+$archivechoices=getvalescaped("archive",getvalescaped("saved_archive",get_default_search_states()));
 if(!is_array($archivechoices)){$archivechoices=explode(",",$archivechoices);}
 foreach($archivechoices as $archivechoice)
     {
@@ -73,7 +20,12 @@ $archiveonly=count(array_intersect($selected_archive_states,array(1,2)))>0;
 $starsearch=getvalescaped("starsearch","");	
 rs_setcookie('starsearch', $starsearch,0,"","",false,false);
 
-$opensections=get_search_open_sections();
+# Selectedtypes is a list of (resource type) checkboxes which are checked
+# Selectedtypes can also contain Global and Media which are virtual checkboxes which are always considered to be checked
+$selectedtypes=get_selectedtypes();
+
+$access = getval("access", null, true);
+rs_setcookie("access", $access, 0, "{$baseurl_short}pages/", "", false, false);
 
 # Disable auto-save function, only applicable to edit form. Some fields pick up on this value when rendering then fail to work.
 $edit_autosave=false;
@@ -100,11 +52,11 @@ if (getval("submitted","")=="yes" && getval("resetform","")=="")
 	hook("moresearchcriteria");
 
 	if (getval("countonly","")!="")
-		{        
+		{
 		# Only show the results (this will appear in an iframe)
         if (substr($restypes,0,11)!="Collections" && !$collection_search_includes_resource_metadata)
             {
-            $result=do_search($search,$restypes,"relevance",$archive,1,"",false,$starsearch);
+            $result=do_search($search,$restypes,"relevance",$archive,1,"",false,$starsearch, false, false, "", false, true, false, false, false, $access);
             }
         else 
             {
@@ -152,7 +104,17 @@ if (getval("submitted","")=="yes" && getval("resetform","")=="")
 		# Log this			
 		daily_stat("Advanced search",$userref);
 
-		redirect($baseurl_short."pages/search.php?search=" . urlencode($search) . "&archive=" . urlencode($archive) . "&restypes=" . urlencode($restypes));
+        redirect(
+            generateURL(
+                "{$baseurl_short}pages/search.php",
+                array(
+                    "search" => $search,
+                    "archive" => $archive,
+                    "restypes" => $restypes,
+                    "access" => $access,
+                )
+            )
+        );
 		}
 	}
 
@@ -176,6 +138,9 @@ if (getval("resetform","")!="")
   $selected_archive_states=array(0);
   rs_setcookie("search","",0,"","",false,false);
   rs_setcookie("saved_archive","",0,"","",false,false);
+
+  $access = null;
+  rs_setcookie("access", "", 0, "{$baseurl_short}pages/", "", false, false);
   }
 else
   {
@@ -248,25 +213,6 @@ else
     $allwords = str_replace(', ', ' ', $allwords);
   }
 
-function render_advanced_search_buttons() {
- global $lang, $swap_clear_and_search_buttons;
- ?><div class="QuestionSubmit">
- <label for="buttons"> </label>
-<?php if ($swap_clear_and_search_buttons){?>
- <input name="dosearch" class="dosearch" type="submit" value="<?php echo $lang["action-viewmatchingresults"]?>" />
- &nbsp;
- <input name="resetform" class="resetform" type="submit" value="<?php echo $lang["clearbutton"]?>" /> 
-<?php } else { ?>
- <input name="resetform" class="resetform" type="submit" value="<?php echo $lang["clearbutton"]?>" />
- &nbsp;
- <input name="dosearch" class="dosearch" type="submit" value="<?php echo $lang["action-viewmatchingresults"]?>" />
- <?php } ?>
-</div>
-
- <?php 
- }
-
-
 include "../include/header.php";
 ?>
 <script type="text/javascript">
@@ -284,14 +230,14 @@ for ($n=0;$n<count($types);$n++)
 	
 jQuery(document).ready(function()
     {
-    selectedtypes=['<?php echo implode("','",$opensections) ?>'];
+    selectedtypes=['<?php echo implode("','",$selectedtypes) ?>'];
     if(selectedtypes[0]===""){selectedtypes.shift();}
 
     jQuery('.SearchTypeCheckbox').change(function() 
         {
         id=(this.name).substr(12);
 
-       	//if has been checked
+        // Process checkbox change from unchecked to checked
         if (jQuery(this).is(":checked")) {
             if (id=="Global") {
 				selectedtypes=["Global"];
@@ -304,8 +250,8 @@ jQuery(document).ready(function()
 				//Uncheck Collections
 				jQuery('#SearchCollectionsCheckbox').prop('checked',false);	
 
-				jQuery('#AdvancedSearchTypeSpecificSectionGlobalHead').show();
-				if (getCookie('AdvancedSearchTypeSpecificSectionGlobal')!="collapsed"){jQuery("#AdvancedSearchTypeSpecificSectionGlobal").show();}				
+				jQuery('#AdvancedSearchGlobalSectionHead').show();
+				if (getCookie('AdvancedSearchGlobalSection')!="collapsed"){jQuery("#AdvancedSearchGlobalSection").show();}				
 				jQuery('#AdvancedSearchMediaSectionHead').show();
 				if (getCookie('AdvancedSearchMediaSection')!="collapsed"){jQuery("#AdvancedSearchMediaSection").show();}
 			}
@@ -320,8 +266,8 @@ jQuery(document).ready(function()
 				
 
 				// Show collection search sections	
-				jQuery('#AdvancedSearchTypeSpecificSectionCollectionsHead').show();
-				if (getCookie('advancedsearchsection')!="collapsed"){jQuery("#AdvancedSearchTypeSpecificSectionCollections").show();}
+				jQuery('#AdvancedSearchCollectionsSectionHead').show();
+				if (getCookie('AdvancedSearchCollectionsSection')!="collapsed"){jQuery("#AdvancedSearchCollectionsSection").show();}
             }
             else {	
 				selectedtypes = jQuery.grep(selectedtypes, function(value) {return value != "Collections";});				
@@ -334,19 +280,19 @@ jQuery(document).ready(function()
                 jQuery('#SearchGlobal').prop('checked',false);
 				jQuery('#SearchCollectionsCheckbox').prop('checked',false);		
 				// Show global and media search sections	
-                jQuery("#AdvancedSearchTypeSpecificSectionGlobalHead").show();
-                if (getCookie('AdvancedSearchTypeSpecificSectionGlobal')!="collapsed"){jQuery("#AdvancedSearchTypeSpecificSectionGlobal").show();}
+                jQuery("#AdvancedSearchGlobalSectionHead").show();
+                if (getCookie('AdvancedSearchGlobalSection')!="collapsed"){jQuery("#AdvancedSearchGlobalSection").show();}
 				jQuery('#AdvancedSearchMediaSectionHead').show();
 				if (getCookie('AdvancedSearchMediaSection')!="collapsed"){jQuery("#AdvancedSearchMediaSection").show();}						
 				
 				// Show resource type specific search sections	if only one checked
 				if(selectedtypes.length==1){
-					if (getCookie('AdvancedSearchTypeSpecificSection'+id)!="collapsed"){jQuery('#AdvancedSearchTypeSpecificSection'+id).show();}
-					jQuery('#AdvancedSearchTypeSpecificSection'+id+'Head').show();				
+					if (getCookie('AdvancedSearch'+id+'Section')!="collapsed"){jQuery('#AdvancedSearch'+id+'Section').show();}
+					jQuery('#AdvancedSearch'+id+'SectionHead').show();				
 				}
 			}
         }
-        else {// Box has been unchecked
+        else { // Process checkbox change from checked to unchecked
 			if (id=="Global") {		
 				selectedtypes=[];	
 	     		jQuery('.SearchTypeItemCheckbox').prop('checked',false);
@@ -355,7 +301,7 @@ jQuery(document).ready(function()
 				selectedtypes=[];
 
 				// Hide collection search sections	
-				jQuery('#AdvancedSearchTypeSpecificSectionCollectionsHead').hide();
+				jQuery('#AdvancedSearchCollectionsSectionHead').hide();
             }
 			else {								
                 jQuery('#SearchGlobal').prop('checked',false);
@@ -367,20 +313,23 @@ jQuery(document).ready(function()
 				// If global was previously checked, make sure all other types are now checked
 				selectedtypes = jQuery.grep(selectedtypes, function(value) {return value != id;});
 				if(selectedtypes.length==1){
-					if (getCookie('AdvancedSearchTypeSpecificSection'+selectedtypes[0])!="collapsed") jQuery('#AdvancedSearchTypeSpecificSection'+selectedtypes[0]).show();
-					jQuery('#AdvancedSearchTypeSpecificSection'+selectedtypes[0]+'Head').show();				
+					if (getCookie('AdvancedSearch'+selectedtypes[0]+'Section')!="collapsed") jQuery('#AdvancedSearch'+selectedtypes[0]+'Section').show();
+					jQuery('#AdvancedSearch'+selectedtypes[0]+'SectionHead').show();				
 				}
 			}
-			//Always Show Global and media
-			jQuery("#AdvancedSearchTypeSpecificSectionGlobalHead").show();
-            if (getCookie('AdvancedSearchTypeSpecificSectionGlobal')!="collapsed"){jQuery("#AdvancedSearchTypeSpecificSectionGlobal").show();}
+			//Always Show Global and Media
+			jQuery("#AdvancedSearchGlobalSectionHead").show();
+            if (getCookie('AdvancedSearchGlobalSection')!="collapsed"){jQuery("#AdvancedSearchGlobalSection").show();}
 			jQuery('#AdvancedSearchMediaSectionHead').show();
 			if (getCookie('AdvancedSearchMediaSection')!="collapsed"){jQuery("#AdvancedSearchMediaSection").show();}
 		}
 
-        SetCookie("advancedsearchsection", selectedtypes);
+		// End of checkbox change processing; update cookie with checkbox values 
+        SetCookie("advanced_search_section", selectedtypes);
         UpdateResultCount();
-        });
+
+        }); // End of SearchTypeCheckbox change function call
+
     jQuery('.CollapsibleSectionHead').click(function() 
             {
             cur=jQuery(this).next();
@@ -420,7 +369,7 @@ jQuery(document).ready(function()
 <iframe src="blank.html" name="resultcount" id="resultcount" style="visibility:hidden;float:right;" width=1 height=1></iframe>
 <div class="BasicsBox">
 <h1><?php echo ($archiveonly)?$lang["archiveonlysearch"]:$lang["advancedsearch"];?> </h1>
-<p class="tight"><?php echo text("introtext")?></p>
+<p class="tight"><?php echo text("introtext");render_help_link("user/advanced-search");?></p>
 <form method="post" id="advancedform" action="<?php echo $baseurl ?>/pages/search_advanced.php" >
 <?php generateFormToken("advancedform"); ?>
 <input type="hidden" name="submitted" id="submitted" value="yes">
@@ -443,7 +392,7 @@ function UpdateResultCount()
 	
 jQuery(document).ready(function(){
 	    jQuery('#advancedform').submit(function() {
-            if (jQuery('#AdvancedSearchTypeSpecificSectionCollections').is(":hidden") && (document.getElementById("countonly").value!="yes")) 
+            if (jQuery('#AdvancedSearchCollectionsSection').is(":hidden") && (document.getElementById("countonly").value!="yes")) 
                 {
                     jQuery('.tickboxcoll').prop('checked',false);
                 }
@@ -517,8 +466,18 @@ if (!hook('advsearchallfields')) { ?>
 <div class="clearerleft"> </div>
 </div>
 <?php } ?>
-<h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionGlobalHead" <?php if (in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["resourcetype-global_fields"]; ?></h1>
-<div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionGlobal" <?php if (in_array("Collections",$opensections)) {?> style="display: none;" <?php } ?>>
+<h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchGlobalSectionHead" 
+<?php if (in_array("Collections",$selectedtypes) && !$collection_search_includes_resource_metadata) 
+		{?> 
+		style="display: none;" 
+<?php 	} ?>>
+<?php echo $lang["resourcetype-global_fields"]; ?>
+</h1>
+<div class="AdvancedSection" id="AdvancedSearchGlobalSection" 
+<?php if (in_array("Collections",$selectedtypes)) 
+		{?> 
+		style="display: none;" 
+<?php 	} ?>>
 
 <?php if (!hook('advsearchresid')) { ?>
 <!-- Search for resource ID(s) -->
@@ -536,8 +495,9 @@ if (!$daterange_search)
 	  <option value=""><?php echo $lang["anyyear"]?></option>
 	  <?php
 	  $y=date("Y");
-	  for ($n=$minyear;$n<=$y;$n++)
-		{
+	  $y += $maxyear_extends_current;
+      for ($n=$y;$n>=$minyear;$n--)
+        {
 		?><option <?php if ($n==$found_year) { ?>selected<?php } ?>><?php echo $n?></option><?php
 		}
 	  ?>
@@ -593,7 +553,7 @@ for ($n=0;$n<count($fields);$n++)
 		?>
 		</div>
             <h1 class="AdvancedSectionHead CollapsibleSectionHead ResTypeSectionHead"
-                id="AdvancedSearchTypeSpecificSection<?php echo $fields[$n]["resource_type"]; ?>Head"
+                id="AdvancedSearch<?php echo $fields[$n]["resource_type"]; ?>SectionHead"
                 <?php
                 if(!in_array($fields[$n]["resource_type"], $restypes) || in_array("Global", $restypes) || count($restypes) > 1)
                     {
@@ -603,9 +563,9 @@ for ($n=0;$n<count($fields);$n++)
                     ?>
             ><?php echo $lang["typespecific"] . ": " . $label ?></h1>
         <div class="AdvancedSection ResTypeSection"
-             id="AdvancedSearchTypeSpecificSection<?php echo $fields[$n]["resource_type"]; ?>"
+             id="AdvancedSearch<?php echo $fields[$n]["resource_type"]; ?>Section"
              <?php
-             if(!in_array($fields[$n]["resource_type"], $opensections))
+             if(!in_array($fields[$n]["resource_type"], $selectedtypes))
                 {
                 ?> style="display: none;"
                 <?php
@@ -617,10 +577,14 @@ for ($n=0;$n<count($fields);$n++)
 
 	# Work out a default value
 	if (array_key_exists($fields[$n]["name"],$values)) {$value=$values[$fields[$n]["name"]];} else {$value="";}
-	if (getval("resetform","")!="") {$value="";}
-	
+	# Clearbutton means resetform
+	$resetform=getval("resetform","");
+	if ($resetform != "") 
+		{
+		$value="";
+		}
 	# Render this field
-    render_search_field($fields[$n], $value, true, 'SearchWidth', false, array(), $searched_nodes);
+    render_search_field($fields[$n], $value, true, 'SearchWidth', false, array(), $searched_nodes, $resetform);
 	}
 ?>
 </div>
@@ -679,6 +643,28 @@ else
 	<?php
 	}
 
+if(checkperm("v"))
+    {
+    render_question_div("search_advanced_access_question", function() use ($lang, $access)
+        {
+        ?>
+        <label for="search_advanced_access"><?php echo htmlspecialchars($lang["access"]); ?></label>
+        <select id="search_advanced_access" class="SearchWidth" name="access" onchange="UpdateResultCount();">
+            <option><?php echo $lang["all"]; ?></option>
+        <?php
+        foreach(range(0, 2) as $access_level)
+            {
+            $label = htmlspecialchars($lang["access{$access_level}"]);
+            $extra_attributes = (!is_null($access) && $access_level == $access ? " selected" : "");
+
+            echo render_dropdown_option($access_level, $label, array(), $extra_attributes);
+            }
+        ?>
+        </select>
+        <?php
+        });
+    }
+
 if($advanced_search_contributed_by)
     {
     ?>
@@ -705,8 +691,8 @@ if($advanced_search_contributed_by)
 ?>
 
 <?php if  ($search_includes_user_collections || $search_includes_public_collections || $search_includes_themes) { ?>
-<h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchTypeSpecificSectionCollectionsHead" <?php if (!in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["collections"]; ?></h1>
-<div class="AdvancedSection" id="AdvancedSearchTypeSpecificSectionCollections" <?php if (!in_array("Collections",$opensections) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>>
+<h1 class="AdvancedSectionHead CollapsibleSectionHead" id="AdvancedSearchCollectionsSectionHead" <?php if (!in_array("Collections",$selectedtypes) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>><?php echo $lang["collections"]; ?></h1>
+<div class="AdvancedSection" id="AdvancedSearchCollectionsSection" <?php if (!in_array("Collections",$selectedtypes) && !$collection_search_includes_resource_metadata) {?> style="display: none;" <?php } ?>>
 
 <script type="text/javascript">	
 function resetTickAllColl(){
@@ -760,9 +746,14 @@ if (!$collection_search_includes_resource_metadata)
 	 {
 	 # Work out a default value
 	 if (array_key_exists($fields[$n]["name"],$values)) {$value=$values[$fields[$n]["name"]];} else {$value="";}
-	 if (getval("resetform","")!="") {$value="";}
+	 # Clearbutton means resetform
+	 $resetform=getval("resetform","");
+	 if ($resetform != "") 
+	 	{
+		$value="";
+		}
 	 # Render this field
-	 render_search_field($fields[$n],$value,true,"SearchWidth",false,array(),$searched_nodes);
+	 render_search_field($fields[$n],$value,true,"SearchWidth",false,array(),$searched_nodes,$resetform);
 	 }
    }
 ?>
@@ -784,6 +775,17 @@ if($advanced_search_media_section)
     render_split_text_question($lang["filesize"], array('media_filesizemin'=>$lang['from'],'media_filesizemax'=>$lang['to']),$lang["megabyte-symbol"], false, " class=\"stdWidth\" OnChange=\"UpdateResultCount();\"", array('media_filesizemin'=>$media_filesizemin,'media_filesizemax'=>$media_filesizemax));
     render_text_question($lang["file_extension_label"], "media_fileextension", "",false," class=\"SearchWidth\" OnChange=\"UpdateResultCount();\"",$media_fileextension);
     render_dropdown_question($lang["previewimage"], "properties_haspreviewimage", array(""=>"","1"=>$lang["yes"],"0"=>$lang["no"]), $properties_haspreviewimage, " class=\"SearchWidth\" OnChange=\"UpdateResultCount();\"");
+    render_dropdown_question(
+        $lang["orientation"],
+        "properties_orientation",
+        array(
+            ""          => "",
+            "portrait"  => $lang["portrait"],
+            "landscape" => $lang["landscape"],
+            "square"    => $lang["square"]
+        ),
+        $properties_orientation,
+        "class=\"SearchWidth\" onchange=\"UpdateResultCount();\"");
     ?>
     </div><!-- End of AdvancedSearchMediaSection -->
     <?php
@@ -812,4 +814,3 @@ if($archive!==0){
 }
 
 include "../include/footer.php";
-?>

@@ -1,7 +1,5 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
-include "../include/search_functions.php";
 
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref","",true),$k))) {include "../include/authenticate.php";}
@@ -18,7 +16,7 @@ $usagecomment=getval("usagecomment","");
 $download_url_suffix="?ref=" . urlencode($ref)  . "&size=" . urlencode($size) . "&ext=" . urlencode($ext) . "&k=" . urlencode($k) . "&alternative=" . urlencode($alternative);
 $download_url_suffix.= hook("addtodownloadquerystring");
 
-if ($download_usage && getval("usage","")=="" && !$direct_download)
+if ($download_usage && getval("usage","")=="" && $terms_download)
 	{
 	redirect($baseurl_short."pages/download_usage.php".$download_url_suffix);
 	}
@@ -83,14 +81,22 @@ if (!$save_as)
 		);
 	
 	?>
-	<?php if (!hook("downloadfinishlinks")) { ?>
-    <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/view.php",$url_parameters) ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
-    <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/search.php", $url_parameters) ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresults"]?></a></p>
-    
-    <?php if ($k=="") { ?>
-    <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short  . "pages/home.php") ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtohome"]?></a></p>
-	<?php } ?>
-    <?php } ?>
+    <?php if (!hook("downloadfinishlinks"))
+        {?>
+        <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/view.php",$url_parameters) ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
+        <?php
+        if(strpos($search,"!collection") !== false)
+            {?>
+            <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/search.php", $url_parameters) ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresults"]?></a></p>
+            <?php
+            }
+
+        if ($k=="")
+            { ?>
+            <p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short  . "pages/home.php") ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtohome"]?></a></p>
+            <?php
+            }
+        }?>
 	
 </div>
 

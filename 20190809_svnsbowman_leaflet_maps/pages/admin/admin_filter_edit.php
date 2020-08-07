@@ -1,6 +1,6 @@
 <?php
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";
 $filterid = getval("filter",0,true);
 
@@ -62,7 +62,7 @@ if($delete_filter != "" && enforcePostRequest("admin_filter_edit"))
         {
         $response   = array('deleted' => false);
         $response["errors"] = array();
-        $response["errors"][] = $lang["filter_search_delete_error"] . ":- ";
+        $response["errors"][] = $lang["filter_delete_error"] . ":- ";
         foreach($result["groups"] as $group)
             {
             $response["errors"][] = $lang["group"] . ": <a href='" . $baseurl_short . "/pages/admin/admin_group_management_edit.php?ref=" . $group . "' target='_blank' >" . $group . "</a>";
@@ -194,7 +194,7 @@ include "../../include/header.php";
             <p><a href="<?php echo $backurl; ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["filter_manage"]; ?></a></p>
              
             <h1><?php echo ($filterid == 0 ? $lang["filter_new"] : $lang["filter_edit"]) ?></h1>
-            <h2><?php echo $lang["filter_edit_text"] ?></h2>
+            <h2><?php echo $lang["filter_edit_text"];render_help_link("systemadmin/search-filters");?></h2>
             <form id="filter_edit_form" name="filter_edit_form" method="post" class="FormWide" action="<?php echo $filter_edit_url; ?>">
                 <input type="hidden" name="filter" value="<?php echo htmlspecialchars($filterid); ?>" />
                 <input type="hidden" name="save" value="true" />

@@ -6,7 +6,7 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; 
 
 if (!checkperm("a"))
@@ -22,7 +22,6 @@ $allowed_extensions    = getvalescaped('allowed_extensions', '');
 $tab                   = getvalescaped('tab', '');
 $push_metadata         = ('' != getvalescaped('push_metadata', '') ? 1 : 0);
 $inherit_global_fields = ('' != getvalescaped('inherit_global_fields', '') ? 1 : 0);
-$confirm_delete        = false;
 
 $restype_order_by=getvalescaped("restype_order_by","rt");
 $restype_sort=getvalescaped("restype_sort","asc");
@@ -59,37 +58,63 @@ if (getval("save","")!="" && enforcePostRequest(false))
                inherit_global_fields = '{$inherit_global_fields}'
          WHERE ref = '$ref'
      ");
-	
+     clear_query_cache("schema");
+
 	redirect(generateURL($baseurl_short . "pages/admin/admin_resource_types.php",$url_params));
 	}
-	
-if (getval("delete","")!="" && enforcePostRequest(false))
-	{
-	
-	$targettype=getvalescaped("targettype","");
-	# Check for resources of this  type
-	$affectedresources=sql_array("select ref value from resource where resource_type='$ref' and ref>0",0);
-	if(count($affectedresources)>0 && $targettype=="")
-	    {
-	    //User needs to confirm a new resource type
-	    $confirm_delete=true;
-	    }
-        else
-	    {
-	    //If we have a target type, move the current resources to the new resource type
-	    if($targettype!="" && $targettype!=$ref)
-		{
-		include "../../include/resource_functions.php"; 
-		foreach($affectedresources as $affectedresource)
-		    {update_resource_type($affectedresource,$targettype);}
-		}
-	    // Delete the resource type
-	    sql_query("delete from resource_type where ref='$ref'");
-		redirect(generateURL($baseurl_short . "pages/admin/admin_resource_types.php",$url_params));
-	    }
-	
-	
-	}
+
+
+$confirm_delete = false;
+$confirm_move_associated_rtf = false;
+if(getval("delete", "") != "" && enforcePostRequest(false))
+    {
+    $targettype=getvalescaped("targettype","");
+    $prereq_action = getval("prereq_action", "");
+    $affectedresources=sql_array("select ref value from resource where resource_type='$ref' and ref>0",0);
+    $affected_rtfs = get_resource_type_fields(array($ref), "ref", "asc", "", array(), true);
+    if(count($affectedresources)>0 && $targettype=="")
+        {
+        //User needs to confirm a new resource type
+        $confirm_delete=true;
+        }
+    else if(count($affected_rtfs) > 0 && $targettype == "")
+        {
+        $confirm_move_associated_rtf = true;
+        }
+    else
+        {
+        //If we have a target type, move the current resources to the new resource type
+        if($targettype!="" && $targettype!=$ref)
+            {
+            if($prereq_action == "move_affected_resources")
+                {
+                foreach($affectedresources as $affectedresource)
+                    {
+                    update_resource_type($affectedresource,$targettype);
+                    }
+                }
+
+            if($prereq_action == "move_affected_rtfs")
+                {
+                foreach($affected_rtfs as $affected_rtf)
+                    {
+                    sql_query("UPDATE resource_type_field SET resource_type = '{$targettype}' WHERE ref = '{$affected_rtf['ref']}'");
+                    clear_query_cache("schema");
+                    }
+                }
+            }
+
+        $affectedresources = sql_array("SELECT ref AS value FROM resource WHERE resource_type = '$ref' AND ref > 0", 0);
+        $affected_rtfs = get_resource_type_fields(array($ref), "ref", "asc", "", array(), true);
+        if(count($affectedresources) === 0 && count($affected_rtfs) === 0)
+            {
+            sql_query("delete from resource_type where ref='$ref'");
+            clear_query_cache("schema");
+            redirect(generateURL($baseurl_short . "pages/admin/admin_resource_types.php",$url_params));
+            }
+        }
+    }
+$actions_required = ($confirm_delete || $confirm_move_associated_rtf);
 
 # Fetch  data
 $restypedata=sql_query ("
@@ -104,7 +129,8 @@ $restypedata=sql_query ("
         FROM resource_type
        WHERE ref = '{$ref}'
     ORDER BY `name`
-");
+", "schema");
+if (count($restypedata)==0) {exit("Resource type not found.");} // Should arrive here unless someone has an old/incorrect URL.
 $restypedata=$restypedata[0];
 
 $inherit_global_fields_checked = ((bool) $restypedata['inherit_global_fields'] ? 'checked' : '');
@@ -117,7 +143,7 @@ include "../../include/header.php";
 <p>    
 <a href="<?php echo $backurl ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["back"]?></a>
 </p>
-<h1><?php echo htmlspecialchars(i18n_get_translated($restypedata["name"])) ?></h1>
+<h1><?php echo htmlspecialchars(i18n_get_translated($restypedata["name"]));render_help_link("resourceadmin/resource-types");?></h1>
 <?php if (isset($error_text)) { ?><div class="FormError"><?php echo $error_text?></div><?php } ?>
 <?php if (isset($saved_text)) { ?><div class="PageInfoMessage"><?php echo $saved_text?></div><?php } ?>
 
@@ -125,13 +151,26 @@ include "../../include/header.php";
 <?php
 generateFormToken("admin_resource_type_edit");
 
-if($confirm_delete)
+if($actions_required)
     {
     ?>
     <div class="PageInfoMessage">
     <?php
-    echo str_replace("%%RESOURCECOUNT%%",count($affectedresources),$lang["resource_type_delete_confirmation"]) . "<br />";	
-        
+    if($confirm_delete)
+        {
+        echo str_replace("%%RESOURCECOUNT%%",count($affectedresources),$lang["resource_type_delete_confirmation"]) . "<br />";
+        ?>
+        <input type="hidden" name="prereq_action" value="move_affected_resources">
+        <?php
+        }
+    else if($confirm_move_associated_rtf)
+        {
+        echo str_replace("%COUNT", count($affected_rtfs), $lang["resource_type_delete_assoc_rtf_confirm"]) . "<br>";
+        ?>
+        <input type="hidden" name="prereq_action" value="move_affected_rtfs">
+        <?php
+        }
+    
     echo $lang["resource_type_delete_select_new"];
     ?>
     </div>
@@ -156,6 +195,12 @@ if($confirm_delete)
       <div class="Inline"><select name="targettype" id="targettype" >
         <option value="" selected ><?php echo $lang["select"]; ?></option>
 	<?php
+    if($confirm_move_associated_rtf)
+        {
+        ?>
+        <option value="0"><?php echo $lang["resourcetype-global_field"]; ?></option>
+        <?php
+        }
 	  for($n=0;$n<count($destrestypes);$n++){
 	?>
 		<option value="<?php echo $destrestypes[$n]["ref"]; ?>"><?php echo htmlspecialchars(i18n_get_translated($destrestypes[$n]["name"])); ?></option>
@@ -167,16 +212,12 @@ if($confirm_delete)
     </div>
 	<div class="clearerleft"> </div>
     </div>
-    
-     
     <div class="QuestionSubmit">
-    <label for="buttons"> </label>			
-    <input name="cancel" type="submit" value="&nbsp;&nbsp;<?php echo $lang["cancel"]?>&nbsp;&nbsp;" />
-    <input name="delete" type="submit" value="&nbsp;&nbsp;<?php echo $lang["action-delete"]?>&nbsp;&nbsp;" onClick="return confirm('<?php echo $lang["confirm-deletion"]?>');"/>
+        <label for="buttons"> </label>			
+        <input name="cancel" type="submit" value="&nbsp;&nbsp;<?php echo $lang["cancel"]?>&nbsp;&nbsp;" />
+        <input name="delete" type="submit" value="&nbsp;&nbsp;<?php echo $lang["action-delete"]?>&nbsp;&nbsp;" onClick="return confirm('<?php echo $lang["confirm-deletion"]?>');"/>
     </div>
-    
-    <?php   
-    
+    <?php
     exit();	
     }
 else

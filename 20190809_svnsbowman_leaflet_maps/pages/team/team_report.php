@@ -6,10 +6,10 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";if (getvalescaped('unsubscribe', '') == '' && !checkperm("t")) {exit ("Permission denied.");}
 include "../../include/reporting_functions.php";
-include_once '../../include/render_functions.php';
+
 set_time_limit(0);
 $report=getvalescaped("report","");
 $period=getvalescaped("period",$reporting_periods_default[0]);
@@ -166,7 +166,7 @@ else
 
 <div class="BasicsBox"> 
   <h1><?php echo $lang["viewreports"]?></h1>
-  <p><?php echo text("introtext")?></p>
+  <p><?php echo text("introtext");render_help_link('resourceadmin/reports-and-statistics');?></p>
   
 <form method="post" action="<?php echo $baseurl ?>/pages/team/team_report.php" onSubmit="if (!do_download) {return CentralSpacePost(this);}">
     <?php generateFormToken("team_report"); ?>

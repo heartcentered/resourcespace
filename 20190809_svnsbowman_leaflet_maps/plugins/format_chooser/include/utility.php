@@ -32,38 +32,6 @@ function supportsInputFormat($inputFormat)
 	}
 
 /**
- * Returns the filename to be used for a specific file.
- * @param type $ref The resource for which the name should be built.
- * @param type $ext The new filename suffix to be used.
- * @param type $size A short name for the target file format, for example 'hpr'.
- */
-function getTargetFilename($ref, $ext, $size)
-	{
-	global $filename_field, $view_title_field;
-
-	# Get filename - first try title, then original filename, and finally use the resource ID
-	$filename = get_data_by_field($ref, $view_title_field);
-	if (empty($filename))
-		{
-		$filename = get_data_by_field($ref, $filename_field);
-		if (!empty($filename))
-			{
-			$originalSuffix = pathinfo($filename, PATHINFO_EXTENSION);
-			$filename = mb_basename($filename, $originalSuffix);
-			}
-		else
-			$filename = strval($ref);
-		}
-
-	# Remove potentially problematic characters, and make sure it's not too long
-	$filename = preg_replace("/[*:<>?\\/|]/", '_', $filename);
-	$filename = substr($filename, 0, 240);
-
-	return $filename . (empty($size) ? '' : '-' . strtolower($size)) . '.'
-			. strtolower($ext);
-	}
-
-/**
  * Returns the size record from the database specified by its ID.
  */
 function getImageFormat($size)
@@ -141,7 +109,7 @@ function sendFile($filename)
 	$size = filesize_unlimited($filename);
 
 	header('Content-Transfer-Encoding: binary');
-	header('Content-Disposition: attachment; filename="' . mb_basename($filename) . '"');
+	header('Content-Disposition: attachment; filename="' . str_replace(array("\n","\r"),"",mb_basename($filename)) . '"');
 	header('Content-Type: ' . get_mime_type($filename, $suffix));
 	header('Content-Length: ' . $size);
 	header("Content-Type: application/octet-stream");

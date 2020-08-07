@@ -6,11 +6,10 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; 
 if (!checkperm("R")) { exit ("Permission denied."); }
 include "../../include/request_functions.php";
-include_once "../../include/collections_functions.php";
 
 $ref = getvalescaped("ref", "", true);
 $modal=(getval("modal","")=="true");
@@ -68,7 +67,7 @@ include "../../include/header.php";
         <?php
         }
         ?>
-    <h1><?php echo $lang["editrequestorder"]?></h1>
+    <h1><?php echo $lang["editrequestorder"];render_help_link('resourceadmin/user-resource-requests');?></h1>
 </div>
 <?php
 if (isset($resulttext))
@@ -123,7 +122,7 @@ if ($request !== false)
 
         <div class="Question">
             <label><?php echo $lang["date"]?></label>
-            <div class="Fixed"><?php echo nicedate($request["created"],true,true)?></div>
+            <div class="Fixed"><?php echo nicedate($request["created"],true,true, true)?></div>
             <div class="clearerleft"></div>
         </div>
 

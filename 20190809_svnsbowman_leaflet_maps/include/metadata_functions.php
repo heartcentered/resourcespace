@@ -43,7 +43,7 @@ function runFitsForFile($file_path)
 * Get metadata value for a FITS field
 * 
 * @param SimpleXMLElement $xml  FITS metadata XML
-* @param string $rs_fits_filter A ResourceSpace specific FITS filter which allows ResourceSpace to know exactly where
+* @param string $fits_field A ResourceSpace specific FITS field mapping which allows ResourceSpace to know exactly where
 *                               to look for that value in XML by converting it to an XPath query string.
 * Example:
 * video.mimeType would point to
@@ -58,28 +58,33 @@ function runFitsForFile($file_path)
 * 
 * @return string
 */
-function getFitsMetadataFieldValue(SimpleXMLElement $xml , $rs_fits_filter)
+function getFitsMetadataFieldValue(SimpleXMLElement $xml , $fits_field)
     {
     // IMPORTANT: Not using "fits" namespace (or any for that matter) will yield no results
     // TODO: since there can be multiple namespaces (especially if run with -xc options) we might need to implement the
-    // ability to use namespaces directly from RS FITS filter.
+    // ability to use namespaces directly from RS FITS Field.
     $xml->registerXPathNamespace('fits', 'http://hul.harvard.edu/ois/xml/ns/fits/fits_output');
 
-    // Take out last filter as that is always going to be the actual property we are looking for
-    $filter        = explode('.', $rs_fits_filter);
-    $fits_property = array_pop($filter);
-    $filter        = implode('/fits:', $filter);
+    // Convert fits field mapping from rs format to namespaced XPath format
+    // Example rs field mapping for an xml element value
+    //   rs field is one.two.three which converts to an xpath filter of //fits:one/fits:two/fits:three
+    // Example rs field mapping for an xml attribute value (attributes are not qualified by the namespace)
+    //   rs attribute is one.two.three/@four which converts to an xpath filter of //fits:one/fits:two/fits:three/@four
+    $fits_path = explode('.', $fits_field);
+    // Reassemble with the namespace
+    $fits_filter  = "//fits:".implode('/fits:', $fits_path);
 
-    $result = $xml->xpath("//fits:{$filter}");
+    $result = $xml->xpath($fits_filter);
 
     if(!isset($result) || false === $result || 0 === count($result))
         {
         return '';
         }
 
-    if(isset($result[0]->$fits_property) && !is_array($result[0]->$fits_property))
+    // First result entry carries the element or attribute value
+    if( isset($result[0]) && !is_array($result[0]) )
         {
-        return $result[0]->$fits_property;
+        return $result[0];
         }
 
     return '';
@@ -135,7 +140,7 @@ function extractFitsMetadata($file_path, $resource)
             WHERE length(rtf.fits_field) > 0
               AND (rtf.resource_type = '{$resource_type}' OR rtf.resource_type = 0)
          ORDER BY fits_field;
-    ");
+    ", "schema");
 
     if(0 === count($rs_fields_to_read_for))
         {
@@ -172,3 +177,147 @@ function extractFitsMetadata($file_path, $resource)
 
     return false;
     }
+
+
+/**
+* Check date conforms to "yyyy-mm-dd hh:mm" format or any valid partital of that e.g. yyyy-mm.
+* 
+* @uses check_date_parts()
+* 
+* @param string         string form of the date to check
+* 
+* @return string
+*/
+function check_date_format($date)
+    {
+    global $lang;
+
+    // Check the format of the date to "yyyy-mm-dd hh:mm:ss"
+    if (preg_match("/^([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})$/", $date, $parts))
+        {
+        if (!checkdate($parts[2], $parts[3], $parts[1]))
+            {
+            return str_replace("%date%", $date, $lang["invalid_date_error"]);
+            }
+        return str_replace("%date%", $date, check_date_parts($parts));
+        } 
+    // Check the format of the date to "yyyy-mm-dd hh:mm"
+    elseif (preg_match("/^([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2})$/", $date, $parts))
+        {
+        if (!checkdate($parts[2], $parts[3], $parts[1]))
+            {
+            return str_replace("%date%", $date, $lang["invalid_date_error"]);
+            }
+        return str_replace("%date%", $date, check_date_parts($parts));
+        } 
+    // Check the format of the date to "yyyy-mm-dd"
+    elseif (preg_match ("/^([0-9]{4})-([0-9]{2})-([0-9]{2})$/", $date, $parts))
+        {
+        if (!checkdate($parts[2], $parts[3], $parts[1]))
+            {
+            return str_replace("%date%", $date, $lang["invalid_date_error"]);
+            }
+        return str_replace("%date%", $date, check_date_parts($parts));
+        } 
+    // Check the format of the date to "yyyy-mm" pads with 01 to ensure validity
+    elseif (preg_match("/^([0-9]{4})-([0-9]{2})$/", $date, $parts))
+        {
+        array_push($parts, '01');
+        return str_replace("%date%", $date, check_date_parts($parts));
+        } 
+    // Check the format of the date to "yyyy" pads with 01 to ensure validity
+    elseif (preg_match("/^([0-9]{4})$/", $date, $parts))
+        {
+        array_push($parts, '01', '01');
+        return str_replace("%date%", $date, check_date_parts($parts));
+        } 
+
+    // If it matches nothing return unknown format error
+    return str_replace("%date%", $date, $lang["unknown_date_format_error"]);;
+    }
+
+/**
+* Check datepart conforms to its formatting and error out each section accordingly
+* 
+* @param array         array of the date parts
+* 
+* @return string
+*/
+function check_date_parts($parts)
+    {
+    global $lang;
+    
+    // Initialise error list holder
+    $invalid_parts = array();
+    
+    // Check day part
+    if (!checkdate('01',$parts[3],'2000'))
+        {
+        array_push($invalid_parts, 'day');
+        } 
+    // Check day month
+    if (!checkdate($parts[2],'01','2000')) 
+        {
+        array_push($invalid_parts, 'month');
+        } 
+    // Check year part
+    if (!checkdate('01','01',$parts[1])) 
+        {
+        array_push($invalid_parts, 'year');
+        }
+    // Check time part
+    if (isset($parts[4]) && isset($parts[5])) 
+        {
+        if (!strtotime($parts[4] . ':' . $parts[5]))
+            {
+            array_push($invalid_parts, 'time');
+            }
+        }
+
+    // No errors found return false
+    if(empty($invalid_parts))
+        {
+        return false;
+        } 
+    // Return errors found
+    else
+        {
+        return str_replace("%parts%", implode(", ", $invalid_parts), $lang["date_format_error"]);
+        }
+    }
+
+function check_view_display_condition($fields,$n,$fields_all)		
+	{
+	#Check if field has a display condition set
+	$displaycondition=true;
+	if ($fields[$n]["display_condition"]!="")
+		{
+		$fieldstocheck=array(); #' Set up array to use in jQuery script function
+		$s=explode(";",$fields[$n]["display_condition"]);
+		$condref=0;
+		foreach ($s as $condition) # Check each condition
+			{
+			$displayconditioncheck=false;
+			$s=explode("=",$condition);
+			for ($cf=0;$cf<count($fields_all);$cf++) # Check each field to see if needs to be checked
+				{
+				if ($s[0]==$fields_all[$cf]["name"]) # this field needs to be checked
+					{					
+					$checkvalues=$s[1];
+					$validvalues=explode("|",strtoupper($checkvalues));
+					$v=trim_array(explode(",",strtoupper($fields_all[$cf]["value"])));
+					foreach ($validvalues as $validvalue)
+						{
+						if (in_array($validvalue,$v)) {$displayconditioncheck=true;} # this is  a valid value						
+						}
+					if (!$displayconditioncheck) {$displaycondition=false;}					
+					}
+					
+				} # see if next field needs to be checked
+							
+			$condref++;
+			} # check next condition	
+		
+		}
+	return $displaycondition;
+	}

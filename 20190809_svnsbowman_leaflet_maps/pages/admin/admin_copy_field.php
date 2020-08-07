@@ -1,16 +1,14 @@
 <?php
 include '../../include/db.php';
-include_once '../../include/general.php';
 include '../../include/authenticate.php';
 if(!checkperm('a'))
     {
     exit('Permission denied.');
     }
-include_once '../../include/resource_functions.php';
 
 $ref    = getvalescaped('ref', '');
 $copied = '';
-$title  = sql_value("SELECT title AS `value` FROM resource_type_field WHERE ref = '{$ref}'", '');
+$title  = sql_value("SELECT title AS `value` FROM resource_type_field WHERE ref = '{$ref}'", '', "schema");
 
 # Perform copy
 if (getval("saveform","")!="" && enforcePostRequest(false))
@@ -114,7 +112,7 @@ include "../../include/header.php";
     <a href="<?php echo "{$baseurl}/pages/admin/admin_resource_type_field_edit.php?ref={$ref}"; ?>" onClick="return CentralSpaceLoad(this, true);"><?php echo LINK_CARET_BACK ?><?php echo $lang['admin_resource_type_field'] . ': ' . i18n_get_translated($title); ?></a>
 </p>
 
-<h1><?php echo $lang['copy-field'] . ":&nbsp;" . i18n_get_translated($title); ?></h1>
+<h1><?php echo $lang['copy-field'] . ":&nbsp;" . i18n_get_translated($title); render_help_link("managing-metadata");?></h1>
 <?php
 if(isset($saved_text))
     {

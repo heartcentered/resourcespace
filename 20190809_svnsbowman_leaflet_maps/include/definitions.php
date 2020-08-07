@@ -1,7 +1,16 @@
 <?php
 
 // current upgrade level of ResourceSpace (used for migration scripts, will set sysvar using this if not already defined)
-define('SYSTEM_UPGRADE_LEVEL', 6);
+define('SYSTEM_UPGRADE_LEVEL', 12);
+
+// PHP VERSION AND MINIMUM SUPPORTED
+if (!defined('PHP_VERSION_ID'))
+    {
+    // Only needed PHP versions < 5.2.7 - we don't support those versions in the rest of the code but this is the one place where we need to (to tell them to upgrade).
+    $version = explode('.', PHP_VERSION);
+    define('PHP_VERSION_ID', ($version[0] * 10000 + $version[1] * 100 + $version[2]));
+    }
+define('PHP_VERSION_SUPPORTED', 70000); // 7.0 is the minimum supported.
 
 // ------------------------- FIELD TYPES -------------------------
 
@@ -84,8 +93,9 @@ define ('LOG_CODE_MULTI_EDITED',		'm');
 define ('LOG_CODE_NODE_REVERT',			'N');
 define ('LOG_CODE_CREATED_BY_CHANGED',  'o');
 define ('LOG_CODE_USER_OPT_IN',	        'O');
-define ('LOG_CODE_PAYED',				'p');
+define ('LOG_CODE_PAID',				'p');
 define ('LOG_CODE_REVERTED_REUPLOADED',	'r');
+define ('LOG_CODE_REPLACED',            'f');
 define ('LOG_CODE_REORDERED',			'R');
 define ('LOG_CODE_STATUS_CHANGED',		's');
 define ('LOG_CODE_SYSTEM',				'S');
@@ -94,8 +104,11 @@ define ('LOG_CODE_UPLOADED',			'u');
 define ('LOG_CODE_UNSPECIFIED',			'U');
 define ('LOG_CODE_VIEWED',				'v');
 define ('LOG_CODE_DELETED',				'x');
+define ('LOG_CODE_DELETED_ALTERNATIVE',	'y');
 define ('LOG_CODE_ENABLED',             '+');
 define ('LOG_CODE_DISABLED',            '-');
+define ('LOG_CODE_LOCKED',              'X');
+define ('LOG_CODE_UNLOCKED',            'Y');
 define ('LOG_CODE_COLLECTION_REMOVED_RESOURCE',				'r');
 define ('LOG_CODE_COLLECTION_REMOVED_ALL_RESOURCES',		'R');
 define ('LOG_CODE_COLLECTION_DELETED_ALL_RESOURCES',		'D');
@@ -134,7 +147,7 @@ define ('USER_REQUEST',			3);
 define ('SUBMITTED_RESOURCE',	4);
 define ('SUBMITTED_COLLECTION',	5);
 
-// Advanced search mappings. USed to translate field names to !properties special search codes
+// Advanced search mappings. Used to translate field names to !properties special search codes
 $advanced_search_properties=array("media_heightmin"=>"hmin",
                                   "media_heightmax"=>"hmax",
                                   "media_widthmin"=>"wmin",
@@ -143,7 +156,8 @@ $advanced_search_properties=array("media_heightmin"=>"hmin",
                                   "media_filesizemax"=>"fmax",
                                   "media_fileextension"=>"fext",
                                   "properties_haspreviewimage"=>"pi",
-                                  "properties_contributor"=>"cu"
+                                  "properties_contributor"=>"cu",
+                                  "properties_orientation" => "orientation"
                                   );
 							  
 
@@ -151,6 +165,7 @@ $advanced_search_properties=array("media_heightmin"=>"hmin",
 define ('STATUS_DISABLED',				0);
 define ('STATUS_ACTIVE',				1);
 define ('STATUS_COMPLETE',				2);	
+define ('STATUS_INPROGRESS',            3);	
 define ('STATUS_ERROR',					5);
 
 // -------------------- General definitions --------------------
@@ -160,12 +175,16 @@ define ('RESOURCE_LOG_APPEND_PREVIOUS', -1);    // used to specify that we want 
 define('LINK_CARET','<i aria-hidden="true" class="fa fa-caret-right"></i>&nbsp;'); 
 define('LINK_CARET_BACK','<i aria-hidden="true" class="fa fa-caret-left"></i>&nbsp;');
 define('LINK_CARET_PLUS','<i aria-hidden="true" class="fa fa-plus"></i>&nbsp;');
+define('LINK_CARET_PLUS_CIRCLE','<i aria-hidden="true" class="fa fa-plus-circle"></i>&nbsp;');
 define('UPLOAD_ICON','<i aria-hidden="true" class="fa fa-fw fa-upload"></i>&nbsp;');
 define('DASH_ICON','<i aria-hidden="true" class="fa fa-fw fa-th"></i>&nbsp;');
 define('FEATURED_COLLECTION_ICON','<i aria-hidden="true" class="fa fa-fw fa-folder"></i>&nbsp;');
 define('RECENT_ICON','<i aria-hidden="true" class="fa fa-fw fa-clock"></i>&nbsp;');
 define('HELP_ICON','<i aria-hidden="true" class="fa fa-fw fa-book"></i>&nbsp;');
 define('HOME_ICON','<i aria-hidden="true" class="fa fa-fw fa-home"></i>&nbsp;');
+define('SEARCH_ICON', '<i class="fa fa-search" aria-hidden="true"></i>&nbsp;');
+define('ICON_EDIT', '<i class="fa fa-pencil" aria-hidden="true"></i>&nbsp;');
+define('ICON_REMOVE', '<i class="fa fa-minus-circle" aria-hidden="true"></i>&nbsp;');
 
 define ('NODE_TOKEN_PREFIX','@@');
 define ('NODE_TOKEN_OR','|');
@@ -245,3 +264,89 @@ $permitted_html_attributes = array('id', 'class', 'style');
 
 $jquery_path = "/lib/js/jquery-3.3.1.min.js";
 $jquery_ui_path = "/lib/js/jquery-ui-1.12.1.min.js";
+
+// Define dropdown action categories
+define ('ACTIONGROUP_RESOURCE',     1);
+define ('ACTIONGROUP_COLLECTION',   2);
+define ('ACTIONGROUP_EDIT',         3);
+define ('ACTIONGROUP_SHARE',        4);
+define ('ACTIONGROUP_RESEARCH',     5);
+define ('ACTIONGROUP_ADVANCED',     6);
+
+$corefields = array(
+    "BASE" => array(
+        'filename_field',
+        'view_title_field',
+        'display_field_below_preview',
+        'date_field',
+        'reset_date_field',
+        'download_filename_field',
+        'extracted_text_field',
+        'facial_recognition_tag_field',
+        'speedtaggingfield',
+        'staticsync_filepath_to_field',
+        'staticsync_extension_mapping_append_values_fields',
+        'portrait_landscape_field',
+        'metadata_template_title_field',
+        'thumbs_display_fields',
+        'list_display_fields',
+        'sort_fields',
+        'xl_thumbs_display_fields',
+        'config_sheetlist_fields',
+        'config_sheetthumb_fields',
+        'config_sheetsingle_fields',
+        'zip_contents_field',
+        'related_search_searchcrumb_field',
+        'warn_field_request_approval',
+        'rating_field',
+        'iiif_identifier_field',
+        'iiif_description_field',
+        'iiif_license_field',
+        'iiif_sequence_field',
+        'facial_recognition_tag_field',
+        'join_fields'
+        )
+    );
+
+define("COLLECTION_TYPE_STANDARD",  0);
+define("COLLECTION_TYPE_UPLOAD",    1); # for collections used in upload then edit mode
+define("COLLECTION_TYPE_SELECTION", 2); # selecting resources to be edited in batch for the active user (allowed only one per user)
+
+
+
+// ----------------------------------------------
+// RESOURCE ACCESS TYPES
+// ----------------------------------------------
+
+define("RESOURCE_ACCESS_FULL", 0); # Full Access (download all sizes)
+define("RESOURCE_ACCESS_RESTRICTED", 1); # 1 = Restricted Access (download only those sizes that are set to allow restricted downloads)
+define("RESOURCE_ACCESS_CONFIDENTIAL", 2); # Confidential (no access)
+define("RESOURCE_ACCESS_CUSTOM_GROUP", 3); # custom group access
+define("RESOURCE_ACCESS_INVALID_REQUEST", 99); # invalid resource request eg. invalid resource ref
+
+
+// ----------------------------------------------
+// MESSAGES
+// ----------------------------------------------
+// Enumerated types of message.  Note the base two offset for binary combination.
+DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN",1);
+DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL",2);
+DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_RESERVED_1",4);
+DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_RESERVED_2",8);
+DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_RESERVED_3",16);
+
+DEFINE ("MESSAGE_DEFAULT_TTL_SECONDS",60 * 60 * 24 * 7);		// 7 days
+
+
+// ----------------------------------------------
+// MIGRATIONS
+// ----------------------------------------------
+define('MIGRATION_FIELD_OPTIONS_DEPRECATED_PREFIX','!deprecated');
+define('MIGRATION_FIELD_OPTIONS_DEPRECATED_PREFIX_CATEGORY_TREE',"-1,,!deprecated\n");
+
+# For str_highlight ().
+define('STR_HIGHLIGHT_SIMPLE', 1);
+define('STR_HIGHLIGHT_WHOLEWD', 2);
+define('STR_HIGHLIGHT_CASESENS', 4);
+define('STR_HIGHLIGHT_STRIPLINKS', 8);
+

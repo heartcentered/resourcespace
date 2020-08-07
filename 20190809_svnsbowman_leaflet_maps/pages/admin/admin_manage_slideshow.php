@@ -1,6 +1,5 @@
 <?php
 include '../../include/db.php';
-include_once '../../include/general.php';
 include '../../include/authenticate.php';
 if(!checkperm('a'))
     {
@@ -8,7 +7,6 @@ if(!checkperm('a'))
     exit('Permission denied.');
     }
 include '../../include/admin_functions.php';
-include '../../include/resource_functions.php';
 include '../../include/slideshow_functions.php';
 
 $slideshow_files = get_slideshow_files_data();
@@ -167,13 +165,15 @@ if('true' === $ajax && getval("static","")!="")
     }
     
 include '../../include/header.php';
+
+
 ?>
 <div class="BasicsBox">
     <p>
         <a href="<?php echo $baseurl_short; ?>pages/admin/admin_home.php" onClick="return CentralSpaceLoad(this, true);"><?php echo LINK_CARET_BACK ?><?php echo $lang['back']; ?></a>
     </p>
     <h1><?php echo $lang['manage_slideshow']; ?></h1>
-    <p><?php echo $lang['manage-slideshow-instructions']; ?></p>
+    <p><?php echo $lang['manage-slideshow-instructions']; render_help_link("resourceadmin/homepage-slideshow");?></p>
     <div class="Listview">
         <table class="ListviewStyle" border="0" cellspacing="0" cellpadding="0">
             <tbody>
@@ -291,8 +291,7 @@ if($slideshow_big)
     </div>
     <?php
     }
-
-hook('render_new_element_for_manage_slideshow', '', array($slideshow_files));
+    hook('render_new_element_for_manage_slideshow', '', array($slideshow_files));
 ?>
 </div>
 <script>

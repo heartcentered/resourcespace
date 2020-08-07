@@ -1,12 +1,9 @@
 <?php 
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
 if (checkperm("b"))
     {exit("Permission denied");}
-include_once "../include/collections_functions.php";
-include "../include/search_functions.php";
-include "../include/resource_functions.php";
 
 $offset=getvalescaped("offset",0);
 $per_page=getvalescaped("per_page_list",$default_perpage_list,true);rs_setcookie('per_page_list', $per_page);
@@ -16,7 +13,7 @@ include "../include/header.php";
 ?>
 <div class="BasicsBox">
 <p><a href="<?php echo $baseurl_short?>pages/collection_manage.php" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["managecollectionslink"]?></a></p>	
-<h1><?php echo $lang["shared_collections"]?></h1>
+<h1><?php echo $lang["shared_collections"];render_help_link("user/sharing-resources");?></h1>
 <?php
 
 $collections=get_user_collections($userref,"!shared");

@@ -6,10 +6,9 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";if (!checkperm("k")) {exit ("Permission denied.");}
 include "../../include/research_functions.php";
-include_once "../../include/collections_functions.php";
 
 $offset=getvalescaped("offset",0);
 $find=getvalescaped("find","");
@@ -23,7 +22,7 @@ include "../../include/header.php";
 
 <div class="BasicsBox"> 
   <h2>&nbsp;</h2>
-  <h1><?php echo $lang["managerelatedkeywords"]?></h1>
+  <h1><?php echo $lang["managerelatedkeywords"];render_help_link('resourceadmin/related-keywords');?></h1>
   <p><?php echo text("introtext")?></p>
  
 <?php 

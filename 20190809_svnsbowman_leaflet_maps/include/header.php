@@ -1,5 +1,4 @@
 <?php 
-include_once("render_functions.php");
 
 hook ("preheaderoutput");
  
@@ -31,18 +30,15 @@ if(!isset($thumbs) && ($pagename!="login") && ($pagename!="user_password") && ($
 	
 ?><!DOCTYPE html>
 <html lang="<?php echo $language ?>">	
-<?php 
-if ($include_rs_header_info)
-    {?>
-    <!--<?php hook("copyrightinsert");?>
-    ResourceSpace version <?php echo $productversion?>
 
-    For copyright and license information see documentation/licenses/resourcespace.txt
-    http://www.resourcespace.org/
-    -->
-    <?php 
-    }
-?>
+<!--
+
+ ResourceSpace version <?php echo $productversion?>
+
+ For copyright and license information see /documentation/licenses/resourcespace.txt
+ https://www.resourcespace.com
+ -->
+
 <head>
 <?php if(!hook("customhtmlheader")): ?>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -125,7 +121,7 @@ if ($enable_ckeditor){?>
 	<script type="text/javascript" src="<?php echo $baseurl_short;?>lib/plupload_2.1.8/jquery.plupload.queue/jquery.plupload.queue.min.js?<?php echo $css_reload_key;?>"></script>
 <?php } ?>
 <?php
-if($videojs && ($keyboard_navigation_video_search || $keyboard_navigation_video_view || $keyboard_navigation_video_preview))
+if ($keyboard_navigation_video_search || $keyboard_navigation_video_view || $keyboard_navigation_video_preview)
     {
     ?>
 	<script type="text/javascript" src="<?php echo $baseurl_short?>lib/js/videojs-extras.js?<?php echo $css_reload_key?>"></script>
@@ -169,7 +165,7 @@ $not_authenticated_pages = array('login', 'user_change_password','user_password'
 $browse_on = has_browsebar();
 if($browse_on)
     {
-    $browse_width   = getval("browse_width",$browse_default_width,true);
+    $browse_width   = $browse_default_width;
     $browse_show    = getval("browse_show","") == "show";
     ?>
     <script src="<?php echo $baseurl_short ?>lib/js/browsebar_js.php" type="text/javascript"></script>
@@ -182,6 +178,7 @@ var baseurl_short="<?php echo $baseurl_short?>";
 var baseurl="<?php echo $baseurl?>";
 var pagename="<?php echo $pagename?>";
 var errorpageload = "<h1><?php echo $lang["error"] ?></h1><p><?php echo str_replace(array("\r","\n"),'',nl2br($lang["error-pageload"])) ?></p>";
+var errortext = "<?php echo $lang["error"] ?>";
 var applicationname = "<?php echo $applicationname?>";
 var branch_limit="<?php echo $cat_tree_singlebranch?>";
 var branch_limit_field = new Array();
@@ -228,6 +225,7 @@ if($browse_on)
 </script>
 
 <script src="<?php echo $baseurl_short?>lib/js/global.js?css_reload_key=<?php echo $css_reload_key?>" type="text/javascript"></script>
+<script src="<?php echo $baseurl_short?>lib/js/polyfills.js?css_reload_key=<?php echo $css_reload_key; ?>"></script>
 
 <?php if ($keyboard_navigation)
     {
@@ -341,33 +339,7 @@ if(!hook('replace_header_text_logo'))
 		}
 	else
 		{
-		if($linkedheaderimgsrc !="") 
-			{
-			$header_img_src = $linkedheaderimgsrc;
-			if(substr($header_img_src, 0, 4) !== 'http')
-				{
-				// Set via System Config page?
-				if (substr($header_img_src, 0, 13) == '[storage_url]')
-					{
-					// Parse and replace the storage URL
-					$header_img_src = str_replace('[storage_url]', $storageurl, $header_img_src);
-					}
-				else
-					{
-					// Set via config.php
-					// if image source already has the baseurl short, then remove it and add it here
-					if(substr($header_img_src, 0, 1) === '/')
-						{
-						$header_img_src = substr($header_img_src, 1);
-						}
-					$header_img_src = $baseurl_short . $header_img_src;
-					}
-				}		
-			}
-		else 
-			{
-			$header_img_src = $baseurl.'/gfx/titles/title.svg';
-			}
+        $header_img_src = get_header_image();
 		if($header_link && ($k=="" || $internal_share_access))
 			{?>
 			<a href="<?php echo $linkUrl; ?>" onClick="return CentralSpaceLoad(this,true);" class="HeaderImgLink"><img src="<?php echo $header_img_src; ?>" id="HeaderImg" ></img></a>
@@ -511,7 +483,7 @@ include_once __DIR__ . '/../pages/ajax/message.php';
 <?php hook("midheader"); ?>
 <div id="HeaderNav2" class="HorizontalNav HorizontalWhiteNav">
 <?php
-if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login))
+if(!($pagename == "terms" && isset($_SERVER["HTTP_REFERER"]) && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login))
     {
         include (dirname(__FILE__) . "/header_links.php");
     }
@@ -543,7 +515,7 @@ if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false 
         'document_viewer'
     );
 
-if($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login)
+if($pagename == "terms" && isset($_SERVER["HTTP_REFERER"]) && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login)
     {
         array_push($omit_searchbar_pages, 'terms');
         $collections_footer = false;
@@ -593,7 +565,7 @@ else
 <!--Main Part of the page-->
 <?php
 
-if($browse_on)
+if($browse_on && checkperm("s") === true)
     {
     render_browse_bar();
     }

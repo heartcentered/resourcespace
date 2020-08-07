@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * Write comments to the database, also deals with hiding and flagging comments
+ *
+ * @return void
+ */
 function comments_submit() 
 	{		
 	global $username, $anonymous_login, $userref, $regex_email, $comments_max_characters, $lang, $email_notify, $comments_email_notification_address;
@@ -94,14 +99,18 @@ function comments_submit()
 	sql_query($sql);
 	}
 
+/**
+ * Display all comments for a resource or collection
+ *
+ * @param  integer $ref                 The reference of the resource, collection or the comment (if called from itself recursively)
+ * @param  boolean $bcollection_mode    false == show comments for resources, true == show comments for collection
+ * @param  boolean $bRecursive          Recursively show comments, defaults to true, will be set to false if depth limit reached
+ * @param  integer $level               Used for recursion for display indentation etc.
+ *
+ * @return void
+ */
 function comments_show($ref, $bcollection_mode = false, $bRecursive = true, $level = 1) 
 	{	
-	# ref 				= the reference of the resource, collection or the comment (if called from itself recursively) 
-	# bcollection_mode	= boolean flag, false(default) == show comments for resources, true == show comments for collection
-	# bRecursive		= flag to indicate whether to recursively show comments, defaults to true, will be set to false if depth limit reached
-	# level				= used for recursion for display indentation etc.	
-	
-	
 	if(!is_numeric($ref))
 		{
 		return false;
@@ -245,11 +254,11 @@ EOT;
 				}								
 			echo "</div>";			
 			
-			echo "<div class='CommentEntryInfoDetails'>" . strftime('%a',strtotime($comment["created"])) . " " . nicedate($comment["created"],true). " ";			
+			echo "<div class='CommentEntryInfoDetails'>" . strftime('%a',strtotime($comment["created"])) . " " . nicedate($comment["created"], true, true, true). " ";			
 			if ($comment['responseToDateTime']!="")
 				{
 				$responseToName = htmlspecialchars ($comment['responseToName']);
-				$responseToDateTime =  strftime('%a',strtotime($comment["responseToDateTime"])) . " " . nicedate($comment['responseToDateTime'], true);						
+				$responseToDateTime =  strftime('%a',strtotime($comment["responseToDateTime"])) . " " . nicedate($comment['responseToDateTime'], true, true, true);						
 				$jumpAnchorID = "comment" . $comment['ref_parent'];								
 				echo $lang['comments_in-response-to'] . "<br /><a class='.smoothscroll' rel='' href='#${jumpAnchorID}'>${responseToName} " . $lang['comments_in-response-to-on'] . " ${responseToDateTime}</a>";				
 				}						
@@ -352,5 +361,3 @@ EOT;
 		}			
 		if ($level == 1)  echo "</div>";  // end of comments_container
 	}
-	
-?>

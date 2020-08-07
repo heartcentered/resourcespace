@@ -1,7 +1,7 @@
 <?php
 
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";
 include "../../include/header.php";
 
@@ -15,7 +15,7 @@ if (getval("allseen","")!="")
 ?>
 <div class="BasicsBox">
   <h1><?php echo $lang["mymessages"]?></h1>
-  <p><?php echo $lang["mymessages_introtext"] ?></p>
+  <p><?php echo $lang["mymessages_introtext"];render_help_link('user/messages'); ?></p>
 
 <?php if ($user_preferences){?>
 <div class="VerticalNav">
@@ -85,7 +85,11 @@ for ($n=0;$n<count($messages);$n++)
     $url_encoded=urlencode($messages[$n]["url"]);
 	$unread_css = ($messages[$n]["seen"]==0 ? " class='MessageUnread'" : "");
 	$userbyname = get_user_by_username($messages[$n]["owner"]);
-	$user = get_user($userbyname);
+    $user = get_user($userbyname);
+    if(!$user)
+        {
+        $user = array('fullname'=> $applicationname,'groupname'=>'');
+        }
 	?>
 		<tr>
 			<td class="SingleLine" <?php echo $unread_css; ?>><?php echo nicedate($messages[$n]["created"],true); ?></td>

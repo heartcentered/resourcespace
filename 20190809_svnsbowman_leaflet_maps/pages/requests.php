@@ -5,10 +5,9 @@
  * @package ResourceSpace
  */
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
 include "../include/request_functions.php";
-include_once "../include/collections_functions.php";
 
 $offset=getvalescaped("offset",0);
 
@@ -17,7 +16,7 @@ include "../include/header.php";
 
 
 <div class="BasicsBox"> 
-  <h1><?php echo $lang["myrequests"]?></h1>
+  <h1><?php echo $lang["myrequests"];render_help_link("resourceadmin/user-resource-requests");?></h1>
   <p><?php echo text("introtext")?></p>
  
 <?php 

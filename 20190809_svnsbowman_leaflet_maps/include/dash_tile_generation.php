@@ -22,16 +22,6 @@ function tile_select($tile_type,$tile_style,$tile,$tile_id,$tile_width,$tile_hei
 			case "thmsl": 	global $usertile;
 							tile_config_themeselector($tile,$tile_id,$usertile,$tile_width,$tile_height);
 							exit;
-			case "theme":	tile_config_theme($tile,$tile_id,$tile_width,$tile_height);
-							exit;
-			case "mycol":	tile_config_mycollection($tile,$tile_id,$tile_width,$tile_height);
-							exit;
-			case "advsr":	tile_config_advancedsearch($tile,$tile_id,$tile_width,$tile_height);
-							exit;
-			case "mycnt":	tile_config_mycontributions($tile,$tile_id,$tile_width,$tile_height);
-							exit;
-			case "hlpad":	tile_config_helpandadvice($tile,$tile_id,$tile_width,$tile_height);
-							exit;
 			case "custm":	tile_config_custom($tile,$tile_id,$tile_width,$tile_height);
 							exit;
 			case "pend": 	tile_config_pending($tile,$tile_id,$tile_width,$tile_height);
@@ -91,15 +81,7 @@ function tile_select($tile_type,$tile_style,$tile,$tile_id,$tile_width,$tile_hei
  * Config controlled panels
  *
  */
-function tile_config_theme($tile,$tile_id,$tile_width,$tile_height)
-	{
-	global $lang,$pagename;
-	$pagename="home";
-	?>
-	<h2><span class='fa fa-th-large'></span><?php echo htmlspecialchars($lang["themes"]); ?></h2>
-	<p><?php echo htmlspecialchars(text("themes"));?></p>
-	<?php
-	}
+
 function tile_config_themeselector($tile,$tile_id,$tile_width,$tile_height)
 	{
 	global $lang,$pagename,$baseurl_short,$dash_tile_shadows, $theme_category_levels, $theme_direct_jump;
@@ -137,42 +119,6 @@ function tile_config_themeselector($tile,$tile_id,$tile_width,$tile_height)
 	</script>
 	<?php
 	}
-function tile_config_mycollection($tile,$tile_id,$tile_width,$tile_height) 
-	{
-	global $lang,$pagename;
-	$pagename="home";
-	?>
-	<h2><span class='fa fa-shopping-bag'></span><?php echo htmlspecialchars($lang["mycollections"]); ?></h2>
-	<p><?php echo htmlspecialchars(text("mycollections")); ?></p>
-	<?php
-	}
-function tile_config_advancedsearch($tile,$tile_id,$tile_width,$tile_height) 
-	{
-	global $lang,$pagename;
-	$pagename="home";
-	?>
-	<h2><span class='fa fa-search'></span><?php echo htmlspecialchars($lang["advancedsearch"]); ?></h2>
-	<p><?php echo htmlspecialchars(text("advancedsearch")); ?></p>
-	<?php
-	}
-function tile_config_mycontributions($tile,$tile_id,$tile_width,$tile_height) 
-	{
-	global $lang,$pagename;
-	$pagename="home";
-	?>
-	<h2><span class='fa fa-user'></span><?php echo htmlspecialchars($lang["mycontributions"]); ?></h2>
-	<p><?php echo htmlspecialchars(text("mycontributions"));?></p>
-	<?php
-	}
-function tile_config_helpandadvice($tile,$tile_id,$tile_width,$tile_height) 
-	{
-	global $lang,$pagename;
-	$pagename="home";
-	?>
-	<h2><span class='fa fa-book'></span><?php echo htmlspecialchars($lang["helpandadvice"]); ?></h2>
-	<p><?php echo htmlspecialchars(text("help")); ?></p>
-	<?php
-	}
 function tile_config_custom($tile,$tile_id,$tile_width,$tile_height) 
 	{
 	global $lang;
@@ -184,29 +130,31 @@ function tile_config_custom($tile,$tile_id,$tile_width,$tile_height)
 	}
 function tile_config_pending($tile,$tile_id,$tile_width,$tile_height)
 	{
-	global $lang;
+	global $lang, $search_all_workflow_states;
 	$linkstring = explode('?',$tile["link"]);
 	parse_str(str_replace("&amp;","&",$linkstring[1]),$linkstring);
 
-	$search="";
-	$count=1;
-	$restypes = "";
-	$order_by= "relevance";
-	$archive = $linkstring["archive"];
-	$sort = "";
-	$tile_search=do_search($search,$restypes,$order_by,$archive,$count,$sort,false,0,false,false,"",false,false);
-	if(!is_array($tile_search))
-		{
-		$found_resources=false;
-		$count=0;
-		}
-	else
-		{
-		$found_resources=true;
-		$count=count($tile_search);
-		}
-	/* Hide if wish to not hide */
-    if(!$found_resources)
+    $search="";
+    $count=1;
+    $restypes = "";
+    $order_by= "relevance";
+    $archive = $linkstring["archive"];
+    $sort = "";
+    $search_all_workflow_states=false;
+    $tile_search=do_search($search,$restypes,$order_by,$archive,$count,$sort,false,0,false,false,"",false,false,false,true);
+    if(!is_array($tile_search))
+        {
+        $found_resources=false;
+        $count=0;
+        }
+    else
+        {
+        $found_resources=true;
+        $count=count($tile_search);
+        }
+
+	// Hide if no results
+    if(!$found_resources || $count==0)
         { 
         global $usertile;
 
@@ -260,7 +208,6 @@ function tile_config_pending($tile,$tile_id,$tile_width,$tile_height)
 			}
 		}
 	?>
-	<!-- <h2 class="title notitle"> <?php echo $lang[strtolower($tile["txt"])]; ?></h2> -->
 	<p class="tile_corner_box">
 		<span aria-hidden="true" class="fa fa-clone"></span>
 		<?php echo $count; ?>
@@ -280,6 +227,7 @@ function tile_freetext($tile,$tile_id,$tile_width,$tile_height)
 	<h2> <?php echo htmlspecialchars(i18n_get_translated($tile["title"])); ?></h2>
 	<p><?php echo htmlspecialchars(i18n_get_translated($tile["txt"])); ?></p>
 	<?php
+	generate_dash_tile_toolbar($tile,$tile_id);
 	}
 
 /*
@@ -293,13 +241,12 @@ function tile_search_thumbs($tile,$tile_id,$tile_width,$tile_height,$promoted_im
 	$tile_style="thmbs";
 	$search_string = explode('?',$tile["link"]);
 	parse_str(str_replace("&amp;","&",$search_string[1]),$search_string);
-	$count = ($tile["resource_count"]) ? "-1" : "1";
 	$search = isset($search_string["search"]) ? $search_string["search"] :"";
 	$restypes = isset($search_string["restypes"]) ? $search_string["restypes"] : "";
 	$order_by= isset($search_string["order_by"]) ? $search_string["order_by"] : "";
 	$archive = isset($search_string["archive"]) ? $search_string["archive"] : "";
 	$sort = isset($search_string["sort"]) ? $search_string["sort"] : "";
-	$tile_search=do_search($search,$restypes,$order_by,$archive,$count,$sort,false,0,false,false,"",false,false);
+	$tile_search=do_search($search,$restypes,$order_by,$archive,-1,$sort,false,0,false,false,"",false,false);
 	$found_resources=true;
 	if(!is_array($tile_search) || empty($tile_search))
 		{
@@ -316,7 +263,7 @@ function tile_search_thumbs($tile,$tile_id,$tile_width,$tile_height,$promoted_im
 		{
 		$previewresource=$tile_search[0];
 		
-		if($promoted_image)
+		if($promoted_image && in_array($promoted_image,array_column($tile_search,"ref")))
 			{
 			$promoted_image_data=get_resource_data($promoted_image);
 			if ($promoted_image_data!==false)
@@ -373,7 +320,7 @@ function tile_search_thumbs($tile,$tile_id,$tile_width,$tile_height,$promoted_im
 		}
 	$icon = ""; 
 	if(substr($search,0,11)=="!collection")
-		{$icon="th-large";}
+		{$icon="cube";}
 	else if(substr($search,0,7)=="!recent" || substr($search,0,5)=="!last")
 		{$icon="clock-o";}
 	else{$icon="search";}
@@ -421,6 +368,7 @@ function tile_search_thumbs($tile,$tile_id,$tile_width,$tile_height,$promoted_im
 		</script>
 		<?php
 		}
+	generate_dash_tile_toolbar($tile,$tile_id);
 	}
 
 function tile_search_multi($tile,$tile_id,$tile_width,$tile_height)
@@ -438,26 +386,28 @@ function tile_search_multi($tile,$tile_id,$tile_width,$tile_height)
 	$archive = isset($search_string["archive"]) ? $search_string["archive"] : "";
 	$sort = isset($search_string["sort"]) ? $search_string["sort"] : "";
 	$resources = do_search($search,$restypes,$order_by,$archive,$count,$sort,false,0,false,false,"",false,false);
-	$img_size="pre";
-	for ($i=0;$i<count($resources) && $i<4;$i++)
+    $img_size="pre";    
+    $count = is_array($resources) ? count($resources) : 0;
+
+    for ($i=0;$i<$count && $i<4;$i++)
         {
         $shadow=true;
-		$ref=$resources[$i]['ref'];
+        $ref=$resources[$i]['ref'];
         $previewpath=get_resource_path($ref, true, $img_size, false, "jpg", -1, 1, false);
         if (file_exists($previewpath))
-        	{
+            {
             $previewpath=get_resource_path($ref,false,$img_size,false,"jpg",-1,1,false,$resources[$i]["file_modified"]);
-        	}
+            }
         else 
-        	{
+            {
             $previewpath=$baseurl_short."gfx/".get_nopreview_icon($resources[$i]["resource_type"],$resources[$i]["file_extension"],"");$border=false;$shadow=false;
-        	}
+            }
         $modifiedurl=hook('searchpublicmodifyurl');
-		if($modifiedurl)
-			{
-			$previewpath=$modifiedurl;
-			$border=true;
-			}
+        if($modifiedurl)
+            {
+            $previewpath=$modifiedurl;
+            $border=true;
+            }
 
         $tile_working_space = ('' == $tile['tlsize'] ? 140 : 280);
 
@@ -466,11 +416,11 @@ function tile_search_multi($tile,$tile_id,$tile_width,$tile_height)
         ?>
         <img style="position: absolute; top:10px;left:<?php echo ($space*1.5) ?>px;height:100%;<?php if ($shadow) { ?>box-shadow: 0 0 25px #000;<?php } ?>;transform: rotate(<?php echo 20-($i *12) ?>deg);" src="<?php echo $previewpath?>">
         <?php				
-		}
+        }
 	
 	$icon = ""; 
 	if(substr($search,0,11)=="!collection")
-		{$icon="th-large";}
+		{$icon="cube";}
 	else if(substr($search,0,7)=="!recent" || substr($search,0,5)=="!last")
 		{$icon="clock-o";}
 	else
@@ -501,11 +451,15 @@ function tile_search_multi($tile,$tile_id,$tile_width,$tile_height)
 		<?php
 		}
 
-	if($tile["resource_count"])
+    if($count==0 && !$tile["resource_count"])
+		{
+		echo "<p class='no_resources'>" . htmlspecialchars($lang["noresourcesfound"]) . "</p>";
+        }
+    if($tile["resource_count"])
 		{?>
 		<p class="tile_corner_box">
 		<span aria-hidden="true" class="fa fa-clone"></span>
-		<?php echo count($resources); ?>
+		<?php echo $count; ?>
 		</p>
 		<?php
 		}
@@ -516,6 +470,7 @@ function tile_search_multi($tile,$tile_id,$tile_width,$tile_height)
 		</script>
 		<?php
 		}
+	generate_dash_tile_toolbar($tile,$tile_id);
 	}
 
 function tile_search_blank($tile,$tile_id,$tile_width,$tile_height)
@@ -545,7 +500,7 @@ function tile_search_blank($tile,$tile_id,$tile_width,$tile_height)
 	
 	$icon = ""; 
 	if(substr($search,0,11)=="!collection")
-		{$icon="th-large";}
+		{$icon="cube";}
 	else if(substr($search,0,7)=="!recent" || substr($search,0,5)=="!last")
 		{$icon="clock-o";}
 	else{$icon="search";}
@@ -594,6 +549,7 @@ function tile_search_blank($tile,$tile_id,$tile_width,$tile_height)
 		</script>
 		<?php
 		}
+	generate_dash_tile_toolbar($tile,$tile_id);
 	}
 
 
@@ -601,15 +557,19 @@ function tile_featured_collection_thumbs($tile, $tile_id, $tile_width, $tile_hei
     {
     global $baseurl_short, $lang, $dash_tile_shadows;
 
-    if(0 < $promoted_image)
+    if($promoted_image > 0)
         {
         $promoted_image_data = get_resource_data($promoted_image);
 		
-        if(false !== $promoted_image_data)
+        if($promoted_image_data !== false)
             {
             $preview_resource = $promoted_image_data;
             }
-        
+        else
+			{
+			return false; // Promoted image could not be found.
+			}
+
 		$preview_resource_mod=hook('modify_promoted_image_preview_resource_data','',array($promoted_image));
 		if($preview_resource_mod!==false)
 			{
@@ -706,7 +666,7 @@ function tile_featured_collection_thumbs($tile, $tile_id, $tile_width, $tile_hei
         <script>jQuery('#<?php echo $tile_id; ?>').addClass('TileContentShadow');</script>
         <?php
         }
-
+	generate_dash_tile_toolbar($tile,$tile_id);
     return;
     }
 
@@ -802,7 +762,7 @@ function tile_featured_collection_multi($tile, $tile_id, $tile_width,$tile_heigh
         <script>jQuery('#<?php echo $tile_id; ?>').addClass('TileContentShadow');</script>
         <?php
         }
-
+	generate_dash_tile_toolbar($tile,$tile_id);
     return;
     }
 
@@ -838,6 +798,6 @@ function tile_featured_collection_blank($tile, $tile_id)
         <script>jQuery('#<?php echo $tile_id; ?>').addClass('TileContentShadow');</script>
         <?php
         }
-
+	generate_dash_tile_toolbar($tile,$tile_id);
     return;
     }

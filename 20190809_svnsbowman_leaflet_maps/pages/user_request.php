@@ -1,6 +1,6 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 
 $error=false;
 $error_extra="";
@@ -64,7 +64,7 @@ if (getval("save","")!="")
 
 	if (!empty($missingFields))
 		{
-		$error=$lang["requiredfields"] . ' ' . i18n_get_translated(implode(', ', $missingFields), true);
+		$error=$lang["requiredfields"] . ' ' . i18n_get_translated(implode(', ', $missingFields));
 		}
     # Check the anti-spam time is recent
     elseif(getval("antispamtime",0)<(time()-180) ||  getval("antispamtime",0)>time())
@@ -125,6 +125,7 @@ include "../include/login_background.php";
 
 <form method="post" action="<?php echo $baseurl_short?>pages/user_request.php">  
 
+<?php if ($error) { ?><div class="FormError">!! <?php echo $error ?> !!<?php echo $error_extra?></div><br /><?php } ?>
 <?php
 if (!hook("replacemain"))
     { /* BEGIN hook Replacemain */ ?>
@@ -356,7 +357,6 @@ if(!hook("replaceantispam"))
 ?>
 
 <div class="QuestionSubmit">
-<?php if ($error) { ?><div class="FormError">!! <?php echo $error ?> !!<?php echo $error_extra?></div><br /><?php } ?>
 <label for="buttons"> </label>			
 <input name="save" type="submit" value="&nbsp;&nbsp;<?php echo $lang["requestuserlogin"]?>&nbsp;&nbsp;" />
 </div>

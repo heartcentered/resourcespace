@@ -264,7 +264,7 @@ function save_proposed_changes($ref)
                     if(in_array($fields[$n]['type'], $DATE_FIELD_TYPES))
                         {
                         # Check that date hasn't only changed by adding seconds value
-                        if (trim($field_value) + ":00" == trim($val))
+                        if (trim($field_value).":00" == trim($val))
                             {
                             continue;    
                             }
@@ -280,32 +280,32 @@ function save_proposed_changes($ref)
         }
         
 function get_proposed_changes($ref, $userid)
-	{
-        //Get all the changes proposed by a user
-        $query = sprintf('
-                    SELECT d.value,
-                           d.resource_type_field,
-						   d.date,
-                           f.*,
-                           f.required AS frequired,
-                           f.ref AS fref
-                      FROM resource_type_field AS f
-                 LEFT JOIN (
-                                SELECT *
-                                  FROM propose_changes_data
-                                 WHERE resource = "%1$s"
-                                   AND user = "%2$s"
-                           ) AS d ON d.resource_type_field = f.ref AND d.resource = "%1$s"
-                 GROUP BY f.ref
-                 ORDER BY f.resource_type, f.order_by, f.ref;
-            ',
-            escape_check($ref),
-            escape_check($userid)
-        );
-        $changes = sql_query($query);
+    {
+    //Get all the changes proposed by a user
+    $query = sprintf('
+                SELECT d.value,
+                       d.resource_type_field,
+                       d.date,
+                       f.*,
+                       f.required AS frequired,
+                       f.ref AS fref
+                  FROM resource_type_field AS f
+             LEFT JOIN (
+                            SELECT *
+                              FROM propose_changes_data
+                             WHERE resource = "%1$s"
+                               AND user = "%2$s"
+                       ) AS d ON d.resource_type_field = f.ref AND d.resource = "%1$s"
+             GROUP BY f.ref
+             ORDER BY f.resource_type, f.order_by, f.ref;
+        ',
+        escape_check($ref),
+        escape_check($userid)
+    );
+    $changes = sql_query($query);
 
-        return $changes;  
-        }
+    return $changes;
+    }
         
 function delete_proposed_changes($ref, $userid="")
 	{

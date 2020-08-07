@@ -78,12 +78,18 @@ function simplesaml_signout()
 	
 function simplesaml_is_authenticated()
 	{
-	global $as,$simplesaml_sp;
+	global $as,$simplesaml_sp,$simplesaml_authenticated;
 	if(!(file_exists(simplesaml_get_lib_path() . '/config/config.php')))
         {
         debug("simplesaml: plugin not configured.");
         return false;
         }
+
+    if(isset($simplesaml_authenticated))
+        {
+        return $simplesaml_authenticated;
+        }
+
     if(!isset($as))
 		{
 		require_once(simplesaml_get_lib_path() . '/lib/_autoload.php');
@@ -91,6 +97,7 @@ function simplesaml_is_authenticated()
 		}
 	if(isset($as) && $as->isAuthenticated())
 		{
+        $simplesaml_authenticated = true;
 		return true;
 		}
 	return false;	
@@ -164,4 +171,46 @@ function simplesaml_duplicate_notify($username, $group, $email, $email_matches, 
         // Send a message with long timeout (30 days)
         message_add($message_users,str_replace($baseurl . "/", $baseurl_short, $message), $messageurl);
         }    
+    }
+
+// Check that the SimpleSAMLphp version
+function simplesaml_config_check()
+	{
+    global $simplesaml_version, $lang;
+	if(!(file_exists(simplesaml_get_lib_path() . '/config/config.php')))
+        {
+        debug("simplesaml: plugin not configured.");
+        return false;
+        }
+    
+
+    require_once(simplesaml_get_lib_path() . '/lib/_autoload.php');
+	$config = SimpleSAML_Configuration::getInstance();
+    $version = $config->getVersion();
+
+    if($version != $simplesaml_version)
+        {
+        if(get_sysvar("SAML_UPGRADE_REQUIRED",0) != 1)
+            {
+            system_notification($lang['simplesaml_authorisation_version_error'], "https://www.resourcespace.com/knowledge-base/plugins/simplesaml#upgrade");
+            // Set flag so this is not sent multiple times
+            set_sysvar("SAML_UPGRADE_REQUIRED",1);
+            }
+        return false;
+        }
+
+    return true;
+    }
+
+function simplesaml_php_check()
+    {
+    global $simplesaml_check_phpversion,$simplesaml_php_check;
+    
+    // Check whether PHP version will cause an error with current SAML config
+    if(!isset($simplesaml_php_check))
+        {
+        // Check if not already checked previously
+        $simplesaml_php_check = simplesaml_config_check() || version_compare(phpversion(), $simplesaml_check_phpversion, '<');
+        }
+    return $simplesaml_php_check;
     }

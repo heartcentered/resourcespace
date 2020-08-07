@@ -1,6 +1,5 @@
 <?php
 // Resource View Leaflet Map Using Leaflet.js and Various Leaflet Plugins
-// Last Edit 11/25/2019, Steve D. Bowman
 
 include "map_functions.php";
 
@@ -35,9 +34,9 @@ if (count($geo_search_restrict) > 0)
     {
     foreach ($geo_search_restrict as $zone)
         {
-        if ($resource["geo_lat"] >= $zone[0] && $resource["geo_lat"] <= $zone[2] && $resource["geo_long"] >= $zone[1] && $resource["geo_long"] <= $zone[3]) 
+        if ($resource["geo_lat"] >= $zone[0] && $resource["geo_lat"] <= $zone[2] && $resource["geo_long"] >= $zone[1] && $resource["geo_long"] <= $zone[3])
             {
-            return false; 
+            return false;
             }
         }
     }
@@ -136,21 +135,21 @@ if(!$hide_geolocation_panel || isset($geolocation_panel_only))
 
     if ($resource["geo_lat"] != "" && $resource["geo_long"] != "")
         { ?>
-        <?php if ($edit_access) 
+        <?php if ($edit_access)
             { ?>
-            <p><?php echo LINK_CARET ?><a href="<?php echo $baseurl_short?>pages/geo_edit.php?ref=<?php echo urlencode($ref); ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang['location-edit']; ?></a></p><?php } 
+            <p><?php echo LINK_CARET ?><a href="<?php echo $baseurl_short?>pages/geo_edit.php?ref=<?php echo urlencode($ref); ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang['location-edit']; ?></a></p><?php }
     $zoom = leaflet_map_zoom($resource["mapzoom"]);
 
-// Check for modal view.
-if (!$modal)
-    {
-    $map_container = "map_id";
-    }
-else
-    {
-    $map_container = "map_id";
-    $map_container = "map_id_modal";
-    }
+    // Check for modal view.
+    if (!$modal)
+        {
+        $map_container = "map_id";
+        }
+    else
+        {
+        $map_container = "map_id";
+        $map_container = "map_id_modal";
+        }
 
     ?>
     <!--Setup Leaflet map container with sizing-->
@@ -174,13 +173,13 @@ else
 
         <?php if ($modal)
             { ?>
-            map.remove(); 
+            map.remove();
             var map = new LeafletView.map(<?php echo $map_container; ?>, {
                 preferCanvas: true,
                 renderer: LeafletView.canvas(),
                 zoomsliderControl: <?php echo $zoomslider?>,
                 zoomControl: <?php echo $zoomcontrol?>
-            }).setView([geo_lat, geo_long], zoom); 
+            }).setView([geo_lat, geo_long], zoom);
             map.invalidateSize(); <?php
             }
         ?>
@@ -193,16 +192,16 @@ else
                 });
             });
         });
-        
+
         // Define available Leaflet basemaps groups and layers using leaflet.providers.js, L.TileLayer.PouchDBCached.js, and styledLayerControl.js based on ../include/map_functions.php.
-        <?php      
+        <?php
         echo leaflet_osm_basemaps();
         echo leaflet_esri_basemaps();
         echo leaflet_stamen_basemaps();
         echo leaflet_hydda_basemaps();
         echo leaflet_nasa_basemaps();
         echo leaflet_thunderforest_basemaps();
-        echo leaflet_mapbox_basemaps(); 
+        echo leaflet_mapbox_basemaps();
 
         // Define Leaflet default basemap attribution.
         switch ($map_default)
@@ -226,7 +225,7 @@ else
             default:
                 ?> var default_attribute = ''; <?php
             } ?>
-            
+
         <!--Define default Leaflet basemap layer using leaflet.js, leaflet.providers.js, and L.TileLayer.PouchDBCached.js-->
         var defaultLayer = new LeafletView.tileLayer.provider('<?php echo $map_default;?>', {
             useCache: '<?php echo $map_default_cache;?>', <!--Use browser caching of tiles (recommended)?-->
@@ -234,7 +233,7 @@ else
             attribution: default_attribute
         }).addTo(map);
         map.invalidateSize(true);
-        
+
         <!--Determine basemaps and map groups for user selection-->
         var baseMaps = [
             { groupName: "<?php echo $lang["map_osm_group"];?>", <!--OSM group-->
@@ -329,7 +328,7 @@ else
 
         var control = LeafletView.Control.styledLayerControl(baseMaps,options);
         map.addControl(control);
-        
+
         <!--Show zoom history navigation bar and add to Leaflet map using Leaflet.NavBar.min.js-->
         <?php if ($map_zoomnavbar && $view_mapheight >= 400)
             { ?>
@@ -338,7 +337,7 @@ else
 
         <!--Add a scale bar to the Leaflet map using leaflet.min.js-->
         new LeafletView.control.scale().addTo(map);
-        
+
         <!--Add download map button to the Leaflet map using bundle.min.js-->
         <?php if ($map1_height >= 335)
             { ?>
@@ -390,7 +389,7 @@ else
         <!--Fix for Microsoft Edge and Internet Explorer browsers-->
         map.invalidateSize(true);
 
-    </script> 
+    </script>
 
     <!--Show resource geolocation value-->
     <div id="resource_coordinate" style="margin-top:0px; margin-bottom:0px; width: 99%;">
@@ -405,7 +404,7 @@ else
 
 ?>
 <script>
-    
+
 </script>
 
 <?php
@@ -437,5 +436,5 @@ if($view_panels)
 if (!isset($geolocation_panel_only))
     { ?>
     </div> <!--End of RecordPanel-->
-    </div> <!--End of RecordBox--> <?php 
+    </div> <!--End of RecordBox--> <?php
     }

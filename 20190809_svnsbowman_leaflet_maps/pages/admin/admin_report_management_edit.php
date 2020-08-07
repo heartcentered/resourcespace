@@ -1,7 +1,7 @@
 <?php
 
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";
 
 if (!checkperm("a"))
@@ -81,7 +81,7 @@ include "../../include/header.php";
 	</p>
 
 	<h1><?php echo $lang['page-title_report_management_edit']; ?></h1>
-	<p><?php echo $lang['page-subtitle_report_management_edit']; ?></p>
+	<p><?php echo $lang['page-subtitle_report_management_edit'];render_help_link("resourceadmin/custom_reports"); ?></p>
 
 		<input type="hidden" name="save" value="1">
 

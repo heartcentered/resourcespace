@@ -1,6 +1,6 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref",""),$k))) {include_once "../include/authenticate.php";}
 
@@ -13,8 +13,6 @@ if ($k!="" && (!isset($internal_share_access) || !$internal_share_access) && $pr
 	}
 
 include "../include/request_functions.php";
-include "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
 
 $ref=getvalescaped("ref","",true);
 $error=false;
@@ -33,6 +31,15 @@ $resource_field_data = get_resource_field_data($ref);
 resource_type_config_override($resource["resource_type"]);
 
 $resource_title = '';
+
+if(isset($user_dl_limit) && intval($user_dl_limit) > 0)
+    {
+    $download_limit_check = get_user_downloads($userref,$user_dl_days);
+    if($download_limit_check >= $user_dl_limit)
+        {
+        $userrequestmode = 0;
+        }
+    }
 
 // Get any metadata fields we may want to show to the user on this page
 // Currently only title is showing
@@ -78,7 +85,7 @@ if (getval("save","")!="" && enforcePostRequest(false))
 		{
 		?>
 		<script>
-		CentralSpaceLoad("<?php echo $baseurl_short ?>pages/done.php?text=resource_request&k=<?php echo htmlspecialchars($k); ?>",true);
+		CentralSpaceLoad("<?php echo $baseurl_short ?>pages/done.php?text=resource_request&resource=<?php echo htmlspecialchars($ref); ?>&k=<?php echo htmlspecialchars($k); ?>",true);
 		</script>
 		<?php
 		}
@@ -92,7 +99,7 @@ include "../include/header.php";
 	</p>
 
   <h1><?php echo i18n_get_translated($lang["requestresource"]); ?></h1>
-  <p><?php echo text("introtext")?></p>
+  <p><?php echo text("introtext");render_help_link("resourceadmin/user-resource-requests")?></p>
   
 	<form method="post" action="<?php echo $baseurl_short?>pages/resource_request.php" onsubmit="return CentralSpacePost(this,true);">
         <?php generateFormToken("resource_request"); ?>

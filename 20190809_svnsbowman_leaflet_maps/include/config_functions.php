@@ -6,77 +6,7 @@
  * @subpackage Includes
  */
 
-/**
- * Validate the given field.
- * 
- * If the field validates, this function will store it in the provided configuration
- * module and key.
- * 
- * @param string $fieldname Name of field (provided to the render functions)
- * @param string $modulename Module name to store the field in.
- * @param string $modulekey Module key
- * @param string $type Validation patthern: (bool,safe,float,int,email,regex)
- * @param string $required Optional required flag.  Defaults to true.
- * @param string $pattern If $type is 'regex' the regex pattern to use.
- * @return bool Returns true if the field was stored in the config database.
- */
-function validate_field($fieldname, $modulename, $modulekey, $type, $required=true, $pattern=''){
-    global $errorfields, $lang;
-    $value = getvalescaped($fieldname, '');
-    if ($value=='' && $required==true){
-        $errorfields[$fieldname]=$lang['cfg-err-fieldrequired'];
-        return false;
-    }
-    elseif ($value=='' && $required==false){
-        set_module_config_key($modulename, $modulekey, $value); 
-    }
-    else {
-        switch ($type){
-            case 'safe':
-                if (!preg_match('/^.+$/', $value)){
-                    $errorfields[$fieldname] = $lang['cfg-err-fieldsafe'];
-                    return false;
-                }
-                break;
-            case 'float':
-                if (!preg_match('/^[\d]+(\.[\d]*)?$/', $value)){
-                    $errorfields[$fieldname] = $lang['cfg-err-fieldnumeric'];
-                    return false;
-                }
-                break;
-            case 'int':
-                if (!preg_match('/^[\d]+$/', $value)){
-                    $errorfields[$fieldname] = $lang['cfg-err-fieldnumeric'];
-                    return false;
-                }
-                break;
-            case 'email':
-                if (!preg_match('/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i', $value)){
-                    $errorfields[$fieldname] = $lang['cfg-err-fieldemail'];
-                    return false;
-                }
-                break;
-            case 'regex':
-                if (!preg_match($pattern, $value)){
-                    $errorfields[$fieldname] = $lang['cfg-err-fieldsafe'];
-                    return false;
-                }
-                break;
-            case 'bool':
-                if (strtolower($value)=='true')
-                    $value=true;
-                elseif (strtolower($value)=='false')
-                    $value=false;
-                else {
-                    $errorfields[$fieldname] = $lang['cfg-err-fieldsafe'];
-                    return false;
-                }
-                break;
-        }
-       set_module_config_key($modulename, $modulekey, $value);
-       return true;             
-    }
-}
+ 
 /**
  * Renders a select element.
  * 
@@ -236,6 +166,9 @@ function set_config_option($user_id, $param_name, $param_value)
 
     sql_query($query);
 
+    // Clear disk cache
+    clear_query_cache("preferences");
+
     return true;
     }
 
@@ -296,7 +229,7 @@ function get_config_option($user_id, $name, &$returned_value, $default = null)
 */
 function get_config_option_users($option,$value)
     {
-    $users = sql_array("SELECT user value FROM user_preferences WHERE parameter = '" . escape_check($option). "' AND value='" . escape_check($value) . "'");
+    $users = sql_array("SELECT user value FROM user_preferences WHERE parameter = '" . escape_check($option). "' AND value='" . escape_check($value) . "'","preferences");
     return $users;   
     }
 
@@ -318,7 +251,7 @@ function get_config_options($user_id, array &$returned_options)
         ',
         is_null($user_id) ? 'user IS NULL' : 'user = \'' . escape_check($user_id) . '\''
     );
-    $config_options = sql_query($query);
+    $config_options = sql_query($query,"preferences");
 
     if(empty($config_options))
         {
@@ -396,10 +329,6 @@ function config_clean($config)
         if (strpos(strtolower($config),"<script") !== false)
             {
             $config = '';
-            }
-        if (get_magic_quotes_gpc())
-            {
-            $config = stripslashes($config);
             }
         }
     return $config;
@@ -923,10 +852,10 @@ function config_single_ftype_select($name, $label, $current, $width=300, $rtype=
 		}
 		
     if($rtype===false){
-    	$fields=sql_query('select * from resource_type_field ' .  (($fieldtypefilter=="")?'':' where ' . $fieldtypefilter) . ' order by title, name');
+    	$fields=sql_query('select * from resource_type_field ' .  (($fieldtypefilter=="")?'':' where ' . $fieldtypefilter) . ' order by title, name', "schema");
     }
     else{
-    	$fields=sql_query("select * from resource_type_field where resource_type='$rtype' " .  (($fieldtypefilter=="")?"":" and " . $fieldtypefilter) . "order by title, name");
+    	$fields=sql_query("select * from resource_type_field where resource_type='$rtype' " .  (($fieldtypefilter=="")?"":" and " . $fieldtypefilter) . "order by title, name", "schema");
     }
 ?>
   <div class="Question">
@@ -1188,4 +1117,69 @@ function config_merge_non_image_types()
                 $ffmpeg_supported_extensions,
                 $unoconv_extensions,
                 $ghostscript_extensions)));
+    }
+
+function get_header_image($full = false)
+    {
+    global $linkedheaderimgsrc, $baseurl_short, $baseurl, $storageurl;
+
+    if(trim($linkedheaderimgsrc) != "")
+        {
+        $header_img_src = $linkedheaderimgsrc;
+        if(substr($header_img_src, 0, 4) !== 'http')
+            {
+            // Set via System Config page?
+            if (substr($header_img_src, 0, 13) == '[storage_url]')
+                {
+                // Parse and replace the storage URL
+                $header_img_src = str_replace('[storage_url]', $storageurl, $header_img_src);
+                }
+            else
+                {
+                // Set via config.php
+                // if image source already has the baseurl short, then remove it and add it here
+                if(substr($header_img_src, 0, 1) === '/')
+                    {
+                    $header_img_src = substr($header_img_src, 1);
+                    }
+                $header_img_src = $baseurl_short . $header_img_src;
+                }
+
+            if($full && substr($header_img_src, 0, 1) === '/')
+                {
+                $header_img_src = $baseurl . substr($header_img_src, 1);
+                }
+            }
+        }
+    else 
+        {
+        $header_img_src = $baseurl.'/gfx/titles/title.svg';
+        }
+        
+    return $header_img_src;
+    }
+
+/**
+* Used to block deletion of 'core' fields. Any variable added to the $corefields array will be checked before a field is deleted and if the field is referenced by one of these core variables the deletion will be blocked
+* 
+* @param string $source Optional origin of variables e.g. 'Transform plugin'
+* @param array $varnames Array of variable names
+*
+* @return void
+*/
+function config_register_core_fieldvars($source="BASE", $varnames=array())
+    {
+    global $corefields;
+    if(!isset($corefields[$source]))
+        {
+        $corefields[$source] = array();
+        }    
+    
+    foreach($varnames as $varname)
+        {
+        if(preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/',$varname))
+            {
+            $corefields[$source][] = $varname;
+            }
+        }
     }

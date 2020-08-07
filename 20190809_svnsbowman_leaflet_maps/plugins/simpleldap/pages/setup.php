@@ -1,7 +1,7 @@
 <?php
 include "../../../include/db.php";
 include "../../../include/authenticate.php"; if (!checkperm("u")) {exit ("Permission denied.");}
-include_once "../../../include/general.php";
+
 
 $plugin_name="simpleldap";
 if(!in_array($plugin_name, $plugins))
@@ -20,6 +20,7 @@ elseif (getval("submit","")!="" || getval("save","")!="" || getval("testConnflag
 	$simpleldap['domain'] = getvalescaped('domain','');
 	$simpleldap['emailsuffix'] = getvalescaped('emailsuffix','');
 	$simpleldap['ldapserver'] = getvalescaped('ldapserver','');
+    $simpleldap['ldap_encoding'] = getvalescaped('ldap_encoding', '');
 	$simpleldap['port'] = getvalescaped('port','');
 	$simpleldap['basedn']= getvalescaped('basedn','');
 	$simpleldap['loginfield'] = getvalescaped('loginfield','');
@@ -50,7 +51,7 @@ elseif (getval("submit","")!="" || getval("save","")!="" || getval("testConnflag
 		{
 		if ($ldapgroups[$i] <> '' && $rsgroups[$i] <> '' && is_numeric($rsgroups[$i]))
 			{
-			$query = "replace into simpleldap_groupmap (ldapgroup,rsgroup,priority) values ('" . escape_check($ldapgroups[$i]) . "','" . $rsgroups[$i] . "' ," . (($priority[$i]!="")?"'" . $priority[$i] . "'":"NULL") .")";
+			$query = "replace into simpleldap_groupmap (ldapgroup,rsgroup,priority) values ('" . escape_check($ldapgroups[$i]) . "','" . $rsgroups[$i] . "' ," . (($priority[$i]!="")?"'" . escape_check($priority[$i]) . "'":"NULL") .")";
 			sql_query($query);		
 			}
 		} 
@@ -94,7 +95,8 @@ foreach(
         'allow_duplicate_email',
         'notification_email',
         'ldaptype',
-        'LDAPTLS_REQCERT_never'
+        'LDAPTLS_REQCERT_never',
+        'ldap_encoding',
     ) as $thefield
 )
     {
@@ -173,7 +175,9 @@ if(getval("testConnflag","")!="" && getval("submit","")=="" && getval("save","")
 				basedn: '<?php echo htmlspecialchars($simpleldap['basedn']) ?>',	
 				ldapgroupfield: '<?php echo htmlspecialchars($simpleldap['ldapgroupfield']) ?>',
 				email_attribute: '<?php echo htmlspecialchars($simpleldap['email_attribute']) ?>',
-				phone_attribute: '<?php echo htmlspecialchars($simpleldap['phone_attribute']) ?>',		
+				phone_attribute: '<?php echo htmlspecialchars($simpleldap['phone_attribute']) ?>',	
+				emailsuffix: '<?php echo htmlspecialchars($simpleldap['emailsuffix']) ?>',	
+				LDAPTLS_REQCERT_never: '<?php echo htmlspecialchars($simpleldap['LDAPTLS_REQCERT_never']) ?>',		
 				ldapuser: user,
 				ldappassword: password,
 				userdomain: userdomain,
@@ -263,7 +267,8 @@ echo config_boolean_field(
 	$lang['simpleldap_LDAPTLS_REQCERT_never_label'],
 	$simpleldap['LDAPTLS_REQCERT_never'],
 	30);
-echo config_text_field("ldapserver",$lang['ldapserver'],$simpleldap['ldapserver'],60);?>
+echo config_text_field("ldapserver",$lang['ldapserver'],$simpleldap['ldapserver'],60);
+echo config_text_field("ldap_encoding", $lang['ldap_encoding'], $simpleldap['ldap_encoding'], 60);?>
 <?php echo config_text_field("domain",$lang['domain'],$simpleldap['domain'],60);?>
 <?php echo config_text_field("emailsuffix",$lang['emailsuffix'],$simpleldap['emailsuffix'],60);?>
 <?php echo config_text_field("email_attribute",$lang['email_attribute'],$simpleldap['email_attribute'],60);?>

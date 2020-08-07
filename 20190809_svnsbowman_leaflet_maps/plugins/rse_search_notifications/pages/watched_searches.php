@@ -3,12 +3,8 @@
 DEFINE('WATCHED_SEARCHES_ITEMS_PER_PAGE',10);
 
 include_once "../../../include/db.php";
-include_once "../../../include/general.php";
 include_once "../../../include/authenticate.php";
-include_once "../../../include/collections_functions.php";
-include_once "../../../include/search_functions.php";
 include_once "../../../include/search_do.php";
-
 include_once "../include/search_notifications_functions.php";
 
 $all_users_mode=getval("allusers",0)==1 && checkperm("a");
@@ -221,7 +217,7 @@ $url = generateURL($watched_searches_url, array("offset" => $offset), $url_set_p
 				$ws = $watched_searches[$i];
 				$view_search_url = search_notification_make_url($ws['search'],$ws['restypes'],$ws['archive']);
 				?><tr>
-					<td><?php echo nicedate(htmlspecialchars($ws["created"]),true); ?></td>
+					<td><?php echo nicedate(htmlspecialchars($ws["created"]), true, true, true); ?></td>
 					<td><?php echo highlightkeywords(htmlspecialchars($ws["username"]),$find); ?></td>
 					<td><a href="<?php echo $view_search_url; ?>"><?php echo highlightkeywords(htmlspecialchars($ws["title"]),$find); ?></a></td>
 					<td><a href="<?php echo $view_search_url; ?>"><?php echo htmlspecialchars($ws["checksum_matches"]); ?></a></td>

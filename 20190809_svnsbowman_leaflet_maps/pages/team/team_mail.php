@@ -6,7 +6,7 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; if (!checkperm("m")) {exit ("Permission denied.");}
 
 $message_type = intval(getval("message_type",MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL));
@@ -60,7 +60,7 @@ switch($message_type){
 }
 ?>
 <div class="BasicsBox">
-<h1><?php echo $title; ?></h1>
+<h1><?php echo $title; render_help_link('resourceadmin/user-communication');?></h1>
 <form id="myform" method="post" action="<?php echo $baseurl_short?>pages/team/team_mail.php">
 <?php
 generateFormToken("myform");

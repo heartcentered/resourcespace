@@ -3,7 +3,6 @@
 # ResourceSpace Analytics - list my reports
 #
 include '../../include/db.php';
-include_once '../../include/general.php';
 include '../../include/authenticate.php';
 
 global $baseurl;
@@ -24,7 +23,7 @@ include dirname(__FILE__)."/../../include/header.php";
 ?>
 
 <div class="BasicsBox"> 
-  <h1><?php echo $lang["rse_analytics"]?></h1>
+  <h1><?php echo $lang["rse_analytics"];render_help_link('resourceadmin/analytics');?></h1>
  
 
 

@@ -1,19 +1,29 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include_once "../include/resource_functions.php";
-include_once "../include/search_functions.php";
-include_once "../include/collections_functions.php";
 
 $ref=getvalescaped("ref","",true);
 $k=getvalescaped("k","");
+$modal = (getval("modal", "") == "true");
 
-// Logs can sometimes contain confidential information and the user looking at them must have admin permissions set
-if(!checkperm('v'))
-{
-	die($lang['log-adminpermissionsrequired']);
-}
+$filter_by_type = trim(getval("filter_by_type", ""));
+$filter_by_usageoption = getval("filter_by_usageoption", null, true);
+$filter_url_params = array(
+    "filter_by_type" => $filter_by_type,
+    "filter_by_usageoption" => $filter_by_usageoption,
+);
+
+// Logs can sometimes contain confidential information and the user looking at them must have admin permissions set.
+// Some log records can be viewed by all users. Ensure access control by allowing only white listed log codes to bypass 
+// permissions checks.
+$safe_log_codes = array(LOG_CODE_DOWNLOADED);
+$resource_access = get_resource_access($ref);
+$bypass_permission_check = in_array($filter_by_type, $safe_log_codes) && in_array($resource_access, array(0, 1));
+if(!checkperm('v') && !$bypass_permission_check)
+    {
+    die($lang['log-adminpermissionsrequired']);
+    }
 
 # fetch the current search (for finding simlar matches)
 $search=getvalescaped("search","");
@@ -28,8 +38,10 @@ if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
 
 $offset=getvalescaped("offset",0);
-$per_page=getvalescaped("per_page_list",15);rs_setcookie('per_page_list', $per_page);
-
+$per_page=getvalescaped("per_page_list", $default_perpage_list);rs_setcookie('per_page_list', $per_page);
+// When filtering by download records only the table output will be slightly different, showing only the following columns:
+// date, user, usage option and usage reason
+$filter_dld_records_only = ($filter_by_type == LOG_CODE_DOWNLOADED);
 
 
 # next / previous resource browsing
@@ -73,48 +85,91 @@ if ($go!="")
 	if ($k!="" && !check_access_key($ref,$k)) {$ref=$origref;} # cancel the move.
 	}
 
+$url_params = array(
+    "ref" => $ref,
+    "search" => $search,
+    "search_offset" => $search_offset,
+    "order_by" => $order_by,
+    "sort" => $sort,
+    "archive" => $archive,
+    "k" => $k,
+);
 
 include "../include/header.php";
 ?>
 <div class="BasicsBox">
-<p><a href="<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($ref)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by) ?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>"  onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
-
-
-<div class="backtoresults">
-<a href="<?php echo $baseurl_short?>pages/log.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&search_offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k) ?>&search_go=previous&<?php echo hook("nextpreviousextraurl") ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["previousresult"]?></a>
-<?php 
-hook("viewallresults");
-if ($k=="") { ?>
-|
-<a href="<?php echo $baseurl_short?>pages/search.php?search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k)?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["viewallresults"]?></a>
-<?php } ?>
-|
-<a href="<?php echo $baseurl_short?>pages/log.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&search_offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by) ?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k)?>&search_go=next&<?php echo hook("nextpreviousextraurl") ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["nextresult"]?>&nbsp;<?php echo LINK_CARET ?></a>
-</div>
-
-<h1><?php echo $lang["resourcelog"] . " : " . $lang["resourceid"] . " " .  htmlspecialchars($ref) ?></h1>
-
-</div>
+<?php
+if(!$modal)
+    {
+    ?>
+    <p><a href="<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($ref)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by) ?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>"  onClick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a></p>
+    <?php
+    }
+?>
+    <div class="RecordHeader">
+        <div class="BackToResultsContainer">
+            <div class="backtoresults">
+                <a href="<?php echo generateURL("{$baseurl_short}pages/log.php", array_merge($url_params, $filter_url_params), array("search_go" => "previous")) . hook("nextpreviousextraurl"); ?>" onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);"><?php echo LINK_CARET_BACK ?><?php echo $lang["previousresult"]?></a>
+                <?php 
+                hook("viewallresults");
+                if ($k=="") { ?>
+                |
+                <a href="<?php echo $baseurl_short?>pages/search.php?search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($search_offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo urlencode($sort)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k)?>" onclick="return CentralSpaceLoad(this, true);"><?php echo $lang["viewallresults"]?></a>
+                <?php } ?>
+                |
+                <a href="<?php echo generateURL("{$baseurl_short}pages/log.php", array_merge($url_params, $filter_url_params), array("search_go" => "next")) . hook("nextpreviousextraurl"); ?>" onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);"><?php echo $lang["nextresult"]?>&nbsp;<?php echo LINK_CARET ?></a>
+                <?php
+                if($modal)
+                    {
+                    ?>
+                    &nbsp;&nbsp;<a class="maxLink fa fa-expand" href="<?php echo generateURL("{$baseurl_short}pages/log.php", array_merge($url_params, $filter_url_params)); ?>" onclick="return CentralSpaceLoad(this);"></a>
+                    &nbsp;<a href="#" class="closeLink fa fa-times" onclick="ModalClose();"></a>
+                    <?php
+                    }
+                ?>
+            </div>
+        </div>
+        <h1><?php echo $lang["resourcelog"] . " : " . $lang["resourceid"] . " " .  htmlspecialchars($ref);render_help_link("user/logs");?></h1>
+    </div>
 
 <?php
-# Fetch the log.
-$log=get_resource_log($ref);
+$fetchrows = $offset + $per_page;
+
+$filters = array();
+if($filter_by_type != "")
+    {
+    $filters["r.type"] = $filter_by_type;
+    }
+if(!is_null($filter_by_usageoption) && $filter_by_usageoption >= 0)
+    {
+    $filters["r.usageoption"] = $filter_by_usageoption;
+    }
+
+if($bypass_permission_check)
+    {
+    $log = bypass_permissions(array("v"), "get_resource_log", array($ref, $fetchrows, $filters));
+    }
+else
+    {
+    $log = get_resource_log($ref, $fetchrows, $filters);
+    }
 
 # Calculate pager vars.
 $results=count($log);
 $totalpages=ceil($results/$per_page);
 $curpage=floor($offset/$per_page)+1;
-
-$url=$baseurl_short."pages/log.php?ref=" . urlencode($ref) . "&search=" . urlencode($search) . "&search_offset=" . urlencode($search_offset) . "&order_by=" . urlencode($order_by) . "&sort=" . urlencode($sort) . "&archive=" . urlencode($archive) . "&k=" . urlencode($k) . hook("nextpreviousextraurl");
+$url = generateURL(
+    "{$baseurl_short}pages/log.php",
+    array_merge($url_params, $filter_url_params)
+) . hook("nextpreviousextraurl");
 ?>
-
 <div class="TopInpageNav"><!--<?php pager(false); ?></div>-->
 <div class="InpageNavLeftBlock"><?php echo $lang["resultsdisplay"]?>:
 	<?php 
 	for($n=0;$n<count($list_display_array);$n++){?>
-	<?php if ($per_page==$list_display_array[$n]){?><span class="Selected"><?php echo $list_display_array[$n]?></span><?php } else { ?><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $url; ?>&per_page_list=<?php echo $list_display_array[$n]?>"><?php echo $list_display_array[$n]?></a><?php } ?>&nbsp;|
+	<?php if ($per_page==$list_display_array[$n]){?><span class="Selected"><?php echo $list_display_array[$n]?></span><?php } else { ?><a onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);" href="<?php echo $url; ?>&per_page_list=<?php echo $list_display_array[$n]?>"><?php echo $list_display_array[$n]?></a><?php } ?>&nbsp;|
 	<?php } ?>
-	<?php if ($per_page==99999){?><span class="Selected"><?php echo $lang["all"]?></span><?php } else { ?><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $url; ?>&per_page_list=99999"><?php echo $lang["all"]?></a><?php } ?>
+	<?php if ($per_page==99999){?><span class="Selected"><?php echo $lang["all"]?></span><?php } else { ?><a onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);" href="<?php echo $url; ?>&per_page_list=99999"><?php echo $lang["all"]?></a><?php } ?>
 	</div> <?php pager(false); ?></div>
 
 
@@ -122,14 +177,27 @@ $url=$baseurl_short."pages/log.php?ref=" . urlencode($ref) . "&search=" . urlenc
 <table border="0" cellspacing="0" cellpadding="0" class="ListviewStyle">
 <!--Title row-->	
 <tr class="ListviewTitleStyle">
-<td width="10%"><?php echo $lang["date"]?></td>
-<td width="10%"><?php echo $lang["user"]?></td>
-<td width="10%"><?php echo $lang["action"]?></td>
-<td width="10%"><?php echo $lang["field"]?></td>
-<td><?php echo $lang["difference"]?></td>
-<?php hook("log_extra_columns_header") ?>
+    <td width="10%"><?php echo $lang["date"]?></td>
+    <td width="10%"><?php echo $lang["user"]?></td>
+    <?php
+    if($filter_dld_records_only)
+        {
+        ?>
+        <td width="20%"><?php echo $lang["indicateusagemedium"]; ?></td>
+        <td><?php echo $lang["usage"]; ?></td>
+        <?php
+        }
+    else
+        {
+        ?>
+        <td width="10%"><?php echo $lang["action"]; ?></td>
+        <td width="10%"><?php echo $lang["field"]; ?></td>
+        <td><?php echo $lang["difference"]; ?></td>
+        <?php
+        hook("log_extra_columns_header");
+        }
+        ?>
 </tr>
-
 <?php
 for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
 	{
@@ -137,20 +205,59 @@ for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
 	?>
 	<!--List Item-->
 	<tr>
-	<td nowrap><?php echo nicedate($log[$n]["date"],true,true)?></td>
+	<td nowrap><?php echo nicedate($log[$n]["date"],true,true, true)?></td>
 	<td nowrap><?php echo (hook("userdisplay","",array($log[$n]))?"":($log[$n]["access_key"]!=""?$lang["externalusersharing"] . ": " . $log[$n]["access_key"] . " " . $lang["viauser"] . " " . $log[$n]["shared_by"]:$log[$n]["fullname"])) ?></td>
-	<td><?php echo $lang["log-" . $log[$n]["type"]]." ".$log[$n]["notes"]?></td>
+	
+    <?php
+    if($filter_dld_records_only)
+        {
+        ?>
+        <td><?php
+        if(isset($download_usage_options[$log[$n]["usageoption"]]) && $log[$n]["usageoption"] != -1 && $log[$n]["usageoption"] >= 0)
+            {
+            echo nl2br(htmlspecialchars($download_usage_options[$log[$n]["usageoption"]]));
+            }
+        ?></td>
+        <td><?php echo htmlspecialchars($log[$n]["notes"]); ?></td>
+        </tr>
+        <?php
+        continue;
+        }
+    ?>
+    <td><?php echo $lang["log-" . $log[$n]["type"]]." ".$log[$n]["notes"]?></td>
 	<td><?php echo htmlspecialchars($log[$n]["title"])?></td>
 	<td><?php
     if($log[$n]["diff"]!=="")
         {
-        echo nl2br(format_string_more_link(htmlspecialchars(wordwrap($log[$n]["diff"],75,"\n",true))));
+        $difftext = $log[$n]["diff"];
+        if($log[$n]["resource_type_field"] != "" && in_array($log[$n]["resource_type_field"],$FIXED_LIST_FIELD_TYPES))
+            {
+            $transdifflines = array();
+            $difflines = explode("\n",$difftext);
+            foreach($difflines as $diffline)
+                {
+                $action = substr($diffline,0,1);
+                $transdifflines[] = $action . " " . i18n_get_translated(substr($diffline,2));
+                }
+            $difftext = implode("\n",$transdifflines);
+             }
+        echo nl2br(format_string_more_link(htmlspecialchars(wordwrap($difftext,75,"\n",true))));
         }
-    if ($log[$n]["usageoption"]!="-1")
+    if ($log[$n]["usageoption"]!="-1" && $log[$n]["usageoption"]!="")
         {
         // if usageoption is set to -1 when logging, you can avoid the usage description here
-        echo (($log[$n]["notes"]=="" || $log[$n]["notes"]=="-1")? $lang["indicateusagemedium"] . ": " . nl2br(htmlspecialchars($download_usage_options[$log[$n]["usageoption"]])) :
-            $lang["usage"] . ": " . nl2br(htmlspecialchars($log[$n]["notes"])) . "<br />" . $lang["indicateusagemedium"] . ": " . nl2br(htmlspecialchars($download_usage_options[$log[$n]["usageoption"]])));
+        // Check that the value in the table is valid first
+        if (isset($download_usage_options[$log[$n]["usageoption"]]))
+            {
+            if ($log[$n]["notes"]=="" || $log[$n]["notes"]=="-1")
+                { 
+                echo $lang["indicateusagemedium"] . ": " . nl2br(htmlspecialchars($download_usage_options[$log[$n]["usageoption"]])); 
+                }
+            else
+                {
+                echo $lang["usage"] . ": " . nl2br(htmlspecialchars($log[$n]["notes"])) . "<br />" . $lang["indicateusagemedium"] . ": " . nl2br(htmlspecialchars($download_usage_options[$log[$n]["usageoption"]]));
+                }
+            }
 	    }
 
 	# For purchases, append size and price
@@ -180,10 +287,8 @@ for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
 	}
 ?>
 </table>
-</div>
+</div> <!-- end of BasicsBox -->
 
 <div class="BottomInpageNav"><?php pager(false); ?></div>
-
 <?php
 include "../include/footer.php";
-?>
