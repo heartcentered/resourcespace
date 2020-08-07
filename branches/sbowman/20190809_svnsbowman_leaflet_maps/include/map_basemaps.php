@@ -15,7 +15,6 @@ var baseMaps = [
             <?php if ($map_osmmtb) { ?> "<?php echo $lang["map_osmmtb"];?>" : osm_mtb, <?php } ?>
             <?php if ($map_osmhikebike) { ?> "<?php echo $lang["map_osmhikebike"];?>" : osm_hikebike, <?php } ?>
             <?php if ($map_otm) { ?> "<?php echo $lang["map_otm"];?>" : osm_otm, <?php } ?>
-            <?php if ($map_omsroads) { ?> "<?php echo $lang["map_omsroads"];?>" : oms_roads <?php } ?>
         }
     },
 

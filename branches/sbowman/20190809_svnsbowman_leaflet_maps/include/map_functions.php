@@ -9,8 +9,8 @@ global $baseurl, $map_default_cache, $map_layer_cache, $map_zoomnavbar, $map_kml
 <link rel="stylesheet" href="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.css"/>
 <script src="<?php echo $baseurl?>/lib/leaflet_1.6.0/leaflet.min.js"></script>
 
-<!--Leaflet Providers v1.9.0 plugin files-->
-<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.9.0/leaflet-providers.babel.min.js"></script>
+<!--Leaflet Providers v1.10.2 plugin files-->
+<script src="<?php echo $baseurl?>/lib/leaflet_plugins/leaflet-providers-1.10.2/leaflet-providers.babel.min.js"></script>
 
 <!--Leaflet PouchDBCached v1.0.0 plugin file with PouchDB v7.1.1 file-->
 <?php if ($map_default_cache || $map_layer_cache)
@@ -138,14 +138,6 @@ function leaflet_osm_basemaps() // OpenStreetMap basemaps.
             detectRetina: '<?php echo $map_retina;?>',
             maxZoom: 17,
             attribution: osm_otm_attribute
-        });
-
-        var oms_attribute = 'Imagery from <a href=\"http://giscience.uni-hd.de/\">GIScience Research Group @ University of Heidelberg</a> &mdash; Map data &copy; <a href=\"http://www.openstreetmap.org/copyright\">OpenStreetMap</a>';
-        var oms_roads = L.tileLayer.provider('OpenMapSurfer.Roads', {
-            useCache: '<?php echo $map_default_cache;?>',
-            detectRetina: '<?php echo $map_retina;?>',
-            maxZoom: 19,
-            attribution: oms_attribute
         }); ";
 
     return $osm;
