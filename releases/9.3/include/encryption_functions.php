@@ -71,6 +71,7 @@ function rsDecrypt($data, $key)
     $mac_key = hash_hmac("sha256", "mac_key", $scramble_key, true);
     $enc_key = hash_hmac("sha256", "enc_key", $scramble_key, true);
 
+    if (count(explode("@@", $data))<3){return false;}
     list($nonce, $cyphertext, $mac) = explode("@@", $data);
 
     // Check MAC
