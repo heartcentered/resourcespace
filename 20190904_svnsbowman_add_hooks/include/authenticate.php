@@ -6,7 +6,13 @@ $autologgedout=false;
 $nocookies=false;
 $is_authenticated=false;
 
-if (!function_exists("ip_matches")){
+/**
+ * Does the provided $ip match the string $ip_restrict? Used for restricting user access by IP address.
+ *
+ * @param  string $ip
+ * @param  string $ip_restrict
+ * @return void
+ */
 function ip_matches($ip, $ip_restrict)
 	{
 	global $system_login;
@@ -41,7 +47,7 @@ function ip_matches($ip, $ip_restrict)
 		}
 	return false;
 	}
-}
+
 
 if (array_key_exists("user",$_COOKIE) || array_key_exists("user",$_GET) || isset($anonymous_login) || hook('provideusercredentials'))
     {
@@ -283,7 +289,7 @@ else
 
 // don't update this table if the System is doing its own operations
 if (!isset($system_login)){
-	sql_query("update user set lang='$language', last_active=now(),logged_in=1,last_ip='" . get_ip() . "',last_browser='" . $last_browser . "' where ref='$userref'",false,-1,true,0);
+	sql_query("update user set lang='$language', last_active=now(),logged_in=1,last_ip='" . escape_check(get_ip()) . "',last_browser='" . $last_browser . "' where ref='$userref'",false,-1,true,0);
 }
 
 # Add group specific text (if any) when logged in.
@@ -310,7 +316,7 @@ else
 			$pagefilter,
 			$usergroup
 		);
-		$results = sql_query($site_text_query,false,-1,true,0);
+		$results = sql_query($site_text_query,"sitetext",-1,true,0);
 
 		for($n = 0; $n < count($results); $n++)
 			{
@@ -330,7 +336,7 @@ else
 
 # Load group specific plugins and reorder plugins list
 $plugins= array();
-$active_plugins = (sql_query("SELECT name,enabled_groups, config, config_json, disable_group_select FROM plugins WHERE inst_version>=0 ORDER BY priority"));
+$active_plugins = (sql_query("SELECT name,enabled_groups, config, config_json, disable_group_select FROM plugins WHERE inst_version>=0 ORDER BY priority","plugins"));
 
 
 foreach($active_plugins as $plugin)
@@ -390,13 +396,14 @@ if(
 
     if(filter_var(getval("ajax", false), FILTER_VALIDATE_BOOLEAN))
         {
+        include_once dirname(__FILE__) . "/ajax_functions.php";
         $return['error'] = array(
             'title'  => $lang["error-csrf-verification"],
             'detail' => $lang["error-csrf-verification-failed"]);
 
-        echo json_encode($return);
+        echo json_encode(array_merge($return, ajax_response_fail(ajax_build_message($lang["error-csrf-verification-failed"]))));
         exit();
         }
 
-    trigger_error($lang["error-csrf-verification-failed"]);
+    exit($lang["error-csrf-verification-failed"]);
     }

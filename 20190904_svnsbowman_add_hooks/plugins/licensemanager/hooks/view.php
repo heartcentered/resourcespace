@@ -6,15 +6,30 @@ function HookLicensemanagerViewCustompanels()
 	
 	if($k!=""){return false;}
 	
-	$licenses=sql_query("select ref,outbound,holder,license_usage,description,expires from resource_license where resource='$ref' order by ref");
+	# Check if it's necessary to upgrade the database structure
+	include dirname(__FILE__) . "/../upgrade/upgrade.php";
+
+	$licenses=sql_query("select license.ref,license.outbound,license.holder,license.license_usage,license.description,license.expires from license join resource_license on license.ref=resource_license.license where resource_license.resource='$ref' order by ref");
 	?>
     <!-- Begin Geolocation Section -->
     <div class="RecordBox">
     <div class="RecordPanel">
     <div class="Title"><?php echo $lang["license_management"] ?></div>
 
-    <?php if ($edit_access) { ?>    
-    <p>&gt;&nbsp;<a href="<?php echo $baseurl_short ?>plugins/licensemanager/pages/edit.php?ref=new&resource=<?php echo $ref ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["new_license"] ?></a></p>	
+    <?php if ($edit_access) { 
+        $new_license_url_params = array(
+            'ref'        => 'new',
+            'resource'   => $ref,
+            'search'     => getval('search',''),
+            'order_by'   => getval('order_by',''),
+            'collection' => getval('collection',''),
+            'offset'     => getval('offset',0),
+            'restypes'   => getval('restypes',''),
+            'archive'    => getval('archive','')
+        );
+        $new_license_url = generateURL($baseurl_short . "plugins/licensemanager/pages/edit.php",$new_license_url_params);
+        ?>    
+    <p>&gt;&nbsp;<a href="<?php echo $new_license_url ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["new_license"] ?></a></p>	
     <?php } ?>
    
 	<?php if (count($licenses)>0) { ?>
@@ -54,12 +69,12 @@ function HookLicensemanagerViewCustompanels()
 				?>
 			</td>
 			<td><?php echo $license["description"] ?></td>
-			<td><?php echo nicedate($license["expires"]) ?></td>
+			<td><?php echo ($license["expires"]==""?$lang["no_expiry_date"]:nicedate($license["expires"])) ?></td>
 		
 			<?php if ($edit_access) { ?>
 			<td><div class="ListTools">
 			<a href="<?php echo $baseurl_short ?>plugins/licensemanager/pages/edit.php?ref=<?php echo $license["ref"] ?>&resource=<?php echo $ref ?>" onClick="return CentralSpaceLoad(this,true);">&gt;&nbsp;<?php echo $lang["action-edit"]?></a>
-			<a href="<?php echo $baseurl_short ?>plugins/licensemanager/pages/delete.php?ref=<?php echo $license["ref"] ?>&resource=<?php echo $ref ?>" onClick="return CentralSpaceLoad(this,true);">&gt;&nbsp;<?php echo $lang["action-delete"]?></a>
+			<a href="<?php echo $baseurl_short ?>plugins/licensemanager/pages/unlink.php?ref=<?php echo $license["ref"] ?>&resource=<?php echo $ref ?>" onClick="return CentralSpaceLoad(this,true);">&gt;&nbsp;<?php echo $lang["action-unlink"]?></a>
 			</div></td>
 			<?php } ?>
 						

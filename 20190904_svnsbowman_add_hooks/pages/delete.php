@@ -1,8 +1,7 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include "../include/resource_functions.php";
 
 $ref=getvalescaped("ref","",true);
 
@@ -19,7 +18,7 @@ $order_by=getvalescaped("order_by","relevance");
 $offset=getvalescaped("offset",0,true);
 $restypes=getvalescaped("restypes","");
 if (strpos($search,"!")!==false) {$restypes="";}
-$archive=getvalescaped("archive",0,true);
+$archive=getvalescaped("archive","");
 
 $modal=(getval("modal","")=="true");
 $default_sort_direction="DESC";
@@ -31,6 +30,13 @@ $error="";
 # Not allowed to edit this resource? They shouldn't have been able to get here.
 if (!get_edit_access($ref,$resource["archive"],false,$resource)) {exit ("Permission denied.");}
 
+if($resource["lock_user"] > 0 && $resource["lock_user"] != $userref)
+    {
+    $error = get_resource_lock_message($resource["lock_user"]);
+    error_alert($error,!$modal);
+    exit();
+    }
+    
 hook("pageevaluation");
 
 if (getval("save","")!="" && enforcePostRequest(getval("ajax", false)))
@@ -77,12 +83,13 @@ if(!$modal)
 ?>
 
 <div class="BasicsBox"> 
+	
   <h1><?php echo $lang["deleteresource"];render_help_link("user/deleting-resources");?></h1>
   <p><?php if($delete_requires_password){text("introtext");}else{echo $lang["delete__nopassword"];} ?></p>
   
   <?php if ($resource["archive"]==3) { ?><p><strong><?php echo $lang["finaldeletion"] ?></strong></p><?php } ?>
   
-	<form method="post" action="<?php echo $baseurl_short?>pages/delete.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset) ?>&order_by=<?php echo urlencode($order_by) ?>&sort=<?php echo urlencode($sort) ?>&archive=<?php echo urlencode($archive) ?>">
+	<form method="post" action="<?php echo $baseurl_short?>pages/delete.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset) ?>&order_by=<?php echo urlencode($order_by) ?>&sort=<?php echo urlencode($sort) ?>&archive=<?php echo urlencode($archive) ?>&amp;restypes=<?php echo urlencode($restypes); ?>">
 	<input type=hidden name=ref value="<?php echo urlencode($ref) ?>">
     <?php generateFormToken("delete_resource"); ?>
 	<div class="Question">
@@ -98,13 +105,29 @@ if(!$modal)
 	<div class="clearerleft"> </div>
 	<?php if ($error!="") { ?><div class="FormError">!! <?php echo htmlspecialchars($error) ?> !!</div><?php } ?>
 	</div>
-	<?php } ?>
+	<?php }
+	
+	$cancelparams = array();
+
+	$cancelparams["ref"] 		= $ref;
+	$cancelparams["search"] 	= $search;
+	$cancelparams["offset"] 	= $offset;
+	$cancelparams["order_by"] 	= $order_by;
+	$cancelparams["sort"] 		= $sort;
+	$cancelparams["archive"] 	= $archive;
+	
+	$cancelurl = generateURL($baseurl_short . "pages/view.php",$cancelparams);
+	?>
 	
 	<div class="QuestionSubmit">
 	<input name="save" type="hidden" value="true" />
 	<label for="buttons"> </label>			
-	<input name="save" type="submit" value="&nbsp;&nbsp;<?php echo $lang["deleteresource"]?>&nbsp;&nbsp;"  onclick="return ModalPost(this.form,true);"/>
+	<input name="save" type="submit" value="&nbsp;&nbsp;<?php echo $lang["deleteresource"]?>&nbsp;&nbsp;"  onclick="return ModalPost(this.form,true);"/>		
+	<input name="cancel" type="button" value="&nbsp;&nbsp;<?php echo $lang["cancel"]?>&nbsp;&nbsp;"  onclick='return CentralSpaceLoad("<?php echo $cancelurl ?>",true);'/>
 	</div>
+
+
+
 	</form>
 	
 </div>

@@ -4,7 +4,6 @@
 #
 
 include '../../../include/db.php';
-include_once '../../../include/general.php';
 include '../../../include/authenticate.php'; if (!checkperm('a')) {exit ($lang['error-permissiondenied']);}
 unset($additional_archive_states);$additional_archive_states=array();
 include_once '../include/rse_workflow_functions.php';
@@ -98,7 +97,8 @@ if (getvalescaped("submitted","")!="" && enforcePostRequest(getval("ajax", false
                        simple_search_flag = '$simple_search_escaped'
                  WHERE code = '$code'");
             }
-
+        
+        clear_query_cache("workflow");
         $saved=true;
         }
     
@@ -224,7 +224,7 @@ else if ($saved)
         </div>
 
         <?php
-        if($search_all_workflow_states || ($code == -1 && $pending_review_visible_to_all) || ($code == -2 &&$pending_submission_searchable_to_all))
+        if($search_all_workflow_states || $code ==0 || ($code == -1 && $pending_review_visible_to_all) || ($code == -2 &&$pending_submission_searchable_to_all))
             {
             echo "<input id='simple_search' type='hidden' value='1' />";
             }

@@ -1,8 +1,7 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include_once "../include/collections_functions.php";
 
 $offset=getvalescaped("offset", 0, true);
 $ref=getvalescaped("ref","",true);
@@ -61,7 +60,8 @@ if ($intro!="") { ?><p><?php echo $intro ?></p><?php }
 <td><?php echo $lang["user"]?></td>
 <td><?php echo $lang["action"]?></td>
 <td><?php echo $lang["resourceid"]?></td>
-<td><?php $field=get_fields(array($view_title_field));echo lang_or_i18n_get_translated($field[0]["title"], "fieldtitle-");?></td>
+<td><?php $field=get_fields(array($view_title_field)); if (!empty($field[0]["title"])) {echo lang_or_i18n_get_translated($field[0]["title"], "fieldtitle-");}?></td>
+<?php hook("log_extra_columns_header"); ?>
 </tr>
 
 <?php
@@ -71,7 +71,7 @@ for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
 	?>
 	<!--List Item-->
 	<tr>
-	<td><?php echo htmlspecialchars(nicedate($log[$n]["date"],true)) ?></td>
+	<td><?php echo htmlspecialchars(nicedate($log[$n]["date"],true, true, true)) ?></td>
 	<td><?php echo htmlspecialchars($log[$n]["fullname"])?></td>
 	<td><?php 
 		echo $lang["collectionlog-" . $log[$n]["type"]] ;
@@ -86,6 +86,7 @@ for ($n=$offset;(($n<count($log)) && ($n<($offset+$per_page)));$n++)
 		?></td>
 	<td><?php if ($log[$n]['resource']!=0){?><a onClick="return CentralSpaceLoad(this,true);" href='<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($log[$n]["resource"]) ?>'><?php echo $log[$n]["resource"]?></a><?php } ?></td>
 	<td><?php if ($log[$n]['resource']!=0){?><a onClick="return CentralSpaceLoad(this,true);" href='<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($log[$n]["resource"]) ?>'><?php echo i18n_get_translated($log[$n]["title"])?></a><?php } ?></td>
+    <?php hook("log_extra_columns_row", "", array($log[$n], $colinfo)); ?>
 	</tr> 
 <?php } ?>
 </table>

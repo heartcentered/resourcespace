@@ -1,7 +1,7 @@
 <?php
 
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";
 
 if (!checkperm("a"))
@@ -54,7 +54,7 @@ if (getval("save","")!="" && enforcePostRequest(false))
 	}
 
 $group=get_usergroup($ref);
-if(in_array("permissions",$group['inherit'])){exit($lang["error-permissiondenied"]);}
+if(isset($group['inherit']) && is_array($group['inherit']) && in_array("permissions",$group['inherit'])){exit($lang["error-permissiondenied"]);}
 $permissions=trim_array(explode(",",$group["permissions"]));
 $permissions_done=array();
 
@@ -140,12 +140,16 @@ DrawOption("w", $lang["show_watermarked_previews_and_thumbnails"]);
 
 # ------------ View access to fields
 DrawOption("f*", $lang["can_see_all_fields"], false, true);
-$fields=sql_query("select * from resource_type_field order by order_by");
+$fields=sql_query("select *,active from resource_type_field order by active desc,order_by", "schema");
 foreach ($fields as $field)
 	{
 	if (!in_array("f*",$permissions))
 		{
-		DrawOption("f" . $field["ref"], "&nbsp;&nbsp; - " . $lang["can_see_field"] . " '" . lang_or_i18n_get_translated($field["title"], "fieldtitle-") . "'" . (($field["name"]=="")?"":"<em> (" . htmlspecialchars($field["name"]) . ")</em>"));
+		# Render disabled fields with strikethrough
+		$fieldprefix="";$fieldsuffix="";
+		if ($field["active"]==0) {$fieldprefix="<span class=FieldDisabled>";$fieldsuffix="</span>";}
+
+		DrawOption("f" . $field["ref"], "&nbsp;&nbsp; - " . $lang["can_see_field"] . " '" . $fieldprefix . lang_or_i18n_get_translated($field["title"], "fieldtitle-") . $fieldsuffix . "'" . (($field["name"]=="")?"":"<em> (" . htmlspecialchars($field["name"]) . ")</em>"));
 		}
 	else
 		{
@@ -155,12 +159,16 @@ foreach ($fields as $field)
 	}
 
 DrawOption("F*", $lang["can_edit_all_fields"], true, true);
-$fields=sql_query("select * from resource_type_field order by order_by");
+$fields=sql_query("select * from resource_type_field order by active desc,order_by", "schema");
 foreach ($fields as $field)
 	{
 	if (in_array("F*",$permissions))	
 		{
-		DrawOption("F-" . $field["ref"], "&nbsp;&nbsp; - " . $lang["can_edit_field"] . " '" . lang_or_i18n_get_translated($field["title"], "fieldtitle-") . "'"  . (($field["name"]=="")?"":"<em> (" . htmlspecialchars($field["name"]) . ")</em>"), false);
+		# Render disabled fields with strikethrough
+		$fieldprefix="";$fieldsuffix="";
+		if ($field["active"]==0) {$fieldprefix="<span class=FieldDisabled>";$fieldsuffix="</span>";}
+
+		DrawOption("F-" . $field["ref"], "&nbsp;&nbsp; - " . $lang["can_edit_field"] . " '" . $fieldprefix . lang_or_i18n_get_translated($field["title"], "fieldtitle-") . $fieldsuffix . "'"  . (($field["name"]=="")?"":"<em> (" . htmlspecialchars($field["name"]) . ")</em>"), false);
 		}
 	else
 		{
@@ -175,7 +183,7 @@ foreach ($fields as $field)
 <?php
 
 # ------------ View access to resource types
-$rtypes=sql_query("select * from resource_type order by name");
+$rtypes=sql_query("select * from resource_type order by name", "schema");
 foreach ($rtypes as $rtype)
 	{
 	DrawOption("T" . $rtype["ref"], str_replace(array("%TYPE","%REF"),array(lang_or_i18n_get_translated($rtype["name"], "resourcetype-"),$rtype["ref"]),$lang["can_see_resource_type"]), true);
@@ -196,8 +204,23 @@ foreach ($rtypes as $rtype)
 # ------------ Edit access to resource types (in any archive state to which the group has access)
 foreach ($rtypes as $rtype)
 	{
-	DrawOption("ert" . $rtype["ref"], $lang["can_edit_resource_type"] ." '" . lang_or_i18n_get_translated($rtype["name"], "resourcetype-") . "'");
-	}
+	DrawOption("ert" . $rtype["ref"], $lang["force_edit_resource_type"] ." '" . lang_or_i18n_get_translated($rtype["name"], "resourcetype-") . "'");
+    }
+    
+foreach ($rtypes as $rtype)
+    {
+    DrawOption("XE" . $rtype["ref"], $lang["deny_edit_resource_type"] ." '" . lang_or_i18n_get_translated($rtype["name"], "resourcetype-") . "'");
+    }
+
+DrawOption("XE", $lang["deny_edit_all_resource_types"],false, true);
+# ------------ Allow edit access to specified resource types
+if (in_array("XE",$permissions))	
+		{
+        foreach ($rtypes as $rtype)
+            {
+            DrawOption("XE-" . $rtype["ref"], str_replace("%%RESOURCETYPE%%","'" . lang_or_i18n_get_translated($rtype["name"], "resourcetype-") . "'",$lang["can_edit_resource_type"]));
+            }
+        }
 
 ?>				<tr class="ListviewTitleStyle">
 					<td colspan=3 class="permheader"><?php echo $lang["resource_creation_and_management"] ?></td>
@@ -328,6 +351,7 @@ DrawOption("U", $lang["can_manage_users_in_children_groups"]);
 DrawOption("E", $lang["can_email_resources_to_own_and_children_and_parent_groups"]);
 DrawOption("x", $lang["allow_user_group_selection_for_access_when_sharing_externally"]);
 DrawOption("noex", $lang["prevent_user_group_sharing_externally"]);
+DrawOption("nolock", $lang["permission_nolock"]);
 
 hook("additionalperms");
 ?>			</table>

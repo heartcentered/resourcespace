@@ -1,10 +1,6 @@
 <?php
 include_once('../../include/db.php');
-include_once('../../include/general.php');
 include_once('../../include/authenticate.php');
-include_once('../../include/resource_functions.php');
-include_once('../../include/search_functions.php');
-include_once('../../include/collections_functions.php');
 
 // Generic endpoint that can be used for ajax calls
 $action = getvalescaped('action','');
@@ -14,6 +10,9 @@ $return['status'] = 400; // set to default
 switch ($action)
     {
     case 'submitpending':
+        // prevent search from returning all contributed resources (archive filter will not be ignored in this case)
+        $search_all_workflow_states = false;
+
         $pending_items=do_search("!contributions" . $userref,"","",-2,-1,"desc",false,0,false,false,"",false,false,true);
         
         // If using '$pending_submission_prompt_review and have added to collection, only submit these resources
@@ -39,6 +38,45 @@ switch ($action)
             }
         
         $return['status'] = 200;
+        break;
+
+    case 'updatelock':
+        $resource = getval("ref",0,true);
+        $lockaction = getval("lock",'') == "true";
+        $resource_data = get_resource_data($resource);
+        
+        if(((string)(int)$resource != (string)$resource) || !$resource_data)
+            {
+            $return['message'] = $lang["error_invalid_input"] ;
+            break;
+            }
+        $edit_access = get_edit_access($resource,$resource_data["archive"],false,$resource_data);
+        $lockuser =  $resource_data["lock_user"];
+
+        if($lockaction && $lockuser > 0 && $lockuser != $userref)
+            {
+            // Already locked
+            $return['status'] = 403;
+            $return['message'] = get_resource_lock_message($lockuser);
+            }
+        elseif(checkperm("a")
+            ||
+            $lockuser == $userref
+            ||
+            ($edit_access && $lockuser == 0 && !checkperm("nolock"))
+            )
+            {
+            $success = update_resource_lock($resource,$lockaction,$userref,true);
+            if($success)
+                {
+                $return['status'] = 200;
+                }
+            }
+        else
+            {
+            $return['status'] = 403;
+            $return['message'] = $lang["error-permissiondenied"];
+            }
         break;
 
     default:

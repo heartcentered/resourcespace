@@ -14,9 +14,7 @@ $status_box_id                     = ($is_search ? "nodes_searched_{$field['ref'
 $status_box_elements               = '';
 $update_result_count_function_call = 'UpdateResultCount();';
 $tree_id                           = ($is_search ? "search_tree_{$field['ref']}" : "tree_{$field['ref']}");
-$category_tree_open                = $is_search ? true : $category_tree_open;
 $tree_container_styling            = ($category_tree_open ? 'display: block;' : 'display: none;');
-$category_tree_show_status_window  = $is_search ? false : $category_tree_show_status_window;
 
 if(!isset($selected_nodes))
     {
@@ -28,19 +26,27 @@ if(!isset($selected_nodes))
         }
     }
 
-foreach($field['nodes'] as $node)
+// User set values are options selected by user - used to render what users selected before submitting the form and
+// receiving an error (e.g required field missing)
+if(isset($user_set_values[$field['ref']]) && is_array($user_set_values[$field['ref']]) && !empty($user_set_values[$field['ref']]))
     {
-    if(!in_array($node['ref'], $selected_nodes) && !(isset($user_set_values[$field['ref']]) && in_array($node['ref'],$user_set_values[$field['ref']])))
+    $selected_nodes = $user_set_values[$field['ref']];
+    }
+
+foreach($selected_nodes as $node)
+    {
+    $node_data = array();
+    if(get_node($node, $node_data) && $node_data["resource_type_field"] != $field["ref"])
         {
         continue;
         }
 
-    $hidden_input_elements .= "<input id=\"{$hidden_input_elements_id_prefix}{$node['ref']}\" class =\"{$tree_id}_nodes\" type=\"hidden\" name=\"{$name}\" value=\"{$node['ref']}\">";
+    $hidden_input_elements .= "<input id=\"{$hidden_input_elements_id_prefix}{$node_data["ref"]}\" class =\"{$tree_id}_nodes\" type=\"hidden\" name=\"{$name}\" value=\"{$node_data["ref"]}\">";
 
     // Show previously searched options on the status box
     if(!(isset($treeonly) && true == $treeonly))
         {
-        $status_box_elements .= "<div class=\"" . $tree_id . "_option_status\"  ><span id=\"{$status_box_id}_option_{$node['ref']}\">" . htmlspecialchars($node['name']) . "</span><br /></div>";
+        $status_box_elements .= "<div class=\"" . $tree_id . "_option_status\"  ><span id=\"{$status_box_id}_option_{$node_data['ref']}\">" . htmlspecialchars($node_data['name']) . "</span><br /></div>";
         }
     }
 
@@ -62,7 +68,7 @@ if(!(isset($treeonly) && true == $treeonly))
     <div id="<?php echo $status_box_id; ?>" class="CategoryBox" <?php if(!$category_tree_show_status_window) { ?>style="display:none;"<?php } ?>>
         <?php echo $status_box_elements; ?>
     </div>
-    <div style="<?php echo ($is_search ? "display: none;" : ""); ?>">
+    <div>
         <a href="#"
            onclick="
                 if(document.getElementById('<?php echo $tree_id; ?>').style.display!='block')

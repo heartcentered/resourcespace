@@ -1,6 +1,5 @@
 <?php
 include '../../include/db.php';
-include_once '../../include/general.php';
 include '../../include/authenticate.php'; if(!checkperm('a')) { exit('Permission denied.'); }
 include_once '../../include/config_functions.php';
 
@@ -82,7 +81,7 @@ $page_def[] = config_add_colouroverride_input(
     '',
     null,
     true,
-    "jQuery('#HeaderNav1 a').css('color',value);jQuery('#HeaderNav2 a').css('color',value);jQuery('#HeaderNav2 li').css('border-color', value);"
+    "jQuery('#HeaderNav1 li a').css('color',value);jQuery('#HeaderNav1 li.UploadButton a').css('color','white');jQuery('#HeaderNav2 a').css('color',value);jQuery('#HeaderNav2 li').css('border-color', value);"
 );
 $page_def[] = config_add_colouroverride_input(
     'home_colour_style_override',
@@ -111,6 +110,7 @@ $page_def[] = config_add_colouroverride_input(
 $page_def[] = config_add_single_select('thumbs_default', $lang['userpreference_thumbs_default_label'], array('show' => $lang['showthumbnails'], 'hide' => $lang['hidethumbnails']), true, 420, '', true);
 $page_def[] = config_add_boolean_select('resource_view_modal', $lang['userpreference_resource_view_modal_label'], $enable_disable_options, 420, '', true);
 $page_def[] = config_add_boolean_select('modal_default', $lang['systemconfig_modal_default'], $enable_disable_options, 420, '', true);
+$page_def[] = config_add_boolean_select('basic_simple_search', $lang['userpreference_basic_simple_search_label'], $enable_disable_options, 420, '', true);
 $page_def[] = config_add_boolean_select('comments_resource_enable', $lang['systemconfig_comments'], $enable_disable_options, 420, '', true);
 $page_def[] = config_add_single_select('upload_then_edit', $lang['default_upload_sequence'], array(true => $lang['upload_first_then_set_metadata'], false => $lang['set_metadata_then_upload']), true, 420, '', true);
 $page_def[] = config_add_boolean_select('byte_prefix_mode_decimal', $lang['byte_prefix_mode_decimal'], $enable_disable_options, 420, '', true);
@@ -188,7 +188,6 @@ $page_def[] = config_add_single_select(
     true
 );
 $page_def[] = config_add_boolean_select('archive_search', $lang['stat-archivesearch'], $enable_disable_options, 420, '', true);
-$page_def[] = config_add_boolean_select('use_checkboxes_for_selection', $lang['userpreference_use_checkboxes_for_selection_label'], $enable_disable_options, 420, '', true);
 $page_def[] = config_add_boolean_select('display_resource_id_in_thumbnail', $lang['systemconfig_display_resource_id_in_thumbnail_label'], $enable_disable_options, 420, '', true);
 $page_def[] = config_add_boolean_select('advanced_search_contributed_by', $lang['systemconfig_advanced_search_contributed_by_label'], $enable_disable_options, 420, '', true);
 $page_def[] = config_add_boolean_select('advanced_search_media_section', $lang['systemconfig_advanced_search_media_section_label'], $enable_disable_options, 420, '', true);

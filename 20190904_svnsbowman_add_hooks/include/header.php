@@ -1,5 +1,4 @@
 <?php 
-include_once("render_functions.php");
 
 hook ("preheaderoutput");
  
@@ -31,18 +30,15 @@ if(!isset($thumbs) && ($pagename!="login") && ($pagename!="user_password") && ($
 	
 ?><!DOCTYPE html>
 <html lang="<?php echo $language ?>">	
-<?php 
-if ($include_rs_header_info)
-    {?>
-    <!--<?php hook("copyrightinsert");?>
-    ResourceSpace version <?php echo $productversion?>
 
-    For copyright and license information see documentation/licenses/resourcespace.txt
-    http://www.resourcespace.org/
-    -->
-    <?php 
-    }
-?>
+<!--
+
+ ResourceSpace version <?php echo $productversion?>
+
+ For copyright and license information see /documentation/licenses/resourcespace.txt
+ https://www.resourcespace.com
+ -->
+
 <head>
 <?php if(!hook("customhtmlheader")): ?>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -111,12 +107,16 @@ if ($contact_sheet)
 global $enable_ckeditor;
 if ($enable_ckeditor){?>
 <script type="text/javascript" src="<?php echo $baseurl?>/lib/ckeditor/ckeditor.js"></script><?php } ?>
-<?php if (!$disable_geocoding) { ?>
-<script src="<?php echo $baseurl ?>/lib/OpenLayers/OpenLayers.js"></script>
-<?php if ($use_google_maps) { ?>
-<script src="https://maps.google.com/maps/api/js?<?php if(isset($google_maps_api_key)) { echo "key={$google_maps_api_key}&"; } ?>v=3"></script>
-<?php } ?>
-<?php } ?>
+<?php if (!$disable_geocoding)
+    {?>
+    <script src="<?php echo $baseurl ?>/lib/OpenLayers/OpenLayers.js"></script>
+    <?php
+    if ($use_google_maps)
+        {
+        echo "<script src=\"https://maps.google.com/maps/api/js?" . (isset($google_maps_api_key) ? ("key=" . $google_maps_api_key . "&") : "") . "v=3\"></script>\n";
+        } ?>
+    <?php
+    } ?>
 <?php if (!hook("ajaxcollections")) { ?>
 <script src="<?php echo $baseurl;?>/lib/js/ajax_collections.js?css_reload_key=<?php echo $css_reload_key?>" type="text/javascript"></script>
 <?php } ?>
@@ -130,13 +130,22 @@ if ($enable_ckeditor){?>
 	<script type="text/javascript" src="<?php echo $baseurl_short;?>lib/plupload_2.1.8/jquery.plupload.queue/jquery.plupload.queue.min.js?<?php echo $css_reload_key;?>"></script>
 <?php } ?>
 <?php
-if($videojs && ($keyboard_navigation_video_search || $keyboard_navigation_video_view || $keyboard_navigation_video_preview))
+if ($keyboard_navigation_video_search || $keyboard_navigation_video_view || $keyboard_navigation_video_preview)
     {
     ?>
 	<script type="text/javascript" src="<?php echo $baseurl_short?>lib/js/videojs-extras.js?<?php echo $css_reload_key?>"></script>
     <?php
     }
+
+if($simple_search_pills_view)
+    {
     ?>
+    <script src="<?php echo $baseurl_short; ?>lib/jquery_tag_editor/jquery.caret.min.js"></script>
+    <script src="<?php echo $baseurl_short; ?>lib/jquery_tag_editor/jquery.tag-editor.min.js"></script>
+    <link type="text/css" rel="stylesheet" href="<?php echo $baseurl_short; ?>lib/jquery_tag_editor/jquery.tag-editor.css" />
+    <?php
+    }
+?>
 
 <!-- FLOT for graphs -->
 <script language="javascript" type="text/javascript" src="<?php echo $baseurl_short; ?>lib/flot/jquery.flot.js"></script> 
@@ -165,7 +174,7 @@ $not_authenticated_pages = array('login', 'user_change_password','user_password'
 $browse_on = has_browsebar();
 if($browse_on)
     {
-    $browse_width   = getval("browse_width",$browse_default_width,true);
+    $browse_width   = $browse_default_width;
     $browse_show    = getval("browse_show","") == "show";
     ?>
     <script src="<?php echo $baseurl_short ?>lib/js/browsebar_js.php" type="text/javascript"></script>
@@ -178,6 +187,7 @@ var baseurl_short="<?php echo $baseurl_short?>";
 var baseurl="<?php echo $baseurl?>";
 var pagename="<?php echo $pagename?>";
 var errorpageload = "<h1><?php echo $lang["error"] ?></h1><p><?php echo str_replace(array("\r","\n"),'',nl2br($lang["error-pageload"])) ?></p>";
+var errortext = "<?php echo $lang["error"] ?>";
 var applicationname = "<?php echo $applicationname?>";
 var branch_limit="<?php echo $cat_tree_singlebranch?>";
 var branch_limit_field = new Array();
@@ -224,6 +234,7 @@ if($browse_on)
 </script>
 
 <script src="<?php echo $baseurl_short?>lib/js/global.js?css_reload_key=<?php echo $css_reload_key?>" type="text/javascript"></script>
+<script src="<?php echo $baseurl_short?>lib/js/polyfills.js?css_reload_key=<?php echo $css_reload_key; ?>"></script>
 
 <?php if ($keyboard_navigation)
     {
@@ -284,19 +295,6 @@ if(!hook("customloadinggraphic"))
 
 <!--Global Header-->
 <?php
-$omit_filter_bar_pages = array(
-    'index',
-    'preview_all',
-    'search_advanced',
-    'preview',
-    'admin_header',
-    'login',
-    'user_request',
-    'user_password',
-    'user_change_password',
-    'document_viewer'
-);
-
 if (($pagename=="terms") && (getval("url","")=="index.php")) {$loginterms=true;} else {$loginterms=false;}
 if (($pagename!="preview" || $preview_header_footer) && $pagename!="preview_all") { ?>
 
@@ -399,22 +397,11 @@ if(isset($username) && !in_array($pagename, $not_authenticated_pages) && false =
 hook("beforeheadernav1");
 if (checkPermission_anonymoususer())
 	{
-    $login_url_params = array(
-        "no_login_background" => "true",
-    );
-    $login_url = generateURL("{$baseurl}/login.php", $login_url_params);
-
 	if (!hook("replaceheadernav1anon")) 
         {
     	?>
     	<ul>
-        <?php
-        if(!in_array($pagename, $omit_filter_bar_pages))
-            {
-            render_filter_bar_component();
-            }
-            ?>
-    	<li><a href="<?php echo $login_url; ?>" onclick="return ModalLoad(this, true);"><?php echo $lang["login"]; ?></a></li>
+    	<li><a href="<?php echo $baseurl?>/login.php"<?php if($anon_login_modal){?> onClick="return ModalLoad(this,true);" <?php } ?>><?php echo $lang["login"]?></a></li>
     	<?php hook("addtoplinksanon");?>
     	<?php if ($contact_link) { ?><li><a href="<?php echo $baseurl?>/pages/contact.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["contactus"]?></a></li><?php } ?>
     	</ul>
@@ -426,13 +413,30 @@ else
 	if (!hook("replaceheadernav1")) {
 	?>
     <ul>
-    <?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php }
-
-    if(!in_array($pagename, $omit_filter_bar_pages))
-        {
-        render_filter_bar_component();
-        }
-
+        
+    <?php if ($header_search && $k=="") { ?>
+    <li>
+	<form class="HeaderSearchForm" id="header_search_form" method="post" action="<?php echo $baseurl?>/pages/search.php" onSubmit="return CentralSpacePost(this,true);">
+    <?php
+    generateFormToken("header_search_form");
+    ?>
+    <input id="ssearchbox" name="search" type="text" class="searchwidth" placeholder="<?php echo $lang['simplesearch'] . '...'; ?>" value="<?php echo (isset($quicksearch)?$htmlspecialchars($quicksearch):"") ?>" />
+    
+    <a href="<?php echo $baseurl; ?>/pages/simple_search.php" onClick="ModalClose(); return ModalLoad(this, true, true, 'right');">
+                <i aria-hidden="true" class="fa fa-filter fa-lg fa-fw"></i>
+            </a>
+    </form>
+         
+         
+    
+        
+    </li>
+    <?php } ?>
+        
+    		
+	<?php if (($top_nav_upload && checkperm("c")) || ($top_nav_upload_user && checkperm("d"))) { ?><li class="HeaderLink UploadButton"><a href="<?php echo $baseurl; if ($upload_then_edit) { ?>/pages/upload_plupload.php<?php } else { ?>/pages/edit.php?ref=-<?php echo @$userref?>&amp;uploader=<?php echo $top_nav_upload_type; } ?>" onClick="return CentralSpaceLoad(this,true);"><?php echo UPLOAD_ICON ?><?php echo $lang["upload"]?></a></li><?php } ?>    
+        
+    <?php
     if(!hook('replaceheaderfullnamelink'))
         {
         ?>
@@ -488,7 +492,7 @@ include_once __DIR__ . '/../pages/ajax/message.php';
 <?php hook("midheader"); ?>
 <div id="HeaderNav2" class="HorizontalNav HorizontalWhiteNav">
 <?php
-if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login))
+if(!($pagename == "terms" && isset($_SERVER["HTTP_REFERER"]) && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login))
     {
         include (dirname(__FILE__) . "/header_links.php");
     }
@@ -496,7 +500,7 @@ if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false 
 </div> 
 
 <?php } else if (!hook("replaceloginheader")) { # Empty Header?>
-<div id="HeaderNav1" class="HorizontalNav "></div>
+<div id="HeaderNav1" class="HorizontalNav ">&nbsp;</div>
 <div id="HeaderNav2" class="HorizontalNav HorizontalWhiteNav">&nbsp;</div>
 <?php } ?>
 
@@ -507,16 +511,47 @@ if(!($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false 
 <div class="clearer"></div><?php if ($pagename!="preview" && $pagename!="preview_all") { ?></div><?php } #end of header ?>
 
 <?php
-if($pagename == "terms" && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login)
+ $omit_searchbar_pages = array(
+        'index',
+        'preview_all',
+        'search_advanced',
+        'preview',
+        'admin_header',
+        'login',
+        'user_request',
+        'user_password',
+        'user_change_password',
+        'document_viewer'
+    );
+
+if($pagename == "terms" && isset($_SERVER["HTTP_REFERER"]) && strpos($_SERVER["HTTP_REFERER"],"login") !== false && $terms_login)
     {
-        array_push($omit_filter_bar_pages, 'terms');
+        array_push($omit_searchbar_pages, 'terms');
         $collections_footer = false;
     }
-
+ 
+if (!$header_search)
+    {
+    # Include simple search sidebar?
+   
+    $modified_omit_searchbar_pages=hook("modifyomitsearchbarpages");
+    if ($modified_omit_searchbar_pages){$omit_searchbar_pages=$modified_omit_searchbar_pages;}
+        
+    if (!in_array($pagename,$omit_searchbar_pages) && ($loginterms==false) && ($k == '' || $internal_share_access) && !hook("replace_searchbarcontainer") ) 	
+        {
+        ?>
+        <div id="SearchBarContainer" class="ui-layout-east" >
+        <?php
+        include dirname(__FILE__)."/searchbar.php";
+        
+        ?>
+        </div>
+        <?php
+        }
+    }
 ?>
-<div id="FilterBarContainer" class="ui-layout-east"></div>
-<?php
 
+<?php
 # Determine which content holder div to use
 if (($pagename=="login") || ($pagename=="user_password") || ($pagename=="user_request") || ($pagename=="user_change_password"))
     {
@@ -526,7 +561,7 @@ if (($pagename=="login") || ($pagename=="user_password") || ($pagename=="user_re
 else
     {
     $div="CentralSpace";
-    if (in_array($pagename,$omit_filter_bar_pages))
+    if (in_array($pagename,$omit_searchbar_pages))
         {
         $uicenterclass="NoSearch";
         }
@@ -539,7 +574,7 @@ else
 <!--Main Part of the page-->
 <?php
 
-if($browse_on)
+if($browse_on && checkperm("s") === true)
     {
     render_browse_bar();
     }
@@ -553,7 +588,10 @@ if (!in_array($pagename, $not_authenticated_pages))
     $csc_classes = array();
     if(isset($username) && !in_array($pagename, $not_authenticated_pages) && false == $loginterms && ('' == $k || $internal_share_access) && $browse_bar) 
         {
-        $csc_classes[] = "NoSearchBar";
+        if($header_search)
+            {
+            $csc_classes[] = "NoSearchBar";
+            }
         }
     echo '<div id="CentralSpaceContainer" ' . (count($csc_classes) > 0 ? 'class="' . implode(' ', $csc_classes) . '"' : '' ) . '>';
     }

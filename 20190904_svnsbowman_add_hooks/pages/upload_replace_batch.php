@@ -4,7 +4,7 @@
  * 
  */
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
 if (!checkperm("t"))
     {
@@ -129,7 +129,7 @@ if (isset($info_text))
 
 <div class="Question">
     <label for="no_exif"><?php echo $lang["no_exif"]?></label>
-    <input type=checkbox <?php if ((!$metadata_read_default && !$submitted) || $no_exif == "yes"){ echo " checked "; } ?> id="no_exif" name="no_exif" value="yes">
+    <input type=checkbox checked id="no_exif" name="no_exif" value="yes">
     <div class="clearerleft"> </div>
 </div>
 
@@ -148,7 +148,7 @@ if($offline_job_queue)
     ?>
 
 <div class="Question">
-<input type="submit" value="<?php echo $lang["start"]; ?>" name="upload" id="upload_button" onClick="CentralSpacePost(this,true);" />
+<input type="submit" value="<?php echo $lang["start"]; ?>" name="upload" id="upload_button" />
 <div class="clearerleft"> </div>
 </div>
 

@@ -100,7 +100,7 @@ $lang["fieldtype-dynamic_keywords_list"]="Dynamische Stichwortliste";
 $lang["fieldtype-dynamic_tree_in_development"]="Dynamischer Baum (in Entwicklung)";
 
 # Property labels (for the default properties)
-$lang["documentation-permissions"]="Weitere Informationen über die Berechtigungen finden Sie in der <a href=../../documentation/permissions.txt target=_blank>Berechtigungen Hilfe-Datei</a>.";
+$lang["documentation-permissions"]="Weitere Informationen über die Berechtigungen finden Sie in der <a href=https://www.resourcespace.com/knowledge-base/ target=_blank>Knowledge Base</a>.";
 $lang["property-reference"]="Referenz";
 $lang["property-name"]="Name";
 $lang["property-permissions"]="Berechtigungen";
@@ -200,7 +200,7 @@ $lang["myrequests"]="Meine Anfragen";
 $lang["collections"]="Kollektionen";
 $lang["mycontributions"]="Meine Beiträge";
 $lang["researchrequest"]="Suchanfrage";
-$lang["helpandadvice"]="Hilfe &amp; Unterstützung";
+$lang["helpandadvice"]="Wissensdatenbank";
 $lang["teamcentre"]="Administration";
 # footer link
 $lang["aboutus"]="Über uns";
@@ -360,7 +360,7 @@ $lang["showthumbnails"]="Vorschaubilder einblenden";
 $lang["toggle"]="Umschalten";
 $lang["resize"]="Größe verändern";
 $lang["contactsheet"]="Kontaktabzug";
-$lang["mycollection"]="Meine Kollektion";
+$lang["mycollection"]="Standard-Kollektion";
 $lang["editresearchrequests"]="Suchanfragen bearbeiten";
 $lang["research"]="Recherche";
 $lang["savedsearch"]="Gespeicherte Suche";
@@ -701,7 +701,7 @@ $lang["continuetohome"]="weiter zur Startseite";
 $lang["backtohelphome"]="zurück zur Hilfeseite";
 $lang["backtosearch"]="zurück zu meinen Suchergebnissen";
 $lang["backtoview"]="Ressource-Ansicht";
-$lang["backtoeditresource"]="zurück zur Ressourcen-Bearbeitung";
+$lang["backtoeditmetadata"]="zurück zur Ressourcen-Bearbeitung";
 $lang["backtouser"]="zurück zum Benutzer-Login";
 $lang["continuetouser"]="weiter zum Benutzer-Login";
 $lang["termsandconditions"]="Allg. Geschäfts- und Nutzungsbedingungen";
@@ -1001,7 +1001,7 @@ $lang["phpextensions"]="PHP Extensions";
 # Setup Script
 $lang["setup-alreadyconfigured"]="Ihre ResourceSpace installation ist bereits konfiguriert. Um die Installation neu zu konfigurieren, können Sie die Datei <pre>include/config.php</pre> und dann diese Seite neu laden.";
 $lang["setup-successheader"]="Glückwunsch!";
-$lang["setup-successdetails"]="Ihre ResourceSpace Installation ist abgeschlossen. Weitere Konfigurationsoptionen finden Sie in der Datei 'include/default.config.php'.";
+$lang["setup-successdetails"]="Ihre ResourceSpace Installation ist abgeschlossen. Weitere Konfigurationsoptionen finden Sie in der Datei 'include/config.default.php'.";
 $lang["setup-successnextsteps"]="Nächste Schritte:";
 $lang["setup-successremovewrite"]="Sie können nun den Schreibzugriff auf den Ordner 'include/' entfernen.";
 $lang["setup-visitwiki"]='Besuchen Sie das <a target="_blank" href="http://www.resourcespace.com/knowledge-base/">ResourceSpace Knowledge Base</a> für weitere Informationen über die Anpassung Ihrer Installation';
@@ -1924,7 +1924,6 @@ $lang['action-move-down'] = 'Nach unten';
 
 $lang["about__about"]="Ihr Text zu \"Über uns\" hier.";
 $lang["all__researchrequest"]="Lassen Sie unser Team nach den benötigten Resourcen suchen.";
-$lang["all__searchpanel"]="Suche nach Beschreibung, Schlagworten und Ressourcen IDs";
 $lang["change_language__introtext"]="Bitte wählen Sie Ihre Sprache aus:";
 $lang["change_password__introtext"]="Neues Passwort unten eingeben, um es zu ändern.";
 $lang["collection_edit__introtext"]="Organisieren und verwalten Sie Ihre Arbeit, indem Sie Ressourcen in Gruppen zusammenstellen. Erstellen Sie Kollektionen wie Sie sie benötigen.\n\n<br />\n\nAlle Kollektionen in Ihrer Liste erscheinen im \"Meine Kollektionen\" Menü am unteren Ende des Fensters.\n\n<br /><br />\n\n<strong>Privater Zugriff</strong> erlaubt nur Ihnen und ausgewählten Benutzern, die Kollektion zu anzusehen. Ideal, um Ressourcen für die eigene Arbeit zusammenzustellen und im Team weiterzugeben.\n\n<br /><br />\n\n<strong>Öffentlicher Zugriff</strong> erlaubt allen Benutzern, die Kollektion zu finden und anzusehen.\n\n<br /><br />\n\nSie können aussuchen, ob Sie anderen Benutzern (öffentlicher Zugriff oder ausgewählte Benutzer beim privaten Zugriff) erlauben, Ressourcen hinzuzufügen oder zu löschen.";
@@ -1947,11 +1946,8 @@ $lang["download_click__introtext"]="Um die Datei herunterzuladen, klicken Sie bi
 $lang["download_progress__introtext"]="Ihr Download wird in Kürze starten. Nachdem der Download abgeschlossen ist, wählen Sie bitte einen der folgenden Links.";
 $lang["edit__batch"]="";
 $lang["edit__multiple"]="Bitte wählen Sie die Felder aus, die Sie verändern wollen. Felder, die Sie nicht anwählen, werden nicht verändert.";
-$lang["home__help"]="Hilfe für die Arbeit mit ResourceSpace";
-$lang["home__mycollections"]="Hier können Sie Ihre Kollektionen organisieren, verwalten und weitergeben.";
 $lang["home__restrictedtext"]="Bitte klicken Sie auf den Link, den Sie per E-Mail erhalten haben, um auf die für Sie ausgesuchten Ressourcen zuzugreifen.";
 $lang["home__restrictedtitle"]="Willkommen bei ResourceSpace";
-$lang["home__themes"]="Von unserem Team vorausgewählte Bilder";
 $lang["home__welcometext"]="Ihr Einleitungstext hier";
 $lang["home__welcometitle"]="Willkommen bei ResourceSpace";
 $lang["login__welcomelogin"]="Willkommen bei ResourceSpace. Bitte loggen Sie sich ein...";
@@ -1973,12 +1969,10 @@ $lang["team_stats__introtext"]="Statistiken werden auf Basis der aktuellsten Dat
 $lang["team_user__introtext"]="In diesem Bereich können Sie Benutzer hinzufügen, löschen und verändern.";
 $lang["terms__introtext"]="Sie müssen zuerst die Nutzungsbedingungen akzeptieren.\n\n";
 $lang["terms__terms"]="Ihre Nutzungsbedingungen hier.";
-$lang["terms and conditions__terms and conditions"]="Ihre Nutzungsbedingungen hier.";
 $lang["themes__findpublic"]="Öffentliche Kollektionen sind Kollektionen, die von anderen Benutzern freigegeben wurden.";
 $lang["themes__introtext"]="Themen sind von unserem Team zusammengestellte Gruppen von Ressourcen.";
 $lang["themes__manage"]="Organisieren und bearbeiten Sie Ihre Themen. Themen sind besonders hervorgehobene Kollektionen. <br /><br /><strong>1 Um einen neuen Eintrag in einem Thema anzulegen, müssen Sie zuerst eine neue Kollektion anlegen</strong><br />Wählen Sie <strong>Meine Kollektionen</strong> aus der oberen Navigation und legen Sie eine neue <strong>öffentliche</strong> Kollektion an. Stellen Sie sicher, dass Sie einen Namen für Ihr Thema eingeben. Um die aktuelle Kollektion einem bestehenden Thema zuzuordnen, nutzen Sie einen bestehenden Themennamen. Wenn Sie einen noch nicht vergebenen Themennamen angeben, erstellen Sie ein neues Thema. <br /><br /><strong>2 Um den Inhalt eines bestehenden Themas zu ändern, </strong><br />wählen Sie <strong>\'Kollektion bearbeiten\'</strong>. Die Ressourcen in dieser Kollektion erscheinen unten im <strong>\'Meine Kollektionen\'</strong> Bereich. Nutzen Sie die Standardwerkzeuge um Resourcen zu bearbeiten, hizuzufügen oder zu löschen.<br /><br /><strong>3 Um eine Kollektion umzubenennen oder unter einem anderen Thema anzuzeigen,</strong><br />wählen Sie <strong>\'bearbeiten\'</strong> und bearbeiten Sie die Themenkategorie oder die Kollektionsnamen. <br /><br /><strong>4 Um eine Kollektion aus einem Thema zu entfernen,</strong><br />wählen Sie<strong> \'bearbeiten\'</strong> und löschen Sie den Eintrag im Feld \"Themen-Kategorie\".";
 $lang["upload__introtext"]="";
-$lang["upload_swf__introtext"]="";
 $lang["user_password__introtext"]="Bitte geben Sie Ihre E-Mail Adresse ein. Ihre Zugangsdaten werden dann an per E-Mail an Sie versendet.";
 $lang["user_request__introtext"]="Um einen Zugang anzufordern, füllen Sie bitte das untenstehende Formular aus.";
 $lang["view__storyextract"]="Story:";

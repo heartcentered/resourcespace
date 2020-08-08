@@ -6,7 +6,7 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; 
 
 if (!checkperm("a"))
@@ -14,7 +14,6 @@ if (!checkperm("a"))
 	exit ("Permission denied.");
 	}
 
-include "../../include/resource_functions.php";
 
 $ref=getvalescaped("ref","",true);
 
@@ -33,7 +32,7 @@ $url_params = array("ref"=>$ref,
 $backurl=getvalescaped("backurl","");
 if($backurl=="")
     {
-    $backurl=$baseurl . "/pages/admin/admin_resource_type_fields.php?ref=" . urlencode($ref) . "&restypefilter=" . urlencode($restypefilter) . "&field_sort=" . urlencode($field_sort) . "&find=" . urlencode($find);
+    $backurl = generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_params);
     }
 else
 	{
@@ -71,7 +70,7 @@ function admin_resource_type_field_constraint($ref, $currentvalue)
 	global $lang;
  	
 	$addconstraint=true;
-	$constraint=sql_value("select field_constraint value from resource_type_field where ref='$ref'",0);
+	$constraint=sql_value("select field_constraint value from resource_type_field where ref='$ref'",0, "schema");
 	?>
 		<div class="clearerleft"></div>
 	</div> <!-- end question -->
@@ -87,6 +86,8 @@ function admin_resource_type_field_constraint($ref, $currentvalue)
 	
 function admin_resource_type_field_option($propertyname,$propertytitle,$helptext="",$type, $currentvalue,$fieldtype)
 	{
+    debug("admin_resource_type_field_option(\$propertyname = '{$propertyname}', \$propertytitle = '{$propertytitle}', \$type = '{$type}', \$currentvalue = '{$currentvalue}', \$fieldtype = '{$fieldtype}');");
+
 	global $ref,$lang, $baseurl_short,$FIXED_LIST_FIELD_TYPES, $TEXT_FIELD_TYPES, $daterange_edtf_support, $allfields, $newfield;
 	if($propertyname=="linked_data_field")
 		{
@@ -266,6 +267,7 @@ function admin_resource_type_field_option($propertyname,$propertytitle,$helptext
 			<input name="<?php echo $propertyname ?>" type="text" class="stdwidth" value="<?php echo htmlspecialchars($currentvalue)?>">
 			<?php
 			}
+
 		if($helptext!="")
 				{
 				?>
@@ -275,9 +277,55 @@ function admin_resource_type_field_option($propertyname,$propertytitle,$helptext
 				</div>
 				<?php
 				}
-				?>
-		<div class="clearerleft"> </div>
-	</div>
+
+    if($propertyname == "name")
+        {
+        ?>
+        <div id="shortname_err_msg" class="FormHelp DisplayNone" style="padding:0;clear:left;" >
+            <div class="FormHelpInner PageInformal"><?php echo $lang["warning_duplicate_shortname_fields"]; ?></div>
+        </div>
+        <script>
+        var validate_shortname_in_progress = false;
+        jQuery("input[name='name']").keyup(function(event)
+            {
+            if(validate_shortname_in_progress)
+                {
+                return;
+                }
+
+            validate_shortname_in_progress = true;
+
+            jQuery.get(
+                baseurl + "/pages/admin/ajax/validate_rtf_shortname.php",
+                {
+                ref: "<?php echo $ref; ?>",
+                new_shortname: event.target.value
+                },
+                function (response)
+                    {
+                    var err_msg_el = jQuery("#shortname_err_msg");
+                    if(err_msg_el.hasClass("DisplayNone") === false)
+                        {
+                        err_msg_el.addClass("DisplayNone");
+                        }
+
+                    if(typeof response.data !== "undefined" && !response.data.valid)
+                        {
+                        err_msg_el.removeClass("DisplayNone");
+                        }
+
+                    validate_shortname_in_progress = false;
+                    },
+                "json");
+
+            return;
+            });
+        </script>
+        <?php
+        }
+        ?>
+        <div class="clearerleft"></div>
+    </div>
 	<?php
 	}
 
@@ -294,15 +342,17 @@ function admin_resource_type_field_option($propertyname,$propertytitle,$helptext
 // IMPORTANT - Make sure advanced field properties are listed after the 'partial_index' so that these will be hidden from users by default
 
 $fieldcolumns = array(
+    'active'                   => array($lang['property-field_active'],'',1,1),
     'title'                    => array($lang['property-title'],'',0,1),
     'resource_type'            => array($lang['property-resource_type'],'',0,0),
     'type'                     => array($lang['property-field_type'],'',0,1),
     'linked_data_field'        => array($lang['property-field_raw_edtf'],'',0,1),
     'name'                     => array($lang['property-shorthand_name'],$lang['information-shorthand_name'],0,1),
     'required'                 => array($lang['property-required'],'',1,1),
-    'order_by'                 => array($lang['property-order_by'],'',0,1),
+    'order_by'                 => array($lang['property-order_by'],'',0,0),
     'keywords_index'           => array($lang['property-index_this_field'],$lang['information-if_you_enable_indexing_below_and_the_field_already_contains_data-you_will_need_to_reindex_this_field'],1,1),
     'display_field'            => array($lang['property-display_field'],'',1,1),
+    'full_width'               => array($lang['property-field_full_width'],'',1,1),
     'advanced_search'          => array($lang['property-enable_advanced_search'],'',1,1),
     'simple_search'            => array($lang['property-enable_simple_search'],'',1,1),		
     'browse_bar'               => array($lang['field_show_in_browse_bar'],'',1,1),
@@ -315,8 +365,7 @@ $fieldcolumns = array(
     'hide_when_restricted'     => array($lang['property-hide_when_restricted'],'',1,1),
     'help_text'                => array($lang['property-help_text'],'',2,1),
     'tooltip_text'             => array($lang['property-tooltip_text'],$lang['information-tooltip_text'],2,1),
-    'tab_name'                 => array($lang['property-tab_name'],'',0,1),
-
+    'tab_name'                 => array($lang['property-tab_name'],'',0,0),
     'partial_index'            => array($lang['property-enable_partial_indexing'],$lang['information-enable_partial_indexing'],1,1),
     'iptc_equiv'               => array($lang['property-iptc_equiv'],'',0,1),					
     'display_template'         => array($lang['property-display_template'],'',2,1),
@@ -336,12 +385,12 @@ $fieldcolumns = array(
 
 # Remove some items if $execution_lockout is set to prevent code execution
 if ($execution_lockout)
-	{
-	unset($fieldcolumns["autocomplete_macro"]);
-	unset($fieldcolumns["exiftool_filter"]);
-	unset($fieldcolumns["value_filter"]);
-	unset($fieldcolumns["onchange_macro"]);
-	}
+    {
+    unset($fieldcolumns["autocomplete_macro"]);
+    unset($fieldcolumns["exiftool_filter"]);
+    unset($fieldcolumns["value_filter"]);
+    unset($fieldcolumns["onchange_macro"]);
+    }
 
 $modify_resource_type_field_columns=hook("modifyresourcetypefieldcolumns","",array($fieldcolumns));
 if($modify_resource_type_field_columns!=''){
@@ -413,6 +462,8 @@ if(getval("save","")!="" && getval("delete","")=="" && enforcePostRequest(false)
     $sql .= " WHERE ref = '{$ref}'";
 
 	sql_query($sql);
+	clear_query_cache("schema");
+
 	if($sync_field!="" && $sync_field>0)
 		{
 		$syncsql.=" where ref='$sync_field' or sync_field='$ref'";
@@ -427,56 +478,68 @@ if(getval("save","")!="" && getval("delete","")=="" && enforcePostRequest(false)
 
 $confirm_delete=false;	
 if (getval("delete","")!="" && enforcePostRequest($ajax))
-	{	
-	$confirmdelete=getvalescaped("confirmdelete","");
-	# Check for resources of this  type
-	$affected_resources=sql_array("select distinct resource value from
-								  (
-								  select resource from resource_data where resource>0 and resource_type_field='$ref'
-								  UNION
-								  select resource from resource_node where resource>0 and node in (select ref from node where resource_type_field='$ref')
-								  ) all_resources
-								  
-								  ",0);
-	
-	$affected_resources_count=count($affected_resources);
-	if($affected_resources_count==0 || $confirmdelete!="")
-	    {	    
-	     // Delete the resource type field
-	    sql_query("delete from resource_type_field where ref='$ref'");
-		log_activity(null,LOG_CODE_DELETED,null,'resource_type_field',null,$ref);
-
-	    //Remove all data	    
-	    sql_query("delete from resource_data where resource_type_field='$ref'");
-	    //Remove all keywords	    
-	    sql_query("delete from resource_keyword where resource_type_field='$ref'");
-	    hook("after_delete_resource_type_field");
-
-        if($ajax)
+	{
+    $confirmdelete=getvalescaped("confirmdelete","");
+    # Check for resources of this  type
+    $affected_resources=sql_array("select distinct resource value from
+                                (
+                                select resource from resource_data where resource>0 and resource_type_field='$ref'
+                                UNION
+                                select resource from resource_node where resource>0 and node in (select ref from node where resource_type_field='$ref')
+                                ) all_resources
+                                
+                                ",0);
+    
+    $affected_resources_count=count($affected_resources);
+    if($affected_resources_count==0 || $confirmdelete!="")
+        {    
+        $result = delete_resource_type_field($ref);
+        if($result === true)
             {
-            echo json_encode(
-                array(
-                    'deleted' => $ref
-                )
-            );
-            exit();
+            if($ajax)
+                {
+                echo json_encode(
+                    array(
+                        'deleted' => $ref
+                    )
+                );
+                exit();
+                }
+            else
+                {
+                redirect(generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_params,array("ref"=>"","deleted"=>urlencode($ref))));
+                }
             }
-
-        redirect(generateURL($baseurl . "/pages/admin/admin_resource_type_fields.php",$url_params,array("ref"=>"","deleted"=>urlencode($ref))));
-	    }
-        else
-	    {	    
-	    // User needs to confirm deletion as data will be lost
-	    $error_text=str_replace("%%AFFECTEDRESOURCES%%",$affected_resources_count,$lang["admin_delete_field_confirm"]);
-		$error_text.="<br /><a target=\"_blank\" href=\"" . $baseurl  . "/pages/search.php?search=!hasdata" . $ref . "\">" . $lang["show_resources"] . "</a>";
-	    
-	    $confirm_delete=true;
-	    }
+        elseif(is_string($result))
+            {
+            if($ajax)
+                {
+                echo json_encode(
+                    array(
+                        'message' => $result
+                    )
+                );
+                exit();
+                }
+            else
+                {
+                $error_text = $result;
+                }            
+            }        
+        }
+    else
+        {	    
+        // User needs to confirm deletion as data will be lost
+        $error_text=str_replace("%%AFFECTEDRESOURCES%%",$affected_resources_count,$lang["admin_delete_field_confirm"]);
+        $error_text.="<br /><a target=\"_blank\" href=\"" . $baseurl  . "/pages/search.php?search=!hasdata" . $ref . "\">" . $lang["show_resources"] . "</a>";
+        
+        $confirm_delete=true;
+        }
 	}
 	
 # Fetch  data
 $allfields=get_resource_type_fields();
-$resource_types=sql_query("select ref, name from resource_type");
+$resource_types=sql_query("select ref, name from resource_type", "schema");
 foreach($resource_types as $resource_type)
 	{
 	$resource_type_array[$resource_type["ref"]]=$resource_type["name"];
@@ -515,7 +578,7 @@ var current_type      = <?php echo ('' != $fielddata['type'] ? $fielddata['type'
 
  
 
-<form method="post" class="FormWide" action="<?php echo $baseurl_short?>pages/admin/admin_resource_type_field_edit.php?ref=<?php echo $fielddata["ref"] . "&restypefilter=" . $restypefilter . "&field_order_by=" . $field_order_by . "&field_sort=" . $field_sort ."&find=" . urlencode($find); ?>" onSubmit="return CentralSpacePost(this,true);">
+<form method="post" class="FormWide" action="<?php echo $baseurl_short?>pages/admin/admin_resource_type_field_edit.php?ref=<?php echo (int)$fielddata["ref"] . "&restypefilter=" . (int)$restypefilter . "&field_order_by=" . urlencode($field_order_by) . "&field_sort=" . $field_sort ."&find=" . urlencode($find); ?>" onSubmit="return CentralSpacePost(this,true);">
     <?php generateFormToken("admin_resource_type_field_edit"); ?>
 <input type="hidden" name="ref" value="<?php echo urlencode($ref) ?>">
 
@@ -567,8 +630,11 @@ else
     <input name="save" type="submit" value="&nbsp;&nbsp;&nbsp;&nbsp;<?php echo $lang["save"]?>&nbsp;&nbsp;&nbsp;&nbsp;" />&nbsp;&nbsp;
     <input type="button" class="button" onClick="CentralSpaceLoad('<?php echo $baseurl . "/pages/admin/admin_copy_field.php?ref=" . $ref . "&backurl=" . $url ?>',true);return false;" value="&nbsp;&nbsp;<?php echo $lang["copy-field"] ?>&nbsp;&nbsp;" >
     <input name="migrate_data" id="migrate_data" type="hidden" value="">
-    <input name="delete" type="button" value="&nbsp;&nbsp;<?php echo $lang["action-delete"]?>&nbsp;&nbsp;" onClick="if(confirm('<?php echo $lang["confirm-deletion"] ?>')){jQuery('#delete').val('yes');this.form.submit();}else{jQuery('#delete').val('');}" />
 
+	<?php if ($fielddata["active"]==0) { ?>
+    <input name="delete" type="button" value="&nbsp;&nbsp;<?php echo $lang["action-delete"]?>&nbsp;&nbsp;" onClick="if(confirm('<?php echo $lang["confirm-deletion"] ?>')){jQuery('#delete').val('yes');this.form.submit();}else{jQuery('#delete').val('');}" />
+	<?php } ?>
+	
     </div>
     <?php
     }?>

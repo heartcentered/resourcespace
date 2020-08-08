@@ -7,10 +7,6 @@
  * @return array Containing the login details ('valid' determines whether or not the login succeeded).
  */
 
-if (!function_exists('hash'))
-    {
-    include dirname(__FILE__) . "/hash_functions.php";
-    }
     
 function perform_login()
 	{
@@ -189,6 +185,16 @@ function generate_session_hash($password_hash)
 		
 	}
 
+/**
+* Set login cookies
+* 
+* @param integer $user             User ref
+* @param string  $session_hash     User session hash
+* @param string  $language         Language code (e.g en)
+* @param boolean $user_preferences Set colour theme from user preferences
+* 
+* @return void
+*/
 function set_login_cookies($user, $session_hash, $language = "", $user_preferences)
     {
     global $baseurl, $baseurl_short, $allow_keep_logged_in, $default_res_types, $language;
@@ -215,7 +221,7 @@ function set_login_cookies($user, $session_hash, $language = "", $user_preferenc
     # Set default resource types
     rs_setcookie('restypes', $default_res_types);
 
-    $userpreferences = ($user_preferences) ? sql_query("SELECT user, `value` AS colour_theme FROM user_preferences WHERE user = '" . $user . "' AND parameter = 'colour_theme';") : FALSE;
+    $userpreferences = ($user_preferences) ? sql_query("SELECT user, `value` AS colour_theme FROM user_preferences WHERE user = '" . escape_check($user) . "' AND parameter = 'colour_theme';") : FALSE;
     $userpreferences = ($userpreferences && isset($userpreferences[0])) ? $userpreferences[0]: FALSE;
     if($userpreferences && isset($userpreferences["colour_theme"]) && $userpreferences["colour_theme"]!="" && (!isset($_COOKIE["colour_theme"]) || $userpreferences["colour_theme"]!=$_COOKIE["colour_theme"]))
         {

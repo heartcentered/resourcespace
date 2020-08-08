@@ -140,7 +140,7 @@ $lang["action-editall"]="Ubah semuanya";
 $lang["hidethumbnails"]="Sembunyikan thumbnail";
 $lang["showthumbnails"]="Tunjukkan thumbnail";
 $lang["contactsheet"]="Contact Sheet";
-$lang["mycollection"]="Koleksi Saya";
+$lang["mycollection"]="Koleksi Default";
 $lang["editresearchrequests"]="Ubah permintaan penelusuran";
 $lang["savedsearch"]="Simpan hasil penelusuran";
 $lang["mustspecifyoneusername"]="Anda harus menentukan setidaknya satu nama pengguna";
@@ -397,7 +397,7 @@ $lang["backtohome"]="Kembali ke halaman utama";
 $lang["backtohelphome"]="Kemballi pada halaman pertanyaan";
 $lang["backtosearch"]="Kembali pada hasil penelusuran";
 $lang["backtoview"]="Tampilah Aset";
-$lang["backtoeditresource"]="Kembali ke ubah aset";
+$lang["backtoeditmetadata"]="Kembali ke ubah aset";
 $lang["backtouser"]="Kembali ke login pengguna";
 $lang["termsandconditions"]="Terminologi dan Persyaratab";
 $lang["iaccept"]="Saya terima";
@@ -619,7 +619,7 @@ $lang["addresourcebatchlocalfolder"]="Tambahkan Kumpulan Aset- Fetch dari upload
 # Setup Script
 $lang["setup-alreadyconfigured"]="Instalasi ResourceSpace anda telah di konfigurasi. Untuk meng-konfigurasi ulang, anda boleh menghapus  <pre>include/config.php</pre> dan menggunakan browser anda untuk mengakses halaman ini lagi.";
 $lang["setup-successheader"]="Selamat!";
-$lang["setup-successdetails"]="Setup awal ResourceSpace anda telah selesai.  Silahkan periksa  'include/default.config.php' untuk pilihan konfigurasi lain.";
+$lang["setup-successdetails"]="Setup awal ResourceSpace anda telah selesai.  Silahkan periksa  'include/config.default.php' untuk pilihan konfigurasi lain.";
 $lang["setup-successnextsteps"]="Langkah Berikutnya:";
 $lang["setup-successremovewrite"]="Sekarang anda bisa menyingkirkan akses pengisian untuk memasukkan  'include/'.";
 $lang["setup-visitwiki"]='Silahkan kunjungi <a target="_blank" href="http://www.resourcespace.com/knowledge-base/">ResourceSpace Knowledge Base</a> untuk informasi lebih lanjut tentang setup instalasi anda';

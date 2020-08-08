@@ -89,6 +89,17 @@ button, input[type=submit], input[type=button], .RecordPanel .RecordDownloadSpac
     text-align: center;
 }
 
+#ResourceDownloadOptions td.DownloadFileName.AlternativeFile a 
+{
+    background-color: transparent;
+    border-top: none;
+    box-shadow: none;
+}
+
+.RecordPanel:not(.RecordPanelLarge) .DownloadFileSizePicker > #size {
+    max-width: 230px;
+}
+
 button:hover, input[type=submit]:hover, input[type=button]:hover, .RecordPanel .RecordDownloadSpace .DownloadDBlend a:hover,.UploadButton a {
     background: #1378BF;
     box-shadow: 0 1px 3px rgba(0,0,0,0.25);
@@ -177,8 +188,6 @@ select::-ms-expand
 #TextHeader{font-size:25px;float:left;}
 #TextHeader a {text-decoration:none;}
 #TextDesc{font-size:1em;float:left;display:block;clear:left;}
-
-#header_search_form_button { display: none; }
 
 .headerlink {margin:20px 25px; position: absolute; display: block; width: 400px; height: 55px;  top: 0px; left: 0px;}
 .TeamCentreAlertIcon { position: relative; top: 3px;}
@@ -308,19 +317,22 @@ div#CentralSpaceContainer.SlimHeaderFixedPosition { margin-top: 100px; }
 
 .CollectionPanelShell {padding:5px;float: left;margin: 0px 10px 10px 0px;width: 110px;text-align: left;border-radius: 4px;}
 .CollectionPanelInfo{width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.CollectionPanelThumb{max-height: 75px;}
 .CollectionResourceAlign {width:110px;height:90px;text-align: center;vertical-align: middle;}
 
 #CollectionMinTitle{float: left;margin: 4px 10px 0px 25px;}
 #CollectionMinDropTitle{float: left;padding:0.2em 0em;margin-top: 6px;}
-#CollectionMinDrop{float: left;margin: 6px 0px 0px;padding:0.2em 0em}
+#CollectionMinDrop{float: left;margin: 4px 0px 0px;padding:0.2em 0em}
 #CollectionMinDrop form{margin:0;padding:0}
 #CollectionMinitems{float: left;margin: 5px 10px 0px;padding:0.35em 0em}
-#CollectionMinRightNav{float: right;margin: 5px 25px 0px 0px;padding:0.25em 0em}
+#CollectionMinRightNav{float: right;margin: 4px 25px 0px 0px;padding:0.2em 0em}
 #CollectionMinRightNav #toggleThumbsLink, #CollectionMinRightNav .ActionsContainer {float:right;}
-#CollectionMinRightNav .ActionsContainer {margin-right:25px;}
+#CollectionMinRightNav.CollectionBasket #toggleThumbsLink {float: none;}
 .CollectionTitleLinks a {margin: 5px 4px;}
+#CollectionMinDiv .ToggleThumbsContainer {float: left; padding: 0 12px 0 24px; margin-top: 9px;border-right: 1px solid #E0E0E0;}
+#CollectionMinDiv #CollectionMinDropTitle {margin-left: 12px;}
 
-#CollectionMinDrop .SearchWidth {width: 150px;margin:0; min-height: 20px;}
+#CollectionMinDrop .SearchWidth {width: 190px;margin:0; min-height: 20px;}
 #CollectionMinDrop .SearchWidthExp {width: 200px;font-size: 0.7em ;margin:0;padding: 0;}
 #CollectionMinRightNav ul {padding:0em 0;margin:0;list-style:none;}
 #CollectionMinRightNav li {display:inline;padding:0 0.35em 0 0.5em;margin:0px;}
@@ -351,15 +363,16 @@ div#CentralSpaceContainer.SlimHeaderFixedPosition { margin-top: 100px; }
 #SearchBox .PopupCategoryTree {display: none; text-align: left; z-index: 999; padding: 5px; background: none;}
 
 /*Resource Panel layout*/
-.ResourcePanel {padding:0;margin:0 14px 14px 0;width: 174px;float:left;height:230px;position:relative; overflow: hidden;}
+.ResourcePanel {padding:0;margin:0 14px 14px 0;width: 175px;float:left;position:relative; overflow: hidden;}
 .ResourcePanelPreview {height: 156px;width: 156px;margin: 3px;}
 .ResourcePanelInfo {margin: 5px;overflow:hidden;white-space:nowrap;padding:0;text-align:justify;text-overflow: ellipsis;}   
 .ResourcePanelCountry {margin-right: 5px;margin-left: 5px;margin-bottom: 0px;float: left;clear: left;display:inline;}   
-.ResourcePanelIcons {padding: 5px;text-align:right;position:absolute;bottom:0;right:0;width:166px;} 
+.ResourcePanelIcons {padding: 5px;text-align:right;bottom:0;right:0;width:166px;} 
 .ResourcePanelSmallIcons {padding-left: 5px;}   
-.ImageWrapper {height:174px;display:block;padding:0;vertical-align: middle;text-align: center;clear: right;}
+.ImageWrapper {height:175px;display:block;padding:0;vertical-align: middle;text-align: center;clear: right;}
 .ImageWrapperSmall {height:75px;display:block;padding:0;;vertical-align: middle;text-align: center;clear: right;}
 .ImageWrapperLarge {height:320px; display:block; padding:0; vertical-align: middle; text-align:center; clear:right;}
+.ImageColourWrapper {display: inline-block;}
 
 .ResourceAlign {width:172px;height:177px;text-align: center;vertical-align: middle;}
 .ResourceTypeIcon { height: 16px;width:16px;float:right;margin-right:5px;margin-top:6px; }
@@ -395,7 +408,7 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .Listview {overflow-x:auto; margin: 0 0 25px 0;}
 .ListviewTight {margin: 5px 10px 5px 0;}
 .Listview table{ width:100%;}
-.Listview td {padding:6px 8px 6px 8px;vertical-align: top;}
+.Listview td, .Listview th {padding:6px 8px 6px 8px;vertical-align: top;}
 .ListTools {text-align: right;}
 .ListTitle {font-weight: bold;}
 .Listview .IconStar {width:11px;height:12px;padding: 0;display: block;float:left;}
@@ -420,12 +433,27 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 #CentralSpaceLogin form {margin:0;padding:0;}
 .Question{padding: 0.7em 0em 0.7em 0.5em;}
 .QuestionSubmit{ padding: 1em 0em 1em 0.5em;}
+.QuestionSubmit.QuestionSticky {
+    position: -webkit-sticky; 
+    position: sticky;
+    bottom: 0;
+    background-color: #f2f2f2;
+    border-top: 1px solid #c1c1c1;
+    box-shadow: 0px -12px 15px -12px #bbbbbb;
+}
+/* IE does not support position: sticky so fall back to standard styling */
+@media all and (-ms-high-contrast:none) {
+    .QuestionSubmit.QuestionSticky {
+        border-top: none;
+        box-shadow: none;
+    }
+}
 .Question label, .QuestionSubmit label{ width: 300px;float: left;margin-top: 0.3em;padding-right:10px;}
 .Question .customFieldLabel { width: auto; margin: 0;}
 .Question .customFieldset { padding: 0; border: 0;}
 .Question #capswarning { margin-left: 190px; display: none; color: red;font-weight: bold;}
 .Question .Lineup {margin: 3px 0px;}
-.Question .stdwidth,.stdwidth{width: 420px;font-size: 1em;margin: 3px 0px;}
+.Question .stdwidth,.stdwidth, .dynamickeywords {width: 420px;font-size: 1em;margin: 3px 0px;}
 .Question select {margin: 3px 0px;}
 .Question .medwidth,.medwidth{width: 285px;font-size: 1em;margin: 3px 0px;}
 .Question .shrtwidth,.shrtwidth{width: 145px;font-size: 1em;margin: 0px;}
@@ -466,19 +494,21 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
     margin-left:2px;
     border-left: none;
 }
+.BackToResultsContainer {display: inline;}
 .backtoresults .nextLink,.backtoresults .prevLink,.backtoresults .maxLink {font-size:1.1em;}
 .backtoresults .maxLink {padding-left:20px;}
 .backtoresults .closeLink {padding-left:5px;font-size:1.3em;}
 
 .backtoresults .prevLink:hover,.backtoresults .nextLink:hover,.backtoresults .closeLink:hover,.backtoresults .maxLink:hover {text-decoration:none;}
+.RequiredFieldLabel {display: inline-block; margin-left: 10px;}
 
 .RecordPanel .RecordResouce {position:relative;clear: left;} 
 .RecordPanel .Picture {margin: 0 auto;display: block;width: auto;max-width: 720px;}
 #previewimagewrapper {float:left;margin: 0px 15px 15px 0px; position: relative; min-width: 720px;}
 
 /* Larger layout changes */
-.RecordPanelLarge #previewimagewrapper {float: none; text-align: center; margin: 0px 15px 10px 0;}
-.RecordPanel.RecordPanelLarge .Picture {display: inline-block; max-width: unset;}
+.RecordPanelLarge #previewimagewrapper {float: none; text-align: center; margin: 0 0 10px 0;}
+.RecordPanel.RecordPanelLarge .Picture {display: inline-block; max-width: 100%;}
 .RecordPanel.RecordPanelLarge .RecordDownload {width: 100%;}
 .RecordPanel.RecordPanelLarge #ResourceDownloadOptions {
     width: 70%;
@@ -512,9 +542,9 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 .RecordPanel .Col {float: left;width: 352px;margin-bottom: 10px;}
 .RecordPanel .ColNarrow {float: left;width: 171px;margin-bottom: 10px;}
 .RecordPanel .buffer {margin-right: 10px;}
-.RecordPanel .itemNarrow {word-wrap: break-word; float: left;width: 170px;margin-right: 5px;position:relative; padding-top: 10px;padding-left: 10px;} 
+.RecordPanel .itemNarrow {word-wrap: break-word; float: left;width: 170px;margin-right: 5px;position:relative; margin-top: 10px;padding-left: 10px;} 
 .RecordPanel .SearchSimilar {float: left;width: 120px;margin: 0px 10px 2px 0px;padding: 0px;}
-.RecordPanel .item {word-wrap: break-word; float: left;margin: 10px;width: 100%;position:relative;}
+.RecordPanel .item {word-wrap: break-word; float: left;margin-left: 10px;margin-top: 10px;margin-right: 10px;position:relative;}
 .RecordPanel .item h3, .RecordPanel .itemNarrow h3, th {font-size: 1em;margin: 0px;padding: 0px;text-transform: uppercase; font-size: 0.875rem; color: #999;}
 .RecordPanel .item p, .RecordPanel .itemNarrow p {margin: 0px;padding: 0px;}
 .RecordPanel .RecordDownload {float: left;width: 445px;margin: 0 0 10px 0;}
@@ -555,7 +585,7 @@ a:hover .fa,.fa:hover {text-decoration:none !important;} /* Never underline a Fo
 /*Home styling */
 .HomePanel {margin:15px 15px 0 0;width: 250px;float: left;} 
 .HomePanelIN {padding: 15px;min-height: 150px;}
-.HomePanel h2 {display:block;margin: 5px 0px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
+.HomePanel h2 {display:block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 .HomePanel p {margin: 0; padding: 5px 0 4px 0;}
 .HomePicturePanel {    margin:0px 15px 10px 0px;float: left;width: 517px;}
 .HomePicturePanelIN img {width:517px; height:350px;}
@@ -605,8 +635,8 @@ behavior: url('../css/iepngfix.htc');
 .NewFlag {display:inline;font-size:0.6em;margin-left:5px;padding:1px 3px 1px 3px;}
 .Breadcrumbs {float:left;margin-top:4px;}
 .SearchBreadcrumbs {margin-top:15px;}
-.SearchTitle {padding: 0px;margin-top:15px;}
-.SearchTitle + p{padding-bottom: 0px;}
+.SearchTitle {padding: 0px;margin-top:-10px;margin-bottom:5px;}
+.SearchTitle + p{padding-bottom: 7px;}
 .SearchBreadcrumbs + .RecordHeader .SearchTitle {margin-top:0px;}
 
 .CategoryBox {overflow:auto;width:414px;height:80px;padding:2px;font-size:1em;}
@@ -652,10 +682,10 @@ div.autocomplete ul li {
 #UserRatingMessage {padding-left: 10px;}
 
 /* CSS for the lightbox (for resource feedback) */
-#lightbox{  position: absolute; left: 0; width: 100%; z-index: 100; text-align: center; line-height: 0;}
+#lightbox{  position: absolute; left: 0; width: 100%; z-index: 120; text-align: center; line-height: 0;}
 #lightbox img{ width: auto; height: auto;}
 #lightbox a img{ border: none; }
-.lightboxOverlay {z-index: 10;}
+.lightboxOverlay {z-index: 110;}
 
 #outerImageContainer{ position: relative; width: 250px; height: 250px; margin: 0 auto; }
 #imageContainer{ padding: 10px; }
@@ -719,7 +749,7 @@ div.autocomplete ul li {
     border-radius:5px;
     }
 
-.plupload_container {min-height:500px;}
+.plupload_container {min-height:450px;}
 .plupload_droptext {font-size:20px;line-height:400px;}
 .plupload_wrapper, .plupload_header_title {font-family: inherit;}
 .plupload_header {display:none;}
@@ -734,6 +764,8 @@ div.autocomplete ul li {
 .ui-layout-pane
     {
     overflow: auto;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
     }
 
 .InfoBoxResourceTypeIcon
@@ -755,13 +787,13 @@ div.autocomplete ul li {
 
 h2.CollapsibleSectionHead, h1.CollapsibleSectionHead
     {
-    padding: 0.1em 0 0.5em 0;
+    padding: 0.7em 0 0.5em 0;
     }
 
 .CollapsibleSection 
     {
     margin-bottom: 10px;
-    margin:10px 15px 15px 0;
+    margin:10px 15px 0 0;
     }
 
 /* Resource commenting */
@@ -854,6 +886,7 @@ h2.CollapsibleSectionHead, h1.CollapsibleSectionHead
 
 #SearchResultFound {
     padding-top: 3px;
+    min-width: 90px;
 }
 
 #contactadminbox  textarea{
@@ -871,7 +904,24 @@ h2.CollapsibleSectionHead, h1.CollapsibleSectionHead
     width: 150px;
     }
 
-#ssearchbox {margin-top:10px;}
+#ssearchbox {
+    margin-top:8px;
+    padding: 4px 30px 4px 6px;
+}
+
+.search-icon,
+.search-icon:hover,
+.search-icon:active {
+    float: left;
+    position: relative;
+    color: gray;
+    margin-top: -31px;
+    margin-left: 220px;
+    font-size: 17px;
+    background-color: unset;
+    box-shadow: none;
+    padding: 0 5px;
+}
 
 .CollectionsCompactToolsContainerDummy, .CollectionsCompactToolsContainer {display:inline-block;}
 #GeoDragMode{margin-bottom: 10px;}
@@ -993,8 +1043,27 @@ a.HomePanel:hover {
     width: 515px;
 }
 
+.DashTileActions {
+    position: absolute;
+    color: #fff;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background: #000;
+    height: 20px;
+    text-align: right;
+    z-index:3;
+}
+
+.DashTileActions .tool {
+    margin-left: 8px;
+    vertical-align: middle;
+    display: inline-block;
+    padding-right: 5px;    
+}
+
 .tools a{white-space: nowrap;}
-#trash_bin_delete_dialog {display:none !important;}
+#trash_bin_delete_dialog {display:none !important; }
 .no-close .ui-dialog-titlebar-close {display: none;}
 
 /* Plugin Categories Styling */
@@ -1014,6 +1083,13 @@ a.HomePanel:hover {
     font-size: 0.7em;
 }
 
+/* Plugin icon styling */
+.plugin-icon {
+    font-size: 28px;
+    width: 100%;
+    text-align: center;
+}
+
 /* Maintenance Page */
 #system_down_container {
         width: 500px;
@@ -1029,7 +1105,7 @@ a.HomePanel:hover {
 .trash_bin {
     width: 10%;
     min-width: 100px;
-    padding-top: 8%; 
+    padding-top: 150px; 
     display: none;
     position: fixed;
     top: 0px;
@@ -1046,10 +1122,6 @@ a.HomePanel:hover {
     text-transform: capitalize;
     text-align: center;
     font-size: 100px;
-}
-
-.ui-state-active, .ui-state-hover {
-    opacity: 0.5 !important;
 }
 
 div.video-js {margin:auto;}
@@ -1074,7 +1146,7 @@ div.video-js {margin:auto;}
 #modal
     {
     position:absolute;
-    width: 1235px;
+    max-width: 1235px;
     text-align:left;
     opacity: 1;
     display:none;
@@ -1126,6 +1198,7 @@ div.video-js {margin:auto;}
 #modal_dialog, .ui-dialog
     {
     z-index: 103;
+    word-break: break-word;
     }
         
 #modal_dialog .MessageText {
@@ -1247,8 +1320,7 @@ a.FeaturedSimpleLink:hover, a.FeaturedSimpleLink:active  {
 
 .FeaturedSimpleTile .FeaturedSimpleTileContents h2{
     background: transparent;
-    margin: auto;  
-    max-width: 215px;    
+    max-width: 220px;    
     white-space: normal;
 }
 
@@ -1416,10 +1488,12 @@ UL.jqueryFileTree A:hover {font-weight:bold;}
 }
 
 .keywordselected {
-    display:inline;
-    margin-right:5px;
-    float:none; border-radius:4px;
-    padding:3px 6px;
+    display: inline-block;
+    margin: 0 5px 5px 0;
+    float: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    line-height: 20px;
 }
 .customFieldset input[type=checkbox] {margin:0 2px 0 0;}
 .keywordselected a {padding-left:8px;}
@@ -1496,14 +1570,13 @@ a.Enabled, a:visited.Enabled {
 
 /* Breadcrumbs */
 .BreadcrumbsBox {
-    display: inline-block;
+    display: table;
     border-radius: 4px;
     -moz-border-radius: 4px;
     -webkit-border-radius: 4px;
-    margin: 0em 1em 1em 0em;
-    margin: 0em 1em 1em 0em;
+    margin: 1em 1em 0em 0em;;
     padding: 0.66em;
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(0, 0, 0, 0.33);
 }
 .BreadcrumbsBox > .SearchBreadcrumbs{
     margin: 0;
@@ -1565,7 +1638,8 @@ a.Enabled, a:visited.Enabled {
 }
 
 #preview {
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2)
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    max-height: 250px;
 }
 
 /* Configuration options */
@@ -1621,12 +1695,10 @@ select.MultiSelect:before {
 }
 #BrowseBarContent {
     height: 100%;
-    margin-left: 10px;
     float: left;
     overflow-x: hidden;
     overflow-y: auto;
-    min-width: 140px;
-    padding-top: 10px;
+    min-width: 265px;
 }
 .BrowseBarStructure {
     display: table-cell;
@@ -1634,6 +1706,8 @@ select.MultiSelect:before {
     font-family: "Font Awesome 5 Free";
     font-weight: 600;
     padding-left: 10px;
+    padding-top: 2px;
+    padding-bottom: 2px;
 }
 .BrowseRowInner {
     display: table-row;
@@ -1642,13 +1716,13 @@ select.MultiSelect:before {
     padding-left: 5px;
 }
 .BrowseLine + .BrowseTypeNode, .BrowseLine + .BrowseTypeRestype, .BrowseLine + .BrowseTypeField, .BrowseLine + .BrowseTypeNew{
-    margin-left: 6px;
+    padding-left: 6px;
 }
 .BrowseBarLink{
     display: table-cell;
-    vertical-align: top;
     white-space: normal;
     padding-left: 4px;
+    font-size: 90%;
 }
 #BrowseBar .BrowseLine {
     border-right: 1px solid;
@@ -1684,24 +1758,45 @@ select.MultiSelect:before {
     cursor: pointer;
     opacity: 1;
 }
-.BrowseTypeRestype:after, .BrowseTypeField:after, .BrowseTypeFeatured:after, .BrowseTypeState:after{
+.BrowseTypeRestype:after, .BrowseTypeField:after, .BrowseTypeFeatured:after{
     content: "\f07b";
-}  
+}
+
+.BrowseBarRoot {
+    text-transform: uppercase;
+    font-weight: bold;
+    background: rgba(255, 255, 255, 0.1);
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.BrowseBarItem {
+    padding-left: 10px;
+}
+
+#BrowseBarContainer .BrowseBarItem:first-child {
+    padding-top: 0px;
+}
+
+.BrowseBarRoot .BrowseBarLink {
+    cursor: pointer;  
+}
 
 .BrowseOpen .BrowseTypeRestype:after, .BrowseOpen .BrowseTypeField:after, .BrowseOpen .BrowseTypeFeatured:after, .BrowseOpen.BrowseTypeState:after{
     content: "\f07c";
 }
 .browse_closed:after {
-    content: "\f0fe";
+    content: "\f054";
 }
 .browse_expanded:after {
-    content: "\f146";
-}    
+    content: "\f078";
+} 
+
 .BrowseTypeNode:after {
     content: "\f02b";
 } 
 .BrowseTypeCol:after {
-    content: "\f009";
+    content: "\f1b2";
 } 
 .BrowseTypeNew:after {
     content: "\f055";
@@ -1743,31 +1838,30 @@ a.BrowseRefresh{
     vertical-align: text-top;
 }
 
-#FilterBarContainer { padding: 10px 10px; text-align: left; color: #FFF; }
-#FilterBarContainer .SearchWidth, #FilterBarContainer .CategoryBox { width: 380px; }
-#FilterBarContainer > .BasicsBox { margin: initial; }
-#FilterBarContainer .CollapsibleSectionHead, #FilterBarContainer .Question a { color: #FFF; }
-#FilterBarContainer .Question { padding: 0.5em 0em 0.3em 0em }
-#FilterBarContainer .Question, #FilterBarContainer .QuestionSubmit,
-#FilterBarContainer .Question:last-of-type, #FilterBarContainer .QuestionSubmit:last-of-type { border-bottom: initial; }
-#FilterBarContainer .Question label, #FilterBarContainer .QuestionSubmit label { margin: 5px; padding: initial; font-weight: bold; }
-#FilterBarContainer .QuestionSubmit { padding: initial; }
-#FilterBarContainer .Question table { display: inline-block; width: 100%; max-height: 100px; overflow-y: scroll; } /* Intended for checkboxes rendering */
-#FilterBarContainer .Question input[readonly="readonly"] { width: 365px; } /* Contributed By */
-#FilterBarContainer .Question #autocomplete { width: 255px; } /* Contributed By */
-#FilterBarContainer .Question .keywordselected { float: left; margin: 0px 0px 5px 5px; } /* Dynamic keywords list */
-#FilterBarContainer .Question .customFieldLabel { float: none; border-radius: 4px; margin-left: 5px; padding: 3px 6px; background-color: #2e99e6; color: #fff; }
-#FilterBarContainer .BoldMargin { margin-left: 15px; font-size: 1.2em; font-weight: bolder; }
-#FilterBarContainer .CloseButtonLink { text-decoration: none; }
-#FilterBarContainer .CloseButtonLink:hover { color: #dadada; text-decoration: none; }
-#ActiveFilters { z-index: 999; position: sticky; position: -webkit-sticky; top: -10px; margin: 0px 0px 15px 0px; border-top-left-radius: initial; border-top-right-radius: initial; background: #808080; box-shadow: 0px 20px 10px -15px rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19); }
-#FilterBarContainer #ActiveFilters { padding: 0.5em 0em 0.7em 0em; }
-#FilterBarContainer .CollapsibleSection { margin: initial; }
-#FilterBarContainer #AdvancedSearchMediaSection .Question label { float: initial; }
-#FilterBarContainer #AdvancedSearchMediaSection .SplitTextQuestionContent { margin: 10px 0px 0px 5px; }
-#FilterBarContainer #AdvancedSearchMediaSection input.SplitSearch { width: 80px; }
-#FilterBarContainer .Question .indent, #FilterBarContainer .Question .stdwidth, #FilterBarContainer .stdwidth { width: initial; }
-#FilterBarContainer div[class*='_range'] select { width: 89px; }
+.FieldDisabled
+    {
+    text-decoration: line-through;
+    }
+.ResourceLocked{
+    float:left;
+}
 
-.FullWidth { width: -webkit-fill-available; }
-.InsetBottomShadow { background: rgba(0, 0, 0, 0.2); }
+.ResourceLocked:before{
+    content: "\f023";
+    font: normal normal normal 14px "Font Awesome 5 Free";
+    font-weight: 600;
+    padding-right:12px;
+    display: inline-block; width:0.6em;
+}  
+
+.ResourceUnlocked:before{
+    content: "\f09c";
+    font: normal normal normal 14px "Font Awesome 5 Free";
+    font-weight: 600;
+    padding-right:12px;
+    display: inline-block; width:0.6em;
+}  
+
+.userselect {
+    z-index:500;
+}

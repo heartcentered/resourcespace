@@ -409,7 +409,7 @@ $lang["backtohome"]=" العودة إلى الصفحة الرئيسية ";
 $lang["backtohelphome"]=" العودة للمساعدة في المنزل ";
 $lang["backtosearch"]=" العودة الى بلدي نتائج البحث ";
 $lang["backtoview"]=" عرض الموارد ";
-$lang["backtoeditresource"]=" العودة الى تحرير الموارد ";
+$lang["backtoeditmetadata"]=" العودة الى تحرير الموارد ";
 $lang["backtouser"]=" العودة إلى تسجيل دخول المستخدم ";
 $lang["termsandconditions"]=" بنود وشروط ";
 $lang["iaccept"]=" أوافق ";
@@ -634,7 +634,7 @@ $lang["addresourcebatchlocalfolder"]=" إضافة الموارد الدفعية 
 # Setup Script
 $lang["setup-alreadyconfigured"]=" ResourceSpace التثبيت الخاص بك تم تكوينه مسبقا. إلى تكوين ، قد تشمل حذف <pre>/ config.php </ قبل> ونقطة المتصفح إلى هذه الصفحة مرة أخرى. ";
 $lang["setup-successheader"]=" تهانينا! ";
-$lang["setup-successdetails"]=" الأولي الخاص بك ResourceSpace اكتمال الإعداد. أن يكون متأكدا من إطلاعك 'تشمل / default.config.php' لمزيد من خيارات التكوين. ";
+$lang["setup-successdetails"]=" الأولي الخاص بك ResourceSpace اكتمال الإعداد. أن يكون متأكدا من إطلاعك 'تشمل / config.default.php' لمزيد من خيارات التكوين. ";
 $lang["setup-successnextsteps"]=" الخطوات التالية : ";
 $lang["setup-successremovewrite"]=" يمكنك الآن إزالة الكتابة الوصول إلى 'تشمل /'. ";
 $lang["setup-visitwiki"]=" 'زيارة <أ href ";

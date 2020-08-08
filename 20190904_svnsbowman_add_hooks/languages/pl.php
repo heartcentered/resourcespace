@@ -146,7 +146,7 @@ $lang["action-editall"]="Edytuj wszystkie";
 $lang["hidethumbnails"]="Ukryj miniatury";
 $lang["showthumbnails"]="Pokaż miniatury";
 $lang["contactsheet"]="Stykówka";
-$lang["mycollection"]="Moje kolekcje";
+$lang["mycollection"]="Domyślna kolekcje";
 $lang["editresearchrequests"]="Edytuj żądanie wyszukiwania";
 $lang["savedsearch"]="Zapisane wyszukiwanie";
 $lang["mustspecifyoneusername"]="Muisz wprowadzić chociaż jedną nazwę użytkownika";
@@ -418,7 +418,7 @@ $lang["backtohelphome"]="Powrót do strony głównej pomocy";
 $lang["backtosearch"]="Powrót do wyników wyszukiwania";
 $lang["backtocontext"]="Powrót do bieżącego kontekstu";
 $lang["backtoview"]="Powrót";
-$lang["backtoeditresource"]="Powrót do edycji";
+$lang["backtoeditmetadata"]="Powrót do edycji";
 $lang["backtouser"]="Powrót do ekranu logowania";
 $lang["termsandconditions"]="Warunki użytkowania";
 $lang["iaccept"]="Akceptuję";
@@ -646,7 +646,7 @@ $lang["addresourcebatchlocalfolder"]="Add Resource Batch - Fetch from local uplo
 # Setup Script
 $lang["setup-alreadyconfigured"]="Your ResourceSpace installation is already configured.  To reconfigure, you may delete <pre>include/config.php</pre> and point your browser to this page again.";
 $lang["setup-successheader"]="Congratulations!";
-$lang["setup-successdetails"]="Your initial ResourceSpace setup is complete.  Be sure to check out 'include/default.config.php' for more configuration options.";
+$lang["setup-successdetails"]="Your initial ResourceSpace setup is complete.  Be sure to check out 'include/config.default.php' for more configuration options.";
 $lang["setup-successnextsteps"]="Next steps:";
 $lang["setup-successremovewrite"]="You can now remove write access to 'include/'.";
 $lang["setup-visitwiki"]='Visit the <a target="_blank" href="http://www.resourcespace.com/knowledge-base/">ResourceSpace Knowledge Base</a> for more information about customizing your installation';

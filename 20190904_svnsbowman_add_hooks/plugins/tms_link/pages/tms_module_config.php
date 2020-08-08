@@ -1,13 +1,11 @@
 <?php
 include '../../../include/db.php';
-include_once '../../../include/general.php';
 include '../../../include/authenticate.php';
 if(!checkperm('a'))
     {
     http_response_code(401);
     exit($lang["error-permissiondenied"]);
     }
-include_once '../../../include/render_functions.php';
 
 
 
@@ -155,7 +153,7 @@ include '../../../include/header.php';
                             <select class="medwidth" name="tms_rs_mappings[<?php echo $tms_rs_mapping_index; ?>][rs_field]">
                                 <option value=""><?php echo $lang['select']; ?></option>
                         <?php
-                        $fields = sql_query('SELECT * FROM resource_type_field ORDER BY title, name');
+                        $fields = sql_query('SELECT * FROM resource_type_field ORDER BY title, name', "schema");
                         foreach($fields as $field)
                             {
                             $selected = ($tms_rs_mapping['rs_field'] == $field['ref'] ? ' selected' : '');
@@ -199,7 +197,7 @@ include '../../../include/header.php';
                 new_row_html += '<td><select class="medwidth" name="tms_rs_mappings[' + row_index + '][rs_field]">';
                 new_row_html += '<option value=""><?php echo $lang['select']; ?></option>';
                 <?php
-                $fields = sql_query('SELECT * FROM resource_type_field ORDER BY title, name');
+                $fields = sql_query('SELECT * FROM resource_type_field ORDER BY title, name', "schema");
                 foreach($fields as $field)
                     {
                     $option_text = lang_or_i18n_get_translated($field['title'], 'fieldtitle-');
@@ -215,6 +213,9 @@ include '../../../include/header.php';
                 new_row_html += '</tr>';
 
                 jQuery(new_row_html).insertBefore(jQuery(button).closest('tr'));
+
+                reindexTable();
+
                 }
 
             function delete_tms_field_mapping(element)
@@ -223,7 +224,32 @@ include '../../../include/header.php';
                 var record = jQuery(button).closest('tr');
 
                 record.remove();
+                reindexTable();
+
                 }
+
+            // This function reindexes the attribute 'name' when 'Add mapping' or 'Delete' is pressed
+            function reindexTable()
+                {
+                                
+                // Go through each row (not first or last though)
+                jQuery('#tmsModulesMappingTable tr').not(':first').not(':last').each(function(i) 
+                    {
+
+                    // Build strings again using correct number
+                    nameFirst   = "tms_rs_mappings[" + i + "][tms_column]";
+                    nameMiddle  = "tms_rs_mappings[" + i + "][rs_field]";
+                    nameLast    = "tms_rs_mappings[" + i + "][encoding]";
+
+                    // Change name of each input/select to its correct number
+                    jQuery(this).find('td').eq(0).find('input').attr("name", nameFirst);
+                    jQuery(this).find('td').eq(1).find('select').attr("name", nameMiddle);
+                    jQuery(this).find('td').eq(2).find('input').attr("name", nameLast);
+
+                    });
+
+                }
+
             </script>
         </div>
         <div class="QuestionSubmit">

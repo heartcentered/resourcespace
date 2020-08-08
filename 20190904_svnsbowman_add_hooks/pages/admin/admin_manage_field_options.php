@@ -1,6 +1,5 @@
 <?php
 include '../../include/db.php';
-include_once '../../include/general.php';
 include '../../include/authenticate.php';
 
 if(!checkperm('k'))
@@ -9,9 +8,7 @@ if(!checkperm('k'))
     die('Permission denied!');
     }
 
-include_once '../../include/resource_functions.php';
 include_once '../../include/node_functions.php';
-include_once '../../include/render_functions.php';
 
 
 // Initialize
@@ -448,7 +445,7 @@ if($ajax)
     </p>
     <h1><?php echo $lang['manage_metadata_field_options'] . (isset($field_data['title']) ? ' - ' . $field_data['title'] : ''); ?></h1>
 
-    <p><?php echo $lang['metadata_option_change_warning']; render_help_link("resourceadmin/modifying-field-options");?></p>
+    <p><?php echo $lang['manage_metadata_text']; render_help_link("resourceadmin/modifying-field-options");?></p>
     <?php
     if(in_array($field, $default_to_first_node_for_fields))
         {

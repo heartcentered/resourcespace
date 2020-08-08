@@ -1,13 +1,9 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref","",true),$k))) {include "../include/authenticate.php";}
-
-include "../include/search_functions.php";
-include_once "../include/collections_functions.php";
-include "../include/resource_functions.php";
 
 $backto=getval("backto","");
 $col_order_by=getval("col_order_by","");
@@ -130,7 +126,7 @@ function ReorderResources(id1,id2)
 <?php 
 echo $search_title;
 
-$n=0;
+$heightmod = 120;
 for ($x=0;$x<count($result);$x++){
 # Load access level
 $ref=$result[$x]['ref'];
@@ -204,13 +200,13 @@ if (!file_exists($path))
 	if ($modifiedurl){$url=$modifiedurl['url'];$imageheight=$modifiedurl['scr_height'];$border=true;}
 	
 	?>
-    <?php $flvfile=get_resource_path($ref,true,"pre",false,$ffmpeg_preview_extension);
-if (!file_exists($flvfile)) {$flvfile=get_resource_path($ref,true,"",false,$ffmpeg_preview_extension);}
-if (!(isset($resource['is_transcoding']) && $resource['is_transcoding']==1) && file_exists($flvfile) && (strpos(strtolower($flvfile),".".$ffmpeg_preview_extension)!==false))
+    <?php $video_preview_file=get_resource_path($ref,true,"pre",false,$ffmpeg_preview_extension);
+if (!file_exists($video_preview_file)) {$video_preview_file=get_resource_path($ref,true,"",false,$ffmpeg_preview_extension);}
+if (!(isset($resource['is_transcoding']) && $resource['is_transcoding']==1) && file_exists($video_preview_file) && (strpos(strtolower($video_preview_file),".".$ffmpeg_preview_extension)!==false))
 	{
-	# Include the Flash player if an FLV file exists for this resource.
+	# Include the video player if a preview file exists for this resource.
 	$download_multisize=false;
-    if(!hook("customflvplay"))
+    if(!hook("customflvplay")) // Note - legacy hook name - we no longer play FLV files.
         {
         include "video_player.php";?><br /><br /><?php
         }
@@ -221,7 +217,7 @@ if (!(isset($resource['is_transcoding']) && $resource['is_transcoding']==1) && f
     else { ?>
 <?php if (!$allow_reorder){?><a id="resourcelink<?php echo $ref?>" href="<?php echo $baseurl_short?>pages/view.php?ref=<?php echo $result[$x]['ref']?>&search=<?php echo urlencode($search)?>&order_by=<?php echo urlencode($order_by)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k)?>&sort=<?php echo urlencode($sort)?>"><?php } //end if !reorder?><img class="Picture<?php if (!$border){?>Doc<?php } ?>" id="image<?php echo htmlspecialchars($ref)?>" imageheight="<?php echo $imageheight?>" src="<?php echo $url?>" alt="" style="height:<?php echo $height?>px;" /><?php if (!$allow_reorder){?></a><?php } //end if !reorder?><br/><br/>
 <?php } ?>
-<?php if ($search_titles){$heightmod=150;} else {$heightmod=120;}
+<?php if ($search_titles){$heightmod=150;}
 if (isset($collections_compact_style) && ($collections_compact_style)){$heightmod=$heightmod+20;}?>
 <script type="text/javascript">
 var maxheight=window.innerHeight-<?php echo $heightmod?>;
@@ -249,16 +245,12 @@ if (maxheight><?php echo $imageheight?>){
 		<?php } ?>
 <?php if ($vertical=="v"){?><tr><?php } else  { ?></td> <?php } ?>
 <?php } ?>
-<?php $n++;
-?>
-
-
 </tr>
 </table>
 
 <script type="text/javascript">
-<?php if ($preview_all_hide_collections){ ?>
-	CollectionDivLoad("<?php echo $baseurl ?>/pages/collections.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&order_by=<?php echo urlencode($order_by)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k)?>&sort=<?php echo urlencode($sort)?>&thumbs=hide");
+<?php if ($preview_all_hide_collections) { ?>
+	CollectionDivLoad("<?php echo $baseurl ?>/pages/collections.php?ref=<?php echo urlencode($collection) ?>&search=<?php echo urlencode($search)?>&order_by=<?php echo urlencode($order_by)?>&archive=<?php echo urlencode($archive)?>&k=<?php echo urlencode($k)?>&sort=<?php echo urlencode($sort)?>&thumbs=hide");
 <?php } ?>
 
 	window.onresize=function(event){

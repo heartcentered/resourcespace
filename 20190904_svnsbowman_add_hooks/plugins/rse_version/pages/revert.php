@@ -1,26 +1,40 @@
 <?php
+namespace RseVersion;
+
 include '../../../include/db.php';
 include '../../../include/authenticate.php'; 
-include_once '../../../include/general.php';
-include_once '../../../include/resource_functions.php';
 include_once '../../../include/image_processing.php';
+include_once '../include/rse_version_functions.php';
 
-$ref=getvalescaped("ref","");
-
-# Check edit permission.
-if (!get_edit_access($ref))
+if(is_valid_revert_state_request())
     {
-    # The user is not allowed to edit this resource or the resource doesn't exist.
-    $error=$lang['error-permissiondenied'];
-    error_alert($error,true);
+    process_revert_state_form();
+    include "../../../include/header.php";
+    render_revert_state_form();
+    include "../../../include/footer.php";
     exit();
     }
 
+$ref=getvalescaped("ref","");
+
 # Load log entry
 $log=sql_query("select resource_log.*, rtf.ref `resource_type_field_ref`, rtf.type `resource_type_field_type` from resource_log left outer join resource_type_field rtf on resource_log.resource_type_field=rtf.ref where resource_log.ref='$ref'");
-if (count($log)==0) {exit("Log entry not found");}
+if (count($log)==0) 
+    {
+    exit($lang["rse_version_log_not_found"]);
+    }
 $log=$log[0];
 $resource=$log["resource"];
+
+# Check edit permission.
+if (!get_edit_access($resource))
+    {
+    # The user is not allowed to edit this resource or the resource doesn't exist.
+    $error=$lang['error-permissiondenied'];
+    error_alert($error,true, 401);
+    exit();
+    }
+
 $field=$log["resource_type_field"];
 $type=$log["type"];
 
@@ -33,9 +47,9 @@ $b_fixed_field=in_array($log['resource_type_field_type'],$FIXED_LIST_FIELD_TYPES
 // resolve node changes
 if($b_fixed_field)
     {
-
+    $is_cat_tree = ($log["resource_type_field_type"] == FIELD_TYPE_CATEGORY_TREE);
     $nodes_available=array();
-    foreach(get_nodes($log['resource_type_field']) as $available_node)
+    foreach(get_nodes($log['resource_type_field'], null, $is_cat_tree) as $available_node)
         {
         $nodes_available[$available_node['ref']]=$available_node['name'];
         }
@@ -51,7 +65,6 @@ if($b_fixed_field)
             if($found_key===false)
                 {
                 $node_strings_not_found[]=$match;
-                echo "adding match:" . $match;
                 }
             else
                 {
@@ -92,24 +105,14 @@ if ($type==LOG_CODE_EDITED || $type==LOG_CODE_MULTI_EDITED || $type==LOG_CODE_NO
         {
         if($b_fixed_field)
             {
-            $log_entry='';
-            if (count($nodes_to_add) > 0)
+            if(count($nodes_to_remove)>0)
                 {
-                add_resource_nodes($resource, array_values($nodes_to_add),false);
-
-                foreach($nodes_to_add as $node_to_add)
-                    {
-                    $log_entry .= '+ ' . $nodes_available[$node_to_add] . PHP_EOL;
-                    }
-                }
-            if (count($nodes_to_remove) > 0)
+                delete_resource_nodes($resource,array_values($nodes_to_remove),false);
+                }        
+            if(count($nodes_to_add)>0)
                 {
-                delete_resource_nodes($resource,array_values($nodes_to_remove));
-                foreach($nodes_to_remove as $node_to_remove)
-                    {
-                    $log_entry.='- ' . $nodes_available[$node_to_remove] . PHP_EOL;
-                    }
-                }
+                add_resource_nodes($resource, array_values($nodes_to_add),false,false);
+                }       
 
             # If this is a 'joined' field we need to add it to the resource column
             $joins = get_resource_table_joins();
@@ -135,10 +138,7 @@ if ($type==LOG_CODE_EDITED || $type==LOG_CODE_MULTI_EDITED || $type==LOG_CODE_NO
                 sql_query("UPDATE resource SET field{$field} = {$truncated_value} WHERE ref = '{$resource}'");
                 }
 
-            if($log_entry!='')
-                {
-                resource_log($resource,LOG_CODE_NODE_REVERT,$field,$lang["revert_log_note"],'',$log_entry);
-                }
+            log_node_changes($resource,$nodes_to_add,$nodes_to_remove,$lang["revert_log_note"]);
             }
         else
             {
@@ -233,7 +233,7 @@ if ($type==LOG_CODE_EDITED || $type==LOG_CODE_MULTI_EDITED || $type==LOG_CODE_NO
         <?php
         foreach($nodes_to_add as $node_to_add)
             {
-            echo htmlspecialchars($nodes_available[$node_to_add]);
+            echo htmlspecialchars(i18n_get_translated($nodes_available[$node_to_add]));
             ?><br/>
             <?php
             }
@@ -249,7 +249,7 @@ if ($type==LOG_CODE_EDITED || $type==LOG_CODE_MULTI_EDITED || $type==LOG_CODE_NO
         <?php
         foreach($nodes_to_remove as $nodes_to_remove)
             {
-            echo htmlspecialchars($nodes_available[$nodes_to_remove]);
+            echo htmlspecialchars(i18n_get_translated($nodes_available[$nodes_to_remove]));
             ?><br/>
             <?php
             }

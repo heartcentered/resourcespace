@@ -1,7 +1,7 @@
 <?php
 
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php";
 
 if (!checkperm("a"))
@@ -29,6 +29,7 @@ if (getval("newtype","")!="" && enforcePostRequest(false))
 	{
 	sql_query("insert into resource_type (name) values ('" . getvalescaped("newtype","") . "')");
 	$new=sql_insert_id();
+	clear_query_cache("schema");
 	redirect($baseurl_short."pages/admin/admin_resource_type_edit.php?ref=" . $new);
 	}
 

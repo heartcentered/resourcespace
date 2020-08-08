@@ -3,7 +3,7 @@ hook("before_footer_always");
 
 if(getval("loginmodal",""))
 	{
-	$login_url=$baseurl."/login.php?url=".urlencode(getvalescaped("url",""))."&api=".urlencode(getval("api",""))."&error=".urlencode(getval("error",""))."&auto=".urlencode(getval("auto",""))."&nocookies=".urlencode(getval("nocookies",""))."&logout=".urlencode(getval("logout",""));
+	$login_url=$baseurl."/login.php?url=".urlencode(getvalescaped("url",""))."&api=".urlencode(getval("api",""))."&error=".urlencode(getval("error",""))."&auto=".urlencode(getval("auto",""))."&nocookies=".urlencode(getval("nocookies",""))."&logout=".urlencode(getval("logout",true));
 	?><script>
 		jQuery(document).ready(function(){
 			ModalLoad('<?php echo $login_url?>',true);
@@ -472,8 +472,7 @@ if (getval("ajax","") == "")
             east__spacing_open:0,
             east__spacing_closed:8,
             east_resizable: true,
-            east__size: 412,
-            east__initHidden: true,
+            east__size: 295,
 
             north_resizable: false,
             north__closable:false,
@@ -540,35 +539,6 @@ if (getval("ajax","") == "")
                 west__spacing_open: 0,
                 west__minSize:30,
                 west__size: " . $browsesize . ",
-                west__onresize: function(pane)
-                    {
-                    if (pane==\"west\")
-                        {
-                        var browsewidth = jQuery('.ui-layout-west').width();
-                        jQuery('#BrowseBarContent').width(browsewidth-40);
-                        var newbrowsewidth = jQuery('.ui-layout-west').width();
-                        if(newbrowsewidth != 35)
-                            {
-                            SetCookie('browse_width', newbrowsewidth);
-                            browse_width = newbrowsewidth;    
-                            }
-                        }
-                        
-                    // Fixes the issue when zooming in (and then out) that then breaks the west-pane browse bar...
-                    
-                    if(0 < newbrowsewidth && newbrowsewidth < 140 && browsewidth != 30)
-                        {
-                        clearTimeout(resizeTimer);
-                        resizeTimer = setTimeout(function() 
-                            {
-                                // Run code here, resizing has 'stopped'
-                                jQuery('#BrowseBarContent').width(255);
-                                SetCookie('browse_width', 255);
-                                browse_width = 255;
-                                location.reload();
-                            }, 300);
-                        }     
-                    },
                 ";
                 }?>
             });
@@ -582,6 +552,7 @@ if (getval("ajax","") == "")
                     myLayout.sizePane("west", <?php echo $browsesize ?>);
                     jQuery('#BrowseBarContainer').show();
                     jQuery('#BrowseBarTab').show();
+                    jQuery('#BrowseBarContent').width(<?php echo $browsesize ?>-30);
                     }
                 }
                 <?php
@@ -653,6 +624,7 @@ if (getval("ajax","") == "")
 		if(jQuery(window).width() <= 1200)
 			{
 			jQuery('.ResponsiveViewFullSite').css('display', 'block');
+			SetCookie("browse_show","hide");
 			}
 		else
 			{
@@ -663,16 +635,51 @@ if (getval("ajax","") == "")
 			{
 			touchScroll("UICenter");
 			}
-		
+        
+        var lastWindowWidth = jQuery(window).width();
+
 		jQuery(window).resize(function()
 			{
-			hideMyCollectionsCols();
-			responsiveCollectionBar();
-			});
-		if(jQuery(window).width()<=900)
-			{
-			jQuery('#CollectionDiv').hide(0);
-			}
+            // Check if already resizing
+            if(typeof rsresize !== 'undefined')
+                {
+                return;
+                }
+
+            newwidth = jQuery( window ).width();
+
+            if(lastWindowWidth > 1100 && newwidth < 1100 && (typeof browse_show === 'undefined' || browse_show != 'hide'))
+                {
+                // Set flag to prevent recursive loop
+                rsresize = true;
+                ToggleBrowseBar();
+                rsresize = undefined;
+                }
+            else if(lastWindowWidth < 1100 && newwidth > 1100 && typeof browse_show !== 'undefined' && browse_show == 'show')
+                {
+                rsresize = true;
+                ToggleBrowseBar('open');
+                rsresize = undefined;
+                }
+            else if(lastWindowWidth > 900 && newwidth < 900)
+                {
+                rsresize = true;
+                console.log("hiding collections");
+                hideMyCollectionsCols();
+                responsiveCollectionBar();
+                jQuery('#CollectionDiv').hide(0);
+                rsresize = undefined;
+                }
+            else if(lastWindowWidth < 900 && newwidth > 900)
+                {
+                rsresize = true;
+                showResponsiveCollection();
+                rsresize = undefined;
+                }
+
+            lastWindowWidth = newwidth;            
+            });
+		
 		jQuery("#HeaderNav1Click").click(function(event)
 			{
 			event.preventDefault();
@@ -780,9 +787,36 @@ if (getval("ajax","") == "")
 		top.history.replaceState(document.title+'&&&'+jQuery('#CentralSpace').html(), applicationname);
 		}
 	catch(e){console.log(e);
-	//console.log("failed to load state");
 	}
 	
+	</script>
+
+	<script>
+
+		/* Destroy tagEditor if below breakpoint window size (doesn't work in responsize mode */
+
+		window_width = jQuery(window).width();
+		window_width_breakpoint = 1100;
+		simple_search_pills_view = <?php if($simple_search_pills_view) { echo "true"; } else { echo "false"; } ?>;
+
+		/* Page load */
+
+		if(window_width <= window_width_breakpoint && simple_search_pills_view == true)
+			{
+			jQuery('#ssearchbox').tagEditor('destroy');
+			}
+
+		/* Page resized to below breakpoint */
+		
+		jQuery(window).resize(function() 
+			{
+			window_width = jQuery(window).width();
+			if(window_width <= window_width_breakpoint && simple_search_pills_view == true)
+				{
+				jQuery('#ssearchbox').tagEditor('destroy');
+				}
+			});
+
 	</script>
 	
 	<?php if ($chosen_dropdowns)

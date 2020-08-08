@@ -3,14 +3,15 @@
 # PDF Contact Sheet Functionality
 #
 include('../../include/db.php');
-include_once('../../include/general.php');
 include('../../include/authenticate.php');
-include('../../include/search_functions.php');
-include('../../include/resource_functions.php');
-include_once('../../include/collections_functions.php');
 include('../../include/image_processing.php');
 include('../../include/pdf_functions.php');
-require_once '../../lib/html2pdf/html2pdf.class.php';
+require_once '../../lib/html2pdf/vendor/autoload.php';
+
+use Spipu\Html2Pdf\Html2Pdf;
+use Spipu\Html2Pdf\Exception\Html2PdfException;
+use Spipu\Html2Pdf\Exception\ExceptionFormatter;
+
 
 $collection        = getvalescaped('c', 0,true);
 $size              = getvalescaped('size', '');
@@ -197,26 +198,30 @@ foreach($results as $result_data)
 
         if(array_key_exists("field{$contact_sheet_field['ref']}", $result_data))
             {
-            $contact_sheet_value = trim(get_data_by_field($result_data['ref'], $contact_sheet_field['ref']));
-
-            // By default we don't limit the field but if HTML2PDF throws an error because of TD tags spreading across
-            // multiple pages, then truncate the value.
-            if(0 < $field_value_limit)
+            # Include field unless hide restriction is in effect
+            if( !($contact_sheet_field['hide_when_restricted'] && 1 == $access) ) 
                 {
-                $contact_sheet_value = mb_substr($contact_sheet_value, 0, $field_value_limit);
-                }
+                $contact_sheet_value = trim(get_data_by_field($result_data['ref'], $contact_sheet_field['ref']));
 
-            // Clean fixed list types of their front comma
-            if(in_array($contact_sheet_field['type'], $FIXED_LIST_FIELD_TYPES))
-                {
-                $contact_sheet_value = tidylist($contact_sheet_value);
+                // By default we don't limit the field but if HTML2PDF throws an error because of TD tags spreading across
+                // multiple pages, then truncate the value.
+                if(0 < $field_value_limit)
+                    {
+                    $contact_sheet_value = mb_substr($contact_sheet_value, 0, $field_value_limit);
+                    }
+    
+                // Clean fixed list types of their front comma
+                if(in_array($contact_sheet_field['type'], $FIXED_LIST_FIELD_TYPES))
+                    {
+                    $contact_sheet_value = tidylist($contact_sheet_value);
+                    }
+                $field_name='';
+                if($contact_sheet_field_name)
+                    {
+                    $field_name.=$contact_sheet_field['title'] . ': ';
+                    }
+                $placeholders['resources'][$result_data['ref']]['contact_sheet_fields'][$contact_sheet_field['title']] = $field_name . tidylist($contact_sheet_value);
                 }
-			$field_name='';
-			if($contact_sheet_field_name)
-			    {
-				$field_name.=$contact_sheet_field['title'] . ': ';
-			    }
-            $placeholders['resources'][$result_data['ref']]['contact_sheet_fields'][$contact_sheet_field['title']] = $field_name . tidylist($contact_sheet_value);
             }
         }
 

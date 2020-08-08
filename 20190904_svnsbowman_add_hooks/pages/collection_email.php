@@ -1,18 +1,21 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
 include "../include/authenticate.php"; #if (!checkperm("s")) {exit ("Permission denied.");}
-include_once "../include/collections_functions.php";
-include "../include/resource_functions.php";
-include "../include/search_functions.php";
-include "../include/render_functions.php";
 
-$themeshare=getvalescaped("catshare","false");
-$themecount=0;
+
+$collection_url	= getvalescaped("collection","");
+$find			= getvalescaped('find', '');
+$offset 		= getvalescaped("offset","");
+$order_by 		= getvalescaped("order_by","");
+$sort 			= getvalescaped("sort","");
+$search 		= getvalescaped("search","");
+$starsearch		= getvalescaped('starsearch', '', true);
+$themeshare		= getvalescaped("catshare","false");
+$themecount		= 0;
 if(getvalescaped("subthemes","false")!="false"){$subthemes=true;}else{$subthemes=false;}
-$linksuffix="?";
-$ref=getvalescaped("ref","");
-$refArray[]=$ref;
+$linksuffix		= "?";
+$ref			= getvalescaped("ref","");
+$refArray[]		= $ref;
 
 
 # Check access
@@ -70,7 +73,7 @@ if (!$allow_share) {
         }
 		
 
-$user_select_internal=checkperm("noex");
+$user_select_internal=checkperm("noex") || intval($user_dl_limit) > 0;
 	
 #Check if any resources are not in the active state
 foreach ($refArray as $colref){
@@ -144,6 +147,26 @@ include "../include/header.php";
 ?>
 <div class="BasicsBox">
 <h1><?php if ($themeshare){echo $lang["email_theme_category"];} else {echo $lang["emailcollectiontitle"];}?></h1>
+
+<?php
+
+	$link_array = array(
+		"ref"			=>	$ref,
+		"search"		=>	$search,
+		"offset"		=>	$offset,
+		"order_by"		=>	$order_by,
+		"sort"			=>	$sort,
+		"collection"	=>	$collection_url,
+		"starsearch"	=>	$starsearch,
+		"find"			=>	$find,
+		"k"				=>	$k
+	);
+
+	$link_back = generateURL($baseurl . "/pages/collection_share.php", $link_array);
+
+?>
+
+<p><a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $link_back ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtosharecollection"]; ?></a></p>
 
 <p><?php 
 if ($themeshare && text("introtextthemeshare")!="")

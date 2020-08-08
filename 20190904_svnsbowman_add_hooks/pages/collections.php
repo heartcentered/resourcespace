@@ -1,14 +1,11 @@
 <?php
 include_once dirname(__FILE__)."/../include/db.php";
-include_once dirname(__FILE__)."/../include/general.php";
-include_once dirname(__FILE__)."/../include/collections_functions.php";
+
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key_collection(getvalescaped("collection","",true),$k))) {include_once dirname(__FILE__)."/../include/authenticate.php";}
 if (checkperm("b")){exit($lang["error-permissiondenied"]);}
 include_once dirname(__FILE__)."/../include/research_functions.php";
-include_once dirname(__FILE__)."/../include/resource_functions.php";
-include_once dirname(__FILE__)."/../include/search_functions.php";
-include_once dirname(__FILE__) . '/../include/render_functions.php';
+
 
 $sort            = getvalescaped('sort', 'DESC');
 $search          = getvalescaped('search', '');
@@ -20,6 +17,7 @@ $offset          = getvalescaped('offset', '');
 $resources_count = getvalescaped('resources_count', '');
 $collection      = getvalescaped('collection', '');
 $entername       = getvalescaped('entername', '');
+$res_access      = getvalescaped('access','');
 
 # if search is not a special search (ie. !recent), use starsearchvalue.
 if ($search !="" && strpos($search,"!")!==false)
@@ -66,9 +64,6 @@ if($emptycollection!='' && getvalescaped("submitted","")=='removeall' && getval(
     {
     remove_all_resources_from_collection($emptycollection);
     }
-    
-# Disable checkboxes for external users.
-if ($k!="" && !$internal_share_access) {$use_checkboxes_for_selection=false;}
 
 if(!isset($thumbs))
     {
@@ -303,7 +298,6 @@ else { ?>
 
 					jQuery('#trash_bin').hide();
 					// AddResourceToCollection includes a reload of CollectionDiv 
-					//  TODO: Why doesn't it use CollectionDivLoad function to do the reload?
 					AddResourceToCollection(event, resource_id, '');
 					}
 			});
@@ -413,7 +407,6 @@ else { ?>
 					if(class_of_drag.indexOf("CollectionPanelShell") >= 0)
 						{
 						// Handle different cases such as Saved searches
-						// TODO: Explain why?
 						if(ui.draggable.data('savedSearch') === 'yes')
 							{
 							CollectionDivLoad('<?php echo $baseurl; ?>/pages/collections.php?removesearch=' + resource_id + '&nc=<?php echo time(); ?>');
@@ -472,34 +465,51 @@ if ($add!="")
 	// If we provide a collection ID use that one instead
 	$to_collection = getvalescaped('toCollection', '');
 
-	if(checkperm("noex"))
-		{
-		// If collection has been shared externally users with this permission can't add resources
-		$externalkeys=get_collection_external_access(($to_collection === '') ? $usercollection : $to_collection);
-		if(count($externalkeys)>0)
-				{
-				$allowadd=false;				
-				?>
-				<script language="Javascript">alert("<?php echo $lang["sharedcollectionaddblocked"]?>");</script>
-				<?php
-				}
-		}
+	if(strpos($add,",")>0)
+        {
+        $addarray=explode(",",$add);
+        }
+    else
+        {
+        $addarray[0]=$add;
+        unset($add);
+        }	
+
+	// If collection has been shared externally need to check access and permissions
+    $externalkeys=get_collection_external_access(($to_collection === '') ? $usercollection : $to_collection);
+    if(count($externalkeys) > 0)
+        {
+        if(checkperm("noex"))
+            {
+            $allowadd=false;
+            }
+        else
+            {
+            foreach ($addarray as $add)
+                {
+                $resaccess = get_resource_access($add);
+                // Not permitted if share is open and access is restricted
+                if(min(array_column($externalkeys,"access")) < $resaccess)
+                    {
+                    $allowadd=false;
+                    }
+                }
+            }
+        if(!$allowadd)
+            {			
+            ?>
+            <script language="Javascript">alert("<?php echo $lang["sharedcollectionaddblocked"]?>");</script>
+            <?php
+            }
+        }
+
 	if($allowadd)
 		{
-		if(strpos($add,",")>0)
-			{
-			$addarray=explode(",",$add);
-			}
-		else
-			{
-			$addarray[0]=$add;
-			unset($add);
-			}	
 		foreach ($addarray as $add)
 			{
 			hook("preaddtocollection");
 			#add to current collection		
-			if (add_resource_to_collection($add,($to_collection === '') ? $usercollection : $to_collection,false,getvalescaped("size",""))==false)
+			if ($usercollection == -$userref || $to_collection == -$userref || add_resource_to_collection($add,($to_collection === '') ? $usercollection : $to_collection,false,getvalescaped("size",""))==false)
 				{ ?>
 				<script language="Javascript">alert("<?php echo $lang["cantmodifycollection"]?>");</script><?php
 				}
@@ -565,7 +575,7 @@ if ($addsearch!=-1)
 
     $order_by = getvalescaped('order_by', getvalescaped('saved_order_by', $default_collection_sort));
 
-    if (!collection_writeable($usercollection))
+    if ($usercollection == -$userref || !collection_writeable($usercollection))
         { ?>
         <script language="Javascript">alert("<?php echo $lang["cantmodifycollection"]?>");</script><?php
         }
@@ -593,7 +603,7 @@ if ($addsearch!=-1)
 			else
 				{
 				#add saved search (the items themselves rather than just the query)
-				$resourcesnotadded=add_saved_search_items($usercollection, $addsearch, $restypes,$archive, $order_by, $sort, $daylimit, $starsearch);
+				$resourcesnotadded=add_saved_search_items($usercollection, $addsearch, $restypes,$archive, $order_by, $sort, $daylimit, $starsearch, $res_access);
 				if (!empty($resourcesnotadded))
 					{
 					$warningtext="";
@@ -699,7 +709,7 @@ $feedback=$cinfo["request_feedback"];
 $totalprice=0;
 if (($userrequestmode==2 || $userrequestmode==3) && $basket_stores_size)
 	{
-	foreach ($result as $resource)
+	foreach ($results_all as $resource)
 		{
 		# For each resource in the collection, fetch the price (set in config.php, or config override for group specific pricing)
 		$id=$resource["purchase_size"];
@@ -723,38 +733,6 @@ if (($userrequestmode==2 || $userrequestmode==3) && $basket_stores_size)
 			}
 		}
 	}
-
-if(!hook("clearmaincheckboxesfromcollectionframe")){
-	if ($use_checkboxes_for_selection ){?>
-	
-	<script>
-	var checkboxes=jQuery('input.checkselect');
-	//clear all
-	checkboxes.each(function(box){
-		jQuery(checkboxes[box]).prop('checked',false);
-		jQuery(checkboxes[box]).change();
-	});
-	</script>
-<?php }
-} // end hook clearmaincheckboxesfromcollectionframe
-
-if(!hook("updatemaincheckboxesfromcollectionframe")){
-		
-	if ($use_checkboxes_for_selection){?>
-	<script><?php
-	# update checkboxes in main window
-	for ($n=0;$n<count($results_all);$n++)			
-		{
-		$ref=$results_all[$n]["ref"];
-		?>
-		if (jQuery('#check<?php echo htmlspecialchars($ref) ?>')){
-		jQuery('#check<?php echo htmlspecialchars($ref) ?>').prop('checked',true);
-		}
-			
-	<?php }
-	} ?></script><?php
-}# end hook updatemaincheckboxesfromcollectionframe
-
 ?><div><?php
 
 if (true) { // draw both
@@ -777,9 +755,9 @@ else if ($basket)
 	<form action="<?php echo $baseurl_short?>pages/purchase.php">
 
 	<?php if ($count_result==0) { ?>
-	<p><br /><?php echo $lang["yourbasketisempty"] ?></p><br /><br /><br />
+	<p><?php echo $lang["yourbasketisempty"] ?></p><br /><br /><br />
 	<?php } else { ?>
-	<p><br /><?php if ($count_result==1) {echo $lang["yourbasketcontains-1"];} else {echo str_replace("%qty",$count_result,$lang["yourbasketcontains-2"]);} ?>
+	<p><?php if ($count_result==1) {echo $lang["yourbasketcontains-1"];} else {echo str_replace("%qty",$count_result,$lang["yourbasketcontains-2"]);} ?>
 
 	<?php if ($basket_stores_size) {
 	# If they have already selected the size, we can show a total price here.
@@ -789,6 +767,7 @@ else if ($basket)
 
 	<p style="padding-bottom:10px;"><input type="submit" name="buy" value="&nbsp;&nbsp;&nbsp;<?php echo $lang["buynow"] ?>&nbsp;&nbsp;&nbsp;" /></p>
 	<?php } ?>
+    <?php hook("addbasketlinks"); ?>
 	<?php if (!$disable_collection_toggle) { ?>
     <a id="toggleThumbsLink" href="#" onClick="ToggleThumbs();return false;"><?php echo LINK_CARET ?><?php echo $lang["hidethumbnails"]?></a>
   <?php } ?>
@@ -812,16 +791,16 @@ elseif (($k != "" && !$internal_share_access) || $collection_download_only)
   	<?php echo $count_result . " " . $lang["youfoundresources"]?><br />
   	</div>
     <?php
-	if ($download_usage && ((isset($zipcommand) || $collection_download) && $count_result>0)) { ?>
+	if ($download_usage && ((isset($zipcommand) || $collection_download) && $count_result>0 && count($results_all)>0)) { ?>
 		<a onclick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/terms.php?k=<?php echo urlencode($k) ?>&collection=<?php echo $usercollection ?>&url=<?php echo urlencode("pages/download_usage.php?collection=" .  $usercollection . "&k=" . $k)?>"><?php echo LINK_CARET ?><?php echo $lang["action-download"]?></a>
-	<?php } else if ((isset($zipcommand) || $collection_download) && $count_result>0) { ?>
+	<?php } else if ((isset($zipcommand) || $collection_download) && $count_result>0 && count($results_all)>0) { ?>
 	<a href="<?php echo $baseurl_short?>pages/terms.php?k=<?php echo urlencode($k) ?>&collection=<?php echo $usercollection ?>&url=<?php echo urlencode("pages/collection_download.php?collection=" .  $usercollection . "&k=" . $k)?>" onclick="return CentralSpaceLoad(this,true);"><?php echo LINK_CARET ?><?php echo $lang["action-download"]?></a>
 	<?php }
      if ($feedback) {?><br /><br /><a onclick="return CentralSpaceLoad(this);" href="<?php echo $baseurl_short?>pages/collection_feedback.php?collection=<?php echo urlencode($usercollection) ?>&k=<?php echo urlencode($k) ?>"><?php echo LINK_CARET ?><?php echo $lang["sendfeedback"]?></a><?php } ?>
     <?php if ($count_result>0 && checkperm("q"))
     	{ 
 		# Ability to request a whole collection (only if user has restricted access to any of these resources)
-		$min_access=collection_min_access($result);
+		$min_access=collection_min_access($results_all);
 		if ($min_access!=0)
 			{
 		    ?>
@@ -876,7 +855,7 @@ elseif (($k != "" && !$internal_share_access) || $collection_download_only)
                 
 
 			#show only active collections if a start date is set for $active_collections 
-			if (strtotime($list[$n]['created']) > ((isset($active_collections))?strtotime($active_collections):1) || ($list[$n]['name']=="My Collection" && $list[$n]['user']==$userref))
+			if (strtotime($list[$n]['created']) > ((isset($active_collections))?strtotime($active_collections):1) || ($list[$n]['name']=="Default Collection" && $list[$n]['user']==$userref))
 					{ ?>
 			<option value="<?php echo $list[$n]["ref"]?>" <?php if ($usercollection==$list[$n]["ref"]) {?> 	selected<?php $found=true;} ?>><?php echo i18n_get_collection_name($list[$n]) ?> <?php if ($collection_dropdown_user_access_mode){echo htmlspecialchars("(". $colusername."/".$accessmode.")"); } ?></option>
 			<?php }
@@ -1005,7 +984,7 @@ if ($count_result>0)
                     {
                     $colimgpath = get_resource_path($ref, false, ($retina_mode ? 'thm':'col'), false, $result[$n]['preview_extension'], true, 1, $use_watermark, $result[$n]['file_modified']);
                     ?>
-                    <img border=0 src="<?php echo $colimgpath; ?>" title="<?php echo htmlspecialchars(i18n_get_translated(strip_tags(strip_tags_and_attributes($result[$n]["field".$view_title_field]))))?>" alt="<?php echo htmlspecialchars(i18n_get_translated(strip_tags(strip_tags_and_attributes($result[$n]["field".$view_title_field]))))?>"
+                    <img class="CollectionPanelThumb" border=0 src="<?php echo $colimgpath; ?>" title="<?php echo htmlspecialchars(i18n_get_translated(strip_tags(strip_tags_and_attributes($result[$n]["field".$view_title_field]))))?>" alt="<?php echo htmlspecialchars(i18n_get_translated(strip_tags(strip_tags_and_attributes($result[$n]["field".$view_title_field]))))?>"
                     <?php if ($retina_mode) { ?>onload="this.width/=2;this.onload=null;"<?php } ?> /><?php
                     }
 				else
@@ -1030,7 +1009,7 @@ if ($count_result>0)
 				$title_field=$metadata_template_title_field;
 				}	
 			}	
-		$field_type=sql_value("select type value from resource_type_field where ref=$title_field","");
+		$field_type=sql_value("select type value from resource_type_field where ref=$title_field","", "schema");
 		if($field_type==8){
 			$title=strip_tags($title);
 			$title=str_replace("&nbsp;"," ",$title);
@@ -1050,9 +1029,6 @@ if ($count_result>0)
 		<?php hook('before_collectionpaneltools'); ?>
 		
 		<?php if ($k=="" || $internal_share_access) { ?><div class="CollectionPanelTools">
-		<?php if (($feedback) || (($collection_reorder_caption || $collection_commenting))) { ?>
-		<span>  <a aria-hidden="true" class="fa fa-comment"  onclick="return ModalLoad(this,true);" href="<?php echo $baseurl_short?>pages/collection_comment.php?ref=<?php echo urlencode($ref) ?>&collection=<?php echo urlencode($usercollection) ?>"/></span>		
-		<?php } ?>
 
 		<?php if (!isset($cinfo['savedsearch'])||(isset($cinfo['savedsearch'])&&$cinfo['savedsearch']==null)){ // add 'remove' link only if this is not a smart collection 
 			?>
@@ -1136,7 +1112,7 @@ jQuery("#CollectionSpace #ResourceShell<?php echo htmlspecialchars($add) ?>").sl
 		# ------------------------ Basket Mode ----------------------------------------
 		?>
 		<div id="CollectionMinTitle"><h2><?php echo $lang["yourbasket"] ?></h2></div>
-		<div id="CollectionMinRightNav">
+		<div id="CollectionMinRightNav" class="CollectionBasket">
 		<form action="<?php echo $baseurl_short?>pages/purchase.php">
 		<ul>
 		
@@ -1164,18 +1140,19 @@ jQuery("#CollectionSpace #ResourceShell<?php echo htmlspecialchars($add) ?>").sl
 		{
 		# Anonymous access, slightly different display
 		$tempcol=$cinfo;
+	
 		?>
 	<div id="CollectionMinTitle" class="ExternalShare"><h2><?php echo i18n_get_collection_name($tempcol)?></h2></div>
 	<div id="CollectionMinRightNav" class="ExternalShare">
 		<?php if(!hook("replaceanoncollectiontools")){ ?>
-		<?php if ((isset($zipcommand) || $collection_download) && $count_result>0) { ?>
+		<?php if ((isset($zipcommand) || $collection_download) && $count_result>0 && count($results_all) > 0) { ?>
 		<li><a onclick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/terms.php?k=<?php echo urlencode($k) ?>&url=<?php echo urlencode("pages/collection_download.php?collection=" .  $usercollection . "&k=" . $k)?>"><?php echo $lang["action-download"]?></a></li>
 		<?php } ?>
 		<?php if ($feedback) {?><li><a onclick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/collection_feedback.php?collection=<?php echo urlencode($usercollection) ?>&k=<?php echo urlencode($k) ?>"><?php echo $lang["sendfeedback"]?></a></li><?php } ?>
 		<?php if ($count_result>0)
 			{ 
 			# Ability to request a whole collection (only if user has restricted access to any of these resources)
-			$min_access=collection_min_access($result);
+			$min_access=collection_min_access($results_all);
 			if ($min_access!=0)
 				{
 				?>
@@ -1194,23 +1171,15 @@ jQuery("#CollectionSpace #ResourceShell<?php echo htmlspecialchars($add) ?>").sl
 	else
 		{
 		?>
-		<div id="CollectionMinTitle" class="ExternalShare">
-		<?php
-		if(!hook('replacecollectiontitle') && !hook('replacecollectiontitlemin'))
-			{
-			?>
-			<h2><a onclick="return CentralSpaceLoad(this, true);" href="<?php echo $baseurl_short; ?>pages/collection_manage.php"><?php echo $lang['mycollections']; ?></a></h2>
-			<?php
-			}
-			?>
+		<div class="ToggleThumbsContainer">
+			<a id="toggleThumbsLink" href="#" onClick="ToggleThumbs();return false;"><?php echo $lang['showthumbnails']; ?></a>
 		</div>
+
+		<?php hook('aftertogglethumbs'); ?>
 
 		<!--Menu-->	
 		<div id="CollectionMinRightNav">
-        	<a id="toggleThumbsLink" href="#" onClick="ToggleThumbs();return false;"><?php echo $lang['showthumbnails']; ?></a>
     	<?php
-    	hook('aftertogglethumbs');
-
 	    // Render dropdown actions
 		render_actions($cinfo, false, false, "min",$results_all);
 		?>

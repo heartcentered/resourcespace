@@ -30,7 +30,7 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
-@media(max-width:1100px) {
+@media(max-width:1200px) {
 
     #UICenter{
         margin-bottom: 161px !important;
@@ -207,10 +207,6 @@ body {
     body {
         background-image: none !important;
     }
-    
-    #ToggleFilterBarButton { display: none !important; }
-    #header_search_form_button { display: inline-block; width: 65%; }
-    
 }
 /* Login Forms */
 @media(max-width:1100px) { 
@@ -276,6 +272,7 @@ body {
 @media(max-width:1200px) {
     #Header {
         min-height: 47px;
+        height: auto !important;
     }
     #HeaderButtons {
         display: block !important;
@@ -355,8 +352,7 @@ body {
         padding-left: 0px;
         }   
 
-}
-@media(max-width: 1100px) {
+
     #HeaderNav1 li a,
     #HeaderNav2 li a {
         color: #3a3a3a;
@@ -365,6 +361,17 @@ body {
     }
     #HeaderNav2 {
         padding-left: 0;
+    }
+
+    #Header .HorizontalNav ul li  {
+        padding:0 5px;     
+    }
+    
+    #Header .HorizontalNav ul li.UploadButton a {
+        background: #1378BF;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+        color: #ffffff;
+        border: #1378BF;        
     }
 }
 @media(max-width:900px) {
@@ -546,17 +553,20 @@ body {
         width: 90%;
         margin-left: auto;
         margin-right: auto;
-
     }
     
     #searchspace .SearchItem,  #searchspace input{
         clear: both;
-        width: 90%;
+        width: 100%;
         float: left;
         margin-left: auto;
         margin-right: auto;
         margin-top: 5px;
         margin-bottom: 5px;
+    }
+
+    .search-icon, .search-icon:hover, .search-icon:active {
+        display: none;
     }
 
 }
@@ -582,7 +592,7 @@ body {
 }
 
 /* Footer */
-@media(max-width:1100px) {
+@media(max-width:1200px) {
     #FooterNavLeft {
         float:none;
         text-align:center;
@@ -601,12 +611,7 @@ body {
     #SearchBarContainer {
         position: relative !important;
         height: auto !important;
-        width: 96% !important;
-        margin-left: 2% !important;
-        margin-right: 2% !important;
-        margin-top: 5px !important;
-        margin-bottom: 5px !important;
-        margin-top: 5px !important;
+        width: 100% !important;
         top:0px !important;        
     }
 

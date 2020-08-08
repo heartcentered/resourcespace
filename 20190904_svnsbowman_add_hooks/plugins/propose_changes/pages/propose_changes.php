@@ -1,12 +1,8 @@
 <?php
 
 include_once __DIR__ . '/../../../include/db.php';
-include_once __DIR__ . '/../../../include/general.php';
 include __DIR__ . '/../../../include/authenticate.php';
-include_once __DIR__ . '/../../../include/resource_functions.php';
 include_once __DIR__ . '/../include/propose_changes_functions.php';
-include_once __DIR__ . '/../../../include/render_functions.php';
-include_once __DIR__ . '/../../../include/search_functions.php';
 
 
 $ref=getvalescaped("ref","",true);
@@ -381,7 +377,6 @@ function propose_changes_display_multilingual_text_field($n, $field, $translatio
 
 function propose_changes_display_field($n, $field)
 	{
-	
 	global $ref, $original_fields, $multilingual_text_fields,
     $is_template, $language, $lang,  $errors, $proposed_changes, $editaccess,
     $FIXED_LIST_FIELD_TYPES,$range_separator, $edit_autosave;
@@ -464,7 +459,7 @@ function propose_changes_display_field($n, $field)
                     eval($field['value_filter']);
             }
                     else if ($field["type"]==4 || $field["type"]==6) { 
-                            $value=NiceDate($value,false,true);
+                            $value=nicedate($value,false,true);
                     }
             
             ?><div class="propose_changes_current ProposeChangesCurrent"><?php echo $value ?></div><?php                        
@@ -528,7 +523,7 @@ function propose_changes_display_field($n, $field)
                 $name = "field_{$field['ref']}";
                 }
 
-            $selected_nodes = explode(', ', $proposed_value);
+            $selected_nodes = (trim($proposed_value) != "" ? explode(', ', $proposed_value) : array());
 
             if(!$editaccess && '' == $proposed_value)
                 {
@@ -570,7 +565,7 @@ function propose_changes_display_field($n, $field)
 		# Show inline help for this field.
 		# For certain field types that have no obvious focus, the help always appears.
 		?>
-		<div class="FormHelp" style="padding:0;<?php if (!in_array($field["type"],array(2,4,6,7,10))) { ?> display:none;<?php } else { ?> clear:left;<?php } ?>" id="help_<?php echo $field["ref"]?>"><div class="FormHelpInner"><?php echo nl2br(trim(htmlspecialchars(i18n_get_translated($field["help_text"],false))))?></div></div>
+		<div class="FormHelp" style="<?php if (!in_array($field["type"],array(2,4,6,7,10))) { ?>display:none;<?php } else { ?>clear:left;<?php } ?>" id="help_<?php echo $field["ref"]?>"><div class="FormHelpInner"><?php echo nl2br(trim(htmlspecialchars(i18n_get_translated($field["help_text"],false))))?></div></div>
 		<?php
 		}
 

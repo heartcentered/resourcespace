@@ -4,7 +4,6 @@
 #
 
 include '../../../include/db.php';
-include_once '../../../include/general.php';
 include '../../../include/authenticate.php'; if (!checkperm('a')) {exit ($lang['error-permissiondenied']);}
 include_once dirname(__FILE__) . '/../include/simplesaml_functions.php';
 
@@ -90,9 +89,19 @@ include '../../../include/header.php';
   
 <?php
  if(!(file_exists(simplesaml_get_lib_path() . '/config/config.php')))
-            {
-            echo "<div class='PageInfoMessage'>" . $lang['simplesaml_sp_configuration'] . ". <a href='" . $baseurl . "/plugins/simplesaml/pages/about.php'>" . $baseurl . "/plugins/simplesaml/pages/about.php</a></div>";
-			 }  
+    {
+    echo "<div class='PageInfoMessage'>" . $lang['simplesaml_sp_configuration'] . ". <a href='" . $baseurl . "/plugins/simplesaml/pages/about.php'>" . $baseurl . "/plugins/simplesaml/pages/about.php</a></div>";
+    }
+else
+    {
+    require_once(simplesaml_get_lib_path() . '/lib/_autoload.php');
+    $config = SimpleSAML_Configuration::getInstance();
+    $version = $config->getVersion();
+    if($version != $simplesaml_version)
+        {
+        echo "<div class='PageInfoMessage'>" . $lang['simplesaml_authorisation_version_error'] . "</div>";
+        }
+    }
   
 ?>
 <form id="form1" name="form1" method="post" action="">

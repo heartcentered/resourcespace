@@ -1,18 +1,15 @@
 <?php
 
-// enumerated types of message.  Note the base two offset for binary combination.
-DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN",1);
-DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL",2);
-DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_RESERVED_1",4);
-DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_RESERVED_2",8);
-DEFINE ("MESSAGE_ENUM_NOTIFICATION_TYPE_RESERVED_3",16);
-
-DEFINE ("MESSAGE_DEFAULT_TTL_SECONDS",60 * 60 * 24 * 7);		// 7 days
-
-// ------------------------------------------------------------------------------------------------------------------------
-
-// gets messages for a given user (return true if there are messages, if not false)
-// note that messages are passed by reference.
+/**
+ * Gets messages for a given user (returns true if there are messages, false if not)
+ * Note that messages are passed by reference.
+ *
+ * @param  array $messages  Array that will be populated by messages. Passed by reference
+ * @param  int $user        User ID
+ * @param  bool $get_all    Retrieve all messages? Setting to TRUE will include all seen and expired messages
+ * @param  bool $sort_desc  Sort by message ID in descending order? False = Ascending
+ * @return bool             Flag to indicate if any messages exist
+ */
 function message_get(&$messages,$user,$get_all=false,$sort_desc=false)
 	{
 	$messages=sql_query("SELECT user_message.ref, user.username AS owner, user_message.seen, message.created, message.expires, message.message, message.url " .
@@ -26,9 +23,19 @@ function message_get(&$messages,$user,$get_all=false,$sort_desc=false)
 	return(count($messages) > 0);
 	}
 
-// ------------------------------------------------------------------------------------------------------------------------
-
-// add a message.
+/**
+ * Add a new resourcespace system message
+ *
+ * @param  mixed $users             User ID, or array of user IDs
+ * @param  string $text             Message text
+ * @param  string $url              URL to include as link in message
+ * @param  int $owner               ID of message creator/owner
+ * @param  int $notification_type   Message type e.g. MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN, MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL. See definitions.php
+ * @param  int $ttl_seconds         Lifetime of message in seconds before expiry
+ * @param  int $related_activity    ID of related activity type - see SYSTEM NOTIFICATION TYPES section in definitions.php
+ * @param  int $related_ref         Related activity ID - used with type above to delete redundant messages e.g. once a user or resource request has been approved
+ * @return void
+ */
 function message_add($users,$text,$url="",$owner=null,$notification_type=MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN,$ttl_seconds=MESSAGE_DEFAULT_TTL_SECONDS, $related_activity=0, $related_ref=0)
 	{
 	global $userref,$applicationname,$lang, $baseurl, $baseurl_short;
@@ -91,9 +98,12 @@ function message_add($users,$text,$url="",$owner=null,$notification_type=MESSAGE
 
 	}
 
-// ------------------------------------------------------------------------------------------------------------------------
-
-// remove a message from message table and associated user_messages
+/**
+ * Remove a message from message table and associated user_messages
+ *
+ * @param  int $message Message ID
+ * @return void
+ */
 function message_remove($message)
 	{
     $message = escape_check($message);
@@ -102,8 +112,14 @@ function message_remove($message)
 	sql_query("DELETE FROM message WHERE ref='{$message}'");	
 	}
 
-// ------------------------------------------------------------------------------------------------------------------------
 
+/**
+ * Mark a message as seen
+ *
+ * @param  int $message Message ID
+ * @param  int $seen_type    - see definitons.php
+ * @return void
+ */
 function message_seen($message,$seen_type=MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN)
 	{
     $seen_type = escape_check($seen_type);
@@ -112,8 +128,12 @@ function message_seen($message,$seen_type=MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN)
 	sql_query("UPDATE `user_message` SET seen=seen | {$seen_type} WHERE `ref`='{$message}'");
 	}
     
-// ------------------------------------------------------------------------------------------------------------------------
-
+/**
+ * Mark a message as unseen
+ *
+ * @param  int $message Message ID
+ * @return void
+ */
 function message_unseen($message)
 	{
     $message = escape_check($message);
@@ -121,9 +141,13 @@ function message_unseen($message)
 	sql_query("UPDATE `user_message` SET seen='0' WHERE `ref`='{$message}'");
 	}
 
-// ------------------------------------------------------------------------------------------------------------------------
-
-// flags all non-read messages as read for given user and seen type
+/**
+ * Flags all non-read messages as read for given user and seen type
+ *
+ * @param  int $user    User ID
+ * @param  int $seen_type    - see definitons.php
+ * @return void
+ */
 function message_seen_all($user,$seen_type=MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN)
 	{
 	$messages = array();
@@ -136,25 +160,28 @@ function message_seen_all($user,$seen_type=MESSAGE_ENUM_NOTIFICATION_TYPE_SCREEN
 		}
 	}
 
-// ------------------------------------------------------------------------------------------------------------------------
-
-// remove all messages from message and user_message tables that have expired (regardless of read).  This will be called
-// from a cron job.
+/**
+ * Remove all messages from message and user_message tables that have expired (regardless of read). 
+ * This will be called from a cron job.
+ *
+ * @return void
+ */
 function message_purge()
 	{
 	sql_query("DELETE FROM user_message WHERE message IN (SELECT ref FROM message where expires < NOW())");
 	sql_query("DELETE FROM message where expires < NOW()");
 	}
 
-// ------------------------------------------------------------------------------------------------------------------------
 
-// Send a summary of all unread notifications as an email
-// from the standard cron_copy_hitcount
-
+/**
+ * Send a summary of all unread notifications as an email
+ * from the standard cron_copy_hitcount
+ *
+ * @return boolean  Returns false if not due to run
+ */
 function message_send_unread_emails()
 	{
-	global $lang, $applicationname,$actions_enable,$baseurl,$list_search_results_title_trim;
-    global $user_pref_daily_digest,$applicationname,$actions_on, $inactive_message_auto_digest_period;
+	global $lang, $applicationname, $actions_enable, $baseurl, $list_search_results_title_trim, $user_pref_daily_digest, $applicationname, $actions_on, $inactive_message_auto_digest_period, $user_pref_inactive_digest;
     
     $lastrun = get_sysvar('daily_digest', '1970-01-01');
     
@@ -209,9 +236,10 @@ function message_send_unread_emails()
             continue;
             }
 		setup_user($messageuser);
-        get_config_option($digestuser,'user_pref_inactive_digest', $user_auto_digest_option);
+        get_config_option($digestuser,'user_pref_inactive_digest', $user_pref_inactive_digest);
+        get_config_option($digestuser,'user_pref_daily_digest', $user_pref_daily_digest);
         
-        if($inactive_message_auto_digest_period == 0 || !$user_auto_digest_option) // This may be set differently as a group configuration overerride or disabled by user
+        if($inactive_message_auto_digest_period == 0 || (!$user_pref_inactive_digest && !$user_pref_daily_digest)) // This may be set differently as a group configuration overerride or disabled by user
             {
             debug("Skipping email digest for user ref " . $digestuser . " as user or group preference disabled");
             continue;
@@ -248,7 +276,7 @@ function message_send_unread_emails()
 				// Message applies to this user
 				$messageflag=true;
 				$usermail = $unreadmessage["email"];
-				$message .= "<tr><td>" . nicedate($unreadmessage["created"], true) . "</td><td>" . $unreadmessage["message"] . "</td><td><a href='" . $unreadmessage["url"] . "'>" . $lang["link"] . "</a></td></tr>";
+				$message .= "<tr><td>" . nicedate($unreadmessage["created"], true, true, true) . "</td><td>" . $unreadmessage["message"] . "</td><td><a href='" . $unreadmessage["url"] . "'>" . $lang["link"] . "</a></td></tr>";
 				$messagerefs[]=$unreadmessage["messageref"];
 				}
 			}
@@ -294,7 +322,7 @@ function message_send_unread_emails()
 					  }
 					elseif($user_action["type"]=="resourcerequest")
 					  {
-					  $actioneditlink = $baseurl . "/pages/edit.php";
+                      $actioneditlink = $baseurl . "/pages/team/team_request_edit.php";
 					  }
 					elseif($user_action["type"]=="userrequest")
 					  {
@@ -305,7 +333,7 @@ function message_send_unread_emails()
 					$editlink=($actioneditlink=='')?'':generateURL($actioneditlink,$linkparams);
 					$viewlink=($actionviewlink=='')?'':generateURL($actionviewlink,$linkparams);
 					$message .= "<tr>";
-					$message .= "<td>" . nicedate($user_action["date"],true) . "</td>";
+					$message .= "<td>" . nicedate($user_action["date"], true, true, true) . "</td>";
 					$message .= "<td><a href=\"" . $editlink . "\" >" . $user_action["ref"] . "</a></td>";
 					$message .= "<td>" . tidy_trim(TidyList($user_action["description"]),$list_search_results_title_trim) . "</td>";
 					$message .= "<td>" . $lang["actions_type_" . $user_action["type"]] . "</td>";
@@ -332,19 +360,24 @@ function message_send_unread_emails()
 			}
 
 		get_config_option($digestuser,'user_pref_daily_digest_mark_read', $mark_read);
-		if($mark_read)
+		if($mark_read && count($messagerefs) > 0)
 			{
-			sql_query("update user_message set seen='" . MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL . "' where message in ('" . implode("','",$messagerefs) . "') and user = '" . $digestuser . "'");
+			sql_query("UPDATE user_message SET seen='" . MESSAGE_ENUM_NOTIFICATION_TYPE_EMAIL . "' WHERE message IN ('" . implode("','",$messagerefs) . "') and user = '" . $digestuser . "'");
 			}
 		}
 
-    set_sysvar("daily_digest",date("Y-m-d H:i:s")); 
+    set_sysvar("daily_digest",date("Y-m-d H:i:s"));
+    return true; 
 	}
 
+/**
+ * Remove all messages related to a certain activity (e.g. resource request or resource submission)
+ * matching the given ref(s)
 
-
-// ------------------------------------------------------------------------------------------------------------------------
-// Remove all messages related to a certain activity (e.g. resource request or resource submission) matching the given ref(s)
+ * @param  int $remote_activity     ID of related activity type - see SYSTEM NOTIFICATION TYPES section in definitions.php
+ * @param  mixed $remote_refs       Related activity ID or array of IDs
+ * @return void
+ */
 function message_remove_related($remote_activity=0,$remote_refs=array())
 	{
 	if($remote_activity==0 || $remote_refs==0 || (is_array($remote_refs) && count($remote_refs)==0) ){return false;}
@@ -357,7 +390,12 @@ function message_remove_related($remote_activity=0,$remote_refs=array())
         }
 	}
 
-// Remove an instance of a message from user_message table 
+/**
+ * Remove an instance of a message from user_message table 
+ *
+ * @param  int $usermessage Message ID
+ * @return void
+ */
 function message_user_remove($usermessage)
     {
     global $userref;
@@ -366,4 +404,50 @@ function message_user_remove($usermessage)
     $usermessage = escape_check($usermessage);
 
     sql_query("DELETE FROM user_message WHERE user = {$userref} AND ref = '{$usermessage}'");
+    }
+
+/**
+* Send a system notification or email to the system administrators according to preference
+* 
+* @param string  $message      Message text
+* @param string  $url          Optional URL
+* 
+* @return void
+*/ 
+function system_notification($message, $url="")
+    {
+    global $lang, $applicationname;
+    $admin_notify_emails = array();
+    $admin_notify_users = array();
+    $notify_users=get_notification_users("SYSTEM_ADMIN");
+    $subject = str_replace("%%APPLICATION_NAME%%", $applicationname, $lang["system_notification"]);
+    foreach($notify_users as $notify_user)
+        {
+        get_config_option($notify_user['ref'],'user_pref_system_management_notifications', $send_message);
+        if($send_message==false)
+            {
+            $continue;
+            }
+        get_config_option($notify_user['ref'],'email_user_notifications', $send_email);
+        if($send_email && $notify_user["email"]!="")
+            {
+            $admin_notify_emails[] = $notify_user['email'];
+            }
+        else
+            {
+            $admin_notify_users[]=$notify_user["ref"];
+            }
+        }
+    foreach($admin_notify_emails as $admin_notify_email)
+        {
+        $template = "system_notification_email";
+        $templatevars = array("message"=>$message,"url"=>$url);
+        $messageplain = $message . "\n\n" . $url;
+        send_mail($admin_notify_email,$subject,$messageplain,'','',$template,$templatevars);
+        }
+
+    if (count($admin_notify_users)>0)
+        {
+        message_add($admin_notify_users,escape_check($message),$url, 0);
+        }
     }

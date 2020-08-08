@@ -1,11 +1,7 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include_once "../include/collections_functions.php";
-include_once "../include/render_functions.php";
-include_once "../include/resource_functions.php";
-include_once "../include/search_functions.php";
 
 $offset=getvalescaped("offset",0);
 $find=getvalescaped("find",getvalescaped("saved_find",""));rs_setcookie('saved_find', $find);
@@ -231,7 +227,7 @@ for ($n=$offset;(($n<count($collections)) && ($n<($offset+$per_page)));$n++)
     <script>
         jQuery('#<?php echo $action_selection_id ?>').bind({
                         mouseenter:function(e){
-                        LoadActions('collectionpublic','<?php echo $action_selection_id ?>','collection','<?php echo $collections[$n]["ref"] ?>','<?php echo $CSRF_token_identifier; ?>','<?php echo generateCSRFToken($usersession,"collectionpublic_actions"); ?>');
+                        LoadActions('collectionpublic','<?php echo $action_selection_id ?>','collection','<?php echo $collections[$n]["ref"] ?>');
                         }});
     </script>
     <?php
