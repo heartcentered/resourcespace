@@ -18,7 +18,7 @@ include_once '../include/user_functions.php';
  * 
  * @param string $value String representaion of byte size (including K, M, or G
  * @return int Number of KB
- */
+ */ /*
 function ResolveKB($value) { //Copied from includes/db.php
     $value=trim(strtoupper($value));
     if (substr($value,-1,1)=="K")
@@ -35,7 +35,7 @@ function ResolveKB($value) { //Copied from includes/db.php
         }
     return $value;
 }
-
+*/
 
 /**
  * Santitizes input from a given request key.
