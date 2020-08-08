@@ -22,7 +22,7 @@ foreach ($_GET as $key => $value)
 	if (substr($key,0,5)=="theme" && substr($key,0,6)!="themes"){		
 		if (empty($value)) break;	# if the value is empty then there is no point in continuing iterations of the loop
 		$themes[$themecount] = rawurldecode($value);
-		$themecount++;
+		++$themecount;
 		}
 	}
     
@@ -62,8 +62,9 @@ function DisplayTheme($themes=array(), $simpleview=false)
 	if($simpleview)
 		{
 		global $baseurl_short, $lang, $themecount, $themes_simple_images;
-		$getthemes=get_themes($themes);        
-		for ($m=0;$m<count($getthemes);$m++)
+		$getthemes=get_themes($themes);
+        $getthemes_count = count($getthemes);
+		for ($m=0;$m<$getthemes_count;$m++)
 			{
 			$theme_image_path="";
 			if($themes_simple_images)
@@ -188,8 +189,9 @@ function DisplayTheme($themes=array(), $simpleview=false)
 		$getthemes=get_themes($themes);
 	
 		$tmp = hook("getthemesdisp", "", array($themes)); if($tmp!==false) $getthemes = $tmp;
+        $getthemes_count = count($getthemes);
 		
-		if ((!$themes_single_collection_shortcut && count($getthemes)>0) || ($themes_single_collection_shortcut && count($getthemes)>1))
+		if ((!$themes_single_collection_shortcut && count($getthemes)>0) || ($themes_single_collection_shortcut && $getthemes_count>1))
 			{
 			?>
 			<div class="RecordBox">
@@ -203,7 +205,7 @@ function DisplayTheme($themes=array(), $simpleview=false)
 	
 			// count total items in themes
 			$totalcount=0;
-			for ($m=0;$m<count($getthemes);$m++)
+			for ($m=0;$m<$getthemes_count;$m++)
 				{$totalcount=$totalcount+$getthemes[$m]['c'];
 			}
 	
@@ -222,7 +224,8 @@ function DisplayTheme($themes=array(), $simpleview=false)
 			}
 			if (($images!==false) && ($theme_images))
 				{
-				for ($n=0;$n<count($images);$n++)
+                $images_count = count($images);
+				for ($n=0;$n<$images_count;$n++)
 					{
 					?><div style="float:left;margin-right:12px;"><img class="CollectImageBorder" src="<?php echo get_resource_path($images[$n],false,"col",false) ?>" /></div>
 					<?php
@@ -235,7 +238,8 @@ function DisplayTheme($themes=array(), $simpleview=false)
 				<?php
 				}
 			$themeslinks="";
-			for ($x=0;$x<count($themes);$x++){
+            $themes_count = count($themes);
+			for ($x=0;$x<$themes_count;$x++){
 				$themeslinks.="theme".($x+1)."=".urlencode($themes[$x])."&";
 			}
 			?>
@@ -244,7 +248,8 @@ function DisplayTheme($themes=array(), $simpleview=false)
 				{
 				if ($themes_category_split_pages_parents_root_node){?><a href="<?php echo $baseurl_short?>pages/themes.php"  onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["themes"];?></a> / <?php } 
 				$themescrumbs="";
-				for ($x=0;$x<count($themes);$x++){
+                $themes_count = count($themes);
+				for ($x=0;$x<$themes_count;$x++){
 					$themescrumbs.="theme".($x+1)."=".urlencode($themes[$x])."&";
 					?><a href="<?php echo $baseurl_short?>pages/themes.php?<?php echo $themescrumbs?>"  onClick="return CentralSpaceLoad(this,true);"><?php echo htmlspecialchars(i18n_get_translated($themes[$x]))?></a> / <?php
 					}
@@ -258,7 +263,8 @@ function DisplayTheme($themes=array(), $simpleview=false)
 				if (($show_theme_collection_stats) || (!($themes_category_split_pages) && ($enable_theme_category_sharing || $enable_theme_category_edit)))
 					{
 					$linkparams="";
-					for ($x=0;$x<count($themes);$x++){
+                    $themes_count = count($themes);
+					for ($x=0;$x<$themes_count;$x++){
 					$linkparams.="theme".($x+1)."=".urlencode($themes[$x])."&";
 					}
 					if($show_theme_collection_stats)
@@ -277,7 +283,8 @@ function DisplayTheme($themes=array(), $simpleview=false)
 						if (checkperm("h") && $enable_theme_category_sharing)
 							{
 							$sharelink="";
-							for ($x=0;$x<count($themes);$x++)
+                            $themes_count = count($themes);
+							for ($x=0;$x<$themes_count;$x++)
 								{
 								$sharelink.="theme".($x+1)."=" . urlencode($themes[$x]) ."&";					
 								}
@@ -320,7 +327,8 @@ function DisplayTheme($themes=array(), $simpleview=false)
 			</tr>
 	
 			<?php
-			for ($m=0;$m<count($getthemes);$m++)
+            $getthemes_count = count($getthemes);
+			for ($m=0;$m<$getthemes_count;$m++)
 				{
 				?>
 				<tr <?php hook("collectionlistrowstyle");?>>
@@ -460,10 +468,11 @@ if (!$themes_category_split_pages && !$theme_direct_jump) { ?>
 	# Display title and description when 'direct jump' mode is enabled.
 	$text=text("introtext");
 	$title=htmlspecialchars(getval("title",$lang["themes"]),ENT_QUOTES);
-	if (count($themes)>0)
+    $themes_count = count($themes);
+	if ($themes_count>0)
 		{
-		$title=i18n_get_translated($themes[count($themes)-1]);
-		$text=text("introtext" . $themes[count($themes)-1]);
+		$title=i18n_get_translated($themes[$themes_count-1]);
+		$text=text("introtext" . $themes[$themes_count-1]);
 		if ($text=="") {$text=text("introtext");}
 		}
 	?>
@@ -499,7 +508,8 @@ if(!hook('replacethemesbacklink'))
             )
         );
 
-        for($x = 0; $x < count($themes); $x++)
+        $themes_count = count($themes);
+        for($x = 0; $x < $themes_count; $x++)
             {
             $links_trail_additional_params['theme' . (0 == $x ? '': $x + 1)] = $themes[$x];
 
@@ -525,12 +535,13 @@ elseif ($themes_category_split_pages && !$theme_direct_jump)
 	#
 	if (count($themes)<$theme_category_levels){
 	$headers=get_theme_headers($themes);
-	if (count($headers)>0)
+    $headers_count = count($headers);
+	if ($headers_count>0)
 		{
 		if($simpleview)
 			{
 			# Theme headers
-			for ($n=0;$n<count($headers);$n++)
+			for ($n=0;$n<$headers_count;$n++)
 				{
 				$headerlink       = '';
 				$link             = $baseurl_short."pages/themes.php?theme1=" . urlencode((!isset($themes[0]))? $headers[$n]:$themes[0]) . "&simpleview=true";
@@ -563,7 +574,8 @@ elseif ($themes_category_split_pages && !$theme_direct_jump)
                             }
 						}
 					}
-				for ($x=2;$x<count($themes)+2;$x++)
+                $themes_count = count($themes);
+				for ($x=2;$x<$themes_count+2;$x++)
 					{
 					if (isset($headers[$n]))
 						{
@@ -596,7 +608,8 @@ elseif ($themes_category_split_pages && !$theme_direct_jump)
 
                         $additional_dash_tile_link_params['theme1'] = !isset($themes[0]) ? $headers[$n] : $themes[0];
 
-                        for($x = 2; $x < count($themes) + 2; $x++)
+                        $themes_count = count($themes);
+                        for($x = 2; $x < $themes_count + 2; $x++)
                             {
                             if(isset($headers[$n]))
                                 {
@@ -684,7 +697,8 @@ elseif ($themes_category_split_pages && !$theme_direct_jump)
 				if ($themes_category_split_pages_parents){
 					$themeslinks="";
 					echo (count($headers)>1)?$lang["subcategories"]:$lang["subcategory"];?></h1><h1 style="margin-top:5px;"><?php if ($themes_category_split_pages_parents_root_node){?><a href="<?php echo $baseurl_short?>pages/themes.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["themes"];?></a> / <?php } ?><?php
-					for ($x=0;$x<count($themes);$x++){
+                    $themes_count = count($themes);
+					for ($x=0;$x<$themes_count;$x++){
 						$themeslinks.="theme".($x+1)."=".urlencode($themes[$x])."&";
 						?><a href="<?php echo $baseurl_short?>pages/themes.php?<?php echo $themeslinks?>"  onClick="return CentralSpaceLoad(this,true);"><?php echo htmlspecialchars(i18n_get_translated($themes[$x]))?></a> / <?php
 						}
@@ -705,7 +719,8 @@ elseif ($themes_category_split_pages && !$theme_direct_jump)
 			<?php
 	
 			# Theme headers
-			for ($n=0;$n<count($headers);$n++)
+            $headers_count = count($headers);
+			for ($n=0;$n<$headers_count;$n++)
 				{
 				$link=$baseurl_short."pages/themes.php?theme1=" . urlencode((!isset($themes[0]))? $headers[$n]:$themes[0]);
 				$linklang=$lang['action-select'];
@@ -734,7 +749,8 @@ elseif ($themes_category_split_pages && !$theme_direct_jump)
 	
 				$editlink=$baseurl_short."pages/theme_edit.php?theme1=" . urlencode((!isset($themes[0]))? $headers[$n]:$themes[0]);
 				$sharelink=$baseurl_short."pages/theme_category_share.php?theme1=" . urlencode((!isset($themes[0]))? $headers[$n]:$themes[0]);
-				for ($x=2;$x<count($themes)+2;$x++){
+                $themes_count = count($themes);
+				for ($x=2;$x<$themes_count+2;$x++){
 					if (isset($headers[$n])){
 						$link.="&theme".$x."=" . urlencode((!isset($themes[$x-1]))? ((!isset($themes[$x-2]))?"":$headers[$n]):$themes[$x-1]);
 						$headerlink.="&theme".$x."=" . urlencode((!isset($themes[$x-1]))? ((!isset($themes[$x-2]))?"":$headers[$n]):$themes[$x-1]);
@@ -801,7 +817,8 @@ else
 
 		# ----------------- Level 1 headers -------------------------
 		$headers=get_theme_headers(array());
-		for ($n=0;$n<count($headers);$n++)
+        $headers_count = count($headers);
+		for ($n=0;$n<$headers_count;$n++)
 			{
 			?><option value="<?php echo htmlspecialchars($headers[$n])?>" <?php if (isset($themes[0])&&
 			stripslashes($themes[0])==
@@ -813,8 +830,9 @@ else
 		</div>
 
 		<?php
-		if (count($themes)>0){
-		for ($x=0;$x<count($themes);$x++){
+        $themes_count = count($themes);
+		if ($themes_count>0){
+		for ($x=0;$x<$themes_count;$x++){
 		# ----------------- Level headers -------------------------
 		if (isset($themes[$x])&&$themes[$x]!="" && $theme_category_levels>($x+1))
 			{
@@ -823,7 +841,8 @@ else
 				$themearray[]=$themes[$n];
 				}
 			$headers=get_theme_headers($themearray);
-			if (count($headers)>0)
+            $headers_count = count($headers);
+			if ($headers_count>0)
 				{
 				?>
 				<div class="Question" style="border-top:none;">
@@ -832,7 +851,7 @@ else
 				<select class="stdwidth" name="theme<?php echo $x+2?>" id="theme<?php echo $x+2?>" onchange="document.getElementById('lastlevelchange').value='<?php echo $x+2?>';document.getElementById('themeform').submit();">
 					<option value=""><?php echo $lang['select']; ?></option>
 				<?php
-				for($n = 0; $n < count($headers); $n++)
+				for($n = 0; $n < $headers_count; $n++)
 					{
 					?>
 					<option value="<?php echo htmlspecialchars($headers[$n]); ?>" <?php if(isset($themes[$x + 1]) && stripslashes($themes[$x + 1]) == stripslashes($headers[$n])) { ?>selected<?php } ?>><?php echo str_replace("*", "", $headers[$n]); ?></option>
@@ -867,14 +886,16 @@ elseif (($theme_category_levels==1 && $smart_theme=="") || $theme_direct_jump)
 	# Display all themes
 	$headers=get_theme_headers($themes);
 	$tmp = hook("themeheadersdisp", "", array($themes)); if($tmp!==false) $headers = $tmp;
-	for ($n=0;$n<count($headers);$n++)
+    $headers_count = count($headers);
+	for ($n=0;$n<$headers_count;$n++)
 		{
 			DisplayTheme(array_merge($themes,array($headers[$n])), $simpleview);
 		}
 	}
 
 $new_collection_additional_params = array();
-for($x = 0; $x < count($themes); $x++)
+$themes_count = count($themes);
+for($x = 0; $x < $themes_count; $x++)
 	{
 	/*
 	IMPORTANT: this call to action is basically going to make a call to save_collection() which for some unknown
@@ -889,7 +910,8 @@ for($x = 0; $x < count($themes); $x++)
 if ($header=="" && !isset($themes[0]))
 	{
 	$headers=get_smart_theme_headers();
-	for ($n=0;$n<count($headers);$n++)
+    $headers_count = count($headers);
+	for ($n=0;$n<$headers_count;$n++)
 		{
 		$node=getval("node",0);
 
@@ -957,8 +979,9 @@ if ($header=="" && !isset($themes[0]))
 				if (getval("smart_theme","") != "") // We are in the smart theme already
 					{
                     $themes = get_smart_themes_nodes($headers[$n]['ref'], (7 == $headers[$n]['type']), $node);
-                    
-					for ($m=0;$m<count($themes);$m++)
+
+                    $themes_count = count($themes);
+					for ($m=0;$m<$themes_count;$m++)
 						{            
 						$s=$headers[$n]["name"] . ":" . $themes[$m]["name"];
                         $theme_image_path = '';
@@ -1035,7 +1058,8 @@ if ($header=="" && !isset($themes[0]))
 	
 				<?php
 				$themes = get_smart_themes_nodes($headers[$n]['ref'], (7 == $headers[$n]['type']), $node);
-				for ($m=0;$m<count($themes);$m++)
+                $themes_count = count($themes);
+				for ($m=0;$m<$themes_count;$m++)
 					{
 					$s=$headers[$n]["name"] . ":" . $themes[$m]["name"];
 					if(strpos($s," ")!==false){$s="\"" . $s . "\"";}

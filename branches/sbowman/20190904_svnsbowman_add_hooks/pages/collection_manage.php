@@ -146,7 +146,8 @@ if(($purge != "" || $deleteall != "") && enforcePostRequest(false)) {
 	# Delete all resources in collection
 	if (!checkperm("D")) {
 		$resources=do_search("!collection" . $deletecollection);
-		for ($n=0;$n<count($resources);$n++) {
+        $resources_count = count($resources);
+		for ($n=0;$n<$resources_count;$n++) {
 			if (checkperm("e" . $resources[$n]["archive"])) {
 				delete_resource($resources[$n]["ref"]);	
 				collection_log($deletecollection,"D",$resources[$n]["ref"]);
@@ -183,8 +184,9 @@ if ($deleteempty!="" && enforcePostRequest(false)) {
 		
 	$collections=get_user_collections($userref);
 	$deleted_usercoll = false;
-		
-	for ($n = 0; $n < count($collections); $n++) {
+
+    $collections_count = count($collections);
+	for ($n = 0; $n < $collections_count; $n++) {
 		// if count is zero and not Default Collection and collection is owned by user:
 		if ($collections[$n]['count'] == 0 && $collections[$n]['cant_delete'] != 1 && $collections[$n]['user']==$userref) {
 			delete_collection($collections[$n]['ref']);
@@ -274,8 +276,9 @@ $atoz.="</div>";
 $url=$baseurl_short."pages/collection_manage.php?paging=true&col_order_by=".urlencode($col_order_by)."&sort=".urlencode($sort)."&find=".urlencode($find)."";
 
 	?><div class="TopInpageNav"><div class="TopInpageNavLeft"><?php echo $atoz?> <div class="InpageNavLeftBlock"><?php echo $lang["resultsdisplay"]?>:
-  	<?php 
-  	for($n=0;$n<count($list_display_array);$n++){?>
+  	<?php
+    $list_display_array_count = count($list_display_array);
+  	for($n=0;$n<$list_display_array_count;$n++){?>
   	<?php if ($per_page==$list_display_array[$n]){?><span class="Selected"><?php echo htmlspecialchars($list_display_array[$n]) ?></span><?php } else { ?><a href="<?php echo $url; ?>&per_page_list=<?php echo urlencode($list_display_array[$n])?>" onClick="return CentralSpaceLoad(this);"><?php echo htmlspecialchars($list_display_array[$n]) ?></a><?php } ?>&nbsp;|
   	<?php } ?>
   	<?php if ($per_page==99999){?><span class="Selected"><?php echo $lang["all"]?></span><?php } else { ?><a href="<?php echo $url; ?>&per_page_list=99999" onClick="return CentralSpaceLoad(this);"><?php echo $lang["all"]?></a><?php } ?>
@@ -313,7 +316,8 @@ $url=$baseurl_short."pages/collection_manage.php?paging=true&col_order_by=".urle
 <form method="get" name="colactions" id="colactions" action="<?php echo $baseurl_short?>pages/collection_manage.php">
 <?php
 
-for ($n=$offset;(($n<count($collections)) && ($n<($offset+$per_page)));$n++)
+$collections_count = count($collections);
+for ($n=$offset;(($n<$collections_count) && ($n<($offset+$per_page)));$n++)
 	{
     $colusername=$collections[$n]['fullname'];
     $count_result = $collections[$n]["count"];
@@ -384,11 +388,12 @@ hook('render_collections_list_tools', '', array($collections[$n])); ?>
 // count how many collections are owned by the user versus just shared, and show at top
 $mycollcount = 0;
 $othcollcount = 0;
-for($i=0;$i<count($collections);$i++){
+$collections_count = count($collections);
+for($i=0;$i<$collections_countv;$i++){
 	if ($collections[$i]['user'] == $userref){
-		$mycollcount++;
+		++$mycollcount;
 	} else {
-		$othcollcount++;
+		++$othcollcount;
 	}
 }
 
