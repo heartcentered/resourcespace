@@ -1,11 +1,8 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 # External access support (authenticate only if no key provided, or if invalid access key provided)
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref","",true),$k))) {include "../include/authenticate.php";}
-include_once "../include/collections_functions.php";
-include "../include/resource_functions.php";
-include "../include/search_functions.php";
 
 $ref=getvalescaped("ref","",true);
 $collection=getvalescaped("collection","",true);
@@ -54,7 +51,7 @@ if (file_exists($imagepath)){?>
 
 <?php if (!hook("replacecollectioncommentform")) { ?>
 
-<form method="post" action="<?php echo $baseurl_short?>pages/collection_comment.php"  onSubmit="return CentralSpacePost(this,true);">
+<form method="post" action="<?php echo $baseurl_short?>pages/collection_comment.php"  onSubmit="return CentralSpacePost(this, true, false, false);">
     <?php generateFormToken("collection_comment"); ?>
 <input type="hidden" name="ref" value="<?php echo htmlspecialchars($ref) ?>">
 <input type="hidden" name="k" value="<?php echo htmlspecialchars($k) ?>">

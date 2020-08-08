@@ -1,9 +1,8 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php"; if ($disable_upload_preview || checkperm("F*")) {exit ("Permission denied.");}
 include "../include/image_processing.php";
-include "../include/resource_functions.php";
 
 $ref=getvalescaped("ref","",true);
 $status="";
@@ -14,19 +13,50 @@ if (!get_edit_access($ref,$resource["archive"],false,$resource)) {
 		$error=$lang['error-permissiondenied'];
 		error_alert($error);
 		exit();
-		}
+        }
+        
+if($resource["lock_user"] > 0 && $resource["lock_user"] != $userref)
+    {
+    $error = get_resource_lock_message($resource["lock_user"]);
+    http_response_code(403);
+    exit($error);
+    }
 
 # fetch the current search 
 $search=getvalescaped("search","");
 $order_by=getvalescaped("order_by","relevance");
 $offset=getvalescaped("offset",0,true);
 $restypes=getvalescaped("restypes","");
+$starsearch=getvalescaped("starsearch","");
 if (strpos($search,"!")!==false) {$restypes="";}
-$archive=getvalescaped("archive",0,true);
+$archive=getvalescaped("archive","");
+$per_page=getvalescaped("per_page",0,true);
+$default_sort_direction="DESC";
+if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
+$sort=getval("sort",$default_sort_direction);
+$previewresource=getval("previewref",0,true);
+$previewresourcealt=getval("previewalt",-1,true);
 
 $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
+$curpos=getvalescaped("curpos","");
+$go=getval("go","");
+
+$urlparams= array(
+    'ref'				        => $ref,
+    'search'			        => $search,
+    'order_by'			        => $order_by,
+    'offset'			        => $offset,
+    'restypes'			        => $restypes,
+    'starsearch'		        => $starsearch,
+    'archive'			        => $archive,
+    'default_sort_direction'    => $default_sort_direction,
+    'sort'				        => $sort,
+    'curpos'			        => $curpos,
+    'refreshcollectionframe'    => 'true'
+);
+
 
 #handle posts
 if (array_key_exists("userfile",$_FILES) && enforcePostRequest(false))
@@ -34,7 +64,17 @@ if (array_key_exists("userfile",$_FILES) && enforcePostRequest(false))
 	$status=upload_preview($ref);
     if($status !== false)
         {
-        redirect($baseurl_short."pages/edit.php?refreshcollectionframe=true&ref=" . urlencode($ref)."&search=".urlencode($search)."&offset=".urlencode($offset)."&order_by=".urlencode($order_by)."&sort=".urlencode($sort)."&archive=".urlencode($archive));
+        redirect(generateurl($baseurl . "/pages/edit.php", $urlparams));
+        exit();
+        }
+    $error = true;
+    }
+elseif($previewresource > 0 && enforcePostRequest(false))
+    {
+    $status=replace_preview_from_resource($ref,$previewresource,$previewresourcealt);
+    if($status !== false)
+        {
+        redirect(generateurl($baseurl . "/pages/view.php", $urlparams));
         exit();
         }
     $error = true;
@@ -72,7 +112,7 @@ function check(filename) {
 <input name="save" type="submit" onclick="if (!check(this.form.userfile.value)){document.getElementById('invalid').style.display='block';return false;}else {document.getElementById('invalid').style.display='none';}" value="&nbsp;&nbsp;<?php echo $lang["upload_file"]?>&nbsp;&nbsp;" />
 </div>
 
-<p><a onClick="return CentralSpaceLoad(this,true);" href="edit.php?ref=<?php echo urlencode($ref)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoeditresource"]?></a></p>
+<p><a onClick="return CentralSpaceLoad(this,true);" href="edit.php?ref=<?php echo urlencode($ref)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoeditmetadata"]?></a></p>
 
 </form>
 </div>

@@ -7,9 +7,8 @@
 #
 
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 if (!(PHP_SAPI == 'cli')) {include "../../include/authenticate.php"; if (!checkperm("a")) {exit("Permission denied");}}
-include "../../include/resource_functions.php";
 include "../../include/image_processing.php";
 
 set_time_limit(0);
@@ -71,7 +70,7 @@ if (getval("submit","")!="" && enforcePostRequest(false))
 			$n=0;
 			$total=count($data);
 			
-			db_begin_transaction();
+			db_begin_transaction("reindex_field");
 
 			foreach ($data as $row)
 				{
@@ -98,7 +97,7 @@ if (getval("submit","")!="" && enforcePostRequest(false))
 				flush();
 				}
 
-			db_end_transaction();
+			db_end_transaction("reindex_field");
 			
 			$resourcecount = $resourcecount + $reindex_chunk_size;
 			}

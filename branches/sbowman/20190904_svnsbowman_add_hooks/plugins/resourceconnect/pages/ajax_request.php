@@ -1,8 +1,6 @@
 <?php
 include_once "../../../include/db.php";
-include_once "../../../include/general.php";
 include_once "../../../include/authenticate.php";
-include_once "../../../include/search_functions.php";
 
 # This basically acts as a proxy to fetch the remote results, because AJAX is unable to make requests directly to remote servers for security reasons.
 
@@ -21,7 +19,7 @@ $sort=getval("sort","");
 
 
 # Parse and replace nodes.
-$k=(split_keywords($search));$search="";
+$k=(split_keywords($search,false, false, false, false, true));$search="";
 foreach ($k as $kw)
 	{
 	if (substr($kw,0,2)=="@@")
@@ -34,7 +32,7 @@ foreach ($k as $kw)
             {
             # Preserve filter to bind the field.
             $field_info=get_resource_type_field($node["resource_type_field"]);
-            $search.=' ' . $field_info['name'] . ':' . i18n_get_translated($name) ;
+            $search.=' "' . $field_info['name'] . ':' . i18n_get_translated($name) . '"';
             }
         else
             {

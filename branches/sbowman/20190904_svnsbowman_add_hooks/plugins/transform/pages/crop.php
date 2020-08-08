@@ -1,18 +1,31 @@
 <?php
 
 include_once "../../../include/db.php";
-include_once "../../../include/general.php";
 include_once "../../../include/authenticate.php";
-include_once "../../../include/search_functions.php";
-include_once "../../../include/resource_functions.php";
 include_once "../../../include/image_processing.php";
 include_once "../../../include/slideshow_functions.php";
-
 include_once "../include/transform_functions.php";
 
 global $cropper_allowed_extensions;
 
-$ref = getval("ref",true,0);
+$ref        = getval("ref",0);
+$search     = getval("search","");
+$offset     = getval("offset",0,true);
+$order_by   = getval("order_by","");
+$sort       = getval("sort","");
+$k          = getval("k","");
+
+// Build view url for redirect
+$urlparams = array(
+    "ref"       =>  $ref,
+    "search"    =>  $search,
+    "offset"    =>  $offset,
+    "order_by"  =>  $order_by,
+    "sort"      =>  $sort,
+    "k"         =>  $k
+);
+$view_url = generateURL($baseurl_short . 'pages/view.php',$urlparams);
+
 if(is_numeric($ref)==false) {exit($lang['error_resource_id_non_numeric']);}
 $resource=get_resource_data($ref);
 if ($resource===false || $ref < 0) {exit($lang['resourcenotfound']);}
@@ -37,15 +50,37 @@ if (isset($_REQUEST['mode']) && strtolower($_REQUEST['mode']) == 'original'){
     $original = false;
 }
 
-// if they can't download this resource, they shouldn't be doing this
-// also, if they are trying to modify the original but don't have edit access
-// they should never get these errors, because the links shouldn't show up if no perms
+$blockcrop = false;
+
+// Check sufficient access
 if ($access!=0 || ($original && !$edit_access))
     {
-	include "../../../include/header.php";
-	echo "Permission denied.";
-	include "../../../include/footer.php";
-	exit;
+    $blockcrop= true;
+    $error = $lang['error-permissiondenied'];
+    }
+elseif(intval($user_dl_limit) > 0)
+    {
+    $download_limit_check = get_user_downloads($userref,$user_dl_days);
+    if($download_limit_check >= $user_dl_limit)
+        {
+        $blockcrop= true;
+        $error = $lang['download_limit_error'];
+        }
+    }
+
+if($blockcrop)
+    {
+    if(getval("ajax","") != "")
+        {
+        error_alert($error, true,200); // 200 so that history works
+        }
+    else
+        {
+        include "../../../include/header.php";
+        $onload_message = array("title" => $lang["error"],"text" => $error);
+        include "../../../include/footer.php";    
+        }
+    exit();
     }
 
 
@@ -221,7 +256,8 @@ if ($download && $terms_download){
     if('on'!=$terms_accepted)
         {
         $crop_url = str_replace($baseurl_short, "/", $_SERVER['REQUEST_URI']);
-        $redirect_to_terms_url="pages/terms.php?ref=".$ref."&url=".urlencode($crop_url);
+        $url_params["url"]=$crop_url;
+        $redirect_to_terms_url=generateURL("pages/terms.php",$url_params);
         redirect($redirect_to_terms_url);
         }
 }
@@ -499,7 +535,7 @@ if ($cropper_enable_alternative_files && !$download && !$original && getval("sli
 
     # delete existing resource_dimensions
     sql_query("delete from resource_dimensions where resource='$ref'");
-    sql_query("insert into resource_dimensions (resource, width, height, file_size) values ('$ref', '$newfilewidth', '$newfileheight', '$newfilesize')");
+    sql_query("insert into resource_dimensions (resource, width, height, file_size) values ('$ref', '$newfilewidth', '$newfileheight', '" . (int)$newfilesize . "')");
 
     # call remove annotations, since they will not apply to transformed
     hook("removeannotations","",array($ref));
@@ -511,7 +547,7 @@ if ($cropper_enable_alternative_files && !$download && !$original && getval("sli
         redirect($return_to_url);
         }
 
-    redirect("pages/view.php?ref=$ref");
+    redirect($view_url);
     exit;
 
 } elseif (getval("slideshow","")!="" && !$cropperestricted)
@@ -539,20 +575,24 @@ if ($cropper_enable_alternative_files && !$download && !$original && getval("sli
 	unlink($crop_pre_file);
 	}
 else
-	{
+    {
     // we are supposed to download
-	# Output file, delete file and exit
-	$filename.="." . $new_ext;
-	header(sprintf('Content-Disposition: attachment; filename="%s"', $filename));
-	header("Content-Type: application/octet-stream");
+    # Output file, delete file and exit
+    $filename.="." . $new_ext;
+    header(sprintf('Content-Disposition: attachment; filename="%s"', $filename));
+    header("Content-Type: application/octet-stream");
 
-	set_time_limit(0);
-	readfile($newpath);
-	unlink($newpath);	
-	unlink($crop_pre_file);
+    set_time_limit(0);
+
+    daily_stat('Resource download', $ref);
+    resource_log($ref, LOG_CODE_DOWNLOADED, 0,$lang['transformimage'], '',  $lang['cropped'] . ": " . (string)$newfilewidth . "x" . (string)$newfileheight);
+
+    readfile($newpath);
+    unlink($newpath);	
+    unlink($crop_pre_file);
 
     exit();
-}
+    }
 hook("aftercropfinish");
 
 // If other pages request us to go back to them rather then on the view page, do so
@@ -562,8 +602,7 @@ if('' !== $return_to_url)
     }
 
 // send user back to view page
-header("Location:../../../pages/view.php?ref=$ref\n\n");
-exit;
+redirect($view_url);
 
 } else {
 
@@ -597,7 +636,7 @@ include "../../../include/header.php";
 # slider, sound, controls
 ?>
 
-<h1><?php echo ($original ? $lang['transform_original'] : $lang['transformimage']); ?></h1>
+<h1><?php echo ($original ? $lang['imagetoolstransformoriginal'] : $lang['imagetoolstransform']); ?></h1>
 <p><?php
   if($cropperestricted)
       {
@@ -979,7 +1018,7 @@ if ($cropper_debug){
 }
 ?>
     <p style='text-align:right;margin-top:15px;' id='transform_actions'>
-      <input type='button' value="<?php echo $lang['cancel']; ?>" onclick="javascript:return CentralSpaceLoad('<?php echo $baseurl_short . "pages/view.php?ref=" . $ref ?>',true);" />
+      <input type='button' value="<?php echo $lang['cancel']; ?>" onclick="javascript:return CentralSpaceLoad('<?php echo $view_url ?>',true);" />
       <?php if ($original){ ?>
              <input type='submit' name='replace' value="<?php echo $lang['transform_original']; ?>" />
       <?php } else { ?>

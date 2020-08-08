@@ -6,7 +6,7 @@
  * @subpackage Pages_Team
  */
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; if (!checkperm("k")) {exit ("Permission denied.");}
 include "../../include/research_functions.php";
 
@@ -15,8 +15,7 @@ $related=strtolower(getvalescaped("related",""));
 
 if (getval("save","")!="" && enforcePostRequest(false))
 	{
-	# Save data
-	save_related_keywords($keyword,$related);
+	save_related_keywords($keyword, $related);
 	redirect ($baseurl_short."pages/team/team_related_keywords.php?nc=" . time());
 	}
 
@@ -50,7 +49,5 @@ include "../../include/header.php";
 </div>
 </form>
 </div>
-
-<?php		
+<?php
 include "../../include/footer.php";
-?>

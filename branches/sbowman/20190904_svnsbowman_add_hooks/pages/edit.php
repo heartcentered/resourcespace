@@ -1,13 +1,8 @@
 <?php
 include_once "../include/db.php";
-include_once "../include/general.php";
 include "../include/authenticate.php"; 
-include_once "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
-include_once "../include/search_functions.php";
 include_once "../include/image_processing.php";
 include_once '../include/node_functions.php';
-include_once '../include/render_functions.php';
 
 # Editing resource or collection of resources (multiple)?
 $ref=getvalescaped("ref","",true);
@@ -23,7 +18,7 @@ if (strpos($search,"!")!==false) {$restypes="";}
 $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
-$modal=(getval("modal","")=="true");
+$modal = (getval("modal", "") == "true");
 $single=getval("single","") != "" || getval("forcesingle","") != "";
 $disablenavlinks=getval("disablenav","")=="true";
 $uploader = getvalescaped("uploader","");
@@ -56,7 +51,8 @@ $uploadparams["public"] = getval("public","");
 $uploadparams["autorotate"] = $autorotate;
 $uploadparams["entercolname"] = getvalescaped("entercolname","");
 
-# Are we in upload review mode?
+# Upload review mode will be true if we are coming from upload_plupload and then editing (config $upload_then_edit)
+#   or if it's a special collection search where the collection is the negated user reference meaning its resources are to be edited 
 $upload_review_mode=(getval("upload_review_mode","")!="" || $search=="!collection-" . $userref);
 $lastedited = getval('lastedited',0,true);
 $lockable_fields = $upload_review_lock_metadata && $upload_review_mode;
@@ -68,7 +64,10 @@ if ($upload_review_mode)
     # Set the collection and ref if not already set.
     $collection=0-$userref;
     # Make sure review collection is clear of any resources moved out of users archive status permissions by other users
-    collection_cleanup_inaccessible_resources($collection);
+    if ($edit_access_for_contributor == false)
+        {
+        collection_cleanup_inaccessible_resources($collection);
+        }
     # Start reviewing at the first resource. Need to search all worflow states and remove filters as no data has been set yet
     $search_all_workflow_states_cache = $search_all_workflow_states;
     $usersearchfilter_cache = $usersearchfilter;
@@ -107,14 +106,14 @@ if($ref < 0 || $upload_review_mode)
     $check_edit_checksums = false;
     }
 
-global $merge_filename_with_title;
+global $merge_filename_with_title, $merge_filename_with_title_default;
 if($merge_filename_with_title && $ref < 0)
     {
-    $merge_filename_with_title_option = getval('merge_filename_with_title_option', '');
+    $merge_filename_with_title_option = getval('merge_filename_with_title_option', $merge_filename_with_title_default);
     $merge_filename_with_title_include_extensions = getval('merge_filename_with_title_include_extensions', '');
     $merge_filename_with_title_spacer = getval('merge_filename_with_title_spacer', '');
 
-    if($merge_filename_with_title_option != '') 
+    if(strtolower($merge_filename_with_title_option) != '') 
         {
         $uploadparams["merge_filename_with_title_option"] = $merge_filename_with_title_option;
         }
@@ -188,6 +187,7 @@ if ($go!="")
 
 $collection=getvalescaped("collection",0,true);
 $editsearch = getval("editsearchresults","") != "";
+$edit_selection_collection_resources = ($editsearch && $collection == $USER_SELECTION_COLLECTION);
 if($editsearch)
     {
     debug("edit.php: editing multiple items...");
@@ -201,8 +201,9 @@ if($editsearch)
     // Check all resources are editable
     $searchitems = do_search($search, $restypes, 'resourceid', $archive, -1, $sort, false, 0, false, false, '', false, false, true, false);
     $edititems   = do_search($search, $restypes, 'resourceid', $archive, -1, $sort, false, 0, false, false, '', false, false, true, true);
+    if (!is_array($edititems)){$edititems = array();}
     $items       = array_column($edititems,"ref");
-    if(count($searchitems) != count($edititems))
+    if(count($searchitems) != count($edititems) || count($items) == 0)
         {
         $error = $lang['error-permissiondenied'];
         error_alert($error);
@@ -211,8 +212,9 @@ if($editsearch)
 
     $last_resource_edit = get_last_resource_edit_array($items); 
 
-    # If editing multiple items, use the first resource as the template
-    $ref = $items[0];
+    # This is a multiple item edit (even if there is only one item in the list), so use the first resource as the template
+    $ref = array_values($items)[0];
+    $use = $ref;
     }
 else
     {
@@ -245,15 +247,18 @@ if($ref < 0 && $resource_type_force_selection)
   $resource["resource_type"] = "";
   }
 
+// Set initial value for noupload
+$noupload = getval("noupload","") != "" || in_array($resource['resource_type'], $data_only_resource_types);
+
 # Allow to specify resource type from url for new resources
 $resource_type=getval("resource_type","");
-if ($ref<0 && $resource_type!="" && $resource_type!=$resource["resource_type"] && !checkperm("XU{$resource_type}"))     // only if new resource specified and user has permission for that resource type
-	{
-	update_resource_type($ref,intval($resource_type));
+if ($ref<0 && $resource_type != "" && $resource_type!=$resource["resource_type"] && !checkperm("XU{$resource_type}"))     // only if new resource specified and user has permission for that resource type
+    {
+    update_resource_type($ref,intval($resource_type));
     $resource["resource_type"] = $resource_type;
-	}
-
-$noupload = getval("noupload","") != "" || in_array($resource['resource_type'], $data_only_resource_types);
+    // Change the noupload as resource type has changed from that requested originally
+    $noupload = in_array($resource['resource_type'], $data_only_resource_types);
+    }
 
 if($noupload)
     {
@@ -299,6 +304,22 @@ if (!get_edit_access($ref,$resource["archive"],false,$resource))
   error_alert($error,!$modal);
   exit();
 }
+
+if($resource["lock_user"] > 0 && $resource["lock_user"] != $userref)
+    {
+    $error = get_resource_lock_message($resource["lock_user"]);
+    if(getval("autosave","")!="")
+        {
+        // Send JSON with error back
+        http_response_code(403);
+        exit($error);
+        }
+    else
+        {
+        error_alert($error,!$modal);
+        exit();
+        }
+    }
 
 if (getval("regen","")!="" && enforcePostRequest($ajax))
 {
@@ -369,6 +390,8 @@ $urlparams= array(
     'collection'        => $collection,
     'editsearchresults' => ($editsearch ? "true" : "")
 );
+
+check_order_by_in_table_joins($order_by);
 
 hook("editbeforeheader");
 
@@ -445,7 +468,7 @@ if ((getval("autosave","")!="") || (getval("tweak","")=="" && getval("submitted"
                                 }
                                 
                             // Load resource metadata
-                            $fields=get_resource_field_data($ref,$multiple,!hook("customgetresourceperms"),-1,"",$tabs_on_edit);
+                            $fields=get_resource_field_data($ref,$multiple,!hook("customgetresourceperms"),NULL,"",$tabs_on_edit);
                             $all_selected_nodes = get_resource_nodes($ref);
                             
                             // Update resource data with locked resource data from last edited resource
@@ -563,6 +586,10 @@ if ((getval("autosave","")!="") || (getval("tweak","")=="" && getval("submitted"
                             // Create new collection if necessary
                             if($collection_add=="new") 
                                 {
+                                if($uploadparams["entercolname"] == "")
+                                    {
+                                    $uploadparams["entercolname"] = "Upload " . date("YmdHis");
+                                    }
                                 $collection_add = create_collection($userref,$uploadparams["entercolname"]);    
                                 }
                             if(is_numeric($collection_add))
@@ -666,7 +693,45 @@ if ((getval("autosave","")!="") || (getval("tweak","")=="" && getval("submitted"
                 $editsearch["restypes"] = $restypes;
                 $editsearch["archive"]  = $archive;
                 $save_errors=save_resource_data_multi(0,$editsearch);
-                if(!is_array($save_errors) && !hook("redirectaftermultisave"))
+
+                // When editing a search for the COLLECTION_TYPE_SELECTION we want to close the modal and reload the page
+                if(!is_array($save_errors) && $edit_selection_collection_resources)
+                    {
+                    ?>
+                    <script>
+                    // Create a temp form to prevent clear_selection_collection being a query string param and use CentralSpacePost
+                    // to reload the search underneath batch edit modal.
+                    var temp_form = document.createElement("form");
+                    temp_form.setAttribute("method", "post");
+                    temp_form.setAttribute("action", window.location.href);
+
+                    // Instruct search page not to clear the selection collection
+                    var i = document.createElement("input");
+                    i.setAttribute("type", "hidden");
+                    i.setAttribute("name", "clear_selection_collection");
+                    i.setAttribute("value", "no");
+                    temp_form.appendChild(i);
+
+                    <?php
+                    if($CSRF_enabled)
+                        {
+                        ?>
+                        var csrf = document.createElement("input");
+                        csrf.setAttribute("type", "hidden");
+                        csrf.setAttribute("name", "<?php echo $CSRF_token_identifier; ?>");
+                        csrf.setAttribute("value", "<?php echo generateCSRFToken($usersession, "no_clear_selection_collection"); ?>");
+                        temp_form.appendChild(csrf);
+                        <?php
+                        }
+                        ?>
+
+                    document.body.appendChild(temp_form);
+                    temp_form.submit();
+                    </script>
+                    <?php
+                    exit();
+                    }
+                else if(!is_array($save_errors) && !hook("redirectaftermultisave"))
                     {
                     redirect(generateURL($baseurl_short . "pages/search.php",$urlparams));
                     }
@@ -725,6 +790,7 @@ if (getval("tweak","")!="" && !$resource_file_readonly && enforcePostRequest($aj
             $create_previews_job_failure_text = str_replace('%RESOURCE', $ref, $lang['jq_create_previews_failure_text']);
 
             job_queue_add('create_previews', $create_previews_job_data, '', '', $create_previews_job_success_text, $create_previews_job_failure_text);
+            $onload_message["text"] = $lang["recreatepreviews_pending"];
             }
         else
             {
@@ -856,22 +922,9 @@ function ShowHelp(field)
     
     // Disable autosave on enter keypress as form will be submitted by this keypress anyway which can result in duplicate data
     
-    // jQuery(document).bind('keydown',function (e)
-    //     {               
-    //     if(e.which == 13)
-    //         {
-    //         preventautosave=true;
-    //         e.preventDefault();
-    //         }
-    //     else
-    //         {
-    //         preventautosave=false;  
-    //         }
-    //     });
-        
-    jQuery(document).on("keydown", ":input:not(textarea)", function(e) 
+    jQuery("#CentralSpace").on("keydown", ":input:not(textarea):input:not(text)", function(e) 
         {
-        if (e.key == "Enter") 
+        if (e.which == 13) 
             {
             preventautosave = true;
             e.preventDefault();
@@ -899,14 +952,18 @@ function ShowHelp(field)
             return false;
             }
 
-        if(preventautosave)
+        if(preventautosave || typeof jQuery('#mainform').attr('action') == 'undefined')
             {
             return false;
             }
 
         jQuery('#AutoSaveStatus' + field).html('<?php echo $lang["saving"] ?>');
         jQuery('#AutoSaveStatus' + field).show();
-        jQuery.post(jQuery('#mainform').attr('action') + '&autosave=true&autosave_field=' + field,jQuery('#mainform').serialize(),
+        
+        formdata = jQuery('#mainform').serialize();
+        // Clear checksum to prevent edit conflicts for this field if they perform multiple subsequent edits
+        jQuery("#field_" + field + "_checksum").val('');
+        jQuery.post(jQuery('#mainform').attr('action') + '&autosave=true&autosave_field=' + field,formdata,
             function(data)
                 {
                 saveresult=JSON.parse(data);
@@ -944,71 +1001,14 @@ function ShowHelp(field)
                     jQuery('#AutoSaveStatus' + field).fadeOut('slow');
                     styledalert('<?php echo $lang["error"] ?>',saveerrors);
                     }
-                });
+                })
+                .fail(function(response) {
+                    jQuery('#AutoSaveStatus' + field).html('<?php echo $lang["save-error"] ?>');
+                    jQuery('#AutoSaveStatus' + field).fadeOut('slow');
+                    styledalert('<?php echo $lang["error"] ?>',response.responseText);
+                    });
 	}
-<?php } 
-
-# Resource next / back browsing.
-function EditNav() # Create a function so this can be repeated at the end of the form also.
-    {
-    global $baseurl_short,$ref,$search,$offset,$order_by,$sort,$archive,$lang,$modal,$restypes,$disablenavlinks,$upload_review_mode, $urlparams;
-    ?>
-    <div class="backtoresults"> 
-    <?php
-    if(!$disablenavlinks && !$upload_review_mode)
-        {?>
-        <a class="prevLink fa fa-arrow-left" onClick="return <?php echo ($modal?"Modal":"CentralSpace") ?>Load(this,true);" href="<?php echo generateURL($baseurl_short . "pages/edit.php",$urlparams, array("go"=>"previous")); ?>"></a>
-    
-        <a class="upLink" onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateURL($baseurl_short . "pages/search.php",$urlparams, array("go"=>"previous")); ?>"><?php echo $lang["viewallresults"]?></a>
-    
-        <a class="nextLink fa fa-arrow-right" onClick="return <?php echo ($modal?"Modal":"CentralSpace") ?>Load(this,true);" href="<?php echo generateURL($baseurl_short . "pages/edit.php",$urlparams, array("go"=>"next")); ?>"></a>
-    
-        <?php
-        }
-    if ($modal)
-        { ?>
-        &nbsp;&nbsp;<a class="maxLink fa fa-expand" href="<?php echo generateURL($baseurl_short . "pages/edit.php",$urlparams); ?>" onClick="return CentralSpaceLoad(this);"></a>
-        &nbsp;<a href="#"  class="closeLink fa fa-times" onClick="ModalClose();"></a>
-        <?php
-        } ?>
-    </div><?php
-  }
-  
-function SaveAndClearButtons($extraclass="")
-    {
-    global $lang, $multiple, $ref, $clearbutton_on_edit, $upload_review_mode, $resource, $noupload, $edit_autosave;
-
-    $save_btn_value = ($ref > 0 ? ($upload_review_mode ? $lang["saveandnext"] : $lang["save"]) : $lang["next"]);
-    if($ref < 0 && $noupload)
-        {
-        $save_btn_value = $lang['create'];
-        }
-    ?>
-    <div class="QuestionSubmit <?php echo $extraclass ?>">
-    <?php
-    if($ref < 0 || $upload_review_mode)
-        {
-        echo "<input name='resetform' class='resetform' type='submit' value='" . $lang["clearbutton"] . "' />&nbsp;";
-        }
-        ?>
-        <input <?php if ($multiple) { ?>onclick="return confirm('<?php echo $lang["confirmeditall"]?>');"<?php } ?>
-               name="save"
-               class="editsave"
-               type="submit"
-               value="&nbsp;&nbsp;<?php echo $save_btn_value; ?>&nbsp;&nbsp;" />
-    <?php
-    if($upload_review_mode)
-        {
-        ?>&nbsp;<input name="save_auto_next" class="editsave save_auto_next" type="submit" value="&nbsp;&nbsp;<?php echo $lang["save_and_auto"] ?>&nbsp;&nbsp;" />
-        <?php
-        }
-        ?>
-        <br /><br />
-        <div class="clearerleft"> </div>
-    </div>
-    <?php 
-    }
-    ?>
+<?php } ?>
 </script>
 
 <?php
@@ -1029,7 +1029,7 @@ if($ref < 0)
     }
 else
     {
-    $form_action = generateURL($baseurl_short . "pages/edit.php",array_merge($urlparams));
+    $form_action = generateURL($baseurl_short . "pages/edit.php", $urlparams);
     }
 ?>
 
@@ -1041,6 +1041,7 @@ else
         return <?php echo ($modal ? 'Modal' : 'CentralSpace'); ?>Post(this, true);
       ">
     <?php generateFormToken("mainform"); ?>
+    <input type="hidden" name="modal" value="<?php echo ($modal?"true":"")?>" />
     <input type="hidden" name="upload_review_mode" value="<?php echo ($upload_review_mode?"true":"")?>" />
    <div class="BasicsBox">
     
@@ -1074,7 +1075,7 @@ else
          if (!$multiple  && $ref>0  && !hook("dontshoweditnav")) { EditNav(); }
          
          if (!$upload_review_mode) { ?>
-         <h1 id="editresource"><?php echo $lang["editresource"];render_help_link("user/editing-resources");?></h1>
+         <h1 id="editresource"><?php echo $lang["action-editmetadata"];render_help_link("user/editing-resources");?></h1>
          <?php } else { ?>
         <h1 id="editresource"><?php echo $lang["refinemetadata"];render_help_link("user/editing-resources");?></h1>
         <?php } ?>
@@ -1182,7 +1183,8 @@ else
 
   if (!checkperm("F*") && !$resource_file_readonly && !$upload_review_mode) { ?>
   <div class="Question" id="question_imagecorrection">
-   <label><?php echo $lang["imagecorrection"]?><br/><?php echo $lang["previewthumbonly"]?></label><select class="stdwidth" name="tweak" id="tweak" onChange="<?php echo ($modal?"Modal":"CentralSpace") ?>Post(document.getElementById('mainform'),true);">
+   <label><?php echo $lang["imagecorrection"]?><br/><?php echo $lang["previewthumbonly"]?></label>
+   <select class="stdwidth" name="tweak" id="tweak" onchange="add_hidden_modal_input('mainform', <?php echo ($modal ? "true" : "false"); ?>); <?php echo ($modal?"Modal":"CentralSpace") ?>Post(document.getElementById('mainform'),true);">
    <option value=""><?php echo $lang["select"]?></option>
    <?php if ($resource["has_image"]==1) { ?>
    <?php
@@ -1257,13 +1259,6 @@ else
     
     <?php
  }
-// Upload template: Show the required fields note at the top of the form.
-if(!$is_template && $show_required_field_label)
-    {
-    ?>
-    <p class="greyText noPadding"><sup>*</sup> <?php echo $lang['requiredfield']; ?></p>
-    <?php
-    }
 
 # Upload template: Show the save / clear buttons at the top too, to avoid unnecessary scrolling.
 
@@ -1293,7 +1288,7 @@ if(!$multiple)
         ?>
 
         <select name="resource_type" id="resourcetype" class="stdwidth" 
-                onChange="<?php if ($ref>0) { ?>if (confirm('<?php echo $lang["editresourcetypewarning"]; ?>')){<?php } ?><?php echo ($modal?"Modal":"CentralSpace") ?>Post(document.getElementById('mainform'),true);<?php if ($ref>0) { ?>}else {return}<?php } ?>">
+                onChange="<?php if ($ref>0) { ?>if (confirm('<?php echo $lang["editresourcetypewarning"]; ?>')){ add_hidden_modal_input('mainform', <?php echo ($modal ? "true" : "false"); ?>);<?php } ?><?php echo ($modal?"Modal":"CentralSpace") ?>Post(document.getElementById('mainform'),true);<?php if ($ref>0) { ?>}else {return}<?php } ?>">
         <?php
         $types                = get_resource_types();
         $shown_resource_types = array();
@@ -1304,8 +1299,18 @@ if(!$multiple)
           
         for($n = 0; $n < count($types); $n++)
             {
+            $allowed_extensions = trim($types[$n]['allowed_extensions']) != "" ? explode(",",strtolower($types[$n]['allowed_extensions'])): array();
             // skip showing a resource type that we do not to have permission to change to (unless it is currently set to that). Applies to upload only
-            if(0 > $ref && (checkperm("XU{$types[$n]['ref']}") || in_array($types[$n]['ref'], $hide_resource_types)))
+            if(0 > $ref 
+                && 
+                    (checkperm("XU{$types[$n]['ref']}") || in_array($types[$n]['ref'], $hide_resource_types))
+                    ||
+                    (checkperm("XE") && !checkperm("XE-" . $types[$n]['ref']))
+                    ||
+                    (trim($resource["file_extension"]) != "" && count($allowed_extensions) > 0 && !in_array(strtolower($resource["file_extension"]),$allowed_extensions))
+                &&
+                    $resource['resource_type'] != $types[$n]['ref']
+                )
                 {
                 continue;
                 }
@@ -1332,7 +1337,6 @@ if(!$multiple)
                 $selected_type = $shown_resource_types[0];
                 }
 
-            update_resource_type($ref, $selected_type);
             $resource['resource_type'] = $selected_type;
             }
             ?>
@@ -1521,7 +1525,7 @@ if (getval("copyfrom","")!="")
   if ($copyfrom_access!=2) # Do not allow confidential resources (or at least, confidential to that user) to be copied from
     {
     $use=$copyfrom;
-    $original_fields=get_resource_field_data($ref,$multiple,true,-1,"",$tabs_on_edit);
+    $original_fields=get_resource_field_data($ref,$multiple,true,NULL,"",$tabs_on_edit);
     $original_nodes = get_resource_nodes($ref);
     }
   }
@@ -1529,7 +1533,7 @@ if (getval("copyfrom","")!="")
 if(($ref < 0 || $upload_review_mode) && isset($metadata_template_resource_type)  && !$multiple && $metadatatemplate != 0)
     {
     $use             = $metadatatemplate;
-    $original_fields = get_resource_field_data($ref, $multiple, true, -1, '', $tabs_on_edit);
+    $original_fields = get_resource_field_data($ref, $multiple, true, NULL, '', $tabs_on_edit);
     $original_nodes  = get_resource_nodes($ref);
     copyAllDataToResource($use, $ref);
     }
@@ -1574,7 +1578,6 @@ $required_fields_exempt=array(); # new array to contain required fields that hav
 
 # Work out if any fields are displayed, and if so, enable copy from feature (+others)
 $display_any_fields=false;
-$fieldcount=0;
 $tabname="";
 $tabcount=0;
 for ($n=0;$n<count($fields);$n++)
@@ -1607,12 +1610,6 @@ if($multiple)// this is closing a div that can be omitted via hook("replaceeditt
 hook('editbeforesectionhead');
 
 global $collapsible_sections;
-if($collapsible_sections)
-{
-  ?>
-  <div id="CollapsibleSections">
-     <?php
-  }
  
  if ($display_any_fields)
  {
@@ -1630,136 +1627,157 @@ if (($edit_upload_options_at_top || $upload_review_mode) && display_upload_optio
 ?><div <?php if($collapsible_sections){echo'class="CollapsibleSection"';}?> id="ResourceMetadataSection<?php if ($ref<0) echo "Upload"; ?>"><?php
 }
 
+$tabModalityClass = ($modal ? " MetaTabIsModal" : " MetaTabIsNotModal");
+$modalTrueFalse = ($modal ? "true" : "false");
+
 if($tabs_on_edit)
-{
+    {  
+    $tab_names = tab_names($fields);
+
+    // if config option set do case-sensitive alphabetical sort
+    if ($sort_tabs)
+    {
+        sort($tab_names);
+    }
+    
+    // create new array of fields, maintaining field order, and the tab order as defined above
+    $fields_tab_ordered = array();
+
+    // append fields that do not have a tab name and that will be displayed in the default tab
+    $fields_tab_ordered = search_array_by_keyvalue($fields,"tab_name", "", $fields_tab_ordered);
+
+    foreach($tab_names as $tab_name)
+        {
+        // get relevant fields from $fields using tab name
+        $fields_tab_ordered = ($tab_name != "") ? search_array_by_keyvalue($fields,"tab_name", $tab_name, $fields_tab_ordered) : $fields_tab_ordered;
+        }
+
+    // update $fields array with re-ordered fields array, ready to display   
+    $fields = $fields_tab_ordered;   
+
     #  -----------------------------  Draw tabs ---------------------------
   $tabname="";
   $tabcount=0;
-  if (count($fields)>0 && $fields[0]["tab_name"]!="")
-  { 
-    ?>
-
-    <?php
+  if (count($fields)>0 && ($n==0 || $fields[0]["tab_name"]!=""))
+    { 
     $extra="";
-    $tabname="";
+    $tabname=null;
     $tabcount=0;
     $tabtophtml="";
+    $tabs_set = false;
+
+    foreach ($fields as $field)
+        {
+        $field["tab_name"] != "" ? $tabs_set = true : $tabs_set = $tabs_set;
+        }
+
     for ($n=0;$n<count($fields);$n++)
-    {   
-      $value=$fields[$n]["value"];
+        {   
+        # If field is displayable then render its tab name when the tab name changes
+        if (is_field_displayed($fields[$n]))
+            {
+            if ( $fields[$n]["tab_name"] !== $tabname )
+                {
+                if ($tabs_set === true)
+                    {
+                    $newtabname = $fields[$n]["tab_name"] != "" ? $fields[$n]["tab_name"] : $lang["default"];
+                    }
+                else
+                    {
+                    $newtabname = "";
+                    }
+                if($tabcount==0){$tabtophtml.="<div class=\"BasicsBox\" id=\"BasicsBoxTabs\"><div class=\"TabBar\">";}
+                $tabtophtml.="<div id=\"".($modal ? "Modal" : "")."tabswitch" . $tabcount . "\" class=\"Tab";
+                if($tabcount==0){$tabtophtml.=" TabSelected ";}
+                $tabtophtml.="\"><a href=\"#\" onclick=\"SelectMetaTab(".$tabcount.",".$modalTrueFalse.");return false;\">" .  htmlspecialchars(i18n_get_translated($newtabname)) . "</a></div>";
+                $tabcount++;
+                $tabname=$fields[$n]["tab_name"];
+                }
+            }
+        }
 
-            # draw new tab?
-      if ($tabname!=$fields[$n]["tab_name"] && is_field_displayed($fields[$n]))
-      {
-        if($tabcount==0){$tabtophtml.="<div class=\"BasicsBox\" id=\"BasicsBoxTabs\"><div class=\"TabBar\">";}
-        $tabtophtml.="<div id=\"tabswitch" . $tabcount . "\" class=\"Tab";
-        if($tabcount==0){$tabtophtml.=" TabSelected ";}
-        $tabtophtml.="\"><a href=\"#\" onclick=\"SelectTab(" . $tabcount . ");return false;\">" .  i18n_get_translated($fields[$n]["tab_name"]) . "</a></div>";
-        $tabcount++;
-        $tabname=$fields[$n]["tab_name"];
-     }
-  }
+    if ($tabcount>1)
+        {
+        echo $tabtophtml;
+        echo "</div><!-- end of TabBar -->";
+        }
 
-  if ($tabcount>1)
-  {
-   echo $tabtophtml;
-   echo "</div><!-- end of TabBar -->";
-}
+    }
 
-if ($tabcount>1)
-   {?>
-<script type="text/javascript">
-function SelectTab(tab)
-{
-                // Deselect all tabs
-                <?php for ($n=0;$n<$tabcount;$n++) { ?>
-                 document.getElementById("tab<?php echo $n?>").style.display="none";
-                 document.getElementById("tabswitch<?php echo $n?>").className="Tab";
-                 <?php } ?>
-                 document.getElementById("tab" + tab).style.display="block";
-                 document.getElementById("tabswitch" + tab).className="Tab TabSelected";
-              }
-              </script>
-              <?php
-           }
+    if ($tabcount>1)
+        {
+        ?>
+        <div id="tabbedpanelfirst" class="TabbedPanel<?php echo $tabModalityClass; if ($tabcount>0) { ?> StyledTabbedPanel<?php } ?>">
+        <div class="clearerleft"> </div>
+        <div class="TabPanelInner">
+        <?php
+        }
+    }
+
+    #  -----------------------------  Draw fields ---------------------------
+    $tabname=null;
+    $tabcount=0;    
+    for ($n=0;$n<count($fields);$n++)
+        {
+        # Should this field be displayed?
+        if (is_field_displayed($fields[$n]))
+            {
+            if(in_array($fields[$n]['resource_type'], $hide_resource_types)) { continue; }
+            $newtab=false;  
+            # Draw new tab panel?
+            if ($tabs_on_edit && ($fields[$n]["tab_name"]!==$tabname))
+                {
+                # Also display the custom formatted data $extra at the bottom of this tab panel.
+                ?><div class="clearerleft"> </div>
+                <?php if(isset($extra)){echo $extra;} ?>
+                </div><!-- end of TabPanelInner --></div>
+                <!-- end of TabbedPanel --><div class="TabbedPanel <?php echo $tabModalityClass?> StyledTabbedPanel" style="display:none;" id="<?php echo ($modal ? "Modal" : "")?>tab<?php echo $tabcount?>"><div class="TabPanelInner"><?php  
+                $tabcount++;
+                $extra="";
+                $newtab=true;
+                $tabname=$fields[$n]["tab_name"];
+                }
+            
+            node_field_options_override($fields[$n]);
+            display_field($n, $fields[$n], $newtab, $modal);
+            }
         }
 
 
-        if ($tabcount>1)
+    if ($tabs_on_edit && $tabcount>0)
         {
-          ?>
-          <div id="tab0" class="TabbedPanel<?php if ($tabcount>0) { ?> StyledTabbedPanel<?php } ?>">
-             <div class="clearerleft"> </div>
-             <div class="TabPanelInner">
-
-                <?php
-             }
-          }
-
-
-          $tabname="";
-          $tabcount=0;    
-          for ($n=0;$n<count($fields);$n++)
-          {
-    # Should this field be displayed?
-           if (is_field_displayed($fields[$n]))
-           {
-            if(in_array($fields[$n]['resource_type'], $hide_resource_types)) { continue; }
-            $newtab=false;  
-            if($n==0 && $tabs_on_edit){$newtab=true;}
-        # draw new tab panel?
-            if ($tabs_on_edit && ($tabname!=$fields[$n]["tab_name"]) && ($fieldcount>0))
-            {
-               $tabcount++;
-            # Also display the custom formatted data $extra at the bottom of this tab panel.
-               ?><div class="clearerleft"> </div><?php if(isset($extra)){echo $extra;} ?></div><!-- end of TabPanelInner --></div><!-- end of TabbedPanel --><div class="TabbedPanel StyledTabbedPanel" style="display:none;" id="tab<?php echo $tabcount?>"><div class="TabPanelInner"><?php  
-               $extra="";
-               $newtab=true;
-            }
-            $tabname=$fields[$n]["tab_name"];
-            $fieldcount++;
-            
-			node_field_options_override($fields[$n]);
-            display_field($n, $fields[$n], $newtab, $modal);
-         }
-      }
-
-
-
-      if ($tabs_on_edit && $tabcount>0)
-      {
         ?>
         <div class="clearerleft"> </div>
      </div><!-- end of TabPanelInner -->
   </div><!-- end of TabbedPanel -->
 </div><!-- end of Tabs BasicsBox -->
-<?php
-}
+        <?php
+        }
 
 
 # Add required_fields_exempt so it is submitted with POST
 echo " <input type=hidden name=\"exemptfields\" id=\"exemptfields\" value=\"" . implode(",",$required_fields_exempt) . "\">";   
 
 # Work out the correct archive status.
-if ($ref<0) # Upload template.
+if ($ref < 0 && !$show_status_and_access_on_upload) 
    {
-   if ($show_status_and_access_on_upload==false)
-        {
-        # Hide the dropdown, and set the default status.
-        ?>
-        <input type=hidden name="status" id="status" value="<?php echo htmlspecialchars($setarchivestate)?>"><?php
-        }
-   else # Edit Resource(s).
-        {
-        $setarchivestate = $resource["archive"];
-        }
-   }
+    # # Upload template and not displaying status. Hide the dropdown and set the default status.
+    ?>
+    <input type=hidden name="status" id="status" value="<?php echo htmlspecialchars($setarchivestate)?>"><?php
+    }
+else # Edit Resource(s).
+    {
+    $setarchivestate = $resource["archive"];
+    }
 ?>
 </div><!-- end of ResourceMetadataSection -->
 <?php
-# Status / Access / Related Resources
 
-if (eval($show_status_and_access_on_upload_perm) && !hook("editstatushide")) # Only display Status / Access / Related Resources if permissions match.
+# Status / Access / Related Resources
+if (  ($ref > 0 && $upload_review_mode && eval($show_status_and_access_on_upload_perm) )  # If editing a resource after upload
+   || ($ref < 0 && eval($show_status_and_access_on_upload_perm) ) # If editing a resource template
+   || ($ref > 0 && !$upload_review_mode) # If regular resource edit
+   || !hook("editstatushide")  ) # If grant_edit plugin isn't overriding
 {
   if(!hook("replacestatusandrelationshipsheader"))
   {
@@ -1788,10 +1806,13 @@ if ($ref>0 || $show_status_and_access_on_upload===true)
          { ?>
          <div class="Question" id="editmultiple_status"><input name="editthis_status" id="editthis_status" value="yes" type="checkbox" onClick="var q=document.getElementById('question_status');if (q.style.display!='block') {q.style.display='block';} else {q.style.display='none';}">&nbsp;<label id="editthis_status_label" for="editthis<?php echo $n?>"><?php echo $lang["status"]?></label></div>
          <?php
-         } ?>
+         }
+
+    hook("before_status_question");
+    ?>
       <div class="Question <?php if($lockable_fields && in_array("archive",$locked_fields)){echo "lockedQuestion ";} if(isset($save_errors) && is_array($save_errors) && array_key_exists('status',$save_errors)) { echo 'FieldSaveError'; } ?>" id="question_status" <?php if ($multiple) {?>style="display:none;"<?php } ?>>
          <label for="status">
-         <?php echo $lang["status"];
+         <?php echo ($multiple ? "" : $lang["status"]);
          if ($lockable_fields)
             {
             renderLockButton('archive', $locked_fields);
@@ -1811,11 +1832,11 @@ if ($ref>0 || $show_status_and_access_on_upload===true)
          <select class="stdwidth" name="status" id="status" <?php if ($edit_autosave) {?>onChange="AutoSave('Status');"<?php } ?>><?php
          for ($n=-2;$n<=3;$n++)
             {
-            if (checkperm("e" . $n)) { ?><option value="<?php echo $n?>" <?php if ($setarchivestate==$n) { ?>selected<?php } ?>><?php echo $lang["status" . $n]?></option><?php }
+            if (checkperm("e" . $n) || $n==$setarchivestate) { ?><option value="<?php echo $n?>" <?php if ($setarchivestate==$n) { ?>selected<?php } ?>><?php echo $lang["status" . $n]?></option><?php }
             }
          foreach ($additional_archive_states as $additional_archive_state)
             {
-            if (checkperm("e" . $additional_archive_state)) { ?><option value="<?php echo $additional_archive_state?>" <?php if ($setarchivestate==$additional_archive_state) { ?>selected<?php } ?>><?php echo isset($lang["status" . $additional_archive_state])?$lang["status" . $additional_archive_state]:$additional_archive_state ?></option><?php }
+            if (checkperm("e" . $additional_archive_state) || $additional_archive_state==$setarchivestate) { ?><option value="<?php echo $additional_archive_state?>" <?php if ($setarchivestate==$additional_archive_state) { ?>selected<?php } ?>><?php echo isset($lang["status" . $additional_archive_state])?$lang["status" . $additional_archive_state]:$additional_archive_state ?></option><?php }
             }?>
          </select>
          <div class="clearerleft"> </div>
@@ -1898,7 +1919,7 @@ else
                    $editable= (!$ea3)?false:true;
                    if ($groups[$n]["access"]!="") {$access=$groups[$n]["access"];}
                    $perms=explode(",",$groups[$n]["permissions"]);
-                   if (in_array("v",$perms)) {$access=0;$editable=false;} ?>
+                   if (in_array("v",$perms) || $groups[$n]["ref"] == $usergroup) {$access=0;$editable=false;} ?>
                    <tr>
                       <td valign=middle nowrap><?php echo htmlspecialchars($groups[$n]["name"])?>&nbsp;&nbsp;</td>
 
@@ -1910,15 +1931,13 @@ else
                       <td width=10 valign=middle><input type=radio name="custom_<?php echo $groups[$n]["ref"]?>" value="1" <?php if (!$editable) { ?>disabled<?php } ?> <?php if ($access==1) { ?>checked <?php }
                       if ($edit_autosave) {?> onChange="AutoSave('Access');"<?php } ?>></td>
 
-                      <td align=left valign=middle><?php echo $lang["access1"]?></td><?php
+                      <td align=left valign=middle><?php echo $lang["access1"]?></td>
 
-                      if (checkperm("v"))
-                        { ?>
                      <td width=10 valign=middle><input type=radio name="custom_<?php echo $groups[$n]["ref"]?>" value="2" <?php if (!$editable) { ?>disabled<?php } ?> <?php if ($access==2) { ?>checked <?php }
                      if ($edit_autosave) {?> onChange="AutoSave('Access');"<?php } ?>></td>
 
-                     <td align=left valign=middle><?php echo $lang["access2"]?></td><?php
-                  } ?>
+                     <td align=left valign=middle><?php echo $lang["access2"]?></td>
+
                   </tr><?php
                } ?>
             </table>
@@ -1931,7 +1950,7 @@ else
    } /* end hook replaceaccessselector */
 
     # Related Resources
-    if ($enable_related_resources && ($multiple || $ref>0)) # Not when uploading
+    if ($enable_related_resources && ($multiple || ($ref > 0 && !$upload_review_mode))) # Not when uploading
     {
        if ($multiple) { ?><div class="Question"><input name="editthis_related" id="editthis_related" value="yes" type="checkbox" onClick="var q=document.getElementById('question_related');if (q.style.display!='block') {q.style.display='block';} else {q.style.display='none';}">&nbsp;<label for="editthis_related"><?php echo $lang["relatedresources"]?></label></div><?php } ?>
 
@@ -2135,30 +2154,15 @@ if (!$edit_upload_options_at_top && display_upload_options()){include '../includ
 </div>
 
 <?php 
-# Duplicate navigation
-if (!$multiple && !$modal && $ref>0 && !hook("dontshoweditnav")) {EditNav();}
-
 if(!hook('replacesubmitbuttons'))
     {
-    SaveAndClearButtons("NoPaddingSaveClear");
+    SaveAndClearButtons("NoPaddingSaveClear QuestionSticky",true,true);
     }
 
-if(!$is_template && $show_required_field_label)
-    {
-    ?>
-    <p><sup>*</sup> <?php echo $lang['requiredfield']; ?></p>
-    <?php
-    } 
-
-if($collapsible_sections)
-{
-  ?>
-</div><!-- end of collapsible section -->
-<?php
-}
 hook('aftereditcollapsiblesection');
 ?>
 </div><!-- end of BasicsBox -->
+<?php if($uploader == 'ftp') { print '<input type="hidden" name="uploader" value="ftp" />'; } ?>
 </form>
 
 <script>
@@ -2198,12 +2202,25 @@ if (isset($show_error) && isset($save_errors) && is_array($save_errors) && !hook
   // Find the first field that triggered the error:
   var error_fields;
   error_fields = document.getElementsByClassName('FieldSaveError');
-  error_fields[0].scrollIntoView();
+  if(error_fields.length > 0)
+    {
+    error_fields[0].scrollIntoView();
+    }
   styledalert('<?php echo $lang["error"]?>','<?php echo implode("<br />",$save_errors); ?>',450);
   </script>
   <?php
   }
 
 hook("autolivejs");
+?>
 
+<script>
+jQuery('document').ready(function()
+    {
+	/* Call SelectTab upon page load to select first tab*/
+    SelectMetaTab(0,<?php echo $modalTrueFalse?>);
+    registerCollapsibleSections(false);
+    });
+</script>
+<?php
 include "../include/footer.php";

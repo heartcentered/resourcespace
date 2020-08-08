@@ -6,19 +6,17 @@
  */
 
 include "../include/db.php";
-include_once "../include/general.php";
+
 $k=getvalescaped("k","");
 include "../include/authenticate.php";
-include_once "../include/collections_functions.php";
-include_once "../include/search_functions.php";
 include_once "../include/dash_functions.php";
-include_once '../include/render_functions.php';
 
 if(!checkPermission_dashcreate()){exit($lang["error-permissiondenied"]);}
 global $baseurl,$baseurl_short,$userref,$managed_home_dash;
 
 if($managed_home_dash && !(checkperm("h") && !checkperm("hdta")) || (checkperm("dta") && !checkperm("h"))){exit($lang["error-permissiondenied"]);}
 $error=false;
+$message =false;
 
 /* 
  * Process Submitted Tile 
@@ -170,7 +168,14 @@ if($submitdashtile && enforcePostRequest(false))
 		}
 	else
 		{
-		#CREATE NEW
+        #CREATE NEW
+        # check for existing tile with same values
+        $existing_tile_ref = existing_dash_tile($buildurl, $link,$title,$text,$reload_interval,$all_users,$resource_count);
+        if ($existing_tile_ref > 0 && !empty($specific_user_groups))
+            {
+        $message = $lang["existingdashtilefound-2"] . " Please visit the following page: <a href=\"?edit=" . $existing_tile_ref . "\">'" . $lang["editdashtile"] . "'</a> ";  
+            }
+
 		$tile = create_dash_tile($buildurl, $link, $title, $reload_interval, $all_users, $default_order_by, $resource_count, $text, 1, $specific_user_groups);
         if($all_users || (!$all_users && !empty($specific_user_groups)))
             {
@@ -189,7 +194,7 @@ if($submitdashtile && enforcePostRequest(false))
 		}
 	
 	/* SAVE SUCCESSFUL? */
-	if(!$error)
+	if(!$error && !$message)
 		{
 		hook('before_dash_tile_save_redirect');
 		redirect($baseurl);
@@ -206,6 +211,16 @@ if($submitdashtile && enforcePostRequest(false))
 		</p>
 		<?php
 		}?>
+
+<?php 
+	if($message)
+		{?>
+		<p style="margin-left:5px;">
+		<?php echo $message;?>
+		</p>
+		<?php
+		}?>
+
 	<a href="<?php echo $link;?>"><?php echo LINK_CARET ?><?php echo $lang["returntopreviouspage"];?></a>
 	<?php
 	include "../include/footer.php";
@@ -305,6 +320,7 @@ $validpage = false;
 if($create)
 	{
 	$tile_type                    = getvalescaped("tltype","");
+    $tile_style                   = getvalescaped('tlstyle', "");
 	$tile_nostyle                 = getvalescaped("nostyleoptions",FALSE);
 	$allusers                     = getvalescaped("all_users",FALSE);
 	$url                          = getvalescaped("url","");
@@ -319,6 +335,11 @@ if($create)
     // Promoted resources can be available for search tiles (srch) and feature collection tiles (fcthm)
     $promoted_resource = getvalescaped('promoted_resource', FALSE);
 
+    if(!allow_tile_colour_change($tile_type, $tile_style))
+        {
+        $tile_nostyle = true;
+        }
+
 	if($tile_type=="srch")
 		{
 		$srch=getvalescaped("link","");
@@ -330,12 +351,13 @@ if($create)
 		$title=getvalescaped("title","");
 		$resource_count=getvalescaped("resource_count",0,TRUE);
 
+        unset($tile_style);
+
 		$link=$srch."&order_by=" . urlencode($order_by) . "&sort=" . urlencode($sort) . "&archive=" . urlencode($archive) . "&daylimit=" . urlencode($daylimit) . "&k=" . urlencode($k) . "&restypes=" . urlencode($restypes);
 		$title=preg_replace("/^.*search=/", "", $srch);
 		
 		if(substr($title,0,11)=="!collection")
 			{
-			include_once "../include/collections_functions.php";
 			$col= get_collection(preg_replace("/^!collection/", "", $title));
 			$promoted_resource = true;
 			$title=$col["name"];
@@ -459,7 +481,7 @@ if(!$validpage)
 	echo $formextra;
 
 	if($modifylink)
-		{ 
+		{
 		?>
 		<div class="Question">
 			<label for="link"><?php echo $lang["dashtilelink"];?></label> 
@@ -501,7 +523,7 @@ if(!$validpage)
 		<?php
 		}
 
-if('' != $tile_type)
+if('' != $tile_type && $tile_type !== "conf")
     {
     ?>
     <!-- Dash tile size selector -->

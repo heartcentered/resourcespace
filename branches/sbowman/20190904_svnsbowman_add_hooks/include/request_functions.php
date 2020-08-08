@@ -2,6 +2,12 @@
 # Request functions
 # Functions to accomodate resource requests and orders (requests with payment)
 
+/**
+ * Retrieve a resource request record
+ *
+ * @param  integer $request The request record ID
+ * @return mixed False if not found, the resource record (associative array) if found
+ */
 function get_request($request)
     {
     $result=sql_query("select u.username,u.fullname,u.email,r.user,r.collection,r.created,r.request_mode,r.status,r.comments,r.expires,r.assigned_to,r.reason,r.reasonapproved,u2.username assigned_to_username from request r left outer join user u  on r.user=u.ref left outer join user u2 on r.assigned_to=u2.ref where r.ref='$request'");
@@ -15,6 +21,13 @@ function get_request($request)
         }
     }
 
+/**
+ * Fetch a list of all requests for a user
+ *
+ * @param  boolean $excludecompleted  Exclude requests that have already been completed
+ * @param  mixed $returnsql Return the SQL for the execution rather than the results
+ * @return void
+ */
 function get_user_requests($excludecompleted=false,$returnsql=false)
     {
     global $userref;
@@ -23,10 +36,16 @@ function get_user_requests($excludecompleted=false,$returnsql=false)
     return $returnsql?$sql:sql_query($sql);
     }
     
+/**
+ * Handle the posted request form, when saving a request in the admin area.
+ *
+ * @param  integer $request The request record ID
+ * @return boolean  Was this successful?
+ */
 function save_request($request)
     {
     # Use the posted form to update the request
-    global $applicationname,$baseurl,$lang,$request_senduserupdates,$admin_resource_access_notifications;
+    global $applicationname,$baseurl,$lang,$request_senduserupdates,$admin_resource_access_notifications,$userref;
         
     $status=getvalescaped("status","",true);
     $expires=getvalescaped("expires","");
@@ -35,7 +54,8 @@ function save_request($request)
     $assigned_to=getvalescaped("assigned_to","");
     $reason=getvalescaped("reason","");
     $reasonapproved=getvalescaped("reasonapproved","");
-    
+
+    $approved_declined=false;
     
     # --------------------- User Assignment ------------------------
     # Process an assignment change if this user can assign requests to other users
@@ -95,6 +115,7 @@ function save_request($request)
         # --------------- APPROVED -------------
         # Send approval e-mail
         // $reasonapproved=str_replace(array("\\r","\\n"),"\n",$reasonapproved);$reasonapproved=str_replace("\n\n","\n",$reasonapproved); # Fix line breaks.
+        $approved_declined = true;
         $reasonapproved = unescape($reasonapproved);
         $message=$lang["requestapprovedmail"] . "\n\n" . $lang["approvalreason"]. ": " . $reasonapproved . "\n\n" ;
         $message.="$baseurl/?c=" . $currentrequest["collection"] . "\n";
@@ -130,7 +151,7 @@ function save_request($request)
         {
         # --------------- DECLINED -------------
         # Send declined e-mail
-
+        $approved_declined = true;
         $reason = unescape($reason);
         $message=$lang["requestdeclinedmail"] . "\n\n" . $lang["declinereason"] . ": ". $reason . "\n\n$baseurl/?c=" . $currentrequest["collection"] . "\n";
                
@@ -171,6 +192,12 @@ function save_request($request)
     # Save status
     sql_query("update request set status='$status',expires=" . ($expires==""?"null":"'$expires'") . ",reason='$reason',reasonapproved='$reasonapproved' where ref='$request'");
 
+    # Set user that approved or declined the request
+    if ($approved_declined)
+        {
+        sql_query("update request set approved_declined_by='" . escape_check($userref) . "' where ref='" . escape_check($request) . "'");
+        }
+
     if (getval("delete","")!="")
         {
         # Delete the request - this is done AFTER any e-mails have been sent out so this can be used on approval.
@@ -185,6 +212,14 @@ function save_request($request)
     }
     
     
+/**
+ * Fetch a list of requests assigned to the logged in user
+ *
+ * @param  boolean $excludecompleted    Exclude completed requests?
+ * @param  boolean $excludeassigned     Exclude assigned requests? (e.g. if the user is able to assign unassigned requests)
+ * @param  boolean $returnsql           Return SQL instead of the results?
+ * @return array The set of request records
+ */
 function get_requests($excludecompleted=false,$excludeassigned=false,$returnsql=false)
     {
     $condition="";global $userref;
@@ -213,10 +248,16 @@ function get_requests($excludecompleted=false,$excludeassigned=false,$returnsql=
     return $returnsql?$sql:sql_query($sql);
     }
   
+/**
+ * Email a collection request to the team responsible for dealing with requests. Request mode 0 only (non managed).
+ *
+ * @param  integer $ref 
+ * @param  mixed $details
+ * @param  mixed $external_email
+ * @return void
+ */
 function email_collection_request($ref,$details,$external_email)
     {
-    # Request mode 0
-    # E-mails a collection request (posted) to the team
     global $applicationname,$email_from,$baseurl,$email_notify,$username,$useremail,$lang,$request_senduserupdates,$userref,$resource_type_request_emails,$resource_request_reason_required,$admin_resource_access_notifications, $always_email_from_user,$collection_empty_on_submit;
     
     if (trim($details)=="" && $resource_request_reason_required) {return false;}
@@ -381,12 +422,16 @@ function email_collection_request($ref,$details,$external_email)
     return true;
     }
 
+/**
+ * Request mode 1 - quests are managed via the administrative interface. Sends an e-mail but also logs the request in the request table.
+ *
+ * @param  mixed $ref   
+ * @param  mixed $details
+ * @param  mixed $ref_is_resource
+ * @return void
+ */
 function managed_collection_request($ref,$details,$ref_is_resource=false)
     {   
-    # Request mode 1
-    # Managed via the administrative interface
-    
-    # An e-mail is still sent.
     global $applicationname,$email_from,$baseurl,$email_notify,$username,$useremail,$userref,$lang,$request_senduserupdates,$watermark,$filename_field,$view_title_field,$access,$resource_type_request_emails, $resource_type_request_emails_and_email_notify, $manage_request_admin, $resource_request_reason_required, $admin_resource_access_notifications, $always_email_from_user, $collection_empty_on_submit;
 
     if (trim($details)=="" && $resource_request_reason_required) {return false;}
@@ -513,18 +558,11 @@ function managed_collection_request($ref,$details,$ref_is_resource=false)
     
     $notify_manage_request_admin = false;
     $notification_sent = false;
-    
-    // Manage individual requests of resources:
+
     hook('autoassign_individual_requests', '', array($userref, $ref, $message, isset($collectiondata)));
 
-    // Hook Processing
-    // If assigned admin is absent and default manager (manage_request_admin) is present then request SQL is not established by above hook
-    // If however the request SQL has been established, then default manager will be initialised
-
-    // Regular Processing
-    // If the resource level request SQL is yet to be established and a default manager is present for the resource type
-    // then the following will establish the resource level request SQL assigned to the default manager
-    if(isset($manage_request_admin) && $ref_is_resource)
+    // Regular Processing: autoassign using the resource type - one resource was requested and no plugin is preventing this from running
+    if($ref_is_resource && !is_null($manage_request_admin) && is_array($manage_request_admin) && !empty($manage_request_admin))
         {
         $admin_notify_user = 0;
         $request_resource_type = $resourcedata["resource_type"];
@@ -566,17 +604,11 @@ function managed_collection_request($ref,$details,$ref_is_resource=false)
                 }
             }
         }   
-    
-    // Manage collection requests:
+
     hook('autoassign_collection_requests', '', array($userref, isset($collectiondata) ? $collectiondata : array(), $message, isset($collectiondata)));
 
-    // Hook Processing
-    // If collectiondata is absent then request(s) not created by above hook
-    // If however request(s) have been created, then default manager will be initialised
-    
-    // Regular Processing
-    // Runs if default manager present and hook absent or hook present but did not create any request(s)
-    if(isset($manage_request_admin) && count($manage_request_admin) > 0 && isset($collectiondata)) 
+    // Regular Processing: autoassign using the resource type - collection request and no plugin is preventing this from running
+    if(isset($collectiondata) && !is_null($manage_request_admin) && is_array($manage_request_admin) && !empty($manage_request_admin))
         {
         $all_r_types = get_resource_types();
 
@@ -752,7 +784,6 @@ function managed_collection_request($ref,$details,$ref_is_resource=false)
     else
         {
         if(hook('bypass_end_managed_collection_request', '', array(!isset($collectiondata), $ref, $request_query, $message, $templatevars, $assigned_to_user, $admin_mail_template, $user_mail_template)))
-            // This hook is called if the autoassign_collection_requests hook was called
             {
             return true;
             }
@@ -863,13 +894,26 @@ function managed_collection_request($ref,$details,$ref_is_resource=false)
     }
 
 
+/**
+ * E-mails a basic resource request for a single resource (posted) to the team (not a managed request)
+ *
+ * @param  mixed $ref   The resource ID
+ * @param  mixed $details   The request details provided by the user
+ * @return void
+ */
 function email_resource_request($ref,$details)
     {
-    # E-mails a basic resource request for a single resource (posted) to the team
-    # (not a managed request)
+    global $applicationname,$email_from,$baseurl,$email_notify,$username,$useremail,$userref,$lang,$request_senduserupdates,$watermark,$filename_field,$view_title_field,$access,$resource_type_request_emails,$resource_request_reason_required, $admin_resource_access_notifications, $user_dl_limit, $user_dl_days;
     
-    global $applicationname,$email_from,$baseurl,$email_notify,$username,$useremail,$userref,$lang,$request_senduserupdates,$watermark,$filename_field,$view_title_field,$access,$resource_type_request_emails,$resource_request_reason_required, $admin_resource_access_notifications;
-    
+    if(intval($user_dl_limit) > 0)
+        {
+        $download_limit_check = get_user_downloads($userref,$user_dl_days);
+        if($download_limit_check >= $user_dl_limit)
+            {
+            $details = str_replace(array("%%DOWNLOADED%%","%%LIMIT%%"),array($download_limit_check,$user_dl_limit),$lang['download_limit_request_text']) . "\n" . $details;
+            }
+        }
+
     $resourcedata=get_resource_data($ref);
     $templatevars['thumbnail']=get_resource_path($ref,true,"thm",false,"jpg",$scramble=-1,$page=1,($watermark)?(($access==1)?true:false):false);
     if (!file_exists($templatevars['thumbnail'])){
@@ -1000,7 +1044,7 @@ function email_resource_request($ref,$details)
             }
         else
             {
-            $sender =  (!empty($useremail))? $useremail : (!empty($templatevars["formemail"]))? $templatevars["formemail"] :"";
+            $sender =  (!empty($useremail)) ? $useremail : ((!empty($templatevars["formemail"]))? $templatevars["formemail"] : "");
             
             if($sender!="" && filter_var($sender, FILTER_VALIDATE_EMAIL)){send_mail($sender,$applicationname . ": " . $lang["requestsent"] . " - $ref",$userconfirmmessage,$email_from,$email_notify,"emailuserresourcerequest",$templatevars);}  
             }
@@ -1010,3 +1054,113 @@ function email_resource_request($ref,$details)
     sql_query("update resource set request_count=request_count+1 where ref='$ref'");
     }
 
+
+/**
+* Get collection of valid custom fields. A valid fields has at least the expected field properties
+* 
+* IMPORTANT: these fields are not metadata fields - they are configured through config options such as custom_researchrequest_fields
+* 
+* @param  array  $fields  List of custom fields. Often this will simply be the global configuration option (e.g custom_researchrequest_fields)
+* 
+* @return array
+*/
+function get_valid_custom_fields(array $fields)
+    {
+    return array_filter($fields, function($field)
+        {
+        global $lang, $FIXED_LIST_FIELD_TYPES;
+
+        $expected_field_properties = array("id", "title", "type", "required");
+        $available_properties      = array_keys($field);
+        $missing_required_fields   = array_diff(
+            $expected_field_properties,
+            array_intersect($expected_field_properties, $available_properties));
+
+        if(count($missing_required_fields) > 0)
+            {
+            debug("get_valid_custom_fields: custom field misconfigured. Missing properties: "
+                . implode(", ", array_values($missing_required_fields)));
+            return false;
+            }
+
+        // options property required for fixed list fields type
+        if(in_array($field["type"], $FIXED_LIST_FIELD_TYPES) && !array_key_exists("options", $field))
+            {
+            debug("get_valid_custom_fields: custom fixed list field misconfigured. Missing the 'options' property!");
+            return false;
+            }
+
+        return true;
+        });
+    }
+
+
+/**
+* Generate HTML properties for custom fields. These properties can then be used by other functions
+* like render_custom_fields or process_custom_fields_submission
+* 
+* @param  array  $fields  List of custom fields as returned by get_valid_custom_fields(). Note: At this point code 
+* assumes fields have been validated
+* 
+* @return array Returns collection items with the extra "html_properties" key
+*/
+function gen_custom_fields_html_props(array $fields)
+    {
+    return array_map(function($field)
+        {
+        $field["html_properties"] = array(
+            "id"   => "custom_field_{$field["id"]}",
+            "name" => (!empty($field["options"]) ? "custom_field_{$field["id"]}[]" : "custom_field_{$field["id"]}"),
+        );
+        return $field;
+        }, $fields);
+    }
+
+
+/**
+* Process posted custom fields
+* 
+* @param  array    $fields     List of custom fields
+* @param  boolean  $submitted  Processing submitted fields?
+* 
+* @return array Returns collection of items with the extra "html_properties" key
+*/
+function process_custom_fields_submission(array $fields, $submitted)
+    {
+    return array_map(function($field) use ($submitted)
+        {
+        global $lang, $FIXED_LIST_FIELD_TYPES;
+
+        $field["value"] = trim(getval($field["html_properties"]["name"], ""));
+
+        if(in_array($field["type"], $FIXED_LIST_FIELD_TYPES))
+            {
+            // The HTML id and name are basically identical (@see gen_custom_fields_html_props() ). If field is of fixed 
+            // list type, then the name prop will be appended with "[]". For this reason, when we call getval() we need 
+            // to use the elements' ID instead.
+            $submitted_data = getval($field["html_properties"]["id"], array());
+
+            // Find the selected options
+            $field["selected_options"] = array_filter($field["options"], function($option) use ($field, $submitted_data)
+                {
+                $computed_value = md5("{$field["html_properties"]["id"]}_{$option}");
+                if(in_array($computed_value, $submitted_data))
+                    {
+                    return true;
+                    }
+
+                return false;
+                });
+
+            $field["value"] = implode(", ", $field["selected_options"]);
+            }
+
+        if($submitted && $field["required"] && $field["value"] == "")
+            {
+            $field["error"] = str_replace("%field", i18n_get_translated($field["title"]), $lang["researchrequest_custom_field_required"]);
+            return $field;
+            }
+
+        return $field;
+        }, gen_custom_fields_html_props(get_valid_custom_fields($fields)));
+    }

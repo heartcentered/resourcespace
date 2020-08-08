@@ -14,7 +14,7 @@ if($purge_temp_folder_age==0)
 $last_delete_tmp_files  = get_sysvar('last_delete_tmp_files', '1970-01-01');
 
 # No need to run if already run in last 24 hours.
-if (time()-strtotime($last_delete_tmp_files) < 4*60*60)
+if (time()-strtotime($last_delete_tmp_files) < 24*60*60)
     {
     if('cli' == PHP_SAPI)
         {
@@ -27,6 +27,7 @@ if (time()-strtotime($last_delete_tmp_files) < 4*60*60)
 $folderstoscan = array();
 $folderstoscan[] = get_temp_dir(false);
 $folderstoscan[] = get_temp_dir(false) . DIRECTORY_SEPARATOR . "plupload";
+$folderstoscan[] = get_temp_dir(false) . DIRECTORY_SEPARATOR . "querycache";
 
 $modified_folderstoscan = hook("add_folders_to_delete_from_temp", "", array($folderstoscan));
 if(is_array($modified_folderstoscan) && !empty($modified_folderstoscan))

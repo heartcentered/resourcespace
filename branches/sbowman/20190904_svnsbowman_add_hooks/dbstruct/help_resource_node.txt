@@ -1,0 +1,5 @@
+Links fixed metadata nodes with resources, to store metadata for fixed metadata types such as dropdowns.
+resource,int(11),
+node,int(11),
+hit_count,int(11),
+new_hit_count,int(11),

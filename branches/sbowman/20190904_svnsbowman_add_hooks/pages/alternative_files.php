@@ -1,8 +1,7 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 include "../include/authenticate.php";
-include "../include/resource_functions.php";
 
 $ref=getvalescaped("ref","",true);
 $alt=getvalescaped("alternative","",true);
@@ -13,17 +12,44 @@ $order_by=getvalescaped("order_by","");
 $archive=getvalescaped("archive","",true);
 $restypes=getvalescaped("restypes","");
 if (strpos($search,"!")!==false) {$restypes="";}
+$starsearch=getvalescaped("starsearch","");
+$modal = (getval("modal", "") == "true");
 
 $default_sort_direction="DESC";
 if (substr($order_by,0,5)=="field"){$default_sort_direction="ASC";}
 $sort=getval("sort",$default_sort_direction);
+$curpos=getvalescaped("curpos","");
+$go=getval("go","");
 
+$urlparams= array(
+    'resource' => $ref,
+    'ref' => $ref,
+    'search' => $search,
+    'order_by' => $order_by,
+    'offset' => $offset,
+    'restypes' => $restypes,
+    'starsearch' => $starsearch,
+    'archive' => $archive,
+    'default_sort_direction' => $default_sort_direction,
+    'sort' => $sort,
+    'curpos' => $curpos,
+    "modal" => ($modal ? "true" : ""),
+);
 
 # Fetch resource data.
 $resource=get_resource_data($ref);
 
+$editaccess = get_edit_access($ref,$resource["archive"], false,$resource);
+
 # Not allowed to edit this resource?
-if ((!get_edit_access($ref,$resource["archive"], false,$resource) || checkperm('A')) && $ref>0) {exit ("Permission denied.");}
+if (!($editaccess || checkperm('A')) && $ref>0) {exit ("Permission denied.");}
+
+if($resource["lock_user"] > 0 && $resource["lock_user"] != $userref)
+    {
+    $error = get_resource_lock_message($resource["lock_user"]);
+    http_response_code(403);
+    exit($error);
+    }
 
 hook("pageevaluation");
 
@@ -61,11 +87,33 @@ jQuery("#toggleall").click(function() {
 }
 </script>
 <div class="BasicsBox">
-<p>
-<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/edit.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo $sort?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoeditresource"]?></a><br / >
-<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/view.php?ref=<?php echo urlencode($ref)?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo $sort?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a>
-</p>
-<?php 
+<?php
+if(!$modal)
+    {
+    ?>
+    <p>
+    <a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/edit.php",$urlparams); ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoeditmetadata"]?></a><br / >
+    <a onClick="return CentralSpaceLoad(this,true);" href="<?php echo generateurl($baseurl . "/pages/view.php",$urlparams); ?>"><?php echo LINK_CARET_BACK ?><?php echo $lang["backtoresourceview"]?></a>
+    </p>
+    <?php
+    }
+    ?>
+    <div class="RecordHeader">
+        <div class="BackToResultsContainer">
+            <div class="backtoresults"> 
+            <?php
+            if($modal)
+                {
+                ?>
+                <a class="maxLink fa fa-expand" href="<?php echo generateURL($baseurl_short . "pages/alternative_files.php", $urlparams, array("modal" => "")); ?>" onclick="return CentralSpaceLoad(this);"></a>
+                &nbsp;<a href="#" class="closeLink fa fa-times" onclick="ModalClose();"></a>
+                <?php
+                }
+                ?>
+            </div>
+        </div>
+    </div>
+<?php
 if($alternative_file_resource_preview)
     {
     if(file_exists(get_resource_path($resource['ref'], true, 'col', false)))
@@ -85,9 +133,7 @@ if($alternative_file_resource_title && isset($resource['field'.$view_title_field
 <h1><?php echo $lang["managealternativefilestitle"]; render_help_link('user/alternative-files');?></h1>
 
 <?php if (count($files)>0){?><a href="#" id="deletechecked" onclick="if (confirm('<?php echo $lang["confirm-deletion"]?>')) {clickDelete();} return false;"><?php echo LINK_CARET ?><?php echo $lang["action-deletechecked"]?></a><?php } ?>
-</div>
-
-<form method=post id="fileform" action="<?php echo $baseurl_short?>pages/alternative_files.php?ref=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo $sort?>&archive=<?php echo urlencode($archive)?>">
+<form method=post id="fileform" action="<?php echo generateurl($baseurl . "/pages/alternative_files.php",$urlparams); ?>">
 <input type=hidden name="filedelete" id="filedelete" value="">
 <?php generateFormToken("fileform"); ?>
 <div class="Listview"  id="altlistitems">
@@ -107,8 +153,9 @@ if($alternative_file_resource_title && isset($resource['field'.$view_title_field
 </tr>
 
 <?php
-    hook("alt_files_before_list");
-for ($n=0;$n<count($files);$n++)
+hook("alt_files_before_list");
+$files_count = count($files);
+for ($n=0;$n<$files_count;$n++)
 	{
 	?>
 	<!--List Item-->
@@ -123,12 +170,23 @@ for ($n=0;$n<count($files);$n++)
 	<?php if(count($alt_types) > 1){ ?><td><?php echo $files[$n]["alt_type"] ?></td><?php } ?>
 	<td><div class="ListTools">
 	
-	<a href="#" onclick="if (confirm('<?php echo $lang["filedeleteconfirm"]?>')) {document.getElementById('filedelete').value='<?php echo $files[$n]["ref"]?>';document.getElementById('fileform').submit();} return false;"><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a>
+	<a href="#" onclick="
+        if (confirm('<?php echo $lang["filedeleteconfirm"]?>'))
+            {
+            document.getElementById('filedelete').value='<?php echo $files[$n]["ref"]?>';
+            <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Post(document.getElementById('fileform'), true);
+            }
+        return false;
+    "><?php echo LINK_CARET ?><?php echo $lang["action-delete"]?></a>
 
-	&nbsp;<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/alternative_file.php?resource=<?php echo urlencode($ref)?>&ref=<?php echo $files[$n]["ref"]?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo $sort?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET ?><?php echo $lang["action-edit"]?></a>
+	&nbsp;<a onclick="return <?php echo ($modal ? "Modal" : "CentralSpace"); ?>Load(this, true);" href="<?php echo generateurl($baseurl . "/pages/alternative_file.php",$urlparams,array("ref"=>$files[$n]["ref"])); ?>"><?php echo LINK_CARET ?><?php echo $lang["action-edit"]?></a>
 
-        <?php hook("refreshinfo"); ?>
-	
+    <?php if($editaccess && (file_exists(get_resource_path($ref , true, '', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true)) || file_exists(get_resource_path($ref , true, 'hpr', true, 'jpg', true, 1, false, '', $files[$n]["ref"], true))))
+        {
+        echo "<a href=\"#\" onclick=\"previewform=jQuery('#previewform');jQuery('#upload_pre_alt').val('" . $files[$n]["ref"] . "');return " . ($modal ? "Modal" : "CentralSpace") . "Post(previewform, true);\">" . LINK_CARET . $lang["useaspreviewimage"] . "</a>";
+        } 
+    
+    hook("refreshinfo"); ?>
 	</td>
 	
 	</tr>
@@ -137,26 +195,18 @@ for ($n=0;$n<count($files);$n++)
 ?>
 </table>
 </div>
-
-	
-
 <p>
-	<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/upload_plupload.php?alternative=<?php echo urlencode($ref) ?>&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo $sort?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET ?><?php echo $lang["alternativebatchupload"] ?></a>
-	<?php
-	if($upload_methods['fetch_from_local_folder'])
-		{
-		?>
-		<br/>
-		<a onClick="return CentralSpaceLoad(this,true);" href="<?php echo $baseurl_short?>pages/team/team_batch_select.php?use_local=yes&collection_add=&entercolname=&autorotate=&alternative=<?php echo urlencode($ref) ?>&uploader=local&single=&local=true&search=<?php echo urlencode($search)?>&offset=<?php echo urlencode($offset)?>&order_by=<?php echo urlencode($order_by)?>&sort=<?php echo $sort?>&archive=<?php echo urlencode($archive)?>"><?php echo LINK_CARET ?><?php echo $lang["alternativelocalupload"] ?></a>
-		<?php
-		}
-	?>
+	<a onclick="return CentralSpaceLoad(this, true);" href="<?php echo generateurl($baseurl . "/pages/upload_plupload.php",$urlparams,array('alternative'=>$ref)); ?>"><?php echo LINK_CARET ?><?php echo $lang["alternativebatchupload"] ?></a>
 </p>
-
-
-
 </form>
 
+<form method=post id="previewform" name="previewform" action="<?php echo generateurl($baseurl . "/pages/upload_preview.php",$urlparams) ; ?>">
+    <?php generateFormToken("previewform"); ?>
+    <input type=hidden name="ref", id="upload_ref" value="<?php echo htmlspecialchars($ref); ?>"/>
+    <input type=hidden name="previewref", id="upload_pre_ref" value="<?php echo htmlspecialchars($ref); ?>"/>
+    <input type=hidden name="previewalt", id="upload_pre_alt" value=""/>
+</form>
+</div> <!-- end of basicbox -->
 <script type="text/javascript">
 jQuery('#altlistitems').tshift(); // make the select all checkbox work
 jQuery('#altlistitems input[type=checkbox]').click(function(){   
@@ -169,4 +219,3 @@ jQuery('#altlistitems input[type=checkbox]').click(function(){
 
 <?php
 include "../include/footer.php";
-?>

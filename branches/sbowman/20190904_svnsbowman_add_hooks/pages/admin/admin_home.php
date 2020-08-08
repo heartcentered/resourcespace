@@ -1,6 +1,5 @@
 <?php
 include ("../../include/db.php");
-include_once ("../../include/general.php");
 include ("../../include/authenticate.php");
 include ("../../include/header.php");
 ?>
@@ -45,14 +44,14 @@ include ("../../include/header.php");
         if($team_centre_bug_report && !hook("custom_bug_report"))
             {
             ?>
-            <li><i aria-hidden="true" class="fa fa-fw fa-bug"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/admin/admin_reportbug.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["reportbug"]?></a></li>
+            <li><i aria-hidden="true" class="fa fa-fw fa-bug"></i>&nbsp;<a href="https://www.resourcespace.com/bug_report"><?php echo $lang["reportbug"]?></a></li>
             <?php
             }
 
-        if('' != $mysql_bin_path)
+        if('' != $mysql_bin_path && $system_download_config)
             {
             ?>
-            <li><i aria-hidden="true" class="fa fa-fw fa-database"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/team/team_export.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["exportdata"]?></a></li>
+            <li><i aria-hidden="true" class="fa fa-fw fa-database"></i>&nbsp;<a href="<?php echo $baseurl_short?>pages/admin/admin_download_config.php" onClick="return CentralSpaceLoad(this,true);"><?php echo $lang["exportdata"]?></a></li>
             <?php
             }
 

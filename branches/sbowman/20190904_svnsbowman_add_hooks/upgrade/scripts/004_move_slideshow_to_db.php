@@ -1,12 +1,18 @@
 <?php
 include_once __DIR__ . "/../../include/db.php";
-include_once __DIR__ . "/../../include/general.php";
+
 include_once __DIR__ . "/../../include/slideshow_functions.php";
 
 set_sysvar(SYSVAR_UPGRADE_PROGRESS_SCRIPT, "Checking current slideshow images in homeanim folder");
 
 $web_root = dirname(dirname(__DIR__));
 $homeanim_folder_path = "{$web_root}/{$homeanim_folder}";
+
+if(!is_dir($homeanim_folder_path))
+    {
+    // May be a newly configured system that has not followed setup.php
+    return;
+    }
 
 $found_files = array();
 $files = new \DirectoryIterator($homeanim_folder_path);

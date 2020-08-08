@@ -1,6 +1,6 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
+
 
 $k=getvalescaped("k","");if (($k=="") || (!check_access_key(getvalescaped("ref",""),$k))) {include_once "../include/authenticate.php";}
 
@@ -13,8 +13,6 @@ if ($k!="" && (!isset($internal_share_access) || !$internal_share_access) && $pr
 	}
 
 include "../include/request_functions.php";
-include "../include/resource_functions.php";
-include_once "../include/collections_functions.php";
 
 $ref=getvalescaped("ref","",true);
 $error=false;
@@ -33,6 +31,15 @@ $resource_field_data = get_resource_field_data($ref);
 resource_type_config_override($resource["resource_type"]);
 
 $resource_title = '';
+
+if(isset($user_dl_limit) && intval($user_dl_limit) > 0)
+    {
+    $download_limit_check = get_user_downloads($userref,$user_dl_days);
+    if($download_limit_check >= $user_dl_limit)
+        {
+        $userrequestmode = 0;
+        }
+    }
 
 // Get any metadata fields we may want to show to the user on this page
 // Currently only title is showing

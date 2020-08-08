@@ -5,11 +5,15 @@
 # $flags can be adjusted per the information at http://php.net/manual/en/function.html-entity-decode.php
 
 include "../../include/db.php";
-include_once "../../include/general.php";
-include "../../include/authenticate.php"; if (!checkperm("a")) {exit("Permission denied");}
-include "../../include/resource_functions.php";
 
-if ($use_mysqli){$encoding=mysqli_character_set_name($db);} else {$encoding=mysql_client_encoding();}
+include "../../include/authenticate.php"; if (!checkperm("a")) {exit("Permission denied");}
+
+$encoding = mysqli_character_set_name($db["read_write"]);
+if(db_use_multiple_connection_modes())
+    {
+    $encoding = mysqli_character_set_name($db["read_only"]);
+    }
+
 if($encoding=="latin1"){$encoding="ISO-8859-1";}
 elseif($encoding=="utf8"){$encoding="utf-8";}
 
@@ -25,7 +29,7 @@ if ($fieldrefs==0){
 else {
 	$fields=explode(",",$fieldrefs);
 	foreach ($fields as $field){
-		$field_data=sql_query("select * from resource_type_field where ref=$field");
+		$field_data=sql_query("select * from resource_type_field where ref=$field", "schema");
 		if(!empty($field_data)){
 			$field_data=$field_data[0];
 		}

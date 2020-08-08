@@ -1,29 +1,7 @@
 <?php
 include "../include/db.php";
-include_once "../include/general.php";
 include "../include/authenticate.php"; if (!checkperm("a")) {exit("Access denied.");}
 include "../include/header.php";
-
-# A simple script to check the ResourceSpace hosting environment supports our needs.
-
-function ResolveKB($value)
-	{
-	$value=trim(strtoupper($value));
-	if (substr($value,-1,1)=="K")
-		{
-		return substr($value,0,strlen($value)-1);
-		}
-	if (substr($value,-1,1)=="M")
-		{
-		return substr($value,0,strlen($value)-1) * 1024;
-		}
-	if (substr($value,-1,1)=="G")
-		{
-		return substr($value,0,strlen($value)-1) * 1024 * 1024;
-		}
-	return $value;
-	}
-
 ?>
 
 <div class="BasicsBox"> 
@@ -74,15 +52,29 @@ if ($phpversion<'4.4') {$result=$lang["status-fail"] . ": " . str_replace("?", "
 ?><tr><td><?php echo str_replace("?", "PHP", $lang["softwareversion"]); ?></td><td><?php echo $phpversion .'&ensp;&ensp;' . str_replace("%file", $phpinifile, $lang["config_file"]);?></td><td><b><?php echo $result?></b></td></tr><?php
 
 # Check MySQL version
-if ($use_mysqli){
-	$mysqlversion=mysqli_get_server_info($db);
-	}
-else {
-	$mysqlversion=mysql_get_server_info();
-	}
-if ($mysqlversion<'5') {$result=$lang["status-fail"] . ": " . str_replace("?", "5", $lang["shouldbeversion"]);} else {$result=$lang["status-ok"];}
-if ($use_mysqli){$encoding=mysqli_character_set_name($db);} else {$encoding=mysql_client_encoding();}
-?><tr><td><?php echo str_replace("?", "MySQL", $lang["softwareversion"]); ?></td><td><?php echo $mysqlversion . "&ensp;&ensp;" . str_replace("%encoding", $encoding, $lang["client-encoding"]); ?></td><td><b><?php echo $result?></b></td></tr><?php
+$mysqlversion = mysqli_get_server_info($db["read_write"]);
+if($mysqlversion < '5')
+    {
+    $result = $lang["status-fail"] . ": " . str_replace("?", "5", $lang["shouldbeversion"]);
+    }
+else
+    {
+    $result = $lang["status-ok"];
+    }
+$encoding = mysqli_character_set_name($db["read_write"]);
+$encoding_str = str_replace("%encoding", $encoding, $lang["client-encoding"]);
+$db_encoding = sql_value("
+    SELECT default_character_set_name AS `value`
+      FROM information_schema.SCHEMATA
+     WHERE `schema_name` = '" . escape_check($mysql_db) . "';", $lang["unknown"]);
+$db_encoding_str = str_replace("%encoding", $db_encoding, $lang["db-default-encoding"]);
+$encoding_output = "{$mysqlversion}&ensp;&ensp;{$encoding_str} {$db_encoding_str}";
+?>
+<tr>
+    <td><?php echo str_replace("?", "MySQL", $lang["softwareversion"]); ?></td>
+    <td><?php echo $encoding_output; ?></td>
+    <td><b><?php echo $result; ?></b></td>
+</tr><?php
 
 # Check GD installed
 if (function_exists("gd_info"))
@@ -212,7 +204,7 @@ display_extension_status("zip");
 $php_tz = date_default_timezone_get();
 $mysql_tz = sql_value("SELECT IF(@@session.time_zone = 'SYSTEM', @@system_time_zone, @@session.time_zone) AS `value`", '');
 $tz_check_fail_msg = str_replace(array('%phptz%', '%mysqltz%'), array($php_tz, $mysql_tz), $lang['server_timezone_check_fail']);
-$timezone_check = "{$lang['status-fail']}: {$tz_check_fail_msg}";
+$timezone_check = "{$lang['status-warning']}: {$tz_check_fail_msg}";
 if($php_tz == $mysql_tz)
     {
     $timezone_check = $lang['status-ok'];

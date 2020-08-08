@@ -1,13 +1,9 @@
 <?php 
 ini_set('zlib.output_compression','off'); // disable PHP output compression since it breaks collection downloading
 include "../include/db.php";
-include_once "../include/general.php";
-include_once "../include/collections_functions.php";
+
 # External access support (authenticate only if no key provided, or if invalid access key provided)
-$k=getvalescaped("k","");if (($k=="") || (!check_access_key_collection(getvalescaped("collection","",true),$k))) {include "../include/authenticate.php";}
-include "../include/search_functions.php";
-include "../include/resource_functions.php";
-include_once '../include/csv_export_functions.php';
+$k=getvalescaped("k","");if (($k=="") || (!check_access_key_collection(getvalescaped("collection","",true),$k))) {include "../include/authenticate.php";}include_once '../include/csv_export_functions.php';
 include_once '../include/pdf_functions.php';
 ob_end_clean();
 $uniqid="";$id="";
@@ -19,6 +15,12 @@ $useoriginal=getvalescaped("use_original","no");
 $collectiondata=get_collection($collection);
 $tardisabled=getvalescaped("tardownload","")=="off";
 $include_csv_file = getval('include_csv_file', '');
+
+if($k != "" || (isset($anonymous_login) && $username == $anonymous_login))
+    {
+    // Disable offline jobs as there is currently no way to notify the user upon job completion
+    $offline_job_queue = false;
+    }
 
 $collection_download_tar=true;
 
@@ -33,6 +35,7 @@ else
 		{
 		// Set tar as default above certain collection size
 		$results=do_search("!collection" . $collection,"","relevance","",-1,"",false,0,false,true,"");
+		if (empty($results)) {exit($lang["nothing_to_download"]);}
 		$disk_usage=$results[0]["total_disk_usage"];
 		if($disk_usage >= $collection_download_tar_size*1024*1024)
 			{
@@ -87,17 +90,15 @@ for ($n=0;$n<count($result);$n++)
 	# Load access level (0,1,2) for this resource
 	$access=get_resource_access($result[$n]);
 	
-	# get all possible sizes for this resource
-	$sizes=get_all_image_sizes(false,$access>=1);
+    # Get all possible sizes for this resource. If largest available has been requested then include internal or user could end up with no file depite being able to see the preview
+	$sizes=get_all_image_sizes($size=="largest",$access>=1);
 
 	#check availability of original file 
-	$p=get_resource_path($ref,true,"",false,$result[$n]["file_extension"]);
+    $p=get_resource_path($ref,true,"",false,$result[$n]["file_extension"]);
 	if (file_exists($p) && (($access==0) || ($access==1 && $restricted_full_download)) && resource_download_allowed($ref,'',$result[$n]['resource_type']))
 		{
-		$available_sizes['original'][]=$ref;
+        $available_sizes['original'][]=$ref;
 		}
-
-	$pextension = get_extension($result[$n], $size);
 
 	# check for the availability of each size and load it to the available_sizes array
 	foreach ($sizes as $sizeinfo)
@@ -118,8 +119,28 @@ for ($n=0;$n<count($result);$n++)
         $count_data_only_types++;
         }
     }
+    
+if(isset($user_dl_limit) && intval($user_dl_limit) > 0)
+    {
+    $download_limit_check = get_user_downloads($userref,$user_dl_days);
+    if($download_limit_check + count($result) > $user_dl_limit)
+        {
+        $dlsummary = $download_limit_check . "/" . $user_dl_limit;
+        $errormessage = $lang["download_limit_collection_error"] . " " . str_replace(array("%%DOWNLOADED%%","%%LIMIT%%"),array($download_limit_check,$user_dl_limit),$lang['download_limit_summary']);
+        if(getval("ajax","") != "")
+            {
+            error_alert(htmlspecialchars($errormessage), true,200);
+            }
+        else
+            {
+            include "../include/header.php";
+            $onload_message = array("title" => $lang["error"],"text" => $errormessage);
+            include "../include/footer.php";
+            }
+        exit();
+        }
+    }
 
-#print_r($available_sizes);
 if(0 == count($available_sizes) && 0 === $count_data_only_types)
 	{
 	?>
@@ -143,14 +164,79 @@ if ($submitted != "")
 			$exiftool_write_option = true;
 			}
 		}
-					
+
+    if(!$collection_download_tar && $offline_job_queue)
+        {
+        foreach ($result as $key => $resdata)
+            {
+             // Only need to store resource IDS, not full search data
+            $jobresult[$key] = array("ref" => $resdata["ref"]);
+            }
+
+        $collection_download_job_data = array(
+            'collection'            => $collection,
+            'collectiondata'        => $collectiondata,
+            'result'                => $jobresult,
+            'size'                  => $size,
+            'exiftool_write_option' => $exiftool_write_option,
+            'useoriginal'           => $useoriginal,
+            'id'                    => $id,
+            'includetext'           => $includetext,
+            'count_data_only_types' => $count_data_only_types,
+            'usage'                 => $usage,
+            'usagecomment'          => $usagecomment,
+            'settings_id'           => $settings_id,
+            'include_csv_file'      => $include_csv_file
+        );
+
+        $modified_job_data = hook("collection_download_modify_job","",array($collection_download_job_data));
+        if(is_array($modified_job_data))
+            {
+            $collection_download_job_data = $modified_job_data;
+            }
+
+        job_queue_add(
+            'collection_download',
+            $collection_download_job_data,
+            '',
+            '',
+            $lang["oj-collection-download-success-text"],
+            $lang["oj-collection-download-failure-text"]);
+
+        exit();
+        }
+
 	# Estimate the total volume of files to zip
 	$totalsize=0;
 	for ($n=0;$n<count($result);$n++)
 		{
         $ref = $result[$n]['ref'];
-		$usesize = ($size == 'original') ? "" : $usesize=$size;
-		$use_watermark=check_use_watermark();
+        
+        if($size=="largest")
+            {
+            foreach($available_sizes as $available_size => $resources)
+                {
+                if(in_array($ref,$resources))
+                    {   
+                    $usesize = $available_size;
+                    if($available_size == 'original')
+                        {
+                        $usesize = "";
+                        // Has access to the original so no need to check previews
+                        break;
+                        }
+                    }
+                }
+            }
+        else
+            {
+            $usesize = ($size == 'original') ? "" : $size;
+            }        
+
+        $use_watermark=check_use_watermark();
+            
+
+        $pextension = get_extension($result[$n], $usesize);
 		
 		# Find file to use
 		$f=get_resource_path($ref,true,$usesize,false,$pextension,-1,1,$use_watermark);
@@ -221,58 +307,47 @@ if ($submitted != "")
 	// set up an array to store the filenames as they are found (to analyze dupes)
 	$filenames=array();	
 	
-    if(!$collection_download_tar && $offline_job_queue)
+    # Build a list of files to download
+    for ($n=0;$n<count($result);$n++)
         {
-        $collection_download_job_data = array(
-            'k'                     => $k,
-            'collection'            => $collection,
-            'result'                => $result,
-            'size'                  => $size,
-            'exiftool_write_option' => $exiftool_write_option,
-            'usertempdir'           => $usertempdir,
-            'useoriginal'           => $useoriginal,
-            'archiver'              => $archiver,
-            'id'                    => $id,
-            'includetext'           => $includetext,
-            'progress_file'         => $progress_file,
-            'count_data_only_types' => $count_data_only_types,
-            'usage'                 => $usage,
-            'usagecomment'          => $usagecomment,
-            'available_sizes'       => $available_sizes,
-            'settings_id'           => $settings_id,
-            'include_csv_file'      => $include_csv_file,
-        );
-        job_queue_add(
-            'collection_download',
-            $collection_download_job_data,
-            '',
-            '',
-            $lang["oj-collection-download-success-text"],
-            $lang["oj-collection-download-failure-text"]);
+        resource_type_config_override($result[$n]["resource_type"]);
+        $copy=false; 
+        $ref=$result[$n]["ref"];
+        # Load access level
+        $access=get_resource_access($result[$n]);
+        $use_watermark=check_use_watermark();
 
-        exit();
-        }
-
-	# Build a list of files to download
-	for ($n=0;$n<count($result);$n++)
-		{
-		resource_type_config_override($result[$n]["resource_type"]);
-		$copy=false; 
-		$ref=$result[$n]["ref"];
-		# Load access level
-		$access=get_resource_access($result[$n]);
-		$use_watermark=check_use_watermark();
-
-		# Only download resources with proper access level
-		if ($access==0 || $access=1)
-			{
-			$pextension = get_extension($result[$n], $size);
-			$usesize = ($size == 'original') ? "" : $usesize=$size;
-			$p=get_resource_path($ref,true,$usesize,false,$pextension,-1,1,$use_watermark);
+        # Only download resources with proper access level
+        if ($access==0 || $access=1)
+            {			
+            if($size=="largest")
+                {
+                foreach($available_sizes as $available_size => $resources)
+                    {
+                    if(in_array($ref,$resources))
+                        {   
+                        $usesize = $available_size;
+                        if($available_size == 'original')
+                            {
+                            // Has access to the original so no need to check previews
+                            $usesize = "";
+                            break;
+                            }
+                        }
+                    }
+                }
+            else
+                {
+                $usesize = ($size == 'original') ? "" : $size;
+                }      
+            
+            $pextension = get_extension($result[$n], $usesize);
+            $p=get_resource_path($ref,true,$usesize,false,$pextension,-1,1,$use_watermark);
 
 			# Determine whether target exists
 			$subbed_original = false;
-			$target_exists = file_exists($p);
+            $target_exists = file_exists($p);
+            
 			$replaced_file = false;
 
 			$new_file = hook('replacedownloadfile', '', array($result[$n], $usesize, $pextension, $target_exists));
@@ -297,7 +372,7 @@ if ($submitted != "")
 			# Process the file if it exists, and (if restricted access) that the user has access to the requested size
 			if ((($target_exists && $access==0) ||
 				($target_exists && $access==1 &&
-					(image_size_restricted_access($size) || ($usesize='' && $restricted_full_download))) 
+					(image_size_restricted_access($size) || ($usesize=='' && $restricted_full_download))) 
 					) && resource_download_allowed($ref,$usesize,$result[$n]['resource_type']))
 				{
 				$used_resources[]=$ref;
@@ -320,14 +395,8 @@ if ($submitted != "")
 				# if the tmpfile is made, from here on we are working with that. 
 				
 				# If using original filenames when downloading, copy the file to new location so the name is included.
-				$filename = '';
-				if ($original_filenames_when_downloading)	
-					{
-					# Compute a filename for this resource		
-					$filename=get_download_filename($ref,$size,0,$pextension);	
-
-					collection_download_use_original_filenames_when_downloading($filename, $ref, $collection_download_tar, $filenames);
-					}
+				$filename=get_download_filename($ref,$usesize,0,$pextension);
+				collection_download_use_original_filenames_when_downloading($filename, $ref, $collection_download_tar, $filenames,$id);
 
                 if (hook("downloadfilenamealt")) $filename=hook("downloadfilenamealt");
 
@@ -495,7 +564,7 @@ function ajax_download(download_offline)
 
     if(download_offline)
         {
-        styledalert('<?php echo $lang['downloadinprogress']; ?>', '<?php echo $lang['jq_notify_user_preparing_archive']; ?>');
+        styledalert('<?php echo $lang['collection_download']; ?>', '<?php echo $lang['jq_notify_user_preparing_archive']; ?>');
         document.getElementById('downloadbuttondiv').style.display='none';
         return false;
         }
@@ -543,12 +612,7 @@ function ajax_download(download_offline)
                 }
      
     });
-		
-}
-
-
-        
-
+	}
 
 </script>
 
@@ -584,50 +648,10 @@ if (!hook('replacesizeoptions'))
 	# analyze available sizes and present options
 ?><select name="size" class="stdwidth" id="downloadsize"<?php if (!empty($submitted)) echo ' disabled="disabled"' ?>><?php
 
-function display_size_option($sizeID, $sizeName, $fordropdown=true)
-	{
-	global $available_sizes, $lang, $result;
-	if(!hook('replace_display_size_option','',array($sizeID, $sizeName, $fordropdown))){
-    	if ($fordropdown)
-			{
-			?><option value="<?php echo htmlspecialchars($sizeID) ?>"><?php
-			echo $sizeName;
-			}
-    	if(isset($available_sizes[$sizeID]))
-			{
-			$availableCount = count($available_sizes[$sizeID]);
-			}
-		else
-			{
-			$availableCount=0;
-			}
-		$resultCount = count($result);
-		if ($availableCount != $resultCount)
-			{
-			echo " (" . $availableCount . " " . $lang["of"] . " " . $resultCount . " ";
-			switch ($availableCount)
-				{
-				case 0:
-					echo $lang["are_available-0"];
-					break;
-				case 1:
-					echo $lang["are_available-1"];
-					break;
-				default:
-					echo $lang["are_available-2"];
-					break;
-				}
-			echo ")";
-			}
-			 if ($fordropdown)
-				{
-			?></option><?php
-			}
-		}
-	}
 
 if (array_key_exists('original',$available_sizes))
 	display_size_option('original', $lang['original'], true);
+	display_size_option('largest', $lang['imagesize-largest'], true);
 
 foreach ($available_sizes as $key=>$value)
 	{
@@ -729,7 +753,7 @@ if($exiftool_write && !$force_exiftool_write_metadata)
 	<div class="clearerleft"></div></div><br />
 	<div class="clearerleft"></div>
 	<label for="tarinfo"></label>
-	<div class="Fixed"><?php echo $lang["collection_download_tar_info"]  . "<br />" . $lang["collection_download_tar_applink"]?></div>
+	<div class="FormHelpInner tickset"><?php echo $lang["collection_download_tar_info"]  . "<br />" . $lang["collection_download_tar_applink"]?></div>
 	
 	<div class="clearerleft"></div>
 </div>

@@ -1,9 +1,7 @@
 <?php
 include "../../include/db.php";
-include_once "../../include/general.php";
+
 include "../../include/authenticate.php"; if (!checkperm("c")) {exit ("Permission denied.");}
-include "../../include/resource_functions.php";
-include_once "../../include/collections_functions.php";
 include "../../include/image_processing.php";
 
 enforcePostRequest(false);
@@ -128,7 +126,7 @@ for ($n=0;$n<count($uploadfiles);$n++)
 		error_reporting(0);
 		                 
         # PLUpload - file was sent chunked and reassembled - use the reassembled file location
-        $result=copy($folder . DIRECTORY_SEPARATOR . $uploadfiles[$n], $localpath);
+        $result=copy($folder . DIRECTORY_SEPARATOR . safe_file_name($uploadfiles[$n]), $localpath);
 
         if ($result===false) 
 			{
@@ -199,7 +197,7 @@ for ($n=0;$n<count($uploadfiles);$n++)
 
 		if ($use_local)
 			{
-			$result=copy($folder . DIRECTORY_SEPARATOR . $uploadfiles[$n],$localpath);
+			$result=copy($folder . DIRECTORY_SEPARATOR . safe_file_name($uploadfiles[$n]),$localpath);
 			}
 		else
 			{

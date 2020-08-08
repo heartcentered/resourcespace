@@ -1,9 +1,6 @@
 <?php
 
 include '../../../include/db.php';
-include_once '../../../include/general.php';
-include '../../../include/resource_functions.php';
-include '../../../include/search_functions.php';
 include_once dirname(__FILE__) . "/../include/utility.php";
 
 $k=getvalescaped("k","");
@@ -45,12 +42,18 @@ $profile = getProfileFileName(getvalescaped('profile', null));
 $baseDirectory = get_temp_dir() . '/format_chooser';
 @mkdir($baseDirectory);
 
-$target = $baseDirectory . '/' . getTargetFilename($ref, $ext, $size);
+$target = $baseDirectory . '/' . get_download_filename($ref,$size,-1,$ext);
 
 set_time_limit(0);
 
 convertImage($resource, $page, $alternative, $target, $width, $height, $profile);
-sendFile($target);
-unlink($target);
 
+daily_stat('Resource download', $ref);
+resource_log($ref, LOG_CODE_DOWNLOADED, 0,$lang['format_chooser'], '',  $size);
+
+if(file_exists($target))
+    {
+    sendFile($target);
+    unlink($target);
+    }
 ?>

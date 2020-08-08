@@ -2,7 +2,6 @@
 
 // Do the include and authorization checking ritual
 include '../../../include/db.php';
-include_once '../../../include/general.php';
 include '../../../include/authenticate.php'; if (!checkperm('a')) {exit ($lang['error-permissiondenied']);}
 
 // Specify the name of this plugin and the heading to display for the page.
@@ -30,6 +29,12 @@ $page_def[]= config_add_single_ftype_select("google_vision_face_detect_field", $
 $page_def[]= config_add_single_ftype_select("google_vision_face_dependent_field", $lang["google_vision_face_dependent_field"],300); 
 $page_def[] = config_add_boolean_select("google_vision_face_detect_fullface", $lang["google_vision_face_detect_fullface"],'',300); 
 $page_def[] = config_add_boolean_select("google_vision_face_detect_verbose", $lang["google_vision_face_detect_verbose"],'',300);
+
+
+$page_def[] = config_add_section_header($lang["google_vision_translation"]);
+$page_def[] = config_add_text_input("google_vision_translation_api_key",$lang["google_vision_translation_api_key"]);
+$page_def[] = config_add_text_input("google_vision_translation_languages",$lang["google_vision_translation_languages"]);
+$page_def[] = config_add_boolean_select("google_vision_translation_keep_english", $lang["google_vision_translation_keep_english"],'',300);
 
 
 // Do the page generation ritual
