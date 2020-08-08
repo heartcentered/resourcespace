@@ -389,7 +389,7 @@ hook('render_collections_list_tools', '', array($collections[$n])); ?>
 $mycollcount = 0;
 $othcollcount = 0;
 $collections_count = count($collections);
-for($i=0;$i<$collections_countv;$i++){
+for($i=0;$i<$collections_count;$i++){
 	if ($collections[$i]['user'] == $userref){
 		++$mycollcount;
 	} else {
